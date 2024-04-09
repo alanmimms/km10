@@ -518,10 +518,26 @@ void Disassemble(const W36 iw,
 }
 
 
+void DisassembleToString(W36 iw, char *bufferP) {
+  const char *mnemonicP;
+  const char *ioDevP;
+  unsigned ac, i, x, y;
+
+  Disassemble(iw, &mnemonicP, &ioDevP, &ac, &i, &x, &y);
+
+  if (x) {
+    sprintf(bufferP, "%s %2o,%s%o(%o)", mnemonicP, ac, i ? "@" : "", y, x);
+  } else {
+    sprintf(bufferP, "%s %2o,%s%o", mnemonicP, ac, i ? "@" : "", y);
+  }
+}
+
+
 #if TEST_DISASM
 #include "acutest.h"
 
 static void testSimpleOps(void) {
+  char disassembly[100];
   const char *mneP;
   const char *ioDevP;
   unsigned ac, i, x, y;
@@ -551,6 +567,24 @@ static void testSimpleOps(void) {
   TEST_CHECK(i == 1);
   TEST_CHECK(x == 07);
   TEST_CHECK(y == 0654321ull);
+
+  // EXCH 12,654321(7)
+  DisassembleToString(0250ull << ShiftForBit(8) | /* op */
+		      012ull << ShiftForBit(12)  | /* ac */
+		      0ull << ShiftForBit(13)    | /* i */
+		      07ull << ShiftForBit(17)   | /* x */
+		      0654321ull,		  /* y */
+		      disassembly);
+  TEST_CHECK(strcmp(disassembly, "EXCH 12,654321(7)") == 0);
+
+  // EXCH 12,@654321(7)
+  DisassembleToString(0250ull << ShiftForBit(8) | /* op */
+		      012ull << ShiftForBit(12)  | /* ac */
+		      1ull << ShiftForBit(13)    | /* i */
+		      07ull << ShiftForBit(17)   | /* x */
+		      0654321ull,		  /* y */
+		      disassembly);
+  TEST_CHECK(strcmp(disassembly, "EXCH 12,@654321(7)") == 0);
 }
 
 

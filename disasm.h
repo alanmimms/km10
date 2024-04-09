@@ -11,4 +11,6 @@ extern void Disassemble(W36 iw,
 			unsigned *xP,
 			unsigned *yP);
 
+extern void DisassembleToString(W36 iw, char *bufferP);
+
 #endif
