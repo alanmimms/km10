@@ -74,7 +74,13 @@
 
 
 // This takes a "word" from the comma-delimited A10 format and
-// converts it from its ASCIIized form into an integer value.
+// converts it from its ASCIIized form into an integer value. On
+// entry, *pp must point to the first character of a token. On exit,
+// this is also the case or else **pp is 0.
+//
+// Example:
+//   |      <---- *pp points to the '^' at start and to the next 'A' on exit.
+// T ^,AEh,E,LF@,E,O?m,FC,E,Aru,Lj@,F,AEv,F@@,E,,AJB,L,AnT,F@@,E,Arz,Lk@,F,AEw,F@@,E,E,ND@,K,B,NJ@,E,B`K
 static inline uint16_t unASCIIize(char **pp) {
   uint16_t v = 0;
   int shift = 0;
@@ -82,12 +88,14 @@ static inline uint16_t unASCIIize(char **pp) {
   char *p = *pp;
 
   // Find the end of the token.
-  while (*p != ',' && *p != '\n' && *p != 0) ++p;
+  while (*p != ',' && *p != 0) ++p;
 
-  // Point to next token for next call.
+  // Point to next token for next call, but leave pointer at NUL byte
+  // if that's what is next.
   *pp = *p == 0 ? p : p + 1;
 
-  // Accumulate six-bit values from right to left.
+  // At this point `p` points to the delimiter after the token we need
+  // to scan. Accumulate six-bit values from right to left.
   while (--p >= tokenStartP) {
     v |= (*p & 0077) << shift;
     shift += 6;
@@ -107,7 +115,7 @@ int LoadA10(const char *fileNameP, uint64_t *memP, uint32_t *startAddrP) {
   uint32_t wordCount = 0;
   uint32_t startAddr;
 
-  char line[100];
+  char line[1024];
   FILE *inF = fopen(fileNameP, "r");
 
   if (!inF) return -1;
@@ -121,13 +129,15 @@ int LoadA10(const char *fileNameP, uint64_t *memP, uint32_t *startAddrP) {
 
     if (recType == ';') continue; /* Just ignore comment lines */
 
+    // Kill newline at end of line if it's there.
+    char *p = line + strlen(line) - 1;
+    if (*p == '\n') *p = 0;
+
     // Initialize our token pointer for scanning.
-    char *p = line + 2;
+    p = line + 2;
 
-    if (!p) break;		/* When we don't get any more tokens we can end this line */
-
-    // Use this to advance to next token ("word") in the line.
-#define NEXT	strtok_r(NULL, ",\n", &saveptr)
+    // When we don't have any tokens we can skip processing this line.
+    if (!p) break;
 
     // Count of words on this line.
     int wc = unASCIIize(&p);
@@ -176,20 +186,20 @@ int LoadA10(const char *fileNameP, uint64_t *memP, uint32_t *startAddrP) {
       break;
       
     default:
-      fprintf(stderr, "ERROR: Unknown record type in A10 file '%c'\n", recType);
+      fprintf(stderr, "ERROR: Unknown record type '%c' in file \"%s\"\n", recType, fileNameP);
       break;      
     }
   }
 
   fclose(inF);
 
-  fprintf(stderr, "[loaded %s to %06o:%06o start=%06o]\n",
+  fprintf(stderr, "[loaded %s from %06o to %06o start=%06o]\n",
 	  fileNameP, lowestAddr, highestAddr, startAddr);
   return wordCount;
 }
 
 
-#if TEST
+#if TEST_LOADA10
 int main(int argc, char *argv[]) {
   static uint64_t memory[256*1024];
   uint32_t startAddr = 0;
