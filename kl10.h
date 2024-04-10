@@ -8,6 +8,12 @@
 // A 36-bit PDP10 word.
 typedef uint64_t W36;
 
+#define PRI06o32	"%06o"
+#define PRI06o64	"%06lo"
+#define PRI6o32		"%6o"
+#define PRI6o64		"%6lo"
+
+
 // Bitmask for 36 bits.
 static const W36 ALL1s = 0777777777777ull;
 
@@ -34,13 +40,13 @@ static inline W36 Extract(W36 w, int s, int e) {
 }
 
 
-// Format `w` as standard 777777,,777777 format and return a pointer
+// Format `w` as standard 123456,,654321 format and return a pointer
 // to the buffer it's formatted into (which is passed in from caller).
 // This makes printf suck a little less. (Why doesn't printf
 // formatting have an extension API for those who want to add more
 // formatting types?)
 static inline char *oct36(char *bufP, W36 w) {
-  sprintf(bufP, "%06lo,,%06lo", w, w);
+  sprintf(bufP, PRI06o32 ",," PRI06o32, (uint32_t) (w >> 18), (uint32_t) (w & 0777777ul));
   return bufP;
 }
 

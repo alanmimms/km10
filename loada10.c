@@ -2,7 +2,8 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-
+#include "kl10.h"
+#include "loada10.h"
 
 /*
       PDP-10 ASCIIZED FILE FORMAT
@@ -73,34 +74,37 @@
  */
 
 
-// This takes a "word" from the comma-delimited A10 format and
-// converts it from its ASCIIized form into an integer value. On
-// entry, *pp must point to the first character of a token. On exit,
-// this is also the case or else **pp is 0.
-//
-// Example:
-//   |      <---- *pp points to the '^' at start and to the next 'A' on exit.
-// T ^,AEh,E,LF@,E,O?m,FC,E,Aru,Lj@,F,AEv,F@@,E,,AJB,L,AnT,F@@,E,Arz,Lk@,F,AEw,F@@,E,E,ND@,K,B,NJ@,E,B`K
-static inline uint16_t unASCIIize(char **pp) {
-  uint16_t v = 0;
-  int shift = 0;
-  char *tokenStartP = *pp;
-  char *p = *pp;
+// Reverse the 16-bit value v.
+static uint16_t bitReverse(uint16_t v) {
+  uint16_t result = 0;
 
-  // Find the end of the token.
-  while (*p != ',' && *p != 0) ++p;
-
-  // Point to next token for next call, but leave pointer at NUL byte
-  // if that's what is next.
-  *pp = *p == 0 ? p : p + 1;
-
-  // At this point `p` points to the delimiter after the token we need
-  // to scan. Accumulate six-bit values from right to left.
-  while (--p >= tokenStartP) {
-    v |= (*p & 0077) << shift;
-    shift += 6;
+  for (uint16_t toMask = 0x8000; v; toMask >>= 1, v >>= 1) {
+    if (v & 1) result |= toMask;
   }
 
+  return result;
+}
+
+
+// This takes a "word" from the comma-delimited A10 format and
+// converts it from its ASCIIized form into an 16-bit integer value.
+// On entry, *pp must point to the first character of a token. On
+// exit, *pp points to the start of the next token or else the NUL at
+// the end of the string.
+//
+// Example:
+//     |      <---- *pp points to the 'A' on entry
+//     |   |  <---- and to the 'E' four chars later at exit.
+// T ^,AEh,E,LF@,E,O?m,FC,E,Aru,Lj@,F,AEv,F@@,E,,AJB,L,AnT,F@@,E,Arz,Lk@,F,AEw,F@@,E,E,ND@,K,B,NJ@,E,B`K
+static uint16_t unASCIIize(char **pp) {
+  uint16_t v = 0;
+  char *p = *pp;
+
+  while (*p != ',' && *p != 0) {
+    v = (v << 6) | (*p++ & 077);
+  }
+
+  *pp = *p == 0 ? p : p + 1;
   return v;
 }
 
@@ -108,12 +112,12 @@ static inline uint16_t unASCIIize(char **pp) {
 // Returns number of words loaded or -1 for error.
 // Pass filename and a pointer to memory big enough to hold the program.
 // Returns start address in startAddrP if non-NULL.
-int LoadA10(const char *fileNameP, uint64_t *memP, uint32_t *startAddrP) {
-  uint32_t addr = 0;
-  uint32_t highestAddr = 0;
-  uint32_t lowestAddr = 0777777;
-  uint32_t wordCount = 0;
-  uint32_t startAddr;
+int LoadA10(const char *fileNameP, W36 *memP, W36 *startAddrP, W36 *lowestAddrP, W36 *highestAddrP) {
+  W36 addr = 0;
+  W36 highestAddr = 0;
+  W36 lowestAddr = 0777777;
+  W36 wordCount = 0;
+  W36 startAddr;
 
   char line[1024];
   FILE *inF = fopen(fileNameP, "r");
@@ -146,43 +150,41 @@ int LoadA10(const char *fileNameP, uint64_t *memP, uint32_t *startAddrP) {
     addr |= wc & 0xC000;
     wc = wc & 0x3FFF;
 
+    int zeroCount;
+    W36 offset;
+
     switch (recType) {
-    case 'Z': {
-      int zeroCount = unASCIIize(&p);
+    case 'Z':
+      zeroCount = unASCIIize(&p);
+
       if (zeroCount == 0) zeroCount = 64*1024;
 
-      for (uint32_t offset = 0; offset < zeroCount; ++offset) {
-	uint32_t a = addr + offset;
+      for (W36 offset = 0; offset < zeroCount; ++offset) {
+	W36 a = addr + offset;
 
 	if (a > highestAddr) highestAddr = a;
 	if (a < lowestAddr) lowestAddr = a;
 	memP[a] = 0;
       }
-      }
+
       break;
 
-    case 'T': {
+    case 'T':
+      if (wc == 0) startAddr = addr;
 
-      if (wc == 0) {
-        startAddr = addr;
-	if (startAddrP) *startAddrP = addr;
-      }
-
-      uint32_t offset = 0;
-
-      for (int token = 0; token < wc; token += 3) {
-	uint16_t w0 = unASCIIize(&p);
-	uint16_t w1 = unASCIIize(&p);
-	uint16_t w2 = unASCIIize(&p);
-	uint64_t w = ((w2 & 0x0F) << 16) | (w1 << 16) | w0;
-	uint32_t a = addr + offset;
+      for (offset = 0; offset < wc; ++offset) {
+	W36 w0 = unASCIIize(&p);
+	W36 w1 = unASCIIize(&p);
+	W36 w2 = unASCIIize(&p);
+	W36 w = ((w2 & 0x0F) << 32) | (w1 << 16) | w0;
+	W36 a = addr + offset;
 
 	if (a > highestAddr) highestAddr = a;
 	if (a < lowestAddr) lowestAddr = a;
 	memP[a] = w;
 	++wordCount;
       }
-      }
+
       break;
       
     default:
@@ -193,27 +195,136 @@ int LoadA10(const char *fileNameP, uint64_t *memP, uint32_t *startAddrP) {
 
   fclose(inF);
 
-  fprintf(stderr, "[loaded %s from %06o to %06o start=%06o]\n",
+  if (startAddrP) *startAddrP = startAddr;
+  if (lowestAddrP) *lowestAddrP = lowestAddr;
+  if (highestAddrP) *highestAddrP = highestAddr;
+
+  fprintf(stderr, "[loaded %s from " PRI06o64 " to " PRI06o64 " start=" PRI06o64 "]\n",
 	  fileNameP, lowestAddr, highestAddr, startAddr);
   return wordCount;
 }
 
 
 #if TEST_LOADA10
-int main(int argc, char *argv[]) {
-  static uint64_t memory[256*1024];
-  uint32_t startAddr = 0;
-  char *fileNameP = NULL;
+#include "acutest.h"
+#include "disasm.h"
 
-  if (argc == 2) fileNameP = argv[1];
 
-  if (!fileNameP) {
-    fprintf(stderr, "Usage:\n\
-%s a10-file-path-name\n", argv[0]);
-  }
+static void testBitReverse(void) {
+  uint16_t was;
 
-  int st = LoadA10(fileNameP, memory, &startAddr);
-  fprintf(stderr, "[LoadA10 returned %d]\n", st);
-  return 0;
+  was = bitReverse( 0xFFFF);
+  TEST_CHECK(was == 0xFFFF);
+  was = bitReverse( 0x0000);
+  TEST_CHECK(was == 0x0000);
+  was = bitReverse( 0xAAAA);
+  TEST_CHECK(was == 0x5555);
+  was = bitReverse( 0x5555);
+  TEST_CHECK(was == 0xAAAA);
+
+  was = bitReverse( 0x8000);
+  TEST_CHECK(was == 0x0001);
+  was = bitReverse( 0x4000);
+  TEST_CHECK(was == 0x0002);
+  was = bitReverse( 0x2000);
+  TEST_CHECK(was == 0x0004);
+  was = bitReverse( 0x1000);
+  TEST_CHECK(was == 0x0008);
+
+  was = bitReverse( 0x0800);
+  TEST_CHECK(was == 0x0010);
+  was = bitReverse( 0x0400);
+  TEST_CHECK(was == 0x0020);
+  was = bitReverse( 0x0200);
+  TEST_CHECK(was == 0x0040);
+  was = bitReverse( 0x0100);
+  TEST_CHECK(was == 0x0080);
+
+  was = bitReverse( 0x0080);
+  TEST_CHECK(was == 0x0100);
+  was = bitReverse( 0x0040);
+  TEST_CHECK(was == 0x0200);
+  was = bitReverse( 0x0020);
+  TEST_CHECK(was == 0x0400);
+  was = bitReverse( 0x0010);
+  TEST_CHECK(was == 0x0800);
+
+  was = bitReverse( 0x0008);
+  TEST_CHECK(was == 0x1000);
+  was = bitReverse( 0x0004);
+  TEST_CHECK(was == 0x2000);
+  was = bitReverse( 0x0002);
+  TEST_CHECK(was == 0x4000);
+  was = bitReverse( 0x0001);
+  TEST_CHECK(was == 0x8000);
 }
+
+
+static void testUnASCIIize(void) {
+  char buf[64];
+  char *p;
+  W36 was;
+  W36 w = 0;
+
+  p = "A@@,A@B,F@@,E";
+  was = unASCIIize(&p);
+  TEST_CHECK(was == 010000);
+  TEST_MSG("Was: " PRI06o64 "  SB: 010000", was);
+  was = unASCIIize(&p);
+  w = was;
+  TEST_CHECK(was == 0010002);
+  TEST_MSG("Was: " PRI06o64 "  SB: 0010002", was);
+  was = unASCIIize(&p);
+  w |= was << 16;
+  TEST_CHECK(was == 0060000);
+  TEST_MSG("Was: " PRI06o64 "  SB: 0060000", was);
+  was = unASCIIize(&p);
+  w |= was << 32;
+  TEST_CHECK(was == 0000005);
+  TEST_MSG("Was: " PRI06o64 "  SB: 0000005", was);
+  TEST_MSG("W: %s", oct36(buf, w));
+
+  p = ",IDj,H";
+  was = unASCIIize(&p);
+  w = was;
+  TEST_CHECK(was == 0000000);
+  TEST_MSG("Was: " PRI06o64 "  SB: 000000", was);
+  was = unASCIIize(&p);
+  w |= was << 16;
+  TEST_CHECK(was == 0110452);
+  TEST_MSG("Was: " PRI06o64 "  SB: 0110452", was);
+  was = unASCIIize(&p);
+  w |= was << 32;
+  TEST_CHECK(was == 0000010);
+  TEST_MSG("Was: " PRI06o64 "  SB: 000010", was);
+  TEST_MSG("W: %s", oct36(buf, w));
+}
+
+
+static const char fileName[] = "../images/klddt/klddt.a10";
+
+
+static void testLoadKLDDT(void) {
+  static W36 memory[256*1024];
+  W36 startAddr, lowestAddr, highestAddr;
+
+  int st = LoadA10(fileName, memory, &startAddr, &lowestAddr, &highestAddr);
+  fprintf(stderr, "[LoadA10 %s returned %d]\n", fileName, st);
+
+  char disassembly[1024];
+
+  for (W36 a = lowestAddr; a <= highestAddr; ++a) {
+    char buf[64];
+    DisassembleToString(memory[a], disassembly);
+    fprintf(stderr, PRI06o64 ": %s    %s\n", a, oct36(buf, memory[a]), disassembly);
+  }
+}
+
+
+TEST_LIST = {
+  {"bitReverse", testBitReverse},
+  {"unASCIIize", testUnASCIIize},
+  {"loadKLDDT", testLoadKLDDT},
+  {NULL, NULL},
+};
 #endif

@@ -1,5 +1,7 @@
 // Disassemble a KL10 instruction word into its component values,
 // including mnemonic, I, X, and Y.
+//
+// TODO: Support I/O instructions properly. They aren't at all correct right now.
 #include <stdint.h>
 #include "kl10.h"
 
@@ -453,6 +455,20 @@ void Disassemble(const W36 iw,
   if (op == 0133 && ac != 0) {		/* IBP becomes ADJBP for nonzero AC */
     mneP = "ADJBP";
   } else if (op == 0254) {		/* JRST family */
+
+    switch (ac) {
+    case 000: mneP = "JRST"; break;
+    case 001: mneP = "PORTAL"; break;
+    case 002: mneP = "JRSTF"; break;
+    case 004: mneP = "HALT"; break;
+    case 005: mneP = "XJRSTF"; break;
+    case 006: mneP = "XJEN"; break;
+    case 007: mneP = "XPCW"; break;
+    case 010: mneP = "RESTOR"; break;
+    case 012: mneP = "JEN"; break;
+    case 014: mneP = "SFM"; break;
+    default: mneP = "JRST"; break;
+    }
   } else if ((op & 0700) == 0700) {	/* I/O instructions */
 
     switch (Extract(iw, 0, 9)) {
@@ -525,10 +541,15 @@ void DisassembleToString(W36 iw, char *bufferP) {
 
   Disassemble(iw, &mnemonicP, &ioDevP, &ac, &i, &x, &y);
 
-  if (x) {
-    sprintf(bufferP, "%s %2o,%s%o(%o)", mnemonicP, ac, i ? "@" : "", y, x);
+  if (!mnemonicP) {
+    oct36(bufferP, iw);
   } else {
-    sprintf(bufferP, "%s %2o,%s%o", mnemonicP, ac, i ? "@" : "", y);
+
+    if (x) {
+      sprintf(bufferP, "%s %2o,%s%o(%o)", mnemonicP, ac, i ? "@" : "", y, x);
+    } else {
+      sprintf(bufferP, "%s %2o,%s%o", mnemonicP, ac, i ? "@" : "", y);
+    }
   }
 }
 
