@@ -74,18 +74,6 @@
  */
 
 
-// Reverse the 16-bit value v.
-static uint16_t bitReverse(uint16_t v) {
-  uint16_t result = 0;
-
-  for (uint16_t toMask = 0x8000; v; toMask >>= 1, v >>= 1) {
-    if (v & 1) result |= toMask;
-  }
-
-  return result;
-}
-
-
 // This takes a "word" from the comma-delimited A10 format and
 // converts it from its ASCIIized form into an 16-bit integer value.
 // On entry, *pp must point to the first character of a token. On
@@ -199,8 +187,10 @@ int LoadA10(const char *fileNameP, W36 *memP, W36 *startAddrP, W36 *lowestAddrP,
   if (lowestAddrP) *lowestAddrP = lowestAddr;
   if (highestAddrP) *highestAddrP = highestAddr;
 
+#if TEST_LOADA10
   fprintf(stderr, "[loaded %s from " PRI06o64 " to " PRI06o64 " start=" PRI06o64 "]\n",
 	  fileNameP, lowestAddr, highestAddr, startAddr);
+#endif
   return wordCount;
 }
 
@@ -208,56 +198,6 @@ int LoadA10(const char *fileNameP, W36 *memP, W36 *startAddrP, W36 *lowestAddrP,
 #if TEST_LOADA10
 #include "acutest.h"
 #include "disasm.h"
-
-
-static void testBitReverse(void) {
-  uint16_t was;
-
-  was = bitReverse( 0xFFFF);
-  TEST_CHECK(was == 0xFFFF);
-  was = bitReverse( 0x0000);
-  TEST_CHECK(was == 0x0000);
-  was = bitReverse( 0xAAAA);
-  TEST_CHECK(was == 0x5555);
-  was = bitReverse( 0x5555);
-  TEST_CHECK(was == 0xAAAA);
-
-  was = bitReverse( 0x8000);
-  TEST_CHECK(was == 0x0001);
-  was = bitReverse( 0x4000);
-  TEST_CHECK(was == 0x0002);
-  was = bitReverse( 0x2000);
-  TEST_CHECK(was == 0x0004);
-  was = bitReverse( 0x1000);
-  TEST_CHECK(was == 0x0008);
-
-  was = bitReverse( 0x0800);
-  TEST_CHECK(was == 0x0010);
-  was = bitReverse( 0x0400);
-  TEST_CHECK(was == 0x0020);
-  was = bitReverse( 0x0200);
-  TEST_CHECK(was == 0x0040);
-  was = bitReverse( 0x0100);
-  TEST_CHECK(was == 0x0080);
-
-  was = bitReverse( 0x0080);
-  TEST_CHECK(was == 0x0100);
-  was = bitReverse( 0x0040);
-  TEST_CHECK(was == 0x0200);
-  was = bitReverse( 0x0020);
-  TEST_CHECK(was == 0x0400);
-  was = bitReverse( 0x0010);
-  TEST_CHECK(was == 0x0800);
-
-  was = bitReverse( 0x0008);
-  TEST_CHECK(was == 0x1000);
-  was = bitReverse( 0x0004);
-  TEST_CHECK(was == 0x2000);
-  was = bitReverse( 0x0002);
-  TEST_CHECK(was == 0x4000);
-  was = bitReverse( 0x0001);
-  TEST_CHECK(was == 0x8000);
-}
 
 
 static void testUnASCIIize(void) {
@@ -322,7 +262,6 @@ static void testLoadKLDDT(void) {
 
 
 TEST_LIST = {
-  {"bitReverse", testBitReverse},
   {"unASCIIize", testUnASCIIize},
   {"loadKLDDT", testLoadKLDDT},
   {NULL, NULL},

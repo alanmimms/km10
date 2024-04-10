@@ -13,3 +13,6 @@ target_compile_options(disasm PUBLIC -DTEST_DISASM=1 ${COptionsForALL})
 
 add_executable(loada10 loada10.c disasm.c)
 target_compile_options(loada10 PUBLIC -DTEST_LOADA10=1 ${COptionsForALL})
+
+add_executable(km10 km10.c loada10.c disasm.c)
+target_compile_options(km10 PUBLIC -DTEST_KM10=1 ${COptionsForALL})
