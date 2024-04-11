@@ -14,20 +14,28 @@ typedef uint64_t W36;
 #define PRI6o64		"%6lo"
 
 
+static inline W36 RH(W36 w) {
+  return w & 0777777;
+};
+
+
+static inline W36 LH(W36 w) {
+  return (w >> 18) & 0777777;
+}
+
+
 // Bitmask for 36 bits.
 static const W36 ALL1s = 0777777777777ull;
 
 
-static inline int ShiftForBit(int b) {
-  return 35 - b;
-}
-
+// Return the bit shift for PDP-10 numbered bit n.
+#define ShiftForBit(B)	(35 - (B))
 
 // Return the bit mask for PDP-10 numbered bit n. This special-cases
-// negative n to return zero.
-static inline W36 MaskForBit(int n) {
-  return (n < 0 || n > 35) ? 0ull : (1ull << 35) >> n;
-}
+// negative n to return zero. This is a macro because goddamned C99
+// doesn't allow static inline functions as constants and I needed
+// that.
+#define MaskForBit(B)	(((B) < 0 || (B) > 35) ? 0ull : (1ull << 35) >> (B))
 
 
 // Extract from 36-bit word `w` the PDP-10 numbered bits from `s` to
