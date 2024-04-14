@@ -44,29 +44,44 @@ ${Object.keys(flags)
 
 
 // XXX For now
-#define CHECK_GET_ABREAK(A)	((A) < 020 ? cp->ac[A] : cp->memP[A])
-#define CHECK_PUT_ABREAK(A,V)	do {if ((A) < 020) cp->ac[A] = (V); else cp->memP[A] = (V); } while(0)
+#define CHECK_GET_ABREAK(A)	((A) < 020 ? AC[A] : memP[A])
 
 
-typedef struct KMContext {
-  W36 ac[16];
-  W36 pc;
-  W36 flags;
-  W36 *memP;
-  unsigned running: 1;
-  unsigned tracePC: 1;
-} KMContext;
+// XXX For now
+#define CHECK_PUT_ABREAK(A,V)			\\
+    do {					\\
+      if ((A) < 020)				\\
+        AC[A] = (V);				\\
+      else					\\
+        memP[A] = (V);				\\
+     } while(0)					\\
+
+
+static volatile int running;
+static volatile int tracePC;
+
+static volatile W36 AC[16];
+static volatile W36 pc;
+static volatile W36 flags;
+static volatile W36 *memP;
 
 
 // XXX This needs nonzero section code added.
-static inline W36 pcAndFlags(KMContext *cp) {
-  return cp->flags | cp->pc;
+static inline W36 pcAndFlags() {
+  return flags | pc;
 }
 
 
 static inline int nonZeroSection(W36 a) {
   return !!(a & LHMASK);
 }
+
+
+static void NYI(const char *mneP) {
+  char buf[64];
+  fprintf(stderr, "Not yet implemented: %s at %s\\n", mneP, octVMA(buf, pc));
+}
+
 `;
 
 
@@ -113,7 +128,7 @@ function putMem(a, value) {
 
 
 function setFlags(flagsList) {
-  return `cp->flags |= ${flagsList
+  return `flags |= ${flagsList
 .split(/\s+/)
 .map(flag => `flag${flag}`)
 .join('|')}`;
@@ -129,6 +144,21 @@ function setSignedMoveFlags() {
 	if (tmp == 0) {
 	  ${setFlags(`CY0 CY1`)};
 	}`;
+}
+
+
+// If cond is undefined never skip. If cond is 1 always skip.
+// Else generate if (cond) for skip.
+function doSKIP(cond) {
+  const prefix = `    if (ac != 0) ${putAC('ea')};`;
+
+  if (cond == undefined) return prefix;
+  if (cond === 1 && cond !== undefined)
+    return `${prefix}
+    ++pc;`;
+  else
+    return `${prefix}
+    if (${getMem()} ${cond}) ++pc;`;
 }
 
 
@@ -172,7 +202,7 @@ const kl10Instructions = {
 	${setSignedMoveFlags()}
 `,
 '415': `// SETMI/XMOVEI
-	if (nonZeroSection(cp->pc)) {
+	if (nonZeroSection(pc)) {
 
 	  if (eaIsLocal) {
 	    W36 tmp = BIT17 | RH(ea);
@@ -184,6 +214,85 @@ const kl10Instructions = {
 	} else {	// SETMI
 	  ${putAC('RH(ea)')};
 	}
+`,
+'254': `// JRST
+	switch(ac) {		// AC is the JRST function F
+	case 000: // JRST
+	  pc = ea;
+	  goto SKIP_PC_INCR;
+
+	case 001: // PORTAL
+	  NYI("PORTAL");
+	  break;
+
+	case 002: // JRSTF
+	  NYI("JRSTF");
+	  break;
+
+	case 004: // HALT
+	  running = 0;
+	  break;
+
+	case 005: // XJRSTF
+	  NYI("XJRSTF");
+	  break;
+
+	case 006: // XJEN
+	  NYI("XJEN");
+	  break;
+
+	case 007: // XPCW
+	  NYI("XPCW");
+	  break;
+
+	case 010: // RSTOR
+	  NYI("RSTOR");
+	  break;
+
+	case 012: // JEN
+	  NYI("JEN");
+	  break;
+
+	case 014: // SFM
+	  NYI("SFM");
+	  break;
+	}
+`,
+'264': `// JSR
+    memP[ea] = nonZeroSection(pc) ? (pc & 0007777777777ull) : (pc | flags);
+    pc = ea + 1;
+    flags &= ~(flagFPD | flagAFI | flagTR2 | flagTR1);
+    goto SKIP_PC_INCR;
+`,
+'265': `// JSP
+    AC[ac] = nonZeroSection(pc) ? (pc & 0007777777777ull) : (pc | flags);
+    pc = ea;
+    flags &= ~(flagFPD | flagAFI | flagTR2 | flagTR1);
+    goto SKIP_PC_INCR;
+`,
+'330': `// SKIP if ac !== 0: (e) -> (ac)
+    ${doSKIP()}
+`,
+'331': `// SKIPL
+    ${doSKIP('< 0')}
+`,
+'332': `// SKIPE
+    ${doSKIP('== 0')}
+`,
+'333': `// SKIPLE
+    ${doSKIP('<= 0')}
+`,
+'334': `// SKIPA
+    ${doSKIP(1)}
+`,
+'335': `// SKIPGE
+    ${doSKIP('>= 0')}
+`,
+'336': `// SKIPN
+    ${doSKIP('!= 0')}
+`,
+'337': `// SKIPG
+    ${doSKIP('> 0')}
 `,
 /*
 '120': `// DMOVE
@@ -764,37 +873,6 @@ const kl10Instructions = {
 `,
 '327': `// JUMPG
 	if (ac) > 0: e -> (pc)
-`,
-'330': `// SKIP
-	if ac !== 0: (e) -> (ac)
-`,
-'331': `// SKIPL
-	if ac !== 0: (e) -> (ac)
-      		if (e) < 0: skip
-`,
-'332': `// SKIPE
-	if ac !== 0: (e) -> (ac)
-      		if (e) === 0: skip
-`,
-'333': `// SKIPLE
-	if ac !== 0: (e) -> (ac)
-      		if (e) <= 0: skip
-`,
-'334': `// SKIPA
-	if ac !== 0: (e) -> (ac)
-      		skip
-`,
-'335': `// SKIPGE
-	if ac !== 0: (e) -> (ac)
-      		if (e) >= 0: skip
-`,
-'336': `// SKIPN
-	if ac !== 0: (e) -> (ac)
-      		if (e) !== 0: skip
-`,
-'337': `// SKIPG
-	if ac !== 0: (e) -> (ac)
-      		if (e) > 0: skip
 `,
 '340': `// AOJ
 	(ac).aox -> (ac)
@@ -1382,15 +1460,6 @@ const kl10Instructions = {
 '255': `// JFCL
 	{cpu.doJFCL(ac, e)}
 `,
-'254': `// JRST
-	{cpu.doJRST(e)}
-`,
-'264': `// JSR
-	{cpu.doJSx(ac, e, true)}
-`,
-'265': `// JSP
-	{cpu.doJSx(ac, e, false)}
-`,
 '266': `// JSA
 	(ac) -> (e)
 		e.r -> (ac).l
@@ -1546,17 +1615,14 @@ console.log(`\
 
 ${macros}
 
-static void emulate(KMContext *cp) {
-  char octbuf[64];
-  char octbuf2[64];
+static void emulate() {
 
   do {
     // XXX Put interrupt, trap, HALT, etc. handling here...
-    W36 iw = cp->memP[cp->pc];
+    W36 iw = memP[pc];
 
     W36 ea;
     int eaIsLocal = 1;		// XXX THIS IS TEMPORARY UNTIL WE HAVE EXTENDED STUFF
-    W36 tmp;
     unsigned op;
     unsigned ac;
     unsigned i;
@@ -1572,32 +1638,32 @@ static void emulate(KMContext *cp) {
       x = Extract(eaw, 14, 17);
       y = Extract(eaw, 18, 35);
 
-      ea = x ? RH(cp->ac[x] + y) : y;
+      ea = x ? RH(AC[x] + y) : y;
 
-      if (i) eaw = cp->memP[ea];
+      if (i) eaw = memP[ea];
     } while (i);
 
-    if (cp->tracePC) {
+    if (tracePC) {
       char pcBuf[64];
       char eaBuf[64];
       char daBuf[256];
 
       DisassembleToString(iw, daBuf);
-      fprintf(stderr, "%s: [ea=%s] %s\\n", oct36(pcBuf, cp->pc), oct36(eaBuf, ea), daBuf);
+      fprintf(stderr, "%s: [ea=%s] %s\\n", oct36(pcBuf, pc), oct36(eaBuf, ea), daBuf);
     }
 
     switch (op) {
     ${Object.keys(kl10Instructions)
-	    .map(k => `\
-	case ${k}: {
-${kl10Instructions[k]}
-	  break; };`).join('\n')}
+	    .map(k => `
+	case 0${k}: {
+${kl10Instructions[k]}\
+	  break; }`).join('\n')}
     }
 
-    ++cp->pc;
+    ++pc;
 
   SKIP_PC_INCR: ;
-  } while (cp->running);
+  } while (running);
 }
 
 
@@ -1617,11 +1683,9 @@ int main(int argc, char *argv[]) {
   int st = LoadA10(fileNameP, memory, &startAddr, &lowestAddr, &highestAddr);
   fprintf(stderr, "[Loaded %s  st=%d  start=" PRI06o64 "]\\n", fileNameP, st, startAddr);
 
-  static KMContext context;
-  memset(&context, 0, sizeof(context));
-  context.pc = startAddr;
-  context.memP = memory;
-  context.tracePC = 1;
-  context.running = 1;
-  emulate(&context);
+  pc = startAddr;
+  memP = memory;
+  tracePC = 1;
+  running = 1;
+  emulate();
 }`);

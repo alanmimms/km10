@@ -53,8 +53,17 @@ static inline W36 Extract(W36 w, int s, int e) {
 // This makes printf suck a little less. (Why doesn't printf
 // formatting have an extension API for those who want to add more
 // formatting types?)
-static inline char *oct36(char *bufP, W36 w) {
-  sprintf(bufP, PRI06o32 ",," PRI06o32, (uint32_t) (w >> 18), (uint32_t) (w & 0777777ul));
+static char *oct36(char *bufP, W36 w) {
+  sprintf(bufP, PRI06o32 ",," PRI06o32,
+	  (uint32_t) (w >> 18), (uint32_t) (w & 0777777ul));
+  return bufP;
+}
+
+
+// Format a PC or other virtual address as octal ,, pair.
+static char *octVMA(char *bufP, W36 a) {
+  sprintf(bufP, PRI06o32 ",," PRI06o32,
+	  (uint32_t) (a >> 18) & 0177, (uint32_t) (a & 0777777ul));
   return bufP;
 }
 
