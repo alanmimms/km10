@@ -2,3 +2,5 @@
 .*~
 *.o
 build
+node_modules/
+compiler/insns.astdump
