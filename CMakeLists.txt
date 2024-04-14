@@ -14,5 +14,14 @@ target_compile_options(disasm PUBLIC -DTEST_DISASM=1 ${COptionsForALL})
 add_executable(loada10 loada10.c disasm.c)
 target_compile_options(loada10 PUBLIC -DTEST_LOADA10=1 ${COptionsForALL})
 
+add_custom_command(
+  OUTPUT km10.c
+  COMMAND ( cd ${PROJECT_SOURCE_DIR}/compiler ;
+	    ./compile10 > ../km10.c )
+  DEPENDS ${PROJECT_SOURCE_DIR}/compiler/compile10
+  DEPENDS ${PROJECT_SOURCE_DIR}/compiler/compile10.js
+)
+
 add_executable(km10 km10.c loada10.c disasm.c)
 target_compile_options(km10 PUBLIC -DTEST_KM10=1 ${COptionsForALL})
+
