@@ -45,7 +45,7 @@ ${Object.keys(flags)
 
 // XXX For now
 #define CHECK_GET_ABREAK(A)	((A) < 020 ? cp->ac[A] : cp->memP[A])
-#define CHECK_PUT_ABREAK(A,V)	if ((A) < 020) cp->ac[A] = (V); else cp->memP[A] = (V)
+#define CHECK_PUT_ABREAK(A,V)	do {if ((A) < 020) cp->ac[A] = (V); else cp->memP[A] = (V); } while(0)
 
 
 typedef struct KMContext {
