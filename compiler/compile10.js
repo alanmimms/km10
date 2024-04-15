@@ -182,6 +182,101 @@ function doSKIP(cond) {
 }
 
 
+// Handle the Test, Modify, and Skip instructions by passing appropriate
+// getMask, modifier, and skipper functions for each case.
+function testInsn(getMask, modifier, skipper) {
+  return `\
+  W36 mask = ${getMask()};
+  ${skipper('mask')};
+  ${modifier('mask')};`;
+}
+
+
+function getMem() {
+  return `memP[ea]`;
+}
+
+
+function getMemSwapped() {
+  return `(RH(memP[ea]) << 18) | LH(memP[ea])`;
+}
+
+
+function getMemRH() {
+  return `RH(memP[ea])`;
+}
+
+
+function getEARH() {
+  return `RH(ea)`;
+}
+
+
+function getACRH() {
+  return `RH(ac)`;
+}
+
+
+function getMemLH() {
+  return `LH(memP[ea])`;
+}
+
+
+function getEALH() {
+  return `LH(ea)`;
+}
+
+
+function getACLH() {
+  return `LH(ac)`;
+}
+
+
+function skipNE(mask) {
+  return `if ((AC[ac] & ${mask}) != 0) ++pc`;
+}
+
+
+function skipE(mask) {
+  return `if ((AC[ac] & ${mask}) == 0) ++pc`;
+}
+
+
+function skipAlways(mask) {
+  return `++pc`;
+}
+
+
+function skipNever(mask) {
+  return `(void) 0`;
+}
+
+
+function modRHZeros(mask) {
+  return `${putAC(getAC())} & ~${mask}`
+}
+
+
+function modLHZeros(mask) {
+  return `${putAC(getAC())} & ~${mask}`
+}
+
+
+function modOnes(mask) {
+  return `${putAC(getAC())} | ${mask}`
+}
+
+
+function modComplement(mask) {
+  return `${putAC(getAC())} ^ ${mask}`
+}
+
+
+function noModifer(mask) {
+  return `(void) 0`;
+}
+
+
 const kl10Instructions = {
 // Full Word Movement
 '250': `// EXCH	(ac) <-> (e)
@@ -314,825 +409,772 @@ const kl10Instructions = {
 '337': `// SKIPG
     ${doSKIP('> 0')}
 `,
-'7dd04': `// DATAI
-    NYI("DATAI");
+'120': `// DMOVE D(e,,e+1) -> D(ac,,ac+1)
+    NYI("DMOVE");
 `,
-'7dd10': `// BLKO
-    NYI("BLKO");
 `,
-'7dd14': `// DATAO
-    NYI("DATAO");
+'121': `// DMOVEN -D(e,,e+1) -> D(ac,,ac+1)
+    NYI("DMOVEN");
 `,
-'7dd00': `// BLKI
-    NYI("BLKI");
+'124': `// DMOVEM D(ac,,ac+1) -> D(e,,e+1)
+    NYI("DMOVEM");
 `,
-'7dd20': `// CONO
-    NYI("CONO");
-`,
-'7dd24': `// CONI
-    NYI("CONI");
-`,
-'7dd30': `// CONSZ
-    NYI("CONSZ");
-`,
-'7dd34': `// CONSO
-    NYI("CONSO");
-`,
-/*
-'120': `// DMOVE
-	D(e,,e+1) -> D(ac,,ac+1)
-`,
-'121': `// DMOVEN
-	-D(e,,e+1) -> D(ac,,ac+1)
-`,
-'124': `// DMOVEM
-	D(ac,,ac+1) -> D(e,,e+1)
-`,
-'125': `// DMOVNM
-	-D(ac,,ac+1) -> D(e,,e+1)
+'125': `// DMOVNM -D(ac,,ac+1) -> D(e,,e+1)
+    NYI("DMOVNM");
 `,
 '251': `// BLT
-	{cpu.doBLT(ac, e)}
+    NYI("BLT");
 `,
-'204': `// MOVS
-	(e).s -> (ac)
+'204': `// MOVS (e).s -> (ac)
+    NYI("MOVS");
 `,
-'205': `// MOVSI
-	e,,0 -> (ac)
+'205': `// MOVSI e,,0 -> (ac)
+    NYI("MOVSI");
 `,
-'206': `// MOVSM
-	(ac).s -> (e)
+'206': `// MOVSM (ac).s -> (e)
+    NYI("MOVSM");
 `,
-'207': `// MOVSS
-	(e).s -> (e)
-      		if ac !== 0: (e) -> (ac)
+'207': `// MOVSS (e).s -> (e); if ac !== 0: (e) -> (ac)
+    NYI("MOVSS");
 `,
-'214': `// MOVM
-	|(e)| -> (ac)
+'214': `// MOVM |(e)| -> (ac)
+    NYI("MOVM");
 `,
-'215': `// MOVMI
-	0,,e -> (ac)
+'215': `// MOVMI 0,,e -> (ac)
+    NYI("MOVMI");
 `,
 '216': `// MOVMM
-	|(e)| -> (tmp)
+/*	|(e)| -> (tmp)
 		(tmp) -> (e)
 		if (tmp) == 400000_000000: 1 -> tr1 ov cy1
-		if (tmp) == 0: 1 -> cy0 cy1
+		if (tmp) == 0: 1 -> cy0 cy1 */
+    NYI("MOVMM");
 `,
 '217': `// MOVMS
-	|(e)| -> (tmp)
+/*	|(e)| -> (tmp)
 		(tmp) -> (e)
       		if ac !== 0: (tmp) -> (ac)
 		if (tmp) == 400000_000000: 1 -> tr1 ov cy1
-		if (tmp) == 0: 1 -> cy0 cy1
+		if (tmp) == 0: 1 -> cy0 cy1 */
+    NYI("MOVMS");
 `,
 '052': `// PMOVE
-	{cpu.doPMOVE(ac, e)}
+    NYI("PMOVE");
 `,
 '053': `// PMOVEM
-	{cpu.doPMOVEM(ac, e)}
+    NYI("PMOVEM");
 `,
-'270': `// ADD
-	(ac) + (e) -> (ac)
+'270': `// ADD (ac) + (e) -> (ac)
+    NYI("ADD");
 `,
-'271': `// ADDI
-	(ac) + 0,,e -> (ac)
+'271': `// ADDI (ac) + 0,,e -> (ac)
+    NYI("ADDI");
 `,
-'272': `// ADDM
-	(ac) + (e) -> (e)
+'272': `// ADDM (ac) + (e) -> (e)
+    NYI("ADDM");
 `,
-'273': `// ADDB
-	(ac) + (e) -> (ac) (e)
+'273': `// ADDB (ac) + (e) -> (ac) (e)
+    NYI("ADDB");
 `,
-'274': `// SUB
-	(ac) - (e) -> (ac)
+'274': `// SUB (ac) - (e) -> (ac)
+    NYI("SUB");
 `,
-'275': `// SUBI
-	(ac) - 0,,e -> (ac)
+'275': `// SUBI (ac) - 0,,e -> (ac)
+    NYI("SUBI");
 `,
-'276': `// SUBM
-	(ac) - (e) -> (e)
+'276': `// SUBM (ac) - (e) -> (e)
+    NYI("SUBM");
 `,
-'277': `// SUBB
-	(ac) - (e) -> (ac) (e)
+'277': `// SUBB (ac) - (e) -> (ac) (e)
+    NYI("SUBB");
 `,
-'220': `// IMUL
-	(ac) * (e) -> (ac).discardHi
+'220': `// IMUL (ac) * (e) -> (ac).discardHi
+    NYI("IMUL");
 `,
-'221': `// IMULI
-	(ac) * 0,,e -> (ac).discardHi
+'221': `// IMULI (ac) * 0,,e -> (ac).discardHi
+    NYI("IMULI");
 `,
-'222': `// IMULM
-	(ac) * (e) -> (e).discardHi
+'222': `// IMULM (ac) * (e) -> (e).discardHi
+    NYI("IMULM");
 `,
-'223': `// IMULB
-	(ac) * (e) -> (ac).discardHi (e).discardHi
+'223': `// IMULB (ac) * (e) -> (ac).discardHi (e).discardHi
+    NYI("IMULB");
 `,
-'224': `// MUL
-	(ac) * (e) -> D(ac,,ac+1)
+'224': `// MUL (ac) * (e) -> D(ac,,ac+1)
+    NYI("MUL");
 `,
-'225': `// MULI
-	(ac) * 0,,e -> D(ac,,ac+1)
+'225': `// MULI (ac) * 0,,e -> D(ac,,ac+1)
+    NYI("MULI");
 `,
-'226': `// MULM
-	(ac) * (e) -> (e).discardLo
+'226': `// MULM (ac) * (e) -> (e).discardLo
+    NYI("MULM");
 `,
-'227': `// MULB
-	(ac) * (e) -> (ac,,ac+1) (e).discardLo
+'227': `// MULB (ac) * (e) -> (ac,,ac+1) (e).discardLo
+    NYI("MULB");
 `,
-'230': `// IDIV
-	(ac) / (e) -> (ac).quo (ac+1).rem
+'230': `// IDIV (ac) / (e) -> (ac).quo (ac+1).rem
+    NYI("IDIV");
 `,
-'231': `// IDIVI
-	(ac) / 0,,e -> (ac).quo (ac+1).rem
+'231': `// IDIVI (ac) / 0,,e -> (ac).quo (ac+1).rem
+    NYI("IDIVI");
 `,
-'232': `// IDIVM
-	(ac) / (e) -> (e).quo
+'232': `// IDIVM (ac) / (e) -> (e).quo
+    NYI("IDIVM");
 `,
-'233': `// IDIVB
-	(ac) / (e) -> (ac).quo (ac+1).rem (e).quo
+'233': `// IDIVB (ac) / (e) -> (ac).quo (ac+1).rem (e).quo
+    NYI("IDIVB");
 `,
-'234': `// DIV
-	D(ac,,ac+1) / (e) -> (ac).quo (ac+1).rem
+'234': `// DIV D(ac,,ac+1) / (e) -> (ac).quo (ac+1).rem
+    NYI("DIV");
 `,
-'235': `// DIVI
-	D(ac,,ac+1) / 0,,e -> (ac).quo (ac+1).rem
+'235': `// DIVI D(ac,,ac+1) / 0,,e -> (ac).quo (ac+1).rem
+    NYI("DIVI");
 `,
-'236': `// DIVM
-	D(ac,,ac+1) / (e) -> (e).quo
+'236': `// DIVM D(ac,,ac+1) / (e) -> (e).quo
+    NYI("DIVM");
 `,
-'237': `// DIVB
-	D(ac,,ac+1) / (e) -> (ac).quo (ac+1).rem (e).quo
+'237': `// DIVB D(ac,,ac+1) / (e) -> (ac).quo (ac+1).rem (e).quo
+    NYI("DIVB");
 `,
-'114': `// DADD
-	D(ac,,ac+1) d+ D(e,,e+1) -> D(ac,,ac+1)
+'114': `// DADD D(ac,,ac+1) d+ D(e,,e+1) -> D(ac,,ac+1)
+    NYI("DADD");
 `,
-'115': `// DSUB
-	D(ac,,ac+1) d- D(e,,e+1) -> D(ac,,ac+1)
+'115': `// DSUB D(ac,,ac+1) d- D(e,,e+1) -> D(ac,,ac+1)
+    NYI("DSUB");
 `,
-'116': `// DMUL
-	D(ac,,ac+1) d* D(e,,e+1) -> Q(ac,,ac+3)
+'116': `// DMUL D(ac,,ac+1) d* D(e,,e+1) -> Q(ac,,ac+3)
+    NYI("DMUL");
 `,
-'117': `// DDIV
-	D(ac,,ac+1) d/ D(e,,e+1) -> Q(ac,,ac+3)
+'117': `// DDIV D(ac,,ac+1) d/ D(e,,e+1) -> Q(ac,,ac+3)
+    NYI("DDIV");
 `,
-'140': `// FAD
-    	(ac) f+ (e) -> (ac)
+'140': `// FAD (ac) f+ (e) -> (ac)
+    NYI("FAD");
 `,
-'141': `// FADL
-    	(ac) fl+ (e) -> D(ac,,ac+1)
+'141': `// FADL (ac) fl+ (e) -> D(ac,,ac+1)
+    NYI("FADL");
 `,
-'142': `// FADM
-    	(ac) f+ (e) -> (e)
+'142': `// FADM (ac) f+ (e) -> (e)
+    NYI("FADM");
 `,
-'143': `// FADB
-    	(ac) f+ (e) -> (ac) (e)
+'143': `// FADB (ac) f+ (e) -> (ac) (e)
+    NYI("FADB");
 `,
-'144': `// FADR
-    	(ac) fr+ (e) -> (ac)
+'144': `// FADR (ac) fr+ (e) -> (ac)
+    NYI("FADR");
 `,
-'145': `// FADRI
-    	(ac) fr+ e,,0 -> (ac)
+'145': `// FADRI (ac) fr+ e,,0 -> (ac)
+    NYI("FADRI");
 `,
-'146': `// FADRM
-    	(ac) fr+ (e) -> (e)
+'146': `// FADRM (ac) fr+ (e) -> (e)
+    NYI("FADRM");
 `,
-'147': `// FADRB
-    	(ac) fr+ (e) -> (ac) (e)
+'147': `// FADRB (ac) fr+ (e) -> (ac) (e)
+    NYI("FADRB");
 `,
-'150': `// FSB
-	(ac) f- (e) -> (ac)
+'150': `// FSB (ac) f- (e) -> (ac)
+    NYI("FSB");
 `,
-'151': `// FSBL
-	(ac) fl- (e) -> D(ac,,ac+1)
+'151': `// FSBL (ac) fl- (e) -> D(ac,,ac+1)
+    NYI("FSBL");
 `,
-'152': `// FSBM
-	(ac) f- (e) -> (e)
+'152': `// FSBM (ac) f- (e) -> (e)
+    NYI("FSBM");
 `,
-'153': `// FSBB
-	(ac) f- (e) -> (ac) (e)
+'153': `// FSBB (ac) f- (e) -> (ac) (e)
+    NYI("FSBB");
 `,
-'154': `// FSBR
-    	(ac) fr- (e) -> (ac)
+'154': `// FSBR (ac) fr- (e) -> (ac)
+    NYI("FSBR");
 `,
-'155': `// FSBRI
-    	(ac) fr- e,,0 -> (ac)
+'155': `// FSBRI (ac) fr- e,,0 -> (ac)
+    NYI("FSBRI");
 `,
-'156': `// FSBRM
-    	(ac) fr- (e) -> (e)
+'156': `// FSBRM (ac) fr- (e) -> (e)
+    NYI("FSBRM");
 `,
-'157': `// FSBRB
-    	(ac) fr- (e) -> (ac) (e)
+'157': `// FSBRB (ac) fr- (e) -> (ac) (e)
+    NYI("FSBRB");
 `,
-'160': `// FMP
-	(ac) f* (e) -> (ac)
+'160': `// FMP (ac) f* (e) -> (ac)
+    NYI("FMP");
 `,
-'161': `// FMPL
-	(ac) fl* (e) -> D(ac,,ac+1)
+'161': `// FMPL (ac) fl* (e) -> D(ac,,ac+1)
+    NYI("FMPL");
 `,
-'162': `// FMPM
-	(ac) f* (e) -> (e)
+'162': `// FMPM (ac) f* (e) -> (e)
+    NYI("FMPM");
 `,
-'163': `// FMPB
-	(ac) f* (e) -> (ac) (e)
+'163': `// FMPB (ac) f* (e) -> (ac) (e)
+    NYI("FMPB");
 `,
-'164': `// FMPR
-    	(ac) fr* (e) -> (ac)
+'164': `// FMPR (ac) fr* (e) -> (ac)
+    NYI("FMPR");
 `,
-'165': `// FMPRI
-    	(ac) fr* e,,0 -> (ac)
+'165': `// FMPRI (ac) fr* e,,0 -> (ac)
+    NYI("FMPRI");
 `,
-'166': `// FMPRM
-    	(ac) fr* (e) -> (e)
+'166': `// FMPRM (ac) fr* (e) -> (e)
+    NYI("FMPRM");
 `,
-'167': `// FMPRB
-    	(ac) fr* (e) -> (ac) (e)
+'167': `// FMPRB (ac) fr* (e) -> (ac) (e)
+    NYI("FMPRB");
 `,
-'170': `// FDV
-	(ac) f/ (e) -> (ac)
+'170': `// FDV (ac) f/ (e) -> (ac)
+    NYI("FDV");
 `,
-'171': `// FDVL
-	(ac) fl/ (e) -> D(ac,,ac+1)
+'171': `// FDVL (ac) fl/ (e) -> D(ac,,ac+1)
+    NYI("FDVL");
 `,
-'172': `// FDVM
-	(ac) f/ (e) -> (e)
+'172': `// FDVM (ac) f/ (e) -> (e)
+    NYI("FDVM");
 `,
-'173': `// FDVB
-	(ac) f/ (e) -> (ac) (e)
+'173': `// FDVB (ac) f/ (e) -> (ac) (e)
+    NYI("FDVB");
 `,
-'174': `// FDVR
-    	(ac) fr/ (e) -> (ac)
+'174': `// FDVR (ac) fr/ (e) -> (ac)
+    NYI("FDVR");
 `,
-'175': `// FDVRI
-    	(ac) fr/ e,,0 -> (ac)
+'175': `// FDVRI (ac) fr/ e,,0 -> (ac)
+    NYI("FDVRI");
 `,
-'176': `// FDVRM
-    	(ac) fr/ (e) -> (e)
+'176': `// FDVRM (ac) fr/ (e) -> (e)
+    NYI("FDVRM");
 `,
-'177': `// FDVRB
-    	(ac) fr/ (e) -> (ac) (e)
+'177': `// FDVRB (ac) fr/ (e) -> (ac) (e)
+    NYI("FDVRB");
 `,
-'110': `// DFAD
-	D(ac,,ac+1) d+ D(e,,e+1) -> D(ac,,ac+1)
+'110': `// DFAD D(ac,,ac+1) d+ D(e,,e+1) -> D(ac,,ac+1)
+    NYI("DFAD");
 `,
-'111': `// DFSB
-	D(ac,,ac+1) d- D(e,,e+1) -> D(ac,,ac+1)
+'111': `// DFSB D(ac,,ac+1) d- D(e,,e+1) -> D(ac,,ac+1)
+    NYI("DFSB");
 `,
-'112': `// DFMP
-	D(ac,,ac+1) d* D(e,,e+1) -> D(ac,,ac+1)
+'112': `// DFMP D(ac,,ac+1) d* D(e,,e+1) -> D(ac,,ac+1)
+    NYI("DFMP");
 `,
-'113': `// DFDV
-	D(ac,,ac+1) d/ D(e,,e+1) -> D(ac,,ac+1)
+'113': `// DFDV D(ac,,ac+1) d/ D(e,,e+1) -> D(ac,,ac+1)
+    NYI("DFDV");
 `,
-'132': `// FSC
-	(ac) f<< e -> (ac)
+'132': `// FSC (ac) f<< e -> (ac)
+    NYI("FSC");
 `,
-'031': `// GFSC
-	D(ac,,ac+1) f<< e -> D(ac,,ac+1)
+'031': `// GFSC D(ac,,ac+1) f<< e -> D(ac,,ac+1)
+    NYI("GFSC");
 `,
-'127': `// FLTR
-	(e).ifr -> (ac)
+'127': `// FLTR (e).ifr -> (ac)
+    NYI("FLTR");
 `,
-'030': `// GFLTR
-	(e).ifrD -> D(ac,,ac+1)
+'030': `// GFLTR (e).ifrD -> D(ac,,ac+1)
+    NYI("GFLTR");
 `,
-'027': `// DGFLTR
-	(e,,e+1).DifrD -> D(ac,,ac+1)
+'027': `// DGFLTR (e,,e+1).DifrD -> D(ac,,ac+1)
+    NYI("DGFLTR");
 `,
-'122': `// FIX
-	(e).fix -> (ac)
+'122': `// FIX (e).fix -> (ac)
+    NYI("FIX");
 `,
-'126': `// FIXR
-	(e).fixR -> (ac)
+'126': `// FIXR (e).fixR -> (ac)
+    NYI("FIXR");
 `,
-'024': `// GFIX
-	(e,,e+1).Dfix -> (ac)
+'024': `// GFIX (e,,e+1).Dfix -> (ac)
+    NYI("GFIX");
 `,
-'026': `// GFIXR
-	(e,,e+1).DfixR -> (ac)
+'026': `// GFIXR (e,,e+1).DfixR -> (ac)
+    NYI("GFIXR");
 `,
-'023': `// GDFIX
-	(e,,e+1).DfixD -> D(ac,,ac+1)
+'023': `// GDFIX (e,,e+1).DfixD -> D(ac,,ac+1)
+    NYI("GDFIX");
 `,
-'025': `// GDFIXR
-	(e,,e+1).DfixRD -> D(ac,,ac+1)
+'025': `// GDFIXR (e,,e+1).DfixRD -> D(ac,,ac+1)
+    NYI("GDFIXR");
 `,
-'021': `// GSNGL
-	(e,,e+1).sngl -> (ac)
+'021': `// GSNGL (e,,e+1).sngl -> (ac)
+    NYI("GSNGL");
 `,
-'022': `// GDBLE
-	(e).dble -> D(ac,,ac+1)
+'022': `// GDBLE (e).dble -> D(ac,,ac+1)
+    NYI("GDBLE");
 `,
-'130': `// UFA
-	(ac) fu+ (e) -> (ac+1)
+'130': `// UFA (ac) fu+ (e) -> (ac+1)
+    NYI("UFA");
 `,
-'131': `// DFN
-	{cpu.doDFN(ac, e)}
+'131': `// DFN {cpu.doDFN(ac, e)}
+    NYI("DFN");
 `,
-'400': `// SETZ
-	0 -> (ac)
+'400': `// SETZ 0 -> (ac)
+    NYI("SETZ");
 `,
-'401': `// SETZI
-	0 -> (ac)
+'401': `// SETZI 0 -> (ac)
+    NYI("SETZI");
 `,
-'402': `// SETZM
-	0 -> (e)
+'402': `// SETZM 0 -> (e)
+    NYI("SETZM");
 `,
-'403': `// SETZB
-	0 -> (ac) (e)
+'403': `// SETZB 0 -> (ac) (e)
+    NYI("SETZB");
 `,
-'474': `// SETO
-	777777777777 -> (ac)
+'474': `// SETO 777777777777 -> (ac)
+    NYI("SETO");
 `,
-'475': `// SETOI
-	777777777777 -> (ac)
+'475': `// SETOI 777777777777 -> (ac)
+    NYI("SETOI");
 `,
-'476': `// SETOM
-	777777777777 -> (e)
+'476': `// SETOM 777777777777 -> (e)
+    NYI("SETOM");
 `,
-'477': `// SETOB
-	777777777777 -> (ac) (e)
+'477': `// SETOB 777777777777 -> (ac) (e)
+    NYI("SETOB");
 `,
-'424': `// SETA
-	{ }	// (ac) -> (ac)
+'424': `// SETA { }	// (ac) -> (ac)
+    NYI("SETA");
 `,
-'425': `// SETAI
-	{ }	// (ac) -> (ac)
+'425': `// SETAI { }	// (ac) -> (ac)
+    NYI("SETAI");
 `,
-'426': `// SETAM
-	(ac) -> (e)
+'426': `// SETAM (ac) -> (e)
+    NYI("SETAM");
 `,
-'427': `// SETAB
-	(ac) -> (e)
+'427': `// SETAB (ac) -> (e)
+    NYI("SETAB");
 `,
-'450': `// SETCA
-	~(ac) -> (ac)
+'450': `// SETCA ~(ac) -> (ac)
+    NYI("SETCA");
 `,
-'451': `// SETCAI
-	~(ac) -> (ac)
+'451': `// SETCAI ~(ac) -> (ac)
+    NYI("SETCAI");
 `,
-'452': `// SETCAM
-	~(ac) -> (e)
+'452': `// SETCAM ~(ac) -> (e)
+    NYI("SETCAM");
 `,
-'453': `// SETCAB
-	~(ac) -> (ac) (e)
+'453': `// SETCAB ~(ac) -> (ac) (e)
+    NYI("SETCAB");
 `,
-'414': `// SETM
-	(e) -> (ac)
+'414': `// SETM (e) -> (ac)
+    NYI("SETM");
 `,
-'416': `// SETMM
-	(e) -> (e)// No-op
+'416': `// SETMM (e) -> (e)// No-op
+    NYI("SETMM");
 `,
-'417': `// SETMB
-	(e) -> (ac) (e)
+'417': `// SETMB (e) -> (ac) (e)
+    NYI("SETMB");
 `,
-'460': `// SETCM
-	~(e) -> (ac)
+'460': `// SETCM ~(e) -> (ac)
+    NYI("SETCM");
 `,
-'461': `// SETCMI
-	~[0,,e] -> (ac)
+'461': `// SETCMI ~[0,,e] -> (ac)
+    NYI("SETCMI");
 `,
-'462': `// SETCMM
-	~(e) -> (e)
+'462': `// SETCMM ~(e) -> (e)
+    NYI("SETCMM");
 `,
-'463': `// SETCMB
-	~(e) -> (ac) (e)
+'463': `// SETCMB ~(e) -> (ac) (e)
+    NYI("SETCMB");
 `,
-'404': `// AND
-	(ac) & (e) -> (ac)
+'404': `// AND (ac) & (e) -> (ac)
+    NYI("AND");
 `,
-'405': `// ANDI
-	(ac) & 0,,e -> (ac)
+'405': `// ANDI (ac) & 0,,e -> (ac)
+    NYI("ANDI");
 `,
-'406': `// ANDM
-	(ac) & (e) -> (e)
+'406': `// ANDM (ac) & (e) -> (e)
+    NYI("ANDM");
 `,
-'407': `// ANDB
-	(ac) & (e) -> (ac) (e)
+'407': `// ANDB (ac) & (e) -> (ac) (e)
+    NYI("ANDB");
 `,
-'410': `// ANDCA
-	~(ac) & (e) -> (ac)
+'410': `// ANDCA ~(ac) & (e) -> (ac)
+    NYI("ANDCA");
 `,
-'411': `// ANDCAI
-	~(ac) & 0,,e -> (ac)
+'411': `// ANDCAI ~(ac) & 0,,e -> (ac)
+    NYI("ANDCAI");
 `,
-'412': `// ANDCAM
-	~(ac) & (e) -> (e)
+'412': `// ANDCAM ~(ac) & (e) -> (e)
+    NYI("ANDCAM");
 `,
-'413': `// ANDCAB
-	~(ac) & (e) -> (ac) (e)
+'413': `// ANDCAB ~(ac) & (e) -> (ac) (e)
+    NYI("ANDCAB");
 `,
-'420': `// ANDCM
-	(ac) & ~(e) -> (ac)
+'420': `// ANDCM (ac) & ~(e) -> (ac)
+    NYI("ANDCM");
 `,
-'421': `// ANDCMI
-	(ac) & ~[0,,e] -> (ac)
+'421': `// ANDCMI (ac) & ~[0,,e] -> (ac)
+    NYI("ANDCMI");
 `,
-'422': `// ANDCMM
-	(ac) & ~(e) -> (e)
+'422': `// ANDCMM (ac) & ~(e) -> (e)
+    NYI("ANDCMM");
 `,
-'423': `// ANDCMB
-	(ac) & ~(e) -> (ac) (e)
+'423': `// ANDCMB (ac) & ~(e) -> (ac) (e)
+    NYI("ANDCMB");
 `,
-'440': `// ANDCB
-	~(ac) & ~(e) -> (ac)
+'440': `// ANDCB ~(ac) & ~(e) -> (ac)
+    NYI("ANDCB");
 `,
-'441': `// ANDCBI
-	~(ac) & ~[0,,e] -> (ac)
+'441': `// ANDCBI ~(ac) & ~[0,,e] -> (ac)
+    NYI("ANDCBI");
 `,
-'442': `// ANDCBM
-	~(ac) & ~(e) -> (e)
+'442': `// ANDCBM ~(ac) & ~(e) -> (e)
+    NYI("ANDCBM");
 `,
-'443': `// ANDCBB
-	~(ac) & ~(e) -> (ac) (e)
+'443': `// ANDCBB ~(ac) & ~(e) -> (ac) (e)
+    NYI("ANDCBB");
 `,
-'434': `// IOR
-	(ac) | (e) -> (ac)
+'434': `// IOR (ac) | (e) -> (ac)
+    NYI("IOR");
 `,
-'435': `// IORI
-	(ac) | 0,,e -> (ac)
+'435': `// IORI (ac) | 0,,e -> (ac)
+    NYI("IORI");
 `,
-'436': `// IORM
-	(ac) | (e) -> (e)
+'436': `// IORM (ac) | (e) -> (e)
+    NYI("IORM");
 `,
-'437': `// IORB
-	(ac) | (e) -> (ac) (e)
+'437': `// IORB (ac) | (e) -> (ac) (e)
+    NYI("IORB");
 `,
-'454': `// ORCA
-	~(ac) | (e) -> (ac)
+'454': `// ORCA ~(ac) | (e) -> (ac)
+    NYI("ORCA");
 `,
-'455': `// ORCAI
-	~(ac) | 0,,e -> (ac)
+'455': `// ORCAI ~(ac) | 0,,e -> (ac)
+    NYI("ORCAI");
 `,
-'456': `// ORCAM
-	~(ac) | (e) -> (e)
+'456': `// ORCAM ~(ac) | (e) -> (e)
+    NYI("ORCAM");
 `,
-'457': `// ORCAB
-	~(ac) | (e) -> (ac) (e)
+'457': `// ORCAB ~(ac) | (e) -> (ac) (e)
+    NYI("ORCAB");
 `,
-'464': `// ORCM
-	(ac) | ~(e) -> (ac)
+'464': `// ORCM (ac) | ~(e) -> (ac)
+    NYI("ORCM");
 `,
-'465': `// ORCMI
-	(ac) | ~[0,,e] -> (ac)
+'465': `// ORCMI (ac) | ~[0,,e] -> (ac)
+    NYI("ORCMI");
 `,
-'466': `// ORCMM
-	(ac) | ~(e) -> (e)
+'466': `// ORCMM (ac) | ~(e) -> (e)
+    NYI("ORCMM");
 `,
-'467': `// ORCMB
-	(ac) | ~(e) -> (ac) (e)
+'467': `// ORCMB (ac) | ~(e) -> (ac) (e)
+    NYI("ORCMB");
 `,
-'470': `// ORCB
-	~(ac) | ~(e) -> (ac)
+'470': `// ORCB ~(ac) | ~(e) -> (ac)
+    NYI("ORCB");
 `,
-'471': `// ORCBI
-	~(ac) | ~[0,,e] -> (ac)
+'471': `// ORCBI ~(ac) | ~[0,,e] -> (ac)
+    NYI("ORCBI");
 `,
-'472': `// ORCBM
-	~(ac) | ~(e) -> (e)
+'472': `// ORCBM ~(ac) | ~(e) -> (e)
+    NYI("ORCBM");
 `,
-'473': `// ORCBB
-	~(ac) | ~(e) -> (ac) (e)
+'473': `// ORCBB ~(ac) | ~(e) -> (ac) (e)
+    NYI("ORCBB");
 `,
-'430': `// XOR
-	(ac) ^ (e) -> (ac)
+'430': `// XOR (ac) ^ (e) -> (ac)
+    NYI("XOR");
 `,
-'431': `// XORI
-	(ac) ^ 0,,e -> (ac)
+'431': `// XORI (ac) ^ 0,,e -> (ac)
+    NYI("XORI");
 `,
-'432': `// XORM
-	(ac) ^ (e) -> (e)
+'432': `// XORM (ac) ^ (e) -> (e)
+    NYI("XORM");
 `,
-'433': `// XORB
-	(ac) ^ (e) -> (ac) (e)
+'433': `// XORB (ac) ^ (e) -> (ac) (e)
+    NYI("XORB");
 `,
-'444': `// EQV
-	(ac) >< (e) -> (ac)
+'444': `// EQV (ac) >< (e) -> (ac)
+    NYI("EQV");
 `,
-'445': `// EQVI
-	(ac) >< 0,,e -> (ac)
+'445': `// EQVI (ac) >< 0,,e -> (ac)
+    NYI("EQVI");
 `,
-'446': `// EQVM
-	(ac) >< (e) -> (e)
+'446': `// EQVM (ac) >< (e) -> (e)
+    NYI("EQVM");
 `,
-'447': `// EQVB
-	(ac) >< (e) -> (ac) (e)
+'447': `// EQVB (ac) >< (e) -> (ac) (e)
+    NYI("EQVB");
 `,
-'240': `// ASH
-	(ac) <<a e -> (ac)
+'240': `// ASH (ac) <<a e -> (ac)
+    NYI("ASH");
 `,
-'241': `// ROT
-	(ac) <<r e -> (ac)
+'241': `// ROT (ac) <<r e -> (ac)
+    NYI("ROT");
 `,
-'242': `// LSH
-	(ac) <<u e -> (ac)
+'242': `// LSH (ac) <<u e -> (ac)
+    NYI("LSH");
 `,
-'244': `// ASHC
-	D(ac,,ac+1) <<a e -> D(ac,,ac+1)
+'244': `// ASHC D(ac,,ac+1) <<a e -> D(ac,,ac+1)
+    NYI("ASHC");
 `,
-'245': `// ROTC
-	D(ac,,ac+1) <<r e -> D(ac,,ac+1)
+'245': `// ROTC D(ac,,ac+1) <<r e -> D(ac,,ac+1)
+    NYI("ROTC");
 `,
-'246': `// LSHC
-	D(ac,,ac+1) <<u e -> D(ac,,ac+1)
+'246': `// LSHC D(ac,,ac+1) <<u e -> D(ac,,ac+1)
+    NYI("LSHC");
 `,
 '252': `// AOBJP
-	(ac).l + 1 -> (ac).l
+/*	(ac).l + 1 -> (ac).l
 		(ac).r + 1 -> (ac).r
-      		if (ac) >= 0: e -> (pc)
+      		if (ac) >= 0: e -> (pc) */
+    NYI("AOBJP");
 `,
 '253': `// AOBJN
-	(ac).l + 1 -> (ac).l
+/*	(ac).l + 1 -> (ac).l
 		(ac).r + 1 -> (ac).r
-      		if (ac) < 0: e -> (pc)
+      		if (ac) < 0: e -> (pc) */
+    NYI("AOBJN");
 `,
-'300': `// CAI
-	{ }
+'300': `// CAI { }
+    NYI("CAI");
 `,
-'301': `// CAIL
-	if (ac) < e: skip
+'301': `// CAIL if (ac) < e: skip
+    NYI("CAIL");
 `,
-'302': `// CAIE
-	if (ac) === e: skip
+'302': `// CAIE if (ac) === e: skip
+    NYI("CAIE");
 `,
-'303': `// CAILE
-	if (ac) <= e: skip
+'303': `// CAILE if (ac) <= e: skip
+    NYI("CAILE");
 `,
-'304': `// CAIA
-	skip
+'304': `// CAIA skip
+    NYI("CAIA");
 `,
-'305': `// CAIGE
-	if (ac) >= e: skip
+'305': `// CAIGE if (ac) >= e: skip
+    NYI("CAIGE");
 `,
-'306': `// CAIN
-	if (ac) !== e: skip
+'306': `// CAIN if (ac) !== e: skip
+    NYI("CAIN");
 `,
-'307': `// CAIG
-	if (ac) > e: skip
+'307': `// CAIG if (ac) > e: skip
+    NYI("CAIG");
 `,
-'310': `// CAM
-	{ }
+'310': `// CAM { }
+    NYI("CAM");
 `,
-'311': `// CAML
-	if (ac) < (e): skip
+'311': `// CAML if (ac) < (e): skip
+    NYI("CAML");
 `,
-'312': `// CAME
-	if (ac) === (e): skip
+'312': `// CAME if (ac) === (e): skip
+    NYI("CAME");
 `,
-'313': `// CAMLE
-	if (ac) <= (e): skip
+'313': `// CAMLE if (ac) <= (e): skip
+    NYI("CAMLE");
 `,
-'314': `// CAMA
-	skip
+'314': `// CAMA skip
+    NYI("CAMA");
 `,
-'315': `// CAMGE
-	if (ac) >= (e): skip
+'315': `// CAMGE if (ac) >= (e): skip
+    NYI("CAMGE");
 `,
-'316': `// CAMN
-	if (ac) !== (e): skip
+'316': `// CAMN if (ac) !== (e): skip
+    NYI("CAMN");
 `,
-'317': `// CAMG
-	if (ac) > (e): skip
+'317': `// CAMG if (ac) > (e): skip
+    NYI("CAMG");
 `,
-'320': `// JUMP
-	{ }
+'320': `// JUMP { }
+    NYI("JUMP");
 `,
-'321': `// JUMPL
-	if (ac) < 0: e -> (pc)
+'321': `// JUMPL if (ac) < 0: e -> (pc)
+    NYI("JUMPL");
 `,
-'322': `// JUMPE
-	if (ac) === 0: e -> (pc)
+'322': `// JUMPE if (ac) === 0: e -> (pc)
+    NYI("JUMPE");
 `,
-'323': `// JUMPLE
-	if (ac) <= 0: e -> (pc)
+'323': `// JUMPLE if (ac) <= 0: e -> (pc)
+    NYI("JUMPLE");
 `,
-'324': `// JUMPA
-	e -> (pc)
+'324': `// JUMPA e -> (pc)
+    NYI("JUMPA");
 `,
-'325': `// JUMPGE
-	if (ac) >= 0: e -> (pc)
+'325': `// JUMPGE if (ac) >= 0: e -> (pc)
+    NYI("JUMPGE");
 `,
-'326': `// JUMPN
-	if (ac) !== 0: e -> (pc)
+'326': `// JUMPN if (ac) !== 0: e -> (pc)
+    NYI("JUMPN");
 `,
-'327': `// JUMPG
-	if (ac) > 0: e -> (pc)
+'327': `// JUMPG if (ac) > 0: e -> (pc)
+    NYI("JUMPG");
 `,
-'340': `// AOJ
-	(ac).aox -> (ac)
+'340': `// AOJ (ac).aox -> (ac)
+    NYI("AOJ");
 `,
-'341': `// AOJL
-	(ac).aox -> (ac)
-     		if (ac) < 0: e -> pc
+'341': `// AOJL (ac).aox -> (ac); if (ac) < 0: e -> pc
+    NYI("AOJL");
 `,
-'342': `// AOJE
-	(ac).aox -> (ac)
-     		if (ac) === 0: e -> pc
+'342': `// AOJE (ac).aox -> (ac); if (ac) === 0: e -> pc
+    NYI("AOJE");
 `,
-'343': `// AOJLE
-	(ac).aox -> (ac)
-     		if (ac) <= 0: e -> pc
+'343': `// AOJLE (ac).aox -> (ac); if (ac) <= 0: e -> pc
+    NYI("AOJLE");
 `,
-'344': `// AOJA
-	(ac).aox -> (ac)
-     		e -> pc
+'344': `// AOJA (ac).aox -> (ac); e -> pc
+    NYI("AOJA");
 `,
-'345': `// AOJGE
-	(ac).aox -> (ac)
-     		if (ac) >= 0: e -> pc
+'345': `// AOJGE (ac).aox -> (ac); if (ac) >= 0: e -> pc
+    NYI("AOJGE");
 `,
-'346': `// AOJN
-	(ac).aox -> (ac)
-		if (ac) !== 0: e -> pc
+'346': `// AOJN (ac).aox -> (ac); if (ac) !== 0: e -> pc
+    NYI("AOJN");
 `,
-'347': `// AOJG
-	(ac).aox -> (ac)
-     		if (ac) > 0: e -> pc
+'347': `// AOJG (ac).aox -> (ac); if (ac) > 0: e -> pc
+    NYI("AOJC");
 `,
-'360': `// SOJ
-	(ac).sox -> (ac)
+'360': `// SOJ (ac).sox -> (ac)
+    NYI("SOJ");
 `,
-'361': `// SOJL
-	(ac).sox -> (ac)
-     		if (ac) < 0: e -> pc
+'361': `// SOJL (ac).sox -> (ac); if (ac) < 0: e -> pc
+    NYI("SOJL");
 `,
-'362': `// SOJE
-	(ac).sox -> (ac)
-     		if (ac) === 0: e -> pc
+'362': `// SOJE (ac).sox -> (ac); if (ac) === 0: e -> pc
+    NYI("SOJE");
 `,
-'363': `// SOJLE
-	(ac).sox -> (ac)
-     		if (ac) <= 0: e -> pc
+'363': `// SOJLE (ac).sox -> (ac); if (ac) <= 0: e -> pc
+    NYI("SOJLE");
 `,
-'364': `// SOJA
-	(ac).sox -> (ac)
-     		e -> pc
+'364': `// SOJA (ac).sox -> (ac); e -> pc
+    NYI("SOJA");
 `,
-'365': `// SOJGE
-	(ac).sox -> (ac)
-     		if (ac) >= 0: e -> pc
+'365': `// SOJGE (ac).sox -> (ac); if (ac) >= 0: e -> pc
+    NYI("SOJGE");
 `,
-'366': `// SOJN
-	(ac).sox -> (ac)
-     		if (ac) !== 0: e -> pc
+'366': `// SOJN (ac).sox -> (ac); if (ac) !== 0: e -> pc
+    NYI("SOJN");
 `,
-'367': `// SOJG
-	(ac).sox -> (ac)
-     		if (ac) > 0: e -> pc
+'367': `// SOJG (ac).sox -> (ac); if (ac) > 0: e -> pc
+    NYI("SOJG");
 `,
-'350': `// AOS
-	(e).aox -> (e)
-    		if ac !== 0: (e) -> (ac)
+'350': `// AOS (e).aox -> (e); if ac !== 0: (e) -> (ac)
+    NYI("AOS");
 `,
-'351': `// AOSL
-	(e).aox -> (e)
-     		if ac !== 0: (e) -> (ac)
-		if (e) < 0: skip
+'351': `// AOSL (e).aox -> (e); if ac !== 0: (e) -> (ac); if (e) < 0: skip
+    NYI("AOSL");
 `,
-'352': `// AOSE
-	(e).aox -> (e)
-     		if ac !== 0: (e) -> (ac)
-		if (e) === 0: skip
+'352': `// AOSE (e).aox -> (e); if ac !== 0: (e) -> (ac); if (e) === 0: skip
+    NYI("AOSE");
 `,
-'353': `// AOSLE
-	(e).aox -> (e)
-     		if ac !== 0: (e) -> (ac)
-		if (e) <= 0: skip
+'353': `// AOSLE (e).aox -> (e); if ac !== 0: (e) -> (ac); if (e) <= 0: skip
+    NYI("AOSLE");
 `,
-'354': `// AOSA
-	(e).aox -> (e)
-     		if ac !== 0: (e) -> (ac)
-		skip
+'354': `// AOSA (e).aox -> (e); if ac !== 0: (e) -> (ac); skip
+    NYI("AOSA");
 `,
-'355': `// AOSGE
-	(e).aox -> (e)
-     		if ac !== 0: (e) -> (ac)
-		if (e) >= 0: skip
+'355': `// AOSGE (e).aox -> (e); if ac !== 0: (e) -> (ac); if (e) >= 0: skip
+    NYI("AOSGE");
 `,
-'356': `// AOSN
-	(e).aox -> (e)
-     		if ac !== 0: (e) -> (ac)
-		if (e) !== 0: skip
+'356': `// AOSN (e).aox -> (e); if ac !== 0: (e) -> (ac); if (e) !== 0: skip
+    NYI("AOSN");
 `,
-'357': `// AOSG
-	(e).aox -> (e)
-     		if ac !== 0: (e) -> (ac)
-		if (e) > 0: skip
+'357': `// AOSG (e).aox -> (e); if ac !== 0: (e) -> (ac); if (e) > 0: skip
+    NYI("AOSG");
 `,
-'370': `// SOS
-	(e).sox -> (e)
-    		if ac !== 0: (e) -> (ac)
+'370': `// SOS (e).sox -> (e); if ac !== 0: (e) -> (ac)
+    NYI("SOS");
 `,
-'371': `// SOSL
-	(e).sox -> (e)
-     		if ac !== 0: (e) -> (ac)
-		if (e) < 0: skip
+'371': `// SOSL (e).sox -> (e); if ac !== 0: (e) -> (ac); if (e) < 0: skip
+    NYI("SOSL");
 `,
-'372': `// SOSE
-	(e).sox -> (e)
-     		if ac !== 0: (e) -> (ac)
-		if (e) === 0: skip
+'372': `// SOSE (e).sox -> (e); if ac !== 0: (e) -> (ac); if (e) === 0: skip
+    NYI("SOSE");
 `,
-'373': `// SOSLE
-	(e).sox -> (e)
-     		if ac !== 0: (e) -> (ac)
-		if (e) <= 0: skip
+'373': `// SOSLE (e).sox -> (e); if ac !== 0: (e) -> (ac); if (e) <= 0: skip
+    NYI("SOSLE");
 `,
-'374': `// SOSA
-	(e).sox -> (e)
-     		if ac !== 0: (e) -> (ac)
-		skip
+'374': `// SOSA (e).sox -> (e); if ac !== 0: (e) -> (ac); skip
+    NYI("SOSA");
 `,
-'375': `// SOSGE
-	(e).sox -> (e)
-     		if ac !== 0: (e) -> (ac)
-		if (e) >= 0: skip
+'375': `// SOSGE (e).sox -> (e); if ac !== 0: (e) -> (ac); if (e) >= 0: skip
+    NYI("SOSGE");
 `,
-'376': `// SOSN
-	(e).sox -> (e)
-     		if ac !== 0: (e) -> (ac)
-		if (e) !== 0: skip
+'376': `// SOSN (e).sox -> (e); if ac !== 0: (e) -> (ac); if (e) !== 0: skip
+    NYI("SOSN");
 `,
-'377': `// SOSG
-	(e).sox -> (e)
-     		if ac !== 0: (e) -> (ac)
-		if (e) > 0: skip
+'377': `// SOSG (e).sox -> (e); if ac !== 0: (e) -> (ac); if (e) > 0: skip
+    NYI("SOSG");
 `,
 '600': `// TRN
-	{ }
+  (void) 0;
 `,
 '601': `// TLN
-	{ }
+  (void) 0;
+
+'602': `// TRNE if (ac).r & e === 0: skip
+  ${testInsn(getACRH, noModifier, skipNE)}
 `,
-'602': `// TRNE
-	if (ac).r & e === 0: skip
-`,
-'603': `// TLNE
-	if (ac).l & e === 0: skip
+'603': `// TLNE if (ac).l & e === 0: skip
+  ${testInsn(getACLH, noModifier, skipNE)}
 `,
 '604': `// TRNA
-	skip
+  ++pc;
 `,
 '605': `// TLNA
-	skip
+  ++pc;
 `,
-'606': `// TRNN
-	if (ac).r & e !== 0: skip
+'606': `// TRNN if (ac).r & e !== 0: skip
+  ${testInsn(getACRH, noModifier, skipNE)}
 `,
-'607': `// TLNN
-	if (ac).l & e !== 0: skip
+'607': `// TLNN if (ac).l & e !== 0: skip
+  ${testInsn(getACLH, noModifier, skipNE)}
 `,
-'620': `// TRZ
-	(ac).r & ~e -> (ac).r
+'620': `// TRZ (ac).r & ~e -> (ac).r
+  ${testInsn(getACRH, modZeros, skipNever)}
 `,
-'621': `// TLZ
-	(ac).l & ~e -> (ac).l
+'621': `// TLZ (ac).l & ~e -> (ac).l
+  ${testInsn(getACLH, modZeros, skipNever)}
 `,
 '622': `// TRZE
-	if (ac).r & e === 0: skip
-		(ac).r & ~e -> (ac).r
+    NYI("TRZE");
 `,
 '623': `// TLZE
-	if (ac).l & e === 0: skip
-		(ac).l & ~e -> (ac).l
+    NYI("TLZE");
 `,
 '624': `// TRZA
-	skip
-		(ac).r & ~e -> (ac).r
+/*	skip
+		(ac).r & ~e -> (ac).r */
+  W36 tmp = ${getAC()} & ~ea;
+  ${putAC('tmp')};
+  ++pc;
 `,
 '625': `// TLZA
-	skip
-		(ac).l & ~e -> (ac).l
+/*	skip
+		(ac).l & ~e -> (ac).l */
+  W36 tmp = ${getAC()} & (~ea << 18);
+  ${putAC('tmp')};
+  ++pc;
 `,
 '626': `// TRZN
-	if (ac).r & e !== 0: skip
-		(ac).r & ~e -> (ac).r
+/*	if (ac).r & e !== 0: skip
+		(ac).r & ~e -> (ac).r */
+    NYI("TRZN");
 `,
 '627': `// TLZN
-	if (ac).l & e !== 0: skip
-		(ac).l & ~e -> (ac).l
+/*	if (ac).l & e !== 0: skip
+		(ac).l & ~e -> (ac).l */
+    NYI("TLZN");
 `,
-'640': `// TRC
-	(ac).r ^ e.r -> (ac).r
+'640': `// TRC (ac).r ^ e.r -> (ac).r
+  W36 tmp = ${getAC()} ^ ea;
+  ${putAC('tmp')};
 `,
-'641': `// TLC
-	(ac).l ^ e.r -> (ac).l
+'641': `// TLC (ac).l ^ e.r -> (ac).l
+  W36 tmp = ${getAC()} & (ea << 18);
+  ${putAC('tmp')};
 `,
 '642': `// TRCE
-	if (ac).r & e === 0: skip
-		(ac).r ^ e.r -> (ac).r
+/*	if (ac).r & e === 0: skip
+		(ac).r ^ e.r -> (ac).r */
+    NYI("TRCE");
 `,
 '643': `// TLCE
-	if (ac).l & e === 0: skip
-		(ac).l ^ e.r -> (ac).l
+/*	if (ac).l & e === 0: skip
+		(ac).l ^ e.r -> (ac).l */
+    NYI("TLCE");
 `,
-'644': `// TRCA
-	skip
-		(ac).r ^ e.r -> (ac).r
+'644': `// TRCA skip; (ac).r ^ e.r -> (ac).r
+  W36 tmp = ${getAC()} ^ ea;
+  ${putAC('tmp')};
+  ++pc;
 `,
-'645': `// TLCA
-	skip
-		(ac).l ^ e.r -> (ac).l
+'645': `// TLCA skip; (ac).l ^ e.r -> (ac).l
+  W36 tmp = ${getAC()} & (ea << 18);
+  ${putAC('tmp')};
+  ++pc;
 `,
 '646': `// TRCN
 	if (ac).r & e !== 0: skip
@@ -1142,89 +1184,100 @@ const kl10Instructions = {
 	if (ac).l & e !== 0: skip
 		(ac).l ^ e.r -> (ac).l
 `,
-'660': `// TRO
-	(ac).r | e -> (ac).r
+'660': `// TRO (ac).r | e -> (ac).r
+  W36 tmp = ${getAC()} | ea;
+  ${putAC('tmp')};
 `,
-'661': `// TLO
-	(ac).l | e -> (ac).l
+'661': `// TLO (ac).l | e -> (ac).l
+  W36 tmp = ${getAC()} | (ea << 18);
+  ${putAC('tmp')};
 `,
 '662': `// TROE
-	if (ac).r & e === 0: skip
-		(ac).r | e -> (ac).r
+/*	if (ac).r & e === 0: skip
+		(ac).r | e -> (ac).r */
+    NYI("TROE");
 `,
 '663': `// TLOE
-	if (ac).l & e === 0: skip
-		(ac).l | e -> (ac).l
+/*	if (ac).l & e === 0: skip
+		(ac).l | e -> (ac).l */
 `,
 '664': `// TROA
-	skip
-		(ac).r | e -> (ac).r
+  W36 tmp = ${getAC()} | ea;
+  ${putAC('tmp')};
+  ++pc;
 `,
 '665': `// TLOA
-	skip
-		(ac).l | e -> (ac).l
+  W36 tmp = ${getAC()} | (ea << 18);
+  ${putAC('tmp')};
+  ++pc;
 `,
 '666': `// TRON
-	if (ac).r & e !== 0: skip
-		(ac).r | e -> (ac).r
+/*	if (ac).r & e !== 0: skip
+		(ac).r | e -> (ac).r */
+    NYI("TRON");
 `,
 '667': `// TLON
-	if (ac).l & e !== 0: skip
-		(ac).l | e -> (ac).l
+/*	if (ac).l & e !== 0: skip
+		(ac).l | e -> (ac).l */
+    NYI("TLON");
 `,
 '610': `// TDN
-	{ }
+    (void) 0;
 `,
 '611': `// TSN
-	{ }
+    (void) 0;
 `,
-'612': `// TDNE
-	if (ac) & (e) === 0: skip
+'612': `// TDNE if (ac) & (e) === 0: skip
+  W36 tmp = ${getAC()} & ea;
+  if (tmp != 0) ++pc;
 `,
-'613': `// TSNE
-	if (ac) & (e).s === 0: skip
+'613': `// TSNE if (ac) & (e).s === 0: skip
+    NYI("TSNE");
 `,
 '614': `// TDNA
-	skip
+    ++pc;
 `,
 '615': `// TSNA
-	skip
+    ++pc;
 `,
-'616': `// TDNN
-	if (ac) & (e) !== 0: skip
+'616': `// TDNN if (ac) & (e) !== 0: skip
+    NYI("TDNN");
 `,
-'617': `// TSNN
-	if (ac) & (e).s !== 0: skip
+'617': `// TSNN if (ac) & (e).s !== 0: skip
+    NYI("TSNN");
 `,
-'630': `// TDZ
-	(ac) & ~(e) -> (ac)
+'630': `// TDZ (ac) & ~(e) -> (ac)
+  W36 tmp = ${getAC()} & ~ea;
+  ${putAC('tmp')};
 `,
 '631': `// TSZ
 	(ac) & ~(e).s -> (ac)
 `,
 '632': `// TDZE
-	if (ac) & (e) === 0: skip
-		(ac) & ~(e) -> (ac)
+  W36 tmp = ${getAC()} & ~ea;
+  ${putAC('tmp')};
+  if (tmp == 0) ++pc;
 `,
 '633': `// TSZE
-	if (ac) & (e).s === 0: skip
-		(ac) & ~(e).s -> (ac)
+/*	if (ac) & (e).s === 0: skip
+		(ac) & ~(e).s -> (ac) */
+    NYI("TSZE");
 `,
 '634': `// TDZA
-	skip
-		(ac) & ~(e) -> (ac)
+  W36 tmp = ${getAC()} & ~ea;
+  ${putAC('tmp')};
+  ++pc;
 `,
 '635': `// TSZA
-	skip
-		(ac) & ~(e).s -> (ac)
+/*	skip
+		(ac) & ~(e).s -> (ac) */
+    NYI("TSZA");
 `,
 '636': `// TDZN
-	if (ac) & (e) !== 0: skip
-		(ac) & ~(e) -> (ac)
+    NYI("TDZN");
 `,
 '637': `// TSZN
-	if (ac) & (e).s !== 0: skip
-		(ac) & ~(e).s -> (ac)
+    NYI("TSZN");
 `,
 '650': `// TDC
 	(ac) ^ (e) -> (ac)
@@ -1494,162 +1547,127 @@ const kl10Instructions = {
 		if ac !== 0: (e) -> (ac)
 `,
 '25600': `// XCT
-	{cpu.executeWord(cpu.fetchWord(e))}
+    NYI("XCT");
 `,
 '243': `// JFFO
-	if (ac) === 0: 0 -> (ac+1)
+/*	if (ac) === 0: 0 -> (ac+1)
 		if (ac) !== 0: (ac).jffo -> (ac+1)
-		if (ac) !== 0: e -> (pc)
+		if (ac) !== 0: e -> (pc)*/
+    NYI("JFFO");
 `,
 '255': `// JFCL
-	{cpu.doJFCL(ac, e)}
+    NYI("JFCL");
 `,
 '266': `// JSA
-	(ac) -> (e)
+/*	(ac) -> (e)
 		e.r -> (ac).l
 		(pc).r -> (ac).r
-		e + 1 -> (pc)
+		e + 1 -> (pc) */
+    NYI("JSA");
 `,
 '267': `// JRA
-	{cpu.doJRA(ac, e)}
+    NYI("JRA");
 `,
 '257': `// MAP
-	{cpu.doMAP(ac, e)}
+    NYI("MAP");
 `,
 '256nn': `// PXCT
-	{cpu.doPXCT(ac, e)}
+    NYI("PXCT");
 `,
 '261': `// PUSH
-	{cpu.doPUSH(ac, e)}
+    NYI("PUSH");
 `,
 '262': `// POP
-	{cpu.doPOP(ac, e)}
+    NYI("POP");
 `,
 '260': `// PUSHJ
-	{cpu.doPUSHJ(ac, e)}
+    NYI("PUSHJ");
 `,
 '263': `// POPJ
-	{cpu.doPOPJ(ac, e)}
+    NYI("POPJ");
 `,
 '105': `// ADJSP
-	{cpu.doADJSP(ac, e)}
+    NYI("ADJSP");
 `,
 '13300': `// IBP
-	{cpu.doIBP(ac, e)}
+    NYI("IBP");
 `,
 '133nn': `// ADJBP
-	{cpu.doADJBP(ac, e)}
+    NYI("ADJBP");
 `,
 '135': `// LDB
-	{cpu.doLDB(ac, e)}
+    NYI("LDB");
 `,
 '137': `// DPB
-	{cpu.doDPB(ac, e)}
+    NYI("DPB");
 `,
 '134': `// ILDB
-	{cpu.doIBP(ac, e); cpu.doLDB(ac, e)}
+    NYI("ILDB");
 `,
 '136': `// IDPB
-	{cpu.doIBP(ac, e); cpu.doDPB(ac, e)}
-
+    NYI("IDPB");
 `,
 '001': `// LUUO
-	{cpu.doLUUO(ac, e)}
+    NYI("LUUO");
 `,
 '104': `// JSYS
-	{cpu.doMUUO(ac, e)}
+    NYI("JSYS");
 `,
 '123': `// EXTEND
-	{cpu.doEXTEND(ac, e)}
+    NYI("EXTEND");
 `,
 '70144': `// SWPIA
-	{cpu.doSWPIA(e)}
+    NYI("SWPIA");
 `,
 '70164': `// SWPIO
-	{cpu.doSWPIO(e)}
+    NYI("SWPIO");
 `,
 '70150': `// SWPVA
-	{cpu.doSWPVA(e)}
+    NYI("SWPVA");
 `,
 '70170': `// SWPVO
-	{cpu.doSWPVO(e)}
+    NYI("SWPVO");
 `,
 '70154': `// SWPUA
-	{cpu.doSWPUA(e)}
+    NYI("SWPUA");
 `,
 '70174': `// SWPUO
-	{cpu.doSWPUO(e)}
+    NYI("SWPUO");
 `,
 '70010': `// WRFIL
-	{cpu.doWRFIL(e)}
+    NYI("WRFIL");
 `,
 '70000': `// APRID
-	{cpu.doAPRID(e)}
+    NYI("APRID");
 `,
 '70110': `// CLRPT
-	{cpu.doCLRPT(e)}
+    NYI("CLRPT");
 `,
 '70260': `// WRTIME
-	{cpu.doWRTIME(e)}
+    NYI("WRTIME");
 `,
 '70204': `// RDTIME
-	{cpu.doRDTIME(e)}
+    NYI("RDTIME");
 `,
 '70244': `// RDEACT
-	{cpu.doRDEACT(e)}
+    NYI("RDEACT");
 `,
 '70240': `// RDMACT
-	{cpu.doRDMACT(e)}
+    NYI("RDMACT");
 `,
 '70210': `// WRPAE
-	{cpu.doWRPAE(e)}
+    NYI("WRPAE");
 `,
 '70200': `// RDPERF
-	{cpu.doRDPERF(e)}
+    NYI("RDPERF");
 `,
 '70040': `// RDERA
-	{cpu.doRDERA(e)}
+    NYI("RDERA");
 `,
 '70050': `// SBDIAG
-	{cpu.doSBDIAG(e)}
-
+    NYI("SBDIAG");
 `,
-*/
 };
-
-
-// Fill in the I/O instructions by enumerating the values of `dd` and
-// the others by enumerating values of nn, etc.
-const ioList = Object.keys(kl10Instructions)
-      .filter(op => op.match(/^7dd[0-7][0-7]/));
-
-ioList.forEach(io => {
-
-  const ioToMne = {
-    '7dd04': 'DATAI',
-    '7dd10': 'BLKO',
-    '7dd14': 'DATAO',
-    '7dd00': 'BLKI',
-    '7dd20': 'CONO',
-    '7dd24': 'CONI',
-    '7dd30': 'CONSZ',
-    '7dd34': 'CONSO',
-  };
-
-  for (let dd = 0o00; dd < 0o77; ++dd) {
-
-    Object.keys(ioToMne).forEach(k => {
-      const op = k.replace(/dd/, oct6(dd));
-      const mne = ioToMne[k];
-      kl10Instructions[op] = `// ${mne}
-    NYI("${mne}");
-`;
-    });
-  }
-
-  delete kl10Instructions[io];	// Remove the prototype
-});
-
 
 
 console.log(`\
