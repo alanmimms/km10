@@ -43,6 +43,16 @@ ${Object.keys(flags)
   .join('\n')}
 
 
+static volatile int running;
+static volatile int tracePC;
+static volatile int traceAC;
+
+static volatile W36 AC[16];
+static volatile W36 pc;
+static volatile W36 flags;
+static volatile W36 *memP;
+
+
 // XXX For now
 #define CHECK_GET_ABREAK(A)	((A) < 020 ? AC[A] : memP[A])
 
@@ -57,13 +67,18 @@ ${Object.keys(flags)
      } while(0)					\\
 
 
-static volatile int running;
-static volatile int tracePC;
+static inline W36 checkGetAC(int a) {
+  char buf[64];
+  if (traceAC) fprintf(stderr, "AC%o=%s\\n", a, oct36(buf, AC[a]));
+  return AC[a];
+}
 
-static volatile W36 AC[16];
-static volatile W36 pc;
-static volatile W36 flags;
-static volatile W36 *memP;
+
+static inline void checkPutAC(int a, W36 v) {
+  char buf[64];
+  if (traceAC) fprintf(stderr, "AC%o=%s\\n", a, oct36(buf, v));
+  AC[a] = v;
+}
 
 
 // XXX This needs nonzero section code added.
@@ -85,11 +100,16 @@ static void NYI(const char *mneP) {
 `;
 
 
+function oct6(v) {
+  return v.toString(8).padStart(2, '0');
+}
+
+
 // Optionally `ac` param can be left off and 'ac' will be used. This
 // makes call sites simpler.
 function getAC(ac) {
   if (ac == undefined) ac = 'ac';
-  return `CHECK_GET_ABREAK(${ac})`;
+  return `checkGetAC(${ac})`;
 }
 
 
@@ -102,7 +122,7 @@ function putAC(ac, value) {
     ac = 'ac';
   }
 
-  return `CHECK_PUT_ABREAK(${ac}, ${value})`;
+  return `checkPutAC(${ac}, ${value})`;
 }
 
 
@@ -293,6 +313,30 @@ const kl10Instructions = {
 `,
 '337': `// SKIPG
     ${doSKIP('> 0')}
+`,
+'7dd04': `// DATAI
+    NYI("DATAI");
+`,
+'7dd10': `// BLKO
+    NYI("BLKO");
+`,
+'7dd14': `// DATAO
+    NYI("DATAO");
+`,
+'7dd00': `// BLKI
+    NYI("BLKI");
+`,
+'7dd20': `// CONO
+    NYI("CONO");
+`,
+'7dd24': `// CONI
+    NYI("CONI");
+`,
+'7dd30': `// CONSZ
+    NYI("CONSZ");
+`,
+'7dd34': `// CONSO
+    NYI("CONSO");
 `,
 /*
 '120': `// DMOVE
@@ -1570,32 +1614,42 @@ const kl10Instructions = {
 	{cpu.doSBDIAG(e)}
 
 `,
-'7dd00': `// BLKI
-	{cpu.dispatchBLKI(e)}
-`,
-'7dd04': `// DATAI
-	{cpu.dispatchDATAI(e)}
-`,
-'7dd10': `// BLKO
-	{cpu.dispatchBLKO(e)}
-`,
-'7dd14': `// DATAO
-	{cpu.dispatchDATAO(e)}
-`,
-'7dd20': `// CONO
-	{cpu.dispatchCONO(e)}
-`,
-'7dd24': `// CONI
-	{cpu.dispatchCONI(e)}
-`,
-'7dd30': `// CONSZ
-	{cpu.dispatchCONSZ(e)}
-`,
-'7dd34': `// CONSO
-	{cpu.dispatchCONSO(e)}
-`,
 */
 };
+
+
+// Fill in the I/O instructions by enumerating the values of `dd` and
+// the others by enumerating values of nn, etc.
+const ioList = Object.keys(kl10Instructions)
+      .filter(op => op.match(/^7dd[0-7][0-7]/));
+
+ioList.forEach(io => {
+
+  const ioToMne = {
+    '7dd04': 'DATAI',
+    '7dd10': 'BLKO',
+    '7dd14': 'DATAO',
+    '7dd00': 'BLKI',
+    '7dd20': 'CONO',
+    '7dd24': 'CONI',
+    '7dd30': 'CONSZ',
+    '7dd34': 'CONSO',
+  };
+
+  for (let dd = 0o00; dd < 0o77; ++dd) {
+
+    Object.keys(ioToMne).forEach(k => {
+      const op = k.replace(/dd/, oct6(dd));
+      const mne = ioToMne[k];
+      kl10Instructions[op] = `// ${mne}
+    NYI("${mne}");
+`;
+    });
+  }
+
+  delete kl10Instructions[io];	// Remove the prototype
+});
+
 
 
 console.log(`\
@@ -1686,6 +1740,7 @@ int main(int argc, char *argv[]) {
   pc = startAddr;
   memP = memory;
   tracePC = 1;
+  traceAC = 1;
   running = 1;
   emulate();
 }`);
