@@ -14,18 +14,34 @@ typedef uint64_t W36;
 #define PRI6o64		"%6lo"
 
 
+#define BIT(N)	(1ull << (35 - (N)))
+
+static const W36 BIT0 = BIT(0);
+static const W36 BIT17 = BIT(17);
+static const W36 BIT18 = BIT(18);
+static const W36 BIT35 = BIT(35);
+
+
+static const W36 RHMASK = 0777777ull;
+static const W36 LHMASK = 0777777000000ull;
+
+// Bitmask for 36 bits.
+static const W36 ALL1s = 0777777777777ull;
+
+
+static inline W36 CONS(W36 lh, W36 rh) {
+  return ((lh & RHMASK) << 18) | (rh & RHMASK);
+}
+
+
 static inline W36 RH(W36 w) {
-  return w & 0777777;
+  return w & RHMASK;
 };
 
 
 static inline W36 LH(W36 w) {
-  return (w >> 18) & 0777777;
+  return (w & LHMASK) >> 18;
 }
-
-
-// Bitmask for 36 bits.
-static const W36 ALL1s = 0777777777777ull;
 
 
 // Return the bit shift for PDP-10 numbered bit n.

@@ -25,19 +25,6 @@ const flags = {
 
 
 const macros = `
-#define RH(X)	((X) & 07000000ul)
-#define LH(X)	RH((W36) (X) >> 18)
-
-#define BIT(N)	(1ull << (35 - (N)))
-#define BIT0	BIT(0)
-#define BIT17	BIT(17)
-#define BIT18	BIT(18)
-#define BIT35	BIT(35)
-
-#define LHMASK	(0777777ull << 18)
-#define RHMASK	0777777ull
-
-
 ${Object.keys(flags)
   .map(f => `#define flag${f} BIT(${flags[f]})`)
   .join('\n')}
@@ -115,6 +102,22 @@ function getAC(ac) {
 
 // Optionally `ac` param can be left off and 'ac' will be used. This
 // makes call sites simpler.
+function getACRH(ac) {
+  if (ac == undefined) ac = 'ac';
+  return `checkGetAC(${ac}) & HMASK`;
+}
+
+
+// Optionally `ac` param can be left off and 'ac' will be used. This
+// makes call sites simpler.
+function getACLH(ac) {
+  if (ac == undefined) ac = 'ac';
+  return `checkGetAC((${ac}) >> 18) & HMASK`;
+}
+
+
+// Optionally `ac` param can be left off and 'ac' will be used. This
+// makes call sites simpler.
 function putAC(ac, value) {
 
   if (value == undefined) {
@@ -123,6 +126,32 @@ function putAC(ac, value) {
   }
 
   return `checkPutAC(${ac}, ${value})`;
+}
+
+
+// Optionally `ac` param can be left off and 'ac' will be used. This
+// makes call sites simpler.
+function putACRH(ac, value) {
+
+  if (value == undefined) {
+    value = ac;
+    ac = 'ac';
+  }
+
+  return `checkPutAC(${ac}, CONS(LH(${ac}), ${value}))`;
+}
+
+
+// Optionally `ac` param can be left off and 'ac' will be used. This
+// makes call sites simpler.
+function putACLH(ac, value) {
+
+  if (value == undefined) {
+    value = ac;
+    ac = 'ac';
+  }
+
+  return `checkPutAC(${ac}, CONS(${value}, ${ac}))`;
 }
 
 
@@ -232,7 +261,7 @@ function getACLH() {
 }
 
 
-function skipNE(mask) {
+function skipN(mask) {
   return `if ((AC[ac] & ${mask}) != 0) ++pc`;
 }
 
@@ -258,7 +287,7 @@ function modRHZeros(mask) {
 
 
 function modLHZeros(mask) {
-  return `${putAC(getAC())} & ~${mask}`
+  return `${putACLH(LH(getAC()))} & ~${mask}`
 }
 
 
@@ -272,7 +301,7 @@ function modComplement(mask) {
 }
 
 
-function noModifer(mask) {
+function noModifier(mask) {
   return `(void) 0`;
 }
 
@@ -411,7 +440,6 @@ const kl10Instructions = {
 `,
 '120': `// DMOVE D(e,,e+1) -> D(ac,,ac+1)
     NYI("DMOVE");
-`,
 `,
 '121': `// DMOVEN -D(e,,e+1) -> D(ac,,ac+1)
     NYI("DMOVEN");
@@ -1093,12 +1121,12 @@ const kl10Instructions = {
 `,
 '601': `// TLN
   (void) 0;
-
+`,
 '602': `// TRNE if (ac).r & e === 0: skip
-  ${testInsn(getACRH, noModifier, skipNE)}
+  ${testInsn(getACRH, noModifier, skipE)}
 `,
 '603': `// TLNE if (ac).l & e === 0: skip
-  ${testInsn(getACLH, noModifier, skipNE)}
+  ${testInsn(getACLH, noModifier, skipE)}
 `,
 '604': `// TRNA
   ++pc;
@@ -1107,16 +1135,16 @@ const kl10Instructions = {
   ++pc;
 `,
 '606': `// TRNN if (ac).r & e !== 0: skip
-  ${testInsn(getACRH, noModifier, skipNE)}
+  ${testInsn(getACRH, noModifier, skipN)}
 `,
 '607': `// TLNN if (ac).l & e !== 0: skip
-  ${testInsn(getACLH, noModifier, skipNE)}
+  ${testInsn(getACLH, noModifier, skipN)}
 `,
 '620': `// TRZ (ac).r & ~e -> (ac).r
-  ${testInsn(getACRH, modZeros, skipNever)}
+  ${testInsn(getACRH, modRHZeros, skipNever)}
 `,
 '621': `// TLZ (ac).l & ~e -> (ac).l
-  ${testInsn(getACLH, modZeros, skipNever)}
+  ${testInsn(getACLH, modLHZeros, skipNever)}
 `,
 '622': `// TRZE
     NYI("TRZE");
