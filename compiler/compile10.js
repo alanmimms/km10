@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const util = require('util');
-
+const assert = require('node:assert');
 
 // Names of the flags and their bit numbers in a program flags word:
 const flags = {
@@ -213,21 +213,36 @@ function doSKIP(cond) {
 
 // Handle the Test, Modify, and Skip instructions by passing appropriate
 // getMask, modifier, and skipper functions for each case.
+
+// Always get the AC.
+//
+// Get mask LH, RH, @ea, or swapped(@ea)
+//
+// Do nothing, set masked bits in AC to zeros, complement masked bits in AC,
+// or set masked bits in AC to ones.
+//
+// Don't skip, always skip, or skip if masked bits all zero or not all mask bits are zero.
 function testInsn(getMask, modifier, skipper) {
   return `\
   W36 mask = ${getMask()};
-  ${skipper('mask')};
-  ${modifier('mask')};`;
-}
-
-
-function getMem() {
-  return `memP[ea]`;
+  W36 testAC = ${getAC()};
+  ${skipper()};
+  ${modifier()};`;
 }
 
 
 function getMemSwapped() {
-  return `(RH(memP[ea]) << 18) | LH(memP[ea])`;
+  return `SWAP(memP[ea])`;
+}
+
+
+function getERH() {
+  return `RH(ea)`;
+}
+
+
+function getELH() {
+  return `RH(ea)`;
 }
 
 
@@ -236,18 +251,13 @@ function getMemRH() {
 }
 
 
-function getEARH() {
-  return `RH(ea)`;
-}
-
-
-function getACRH() {
-  return `RH(ac)`;
-}
-
-
 function getMemLH() {
   return `LH(memP[ea])`;
+}
+
+
+function getEARH() {
+  return `RH(ea)`;
 }
 
 
@@ -256,56 +266,136 @@ function getEALH() {
 }
 
 
-function getACLH() {
-  return `LH(ac)`;
+function skipN() {
+  return `if ((testAC & mask) != 0) ++pc`;
 }
 
 
-function skipN(mask) {
-  return `if ((AC[ac] & ${mask}) != 0) ++pc`;
+function skipE() {
+  return `if ((testAC & mask) == 0) ++pc`;
 }
 
 
-function skipE(mask) {
-  return `if ((AC[ac] & ${mask}) == 0) ++pc`;
-}
-
-
-function skipAlways(mask) {
+function skipAlways() {
   return `++pc`;
 }
 
 
-function skipNever(mask) {
+function skipNever() {
   return `(void) 0`;
 }
 
 
-function modRHZeros(mask) {
-  return `${putAC(getAC())} & ~${mask}`
-}
-
-
-function modLHZeros(mask) {
-  return `${putACLH(LH(getAC()))} & ~${mask}`
+function modZeros() {
+  return `${putAC('testAC & ~mask')}`
 }
 
 
 function modOnes(mask) {
-  return `${putAC(getAC())} | ${mask}`
+  return `${putAC('testAC | mask')}`
 }
 
 
 function modComplement(mask) {
-  return `${putAC(getAC())} ^ ${mask}`
+  return `${putAC('testAC ^ mask')}`
 }
 
 
-function noModifier(mask) {
+function modNone(mask) {
   return `(void) 0`;
 }
 
 
+// getSrc() always puts its source right justified in tmp.
+// putDest() always puts tmp to one or the other half.
+// modifier() does nothing, zero, set to all 1s or sign extend the right half of tmp.
+// isSelf is true if result should also go to AC[ac] if ac !== 0.
+
+// Take a half word data transmission mnemonic and return the code to do it.
+//
+// `mne` must be padded so modifier byte of mnemonic is blank if
+// modifier should be Do Nothing and mode byte of mnemonic is blank
+// if mode is Basic.
+function halfInsn(mne) {
+  assert(mne[0] === 'H');
+  const [S,D,MOD,MODE] = mne.substr(1, 4);
+  let srcCode, dstGet, getHalf, dstPut, modCode;
+
+  switch (MODE) {
+  case 'I':
+    srcCode = `W36 src = CONS(0, ea)`;
+    dstGet = `W36 dst = ${getAC()}`;
+    dstPut = putAC('dst');
+    break;
+
+  case 'M':
+    srcCode = `W36 src = ${getAC()}`;
+    dstGet = `W36 dst = ${getMem()}`;
+    dstPut = putMem('dst');
+    break;
+
+  case 'S':
+    srcCode = `W36 src = ${getAC()}`;
+    dstGet = `W36 dst = ${getMem()}`;
+    dstPut = `${putMem('dst')}; if (ac != 0) ${putAC('dst')}`;
+    break;
+
+  default:
+    srcCode = `W36 src = ${getAC()}`;
+    dstGet = `W36 dst = ${getMem()}`;
+    dstPut = putMem('dst');
+    break;
+  }
+
+  // This seems like it works in zero and in nonzero section.
+  if (D == 'R') {		// RH
+
+    if (MOD == 'Z') {
+      modCode = `dst = CONS(0, src)`;
+    } else if (MOD == 'O') {
+      modCode = `dst = CONS(ALL1s, src)`;
+    } else if (MOD == 'E') {
+      modCode = `dst = SEXTEND(src)`;
+    } else {
+      modCode = `dst = CONS(LH(dst), src)`;
+    }
+  } else {			// LH
+
+    if (MOD == 'Z') {
+      modCode = `dst = CONS(src, 0)`;
+    } else if (MOD == 'O') {
+      modCode = `dst = CONS(src, ALL1s)`;
+    } else if (MOD == 'E') {
+      modCode = `dst = SWAP(SEXTEND(LH(src)))`;
+    } else {
+      modCode = `dst = CONS(src), RH(dst))`;
+    }
+  }
+
+  // Now fetch the proper half of the source.
+  switch (mne[1]) {
+  case 'R':
+    getHalf = `src = RH(src);`;
+    break;
+
+  case 'L':
+    getHalf = `src = LH(src);`;
+    break;
+
+  default:
+    assert(false, `halfInsn with bad mnemonic '${mne}'.`);
+    return `!!!! assertion failed !!!!`;
+  }
+
+  return `\
+  ${srcCode};
+  ${getHalf};
+  ${dstGet};
+  ${dstPut}`;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////
 const kl10Instructions = {
 // Full Word Movement
 '250': `// EXCH	(ac) <-> (e)
@@ -1122,11 +1212,11 @@ const kl10Instructions = {
 '601': `// TLN
   (void) 0;
 `,
-'602': `// TRNE if (ac).r & e === 0: skip
-  ${testInsn(getACRH, noModifier, skipE)}
+'602': `// TRNE
+  ${testInsn(getERH, modNone, skipE)}
 `,
-'603': `// TLNE if (ac).l & e === 0: skip
-  ${testInsn(getACLH, noModifier, skipE)}
+'603': `// TLNE
+  ${testInsn(getELH, modNone, skipE)}
 `,
 '604': `// TRNA
   ++pc;
@@ -1134,120 +1224,83 @@ const kl10Instructions = {
 '605': `// TLNA
   ++pc;
 `,
-'606': `// TRNN if (ac).r & e !== 0: skip
-  ${testInsn(getACRH, noModifier, skipN)}
+'606': `// TRNN
+  ${testInsn(getERH, modNone, skipN)}
 `,
-'607': `// TLNN if (ac).l & e !== 0: skip
-  ${testInsn(getACLH, noModifier, skipN)}
+'607': `// TLNN
+  ${testInsn(getELH, modNone, skipN)}
 `,
-'620': `// TRZ (ac).r & ~e -> (ac).r
-  ${testInsn(getACRH, modRHZeros, skipNever)}
+'620': `// TRZ
+  ${testInsn(getERH, modZeros, skipNever)}
 `,
-'621': `// TLZ (ac).l & ~e -> (ac).l
-  ${testInsn(getACLH, modLHZeros, skipNever)}
+'621': `// TLZ
+  ${testInsn(getELH, modZeros, skipNever)}
 `,
 '622': `// TRZE
-    NYI("TRZE");
+  ${testInsn(getERH, modZeros, skipE)};
 `,
 '623': `// TLZE
-    NYI("TLZE");
+  ${testInsn(getELH, modZeros, skipE)};
 `,
 '624': `// TRZA
-/*	skip
-		(ac).r & ~e -> (ac).r */
-  W36 tmp = ${getAC()} & ~ea;
-  ${putAC('tmp')};
-  ++pc;
+  ${testInsn(getERH, modZeros, skipAlways)};
 `,
 '625': `// TLZA
-/*	skip
-		(ac).l & ~e -> (ac).l */
-  W36 tmp = ${getAC()} & (~ea << 18);
-  ${putAC('tmp')};
-  ++pc;
+  ${testInsn(getELH, modZeros, skipAlways)};
 `,
 '626': `// TRZN
-/*	if (ac).r & e !== 0: skip
-		(ac).r & ~e -> (ac).r */
-    NYI("TRZN");
+  ${testInsn(getERH, modZeros, skipN)};
 `,
 '627': `// TLZN
-/*	if (ac).l & e !== 0: skip
-		(ac).l & ~e -> (ac).l */
-    NYI("TLZN");
+  ${testInsn(getELH, modZeros, skipN)};
 `,
 '640': `// TRC (ac).r ^ e.r -> (ac).r
-  W36 tmp = ${getAC()} ^ ea;
-  ${putAC('tmp')};
+  ${testInsn(getERH, modComplement, skipN)};
 `,
 '641': `// TLC (ac).l ^ e.r -> (ac).l
-  W36 tmp = ${getAC()} & (ea << 18);
-  ${putAC('tmp')};
+  ${testInsn(getELH, modComplement, skipN)};
 `,
 '642': `// TRCE
-/*	if (ac).r & e === 0: skip
-		(ac).r ^ e.r -> (ac).r */
-    NYI("TRCE");
+  ${testInsn(getERH, modComplement, skipE)};
 `,
 '643': `// TLCE
-/*	if (ac).l & e === 0: skip
-		(ac).l ^ e.r -> (ac).l */
-    NYI("TLCE");
+  ${testInsn(getELH, modComplement, skipE)};
 `,
 '644': `// TRCA skip; (ac).r ^ e.r -> (ac).r
-  W36 tmp = ${getAC()} ^ ea;
-  ${putAC('tmp')};
-  ++pc;
+  ${testInsn(getERH, modComplement, skipAlways)};
 `,
 '645': `// TLCA skip; (ac).l ^ e.r -> (ac).l
-  W36 tmp = ${getAC()} & (ea << 18);
-  ${putAC('tmp')};
-  ++pc;
+  ${testInsn(getELH, modComplement, skipAlways)};
 `,
 '646': `// TRCN
-	if (ac).r & e !== 0: skip
-		(ac).r ^ e.r -> (ac).r
+  ${testInsn(getERH, modComplement, skipN)};
 `,
 '647': `// TLCN
-	if (ac).l & e !== 0: skip
-		(ac).l ^ e.r -> (ac).l
+  ${testInsn(getELH, modComplement, skipN)};
 `,
 '660': `// TRO (ac).r | e -> (ac).r
-  W36 tmp = ${getAC()} | ea;
-  ${putAC('tmp')};
+  ${testInsn(getERH, modOnes, skipN)};
 `,
 '661': `// TLO (ac).l | e -> (ac).l
-  W36 tmp = ${getAC()} | (ea << 18);
-  ${putAC('tmp')};
+  ${testInsn(getELH, modOnes, skipN)};
 `,
 '662': `// TROE
-/*	if (ac).r & e === 0: skip
-		(ac).r | e -> (ac).r */
-    NYI("TROE");
+  ${testInsn(getERH, modOnes, skipE)};
 `,
 '663': `// TLOE
-/*	if (ac).l & e === 0: skip
-		(ac).l | e -> (ac).l */
+  ${testInsn(getELH, modOnes, skipE)};
 `,
 '664': `// TROA
-  W36 tmp = ${getAC()} | ea;
-  ${putAC('tmp')};
-  ++pc;
+  ${testInsn(getERH, modOnes, skipAlways)};
 `,
 '665': `// TLOA
-  W36 tmp = ${getAC()} | (ea << 18);
-  ${putAC('tmp')};
-  ++pc;
+  ${testInsn(getELH, modOnes, skipAlways)};
 `,
 '666': `// TRON
-/*	if (ac).r & e !== 0: skip
-		(ac).r | e -> (ac).r */
-    NYI("TRON");
+  ${testInsn(getERH, modOnes, skipN)};
 `,
 '667': `// TLON
-/*	if (ac).l & e !== 0: skip
-		(ac).l | e -> (ac).l */
-    NYI("TLON");
+  ${testInsn(getELH, modOnes, skipN)};
 `,
 '610': `// TDN
     (void) 0;
@@ -1256,11 +1309,10 @@ const kl10Instructions = {
     (void) 0;
 `,
 '612': `// TDNE if (ac) & (e) === 0: skip
-  W36 tmp = ${getAC()} & ea;
-  if (tmp != 0) ++pc;
+  ${testInsn(getMem, modNone, skipE)};
 `,
 '613': `// TSNE if (ac) & (e).s === 0: skip
-    NYI("TSNE");
+  ${testInsn(getMemSwapped, modNone, skipE)};
 `,
 '614': `// TDNA
     ++pc;
@@ -1269,310 +1321,278 @@ const kl10Instructions = {
     ++pc;
 `,
 '616': `// TDNN if (ac) & (e) !== 0: skip
-    NYI("TDNN");
+  ${testInsn(getMem, modNone, skipN)};
 `,
 '617': `// TSNN if (ac) & (e).s !== 0: skip
-    NYI("TSNN");
+  ${testInsn(getMemSwapped, modNone, skipN)};
 `,
 '630': `// TDZ (ac) & ~(e) -> (ac)
-  W36 tmp = ${getAC()} & ~ea;
-  ${putAC('tmp')};
+  ${testInsn(getMem, modZeros, skipNever)};
 `,
 '631': `// TSZ
-	(ac) & ~(e).s -> (ac)
+  ${testInsn(getMemSwapped, modZeros, skipNever)};
 `,
 '632': `// TDZE
-  W36 tmp = ${getAC()} & ~ea;
-  ${putAC('tmp')};
-  if (tmp == 0) ++pc;
+  ${testInsn(getMem, modZeros, skipE)};
 `,
 '633': `// TSZE
-/*	if (ac) & (e).s === 0: skip
-		(ac) & ~(e).s -> (ac) */
-    NYI("TSZE");
+  ${testInsn(getMemSwapped, modZeros, skipE)};
 `,
 '634': `// TDZA
-  W36 tmp = ${getAC()} & ~ea;
-  ${putAC('tmp')};
-  ++pc;
+  ${testInsn(getMem, modZeros, skipAlways)};
 `,
 '635': `// TSZA
-/*	skip
-		(ac) & ~(e).s -> (ac) */
-    NYI("TSZA");
+  ${testInsn(getMemSwapped, modZeros, skipAlways)};
 `,
 '636': `// TDZN
-    NYI("TDZN");
+  ${testInsn(getMem, modZeros, skipN)};
 `,
 '637': `// TSZN
-    NYI("TSZN");
+  ${testInsn(getMemSwapped, modZeros, skipN)};
 `,
 '650': `// TDC
-	(ac) ^ (e) -> (ac)
+  ${testInsn(getMem, modComplement, skipNever)};
 `,
 '651': `// TSC
-	(ac) ^ (e).s -> (ac)
+  ${testInsn(getMemSwapped, modComplement, skipNever)};
 `,
 '652': `// TDCE
-	if (ac) & (e) === 0: skip
-		(ac) ^ (e) -> (ac)
+  ${testInsn(getMem, modComplement, skipE)};
 `,
 '653': `// TSCE
-	if (ac) & (e).s === 0: skip
-		(ac) ^ (e).s -> (ac)
+  ${testInsn(getMemSwapped, modComplement, skipE)};
 `,
 '654': `// TDCA
-	skip
-		(ac) ^ (e) -> (ac)
+  ${testInsn(getMem, modComplement, skipAlways)};
 `,
 '655': `// TSCA
-	skip
-		(ac) ^ (e).s -> (ac)
+  ${testInsn(getMemSwapped, modComplement, skipAlways)};
 `,
 '656': `// TDCN
-	if (ac) & (e) !== 0: skip
-		(ac) ^ (e) -> (ac)
+  ${testInsn(getMem, modComplement, skipN)};
 `,
 '657': `// TSCN
-	if (ac) & (e).s !== 0: skip
-		(ac) ^ (e).s -> (ac)
+  ${testInsn(getMemSwapped, modComplement, skipAlways)};
 `,
 '670': `// TDO
-	(ac) | (e) -> (ac)
+  ${testInsn(getMem, modOnes, skipNever)};
 `,
 '671': `// TSO
-	(ac) | (e).s -> (ac)
+  ${testInsn(getMemSwapped, modOnes, skipNever)};
 `,
 '672': `// TDOE
-	if (ac) & (e) === 0: skip
-		(ac) | (e) -> (ac)
+  ${testInsn(getMem, modOnes, skipE)};
 `,
 '673': `// TSOE
-	if (ac) & (e).s === 0: skip
-		(ac) | (e).s -> (ac)
+  ${testInsn(getMemSwapped, modOnes, skipE)};
 `,
 '674': `// TDOA
-	skip
-		(ac) | (e) -> (ac)
+  ${testInsn(getMem, modOnes, skipAlways)};
 `,
 '675': `// TSOA
-	skip
-		(ac) | (e).s -> (ac)
+  ${testInsn(getMemSwapped, modOnes, skipAlways)};
 `,
 '676': `// TDON
-	if (ac) & (e) !== 0: skip
-		(ac) | (e) -> (ac)
+  ${testInsn(getMem, modOnes, skipN)};
 `,
 '677': `// TSON
-	if (ac) & (e).s !== 0: skip
-		(ac) | (e).s -> (ac)
+  ${testInsn(getMemSwapped, modOnes, skipN)};
 `,
 '500': `// HLL
-	(e).l -> (ac).l
+  ${halfInsn('HLL  ')};
 `,
-'501': `// XHLLI
-	if (pc).l === 0: 0 -> (ac).l
-		if (pc).l !== 0: e.l -> (ac).l
+'501': `// HLLI/XHLLI
+  if (LH(pc) == 0) {
+    ${halfInsn('HLLI ')};
+  } else {
+    ${putAC('ea')};
+  }
 `,
 '502': `// HLLM
-	(ac).l -> (e).l
+  ${halfInsn('HLLM ')};
 `,
 '503': `// HLLS
-	if ac !== 0: (e) -> (ac)
+  ${halfInsn('HLLS ')};
 `,
 '510': `// HLLZ
-	(e).l,,0 -> (ac)
+  ${halfInsn('HLLZ  ')};
 `,
 '511': `// HLLZI
-	0 -> (ac)
+  ${putAC(0)};
 `,
 '512': `// HLLZM
-	(ac).l,,0 -> (e)
+  ${halfInsn('HLLZM')};
 `,
 '513': `// HLLZS
-	0 -> (e).r
-		if ac !== 0: (e) -> (ac)
+  ${halfInsn('HLLZS')};
 `,
 '530': `// HLLE
-	(e).l,,(e).lextend -> (ac)
+  ${halfInsn('HLLE ')};
 `,
 '531': `// HLLEI
-	0 -> (ac)
+  ${halfInsn('HLLEI')};
 `,
 '532': `// HLLEM
-	(ac).l,,(ac).lextend -> (e)
+  ${halfInsn('HLLEM')};
 `,
 '533': `// HLLES
-	(e).lextend -> (e).r
-		if ac !== 0: (e) -> (ac)
+  ${halfInsn('HLLES')};
 `,
 '520': `// HLLO
-	(e).l,,777777 -> (ac)
+  ${halfInsn('HLLO ')};
 `,
 '521': `// HLLOI
-	0,,777777 -> (ac)
+  ${halfInsn('HLLOI')};
 `,
 '522': `// HLLOM
-	(ac).l,,777777 -> (e)
+  ${halfInsn('HLLOM')};
 `,
 '523': `// HLLOS
-	777777 -> (e).r
-		if ac !== 0: (e) -> (ac)
+  ${halfInsn('HLLOS')};
 `,
 '544': `// HLR
-	(e).l -> (ac).r
+  ${halfInsn('HLR  ')};
 `,
 '545': `// HLRI
-	0 -> (ac).r
+  ${halfInsn('HLRI ')};
 `,
 '546': `// HLRM
-	(ac).l -> (e).r
+  ${halfInsn('HLRM ')};
 `,
 '547': `// HLRS
-	(e).l -> (e).r
-		if ac !== 0: (e) -> (ac)
+  ${halfInsn('HLRS ')};
 `,
 '554': `// HLRZ
-	0,,(e).l -> (ac)
+  ${halfInsn('HLRZ ')};
 `,
 '555': `// HLRZI
-	0 -> (ac)
+  ${putAC(0)};
 `,
 '556': `// HLRZM
-	0,,(ac).l -> (e)
+  ${halfInsn('HLRZM')};
 `,
 '557': `// HLRZS
-	0,,(e).l -> (e)
-		if ac !== 0: (e) -> (ac)
+  ${halfInsn('HLRZS')};
 `,
 '564': `// HLRO
-	777777,,(e).l -> (ac)
+  ${halfInsn('HLRO ')};
 `,
 '565': `// HLROI
-	777777,,0 -> (ac)
+  ${halfInsn('HLROI')};
 `,
 '566': `// HLROM
-	777777,,(ac).l -> (e)
+  ${halfInsn('HLROM')};
 `,
 '567': `// HLROS
-	777777,,(e).l -> (e)
-		if ac !== 0: (e) -> (ac)
+  ${halfInsn('HLROS')};
 `,
 '574': `// HLRE
-	(e).lextend,,(e).l -> (ac)
+  ${halfInsn('HLRE ')};
 `,
 '575': `// HLREI
-	0 -> (ac)
+  ${halfInsn('HLREI')};
 `,
 '576': `// HLREM
-	(ac).lextend,,(ac).l -> (e)
+  ${halfInsn('HLREM')};
 `,
 '577': `// HLRES
-	(e).lextend,,(e).l -> (e)
-		if ac !== 0: (e) -> (ac)
+  ${halfInsn('HLRES')};
 `,
 '540': `// HRR
-	(e).r -> (ac).r
+  ${halfInsn('HRR  ')};
 `,
 '541': `// HRRI
-	e -> (ac).r
+  ${halfInsn('HRRI ')};
 `,
 '542': `// HRRM
-	(ac).r -> (e).r
+  ${halfInsn('HRRM ')};
 `,
 '543': `// HRRS
-	if ac !== 0: (e) -> (ac)
+  ${halfInsn('HRRS ')};
 `,
 '550': `// HRRZ
-	0,,(e).r -> (ac)
+  ${halfInsn('HRRZ ')};
 `,
 '551': `// HRRZI
-	0,,e -> (ac)
+  ${halfInsn('HRRZI')};
 `,
 '552': `// HRRZM
-	0,,(ac).r -> (e)
+  ${halfInsn('HRRZM')};
 `,
 '553': `// HRRZS
-	0 -> (e).l
-		if ac !== 0: (e) -> (ac)
+  ${halfInsn('HRRZS')};
 `,
 '560': `// HRRO
-	777777,,(e).r -> (ac)
+  ${halfInsn('HRRZO')};
 `,
 '561': `// HRROI
-	777777,,e -> (ac)
+  ${halfInsn('HRROI')};
 `,
 '562': `// HRROM
-	777777,,(ac).r -> (e)
+  ${halfInsn('HRROM')};
 `,
 '563': `// HRROS
-	777777 -> (e).l
-		if ac !== 0: (e) -> (ac)
+  ${halfInsn('HRROS')};
 `,
 '570': `// HRRE
-	(e).rextend,,(e).r -> (ac)
+  ${halfInsn('HRRE ')};
 `,
 '571': `// HRREI
-	e.rextend,,e -> (ac)
+  ${halfInsn('HRREI')};
 `,
 '572': `// HRREM
-	(ac).rextend,,(ac).r -> (e)
+  ${halfInsn('HRREM')};
 `,
 '573': `// HRRES
-	(e).rextend -> (e).l
-		if ac !== 0: (e) -> (ac)
+  ${halfInsn('HRRES')};
 `,
 '504': `// HRL
-	(e).r -> (ac).l
+  ${halfInsn('HRL  ')};
 `,
 '505': `// HRLI
-	e -> (ac).l
+  ${halfInsn('HRLI ')};
 `,
 '506': `// HRLM
-	(ac).r -> (e).l
+  ${halfInsn('HRLM ')};
 `,
 '507': `// HRLS
-	(e).r -> (e).l
-		if ac !== 0: (e) -> (ac)
+  ${halfInsn('HRLS ')};
 `,
 '514': `// HRLZ
-	(e).r,,0 -> (ac)
+  ${halfInsn('HRLZ ')};
 `,
 '515': `// HRLZI
-	e,,0 -> (ac)
+  ${halfInsn('HRLZI')};
 `,
 '516': `// HRLZM
-	(ac).r,,0 -> (e)
+  ${halfInsn('HRLZM')};
 `,
 '517': `// HRLZS
-	(e).r,,0 -> (e)
-		if ac !== 0: (e) -> (ac)
+  ${halfInsn('HRLZS')};
 `,
 '524': `// HRLO
-	(e).r,,777777 -> (ac)
+  ${halfInsn('HRLO ')};
 `,
 '525': `// HRLOI
-	e,,777777 -> (ac)
+  ${halfInsn('HRLOI')};
 `,
 '526': `// HRLOM
-	(ac).r,,777777 -> (e)
+  ${halfInsn('HRLOM')};
 `,
 '527': `// HRLOS
-	(e).r,,777777 -> (e)
-		if ac !== 0: (e) -> (ac)
+  ${halfInsn('HRLOS')};
 `,
 '534': `// HRLE
-	(e).r,,(e).rextend -> (ac)
+  ${halfInsn('HRLE ')};
 `,
 '535': `// HRLEI
-	e.r,,e.rextend -> (ac)
+  ${halfInsn('HRLEI')};
 `,
 '536': `// HRLEM
-	(ac).r,,(ac).rextend -> (e)
+  ${halfInsn('HRLEM')};
 `,
 '537': `// HRLES
-	(e).r,,(e).rextend -> (e)
-		if ac !== 0: (e) -> (ac)
+  ${halfInsn('HRLES')};
 `,
 '25600': `// XCT
     NYI("XCT");
@@ -1599,10 +1619,12 @@ const kl10Instructions = {
 '257': `// MAP
     NYI("MAP");
 `,
+/*
 '256nn': `// PXCT
     NYI("PXCT");
 `,
-'261': `// PUSH
+*/
+  '261': `// PUSH
     NYI("PUSH");
 `,
 '262': `// POP
@@ -1620,9 +1642,11 @@ const kl10Instructions = {
 '13300': `// IBP
     NYI("IBP");
 `,
+/*
 '133nn': `// ADJBP
     NYI("ADJBP");
 `,
+*/
 '135': `// LDB
     NYI("LDB");
 `,

@@ -44,6 +44,16 @@ static inline W36 LH(W36 w) {
 }
 
 
+static inline W36 SWAP(W36 w) {
+  return CONS(RH(w), LH(w));
+}
+
+
+static inline W36 SEXTEND(W36 rh) {
+  return (rh & 0400000) ? (rh | LHMASK) : (rh & RHMASK);
+}
+
+
 // Return the bit shift for PDP-10 numbered bit n.
 #define ShiftForBit(B)	(35 - (B))
 
