@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const util = require('util');
-const assert = require('node:assert');
+const assert = require('assert');
 
 // Names of the flags and their bit numbers in a program flags word:
 const flags = {
@@ -393,6 +393,12 @@ function halfInsn(mne) {
   ${dstGet};
   ${dstPut}`;
 }
+
+
+function emit(s) {
+  fs.writeFileSync(process.argv[2], s);
+}
+
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1722,7 +1728,7 @@ const kl10Instructions = {
 };
 
 
-console.log(`\
+emit(`\
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>

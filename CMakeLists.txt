@@ -16,10 +16,10 @@ target_compile_options(loada10 PUBLIC -DTEST_LOADA10=1 ${COptionsForALL})
 
 add_custom_command(
   OUTPUT ${PROJECT_SOURCE_DIR}/km10.c
-  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/compiler
-  COMMAND ./compile10 > ${PROJECT_SOURCE_DIR}/km10.c
-  DEPENDS ${PROJECT_SOURCE_DIR}/compiler/compile10
-  DEPENDS ${PROJECT_SOURCE_DIR}/compiler/compile10.js
+  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/jsc
+  COMMAND ./js2c km10.jsc ${PROJECT_SOURCE_DIR}/km10.c
+  DEPENDS ${PROJECT_SOURCE_DIR}/jsc/js2c
+  DEPENDS ${PROJECT_SOURCE_DIR}/jsc/km10.jsc
 )
 
 add_executable(km10 km10.c loada10.c disasm.c)
