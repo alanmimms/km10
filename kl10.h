@@ -29,6 +29,96 @@ static const W36 LHMASK = 0777777000000ull;
 static const W36 ALL1s = 0777777777777ull;
 
 
+// See 1982_ProcRefMan.pdf p.262
+typedef struct DTE20ControlBlock {
+  W36 to11BP;
+  W36 to10BP;
+  W36 vectorInsn;
+  W36 reserved;
+  W36 examineAreaSize;
+  W36 examineAreaReloc;
+  W36 depositAreaSize;
+  W36 depositAreaReloc;
+} DTE20ControlBlock;
+
+
+// See 1982_ProcRefMan.pdf p.230
+typedef struct ExecutiveProcessTable {
+
+  struct {
+    W36 initialCommand;
+    W36 statusWord;
+    W36 lastUpdatedCommand;
+    W36 reserved;
+  } channelLogout[8];
+
+  W36 reserved40_41[2];		// 040
+
+  W36 pioInstructions[14];
+
+  W36 channelBlockFill[4];	// 060
+
+  W36 reserved64_137[44];
+  
+  DTE20ControlBlock dte20[4];	// 140
+
+  W36 reserved200_420[145];
+
+  W36 trap1Insn;		// 421
+  W36 stackOverflowInsn;	// 422
+  W36 trap3Insn;		// 423 (not used in KL10?)
+
+  W36 reserved424_507[52];
+
+  W36 timeBase[2];		// 510
+  W36 performanceCount[2];	// 512
+  W36 intervalCounterIntInsn;	// 514
+
+  W36 reserved515_537[19];
+
+  W36 execSection[32];		// 540
+
+  W36 reserved600_777[128];	// 600
+} ExecutiveProcessTable;
+
+
+typedef struct UserProcessTable {
+  W36 reserved000_417[0420];	// 000
+  W36 luuoAddr;			// 420
+  W36 trap1Insn;		// 421
+  W36 stackOverflowInsn;	// 422
+  W36 trap3Insn;		// 423 (not used in KL10?)
+  W36 muuoFlagsOpAC;		// 424
+  W36 muuoOldPC;		// 425
+  W36 muuoE;			// 426
+  W36 muuoContext;		// 427
+  W36 kernelNoTrapMUUOPC;	// 430
+  W36 kernelTrapMUUOPC;		// 431
+  W36 supvNoTrapMUUOPC;		// 432
+  W36 supvTrapMUUOPC;		// 433
+  W36 concNoTrapMUUOPC;		// 434
+  W36 concTrapMUUOPC;		// 435
+  W36 publNoTrapMUUOPC;		// 436
+  W36 publTrapMUUOPC;		// 437
+
+  W36 reserved440_477[32];
+
+  W36 pfWord;			// 500
+  W36 pfFlags;			// 501
+  W36 pfOldPC;			// 502
+  W36 pfNewPC;			// 503
+
+  W36 userExecTime[2];		// 504
+  W36 userMemRefCount[2];	// 506
+
+  W36 reserved510_537[24];
+
+  W36 userSection[32];		// 540
+
+  W36 reserved600_777[128];	// 600
+} UserProcessTable;
+
+
 static inline W36 CONS(W36 lh, W36 rh) {
   return ((lh & RHMASK) << 18) | (rh & RHMASK);
 }

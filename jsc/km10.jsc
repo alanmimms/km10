@@ -33,40 +33,64 @@ ${Object.keys(flags)
 static volatile int running;
 static volatile int tracePC;
 static volatile int traceAC;
+static volatile int traceMem;
 
 static volatile W36 AC[16];
 static volatile W36 pc;
 static volatile W36 flags;
 static volatile W36 *memP;
 
+static int tops20Paging, pagingEnabled;
 
-// XXX For now
-#define CHECK_GET_ABREAK(A)	((A) < 020 ? AC[A] : memP[A])
+// Physical memory. This is mmap()ed for each mode we run in and memP
+// is updated to point to the right address space for the current mode.
+static W36 memory[256*1024];
 
 
-// XXX For now
-#define CHECK_PUT_ABREAK(A,V)			\\
-    do {					\\
-      if ((A) < 020)				\\
-        AC[A] = (V);				\\
-      else					\\
-        memP[A] = (V);				\\
-     } while(0)					\\
-
+typedef signed long long sint64_t;
 
 static inline W36 checkGetAC(int a) {
   char buf[64];
-  if (traceAC) fprintf(stderr, "AC%o=%s\\n", a, oct36(buf, AC[a]));
+  if (traceAC) fprintf(stderr, "                get AC%o=%s\\n", a, oct36(buf, AC[a]));
   return AC[a];
 }
 
 
 static inline void checkPutAC(int a, W36 v) {
   char buf[64];
-  if (traceAC) fprintf(stderr, "AC%o=%s\\n", a, oct36(buf, v));
+  if (traceAC) fprintf(stderr, "                put AC%o=%s\\n", a, oct36(buf, v));
   AC[a] = v;
 }
 
+
+// XXX For now
+static inline W36 checkGetMem(W36 a) {
+  W36 tmp;
+
+  if (a < 020)
+    tmp = AC[a];
+  else
+    tmp = memP[a];
+
+  char aBuf[64], vBuf[64];
+  if (traceMem) fprintf(stderr, "                get %s=%s\\n", oct36(aBuf, a), oct36(vBuf, tmp));
+
+  return tmp;
+}
+
+
+// XXX For now
+static inline void checkPutMem(W36 a, W36 v) {
+
+  if (a < 020) {
+    AC[a] = v;
+  } else {
+    memP[a] = v;
+  }
+
+  char aBuf[64], vBuf[64];
+  if (traceMem) fprintf(stderr, "                put %s=%s\\n", oct36(aBuf, a), oct36(vBuf, v));
+}
 
 // XXX This needs nonzero section code added.
 static inline W36 pcAndFlags() {
@@ -81,9 +105,16 @@ static inline int nonZeroSection(W36 a) {
 
 static void NYI(const char *mneP) {
   char buf[64];
-  fprintf(stderr, "Not yet implemented: %s at %s\\n", mneP, octVMA(buf, pc));
+  fprintf(stderr, ">>>>>>>>>>>>>>>>Not yet implemented: %s at %s\\n", mneP, octVMA(buf, pc));
 }
 
+
+// Take the EA of an instruction and compute the shift count the
+// whacky way PDP10s do it.
+static int getShift(W36 ea) {
+  int shift = ea & 0377;
+  return (ea & BIT18) ? -shift : shift;
+}
 `;
 
 
@@ -159,7 +190,7 @@ function putACLH(ac, value) {
 // makes call sites simpler.
 function getMem(a) {
   if (a == undefined) a = 'ea';
-  return `CHECK_GET_ABREAK(${a})`;
+  return `checkGetMem(${a})`;
 }
 
 
@@ -172,7 +203,7 @@ function putMem(a, value) {
     a = 'ea';
   }
 
-  return `CHECK_PUT_ABREAK(${a}, ${value})`;
+  return `checkPutMem(${a}, ${value})`;
 }
 
 
@@ -199,15 +230,19 @@ function setSignedMoveFlags() {
 // If cond is undefined never skip. If cond is 1 always skip.
 // Else generate if (cond) for skip.
 function doSKIP(cond) {
-  const prefix = `    if (ac != 0) ${putAC('ea')};`;
+  const prefix = `if (ac != 0) ${putAC('ea')};`;
 
   if (cond == undefined) return prefix;
-  if (cond === 1 && cond !== undefined)
-    return `${prefix}
-    ++pc;`;
-  else
-    return `${prefix}
-    if (${getMem()} ${cond}) ++pc;`;
+
+  if (cond === 1) {
+    return `\
+  ${prefix}
+  ++pc;`;
+  } else {
+    return `\
+  ${prefix}
+  if (${getMem()} ${cond}) ++pc;`;
+  }
 }
 
 
@@ -410,93 +445,100 @@ const kl10Instructions = {
 	${putMem('tmp')};
 `,
 '200': `// MOVE (e) -> (ac)
-	${putAC(getMem())};
+  W36 tmp = ${getMem()};
+  ${putAC('tmp')};
 `,
 '201': `// MOVEI 0,,e -> (ac)
-	${putAC('RH(ea)')};
+  ${putAC('RH(ea)')};
 `,
 '202': `// MOVEM (ac) -> (e)
-	${putMem(getAC())};
+  W36 tmp = ${getAC()};
+  ${putMem('tmp')};
 `,
 '203': `// MOVES if ac !== 0: (e) -> (ac)
-	if (ac != 0) ${putAC(getMem())};
+  W36 tmp = ${getMem()};
+
+  if (ac != 0) ${putAC('tmp')};
+
+  ${putMem('tmp')};
 `,
 '210': `// MOVN -(e) -> (ac)
-	W36 tmp = -${getMem()};
-	${putAC('tmp')};
-	${setSignedMoveFlags()}
+  W36 tmp = -${getMem()};
+  ${putAC('tmp')};
+  ${setSignedMoveFlags()}
 `,
 '211': `// MOVNI -[0,,e] -> (ac)
-	W36 tmp = -RH(${getMem()});
-	${putAC('tmp')};	
+  W36 tmp = -RH(${getMem()});
+  ${putAC('tmp')};	
 `,
 '212': `// MOVNM -(e) -> (e)
-	W36 tmp = -LH(${getAC()});
-	${putMem('tmp')};	
-	${setSignedMoveFlags()}
+  W36 tmp = -LH(${getAC()});
+  ${putMem('tmp')};	
+  ${setSignedMoveFlags()}
 `,
 '213': `// MOVNS -(e) -> (e)
-	W36 tmp = -${getMem()};
-	${putMem('tmp')};
-	if (ac != 0) ${putAC('tmp')};
-	${setSignedMoveFlags()}
+  W36 tmp = -${getMem()};
+  ${putMem('tmp')};
+  if (ac != 0) ${putAC('tmp')};
+  ${setSignedMoveFlags()}
 `,
 '415': `// SETMI/XMOVEI
-	if (nonZeroSection(pc)) {
 
-	  if (eaIsLocal) {
-	    W36 tmp = BIT17 | RH(ea);
-	    ${putAC('tmp')};
-	  } else {
-	    W36 tmp = ea & 07777777777ull;
-	    ${putAC('tmp')};
-	  }
-	} else {	// SETMI
-	  ${putAC('RH(ea)')};
-	}
+  if (nonZeroSection(pc)) {
+
+    if (eaIsLocal) {
+      W36 tmp = BIT17 | RH(ea);
+      ${putAC('tmp')};
+    } else {
+      W36 tmp = ea & 07777777777ull;
+      ${putAC('tmp')};
+    }
+  } else {	// SETMI
+    ${putAC('RH(ea)')};
+  }
 `,
 '254': `// JRST
-	switch(ac) {		// AC is the JRST function F
-	case 000: // JRST
-	  pc = ea;
-	  goto SKIP_PC_INCR;
+  switch(ac) {		// AC is the JRST function F
+  case 000: // JRST
+    pc = ea;
+    goto SKIP_PC_INCR;
 
-	case 001: // PORTAL
-	  NYI("PORTAL");
-	  break;
+  case 001: // PORTAL
+    NYI("PORTAL");
+    break;
 
-	case 002: // JRSTF
-	  NYI("JRSTF");
-	  break;
+  case 002: // JRSTF
+    NYI("JRSTF");
+    break;
 
-	case 004: // HALT
-	  running = 0;
-	  break;
+  case 004: // HALT
+    running = 0;
+    break;
 
-	case 005: // XJRSTF
-	  NYI("XJRSTF");
-	  break;
+  case 005: // XJRSTF
+    NYI("XJRSTF");
+    break;
 
-	case 006: // XJEN
-	  NYI("XJEN");
-	  break;
+  case 006: // XJEN
+    NYI("XJEN");
+    break;
 
-	case 007: // XPCW
-	  NYI("XPCW");
-	  break;
+  case 007: // XPCW
+    NYI("XPCW");
+    break;
 
-	case 010: // RSTOR
-	  NYI("RSTOR");
-	  break;
+  case 010: // RSTOR
+    NYI("RSTOR");
+    break;
 
-	case 012: // JEN
-	  NYI("JEN");
-	  break;
+  case 012: // JEN
+    NYI("JEN");
+    break;
 
-	case 014: // SFM
-	  NYI("SFM");
-	  break;
-	}
+  case 014: // SFM
+    NYI("SFM");
+    break;
+  }
 `,
 '264': `// JSR
     memP[ea] = nonZeroSection(pc) ? (pc & 0007777777777ull) : (pc | flags);
@@ -826,211 +868,418 @@ const kl10Instructions = {
     NYI("DFN");
 `,
 '400': `// SETZ 0 -> (ac)
-    NYI("SETZ");
+  ${putAC(0)};
 `,
 '401': `// SETZI 0 -> (ac)
-    NYI("SETZI");
+  ${putAC(0)};
 `,
 '402': `// SETZM 0 -> (e)
-    NYI("SETZM");
+  ${putMem(0)};
 `,
 '403': `// SETZB 0 -> (ac) (e)
-    NYI("SETZB");
+  ${putAC(0)};
+  ${putMem(0)};
 `,
 '474': `// SETO 777777777777 -> (ac)
-    NYI("SETO");
+  ${putAC('ALL1s')};
 `,
 '475': `// SETOI 777777777777 -> (ac)
-    NYI("SETOI");
+  ${putAC('ALL1s')};
 `,
 '476': `// SETOM 777777777777 -> (e)
-    NYI("SETOM");
+  ${putMem('ALL1s')};
 `,
 '477': `// SETOB 777777777777 -> (ac) (e)
-    NYI("SETOB");
+  ${putAC('ALL1s')};
+  ${putMem('ALL1s')};
 `,
 '424': `// SETA { }	// (ac) -> (ac)
-    NYI("SETA");
 `,
 '425': `// SETAI { }	// (ac) -> (ac)
-    NYI("SETAI");
 `,
 '426': `// SETAM (ac) -> (e)
-    NYI("SETAM");
+  W36 tmp = ${getAC()};
+  ${putMem('tmp')};
 `,
 '427': `// SETAB (ac) -> (e)
-    NYI("SETAB");
+  W36 tmp = ${getAC()};
+  ${putMem('tmp')};
 `,
 '450': `// SETCA ~(ac) -> (ac)
-    NYI("SETCA");
+  W36 tmp = ${getAC()} ^ ALL1s;
+  ${putAC('tmp')};
 `,
 '451': `// SETCAI ~(ac) -> (ac)
-    NYI("SETCAI");
+  W36 tmp = ${getAC()} ^ ALL1s;
+  ${putAC('tmp')};
 `,
 '452': `// SETCAM ~(ac) -> (e)
-    NYI("SETCAM");
+  W36 tmp = ${getAC()} ^ ALL1s;
+  ${putMem('tmp')};
 `,
 '453': `// SETCAB ~(ac) -> (ac) (e)
-    NYI("SETCAB");
+  W36 tmp = ${getAC()} ^ ALL1s;
+  ${putAC('tmp')};
+  ${putMem('tmp')};
 `,
 '414': `// SETM (e) -> (ac)
-    NYI("SETM");
+  W36 tmp = ${getAC()};
+  ${putMem('tmp')};
 `,
 '416': `// SETMM (e) -> (e)// No-op
-    NYI("SETMM");
+  W36 tmp = ${getMem()};
+  ${putMem('tmp')};
 `,
 '417': `// SETMB (e) -> (ac) (e)
-    NYI("SETMB");
+  W36 tmp = ${getMem()};
+  ${putAC('tmp')};
+  ${putMem('tmp')};
 `,
 '460': `// SETCM ~(e) -> (ac)
-    NYI("SETCM");
+  W36 tmp = ${getMem()} ^ ALL1s;
+  ${putMem('tmp')};
 `,
 '461': `// SETCMI ~[0,,e] -> (ac)
-    NYI("SETCMI");
+  W36 tmp = RH(${getMem()}) ^ ALL1s;
+  ${putMem('tmp')};
 `,
 '462': `// SETCMM ~(e) -> (e)
-    NYI("SETCMM");
+  W36 tmp = ${getMem()} ^ ALL1s;
+  ${putMem('tmp')};
 `,
 '463': `// SETCMB ~(e) -> (ac) (e)
-    NYI("SETCMB");
+  W36 tmp = ${getMem()} ^ ALL1s;
+  ${putAC('tmp')};
+  ${putMem('tmp')};
 `,
 '404': `// AND (ac) & (e) -> (ac)
-    NYI("AND");
+  W36 tmp = ${getMem()} & ${getAC()};
+  ${putAC('tmp')};
 `,
 '405': `// ANDI (ac) & 0,,e -> (ac)
-    NYI("ANDI");
+  W36 tmp = RH(ea) & ${getAC()};
+  ${putAC('tmp')};
 `,
 '406': `// ANDM (ac) & (e) -> (e)
-    NYI("ANDM");
+  W36 tmp = ${getMem()} & ${getAC()};
+  ${putMem('tmp')};
 `,
 '407': `// ANDB (ac) & (e) -> (ac) (e)
-    NYI("ANDB");
+  W36 tmp = ${getMem()} & ${getAC()};
+  ${putAC('tmp')};
+  ${putMem('tmp')};
 `,
 '410': `// ANDCA ~(ac) & (e) -> (ac)
-    NYI("ANDCA");
+  W36 tmp = ${getMem()} & (ALL1s ^ ${getAC()});
+  ${putAC('tmp')};
 `,
 '411': `// ANDCAI ~(ac) & 0,,e -> (ac)
-    NYI("ANDCAI");
+  W36 tmp = RH(ea) & (ALL1s ^ ${getAC()});
+  ${putAC('tmp')};
 `,
 '412': `// ANDCAM ~(ac) & (e) -> (e)
-    NYI("ANDCAM");
+  W36 tmp = ${getMem()} & (ALL1s ^ ${getAC()});
+  ${putMem('tmp')};
 `,
 '413': `// ANDCAB ~(ac) & (e) -> (ac) (e)
-    NYI("ANDCAB");
+  W36 tmp = ${getMem()} & (ALL1s ^ ${getAC()});
+  ${putAC('tmp')};
+  ${putMem('tmp')};
 `,
 '420': `// ANDCM (ac) & ~(e) -> (ac)
-    NYI("ANDCM");
+  W36 tmp = (ALL1s ^ ${getMem()}) & ${getAC()};
+  ${putAC('tmp')};
 `,
 '421': `// ANDCMI (ac) & ~[0,,e] -> (ac)
-    NYI("ANDCMI");
+  W36 tmp = (ALL1s ^ RH(ea)) & ${getAC()};
+  ${putAC('tmp')};
 `,
 '422': `// ANDCMM (ac) & ~(e) -> (e)
-    NYI("ANDCMM");
+  W36 tmp = (ALL1s ^ ${getMem()}) & ${getAC()};
+  ${putMem('tmp')};
 `,
 '423': `// ANDCMB (ac) & ~(e) -> (ac) (e)
-    NYI("ANDCMB");
+  W36 tmp = (ALL1s ^ ${getMem()}) & ${getAC()};
+  ${putAC('tmp')};
+  ${putMem('tmp')};
 `,
 '440': `// ANDCB ~(ac) & ~(e) -> (ac)
-    NYI("ANDCB");
+  W36 tmp = (ALL1s ^ ${getMem()}) & (ALL1s ^ ${getAC()});
+  ${putAC('tmp')};
 `,
 '441': `// ANDCBI ~(ac) & ~[0,,e] -> (ac)
-    NYI("ANDCBI");
+  W36 tmp = (ALL1s ^ RH(ea)) & (ALL1s ^ ${getAC()});
+  ${putAC('tmp')};
 `,
 '442': `// ANDCBM ~(ac) & ~(e) -> (e)
-    NYI("ANDCBM");
+  W36 tmp = (ALL1s ^ ${getMem()}) & (ALL1s ^ ${getAC()});
+  ${putMem('tmp')};
 `,
 '443': `// ANDCBB ~(ac) & ~(e) -> (ac) (e)
-    NYI("ANDCBB");
+  W36 tmp = (ALL1s ^ ${getMem()}) & (ALL1s ^ ${getAC()});
+  ${putAC('tmp')};
+  ${putMem('tmp')};
 `,
 '434': `// IOR (ac) | (e) -> (ac)
-    NYI("IOR");
+  W36 tmp = ${getMem()} | ${getAC()};
+  ${putAC('tmp')};
 `,
 '435': `// IORI (ac) | 0,,e -> (ac)
-    NYI("IORI");
+  W36 tmp = RH(ea) | ${getAC()};
+  ${putAC('tmp')};
 `,
 '436': `// IORM (ac) | (e) -> (e)
-    NYI("IORM");
+  W36 tmp = ${getMem()} | ${getAC()};
+  ${putMem('tmp')};
 `,
 '437': `// IORB (ac) | (e) -> (ac) (e)
-    NYI("IORB");
+  W36 tmp = ${getMem()} | ${getAC()};
+  ${putAC('tmp')};
+  ${putMem('tmp')};
 `,
 '454': `// ORCA ~(ac) | (e) -> (ac)
-    NYI("ORCA");
+  W36 tmp = (ALL1s ^ ${getMem()}) | (ALL1s ^ ${getAC()});
+  ${putAC('tmp')};
 `,
 '455': `// ORCAI ~(ac) | 0,,e -> (ac)
-    NYI("ORCAI");
+  W36 tmp = (ALL1s ^ RH(ea)) | (ALL1s ^ ${getAC()});
+  ${putMem('tmp')};
 `,
 '456': `// ORCAM ~(ac) | (e) -> (e)
-    NYI("ORCAM");
+  W36 tmp = (ALL1s ^ ${getMem()}) | (ALL1s ^ ${getAC()});
+  ${putMem('tmp')};
 `,
 '457': `// ORCAB ~(ac) | (e) -> (ac) (e)
-    NYI("ORCAB");
+  W36 tmp = (ALL1s ^ ${getMem()}) | (ALL1s ^ ${getAC()});
+  ${putAC('tmp')};
+  ${putMem('tmp')};
 `,
 '464': `// ORCM (ac) | ~(e) -> (ac)
-    NYI("ORCM");
+  W36 tmp = (ALL1s ^ ${getMem()}) | ${getAC()};
+  ${putAC('tmp')};
 `,
 '465': `// ORCMI (ac) | ~[0,,e] -> (ac)
-    NYI("ORCMI");
+  W36 tmp = (ALL1s ^ RH(ea)) | ${getAC()};
+  ${putAC('tmp')};
 `,
 '466': `// ORCMM (ac) | ~(e) -> (e)
-    NYI("ORCMM");
+  W36 tmp = (ALL1s ^ ${getMem()}) | ${getAC()};
+  ${putMem('tmp')};
 `,
 '467': `// ORCMB (ac) | ~(e) -> (ac) (e)
-    NYI("ORCMB");
+  W36 tmp = (ALL1s ^ ${getMem()}) | ${getAC()};
+  ${putAC('tmp')};
+  ${putMem('tmp')};
 `,
 '470': `// ORCB ~(ac) | ~(e) -> (ac)
-    NYI("ORCB");
+  W36 tmp = (ALL1s ^ ${getMem()}) | (ALL1s ^ ${getAC()});
+  ${putAC('tmp')};
 `,
 '471': `// ORCBI ~(ac) | ~[0,,e] -> (ac)
-    NYI("ORCBI");
+  W36 tmp = (ALL1s ^ RH(ea)) | (ALL1s ^ ${getAC()});
+  ${putAC('tmp')};
 `,
 '472': `// ORCBM ~(ac) | ~(e) -> (e)
-    NYI("ORCBM");
+  W36 tmp = (ALL1s ^ ${getMem()}) | (ALL1s ^ ${getAC()});
+  ${putMem('tmp')};
 `,
 '473': `// ORCBB ~(ac) | ~(e) -> (ac) (e)
-    NYI("ORCBB");
+  W36 tmp = (ALL1s ^ ${getMem()}) | (ALL1s ^ ${getAC()});
+  ${putAC('tmp')};
+  ${putMem('tmp')};
 `,
 '430': `// XOR (ac) ^ (e) -> (ac)
-    NYI("XOR");
+  W36 tmp = ${getMem()} ^ ${getAC()};
+  ${putAC('tmp')};
 `,
 '431': `// XORI (ac) ^ 0,,e -> (ac)
-    NYI("XORI");
+  W36 tmp = RH(ea) ^ ${getAC()};
+  ${putAC('tmp')};
 `,
 '432': `// XORM (ac) ^ (e) -> (e)
-    NYI("XORM");
+  W36 tmp = ${getMem()} ^ ${getAC()};
+  ${putMem('tmp')};
 `,
 '433': `// XORB (ac) ^ (e) -> (ac) (e)
-    NYI("XORB");
+  W36 tmp = ${getMem()} ^ ${getAC()};
+  ${putAC('tmp')};
+  ${putMem('tmp')};
 `,
 '444': `// EQV (ac) >< (e) -> (ac)
-    NYI("EQV");
+  W36 tmp = ALL1s ^ ${getMem()} ^ ${getAC()};
+  ${putAC('tmp')};
 `,
 '445': `// EQVI (ac) >< 0,,e -> (ac)
-    NYI("EQVI");
+  W36 tmp = ALL1s ^ RH(ea) ^ ${getAC()};
+  ${putAC('tmp')};
 `,
 '446': `// EQVM (ac) >< (e) -> (e)
-    NYI("EQVM");
+  W36 tmp = ALL1s ^ ${getMem()} ^ ${getAC()};
+  ${putMem('tmp')};
 `,
 '447': `// EQVB (ac) >< (e) -> (ac) (e)
-    NYI("EQVB");
+  W36 tmp = ALL1s ^ ${getMem()} ^ ${getAC()};
+  ${putAC('tmp')};
+  ${putMem('tmp')};
 `,
 '240': `// ASH (ac) <<a e -> (ac)
-    NYI("ASH");
+  int shift = getShift(ea) % 36;
+  W36 tmp = ${getAC()};
+
+  if (shift >= 0) {		// Left shift
+    W36 original = tmp;
+
+    tmp <<= shift;
+
+    // XXX needs to set flags!
+
+    if (original & BIT(0)) {	// Negative number
+    } else {
+    }
+  } else {			// Right shift
+    // Use native arithmetic shift but must make a signed value
+    sint64_t signedTmp = (tmp & BIT(0)) ? (sint64_t) (~ALL1s | tmp) : (sint64_t) tmp;
+    tmp = (W36) (signedTmp >> shift);
+  }
+
+  ${putAC('tmp')};
 `,
 '241': `// ROT (ac) <<r e -> (ac)
-    NYI("ROT");
+  int shift = getShift(ea) % 36;
+  W36 tmp = ${getAC()};
+
+  if (shift > 0) {
+    tmp = (tmp << shift) | (tmp >> (36 - shift));
+  } else if (shift < 0) {
+    shift = -shift;
+    tmp = (tmp >> shift) | (tmp << (36 - shift));
+  }
+
+  tmp &= ALL1s;
+  ${putAC('tmp')};
 `,
 '242': `// LSH (ac) <<u e -> (ac)
-    NYI("LSH");
+  int shift = getShift(ea) % 36;
+  W36 tmp = ${getAC()};
+
+  if (shift > 0)
+    tmp >>= shift;
+  else
+    tmp <<= -shift;
+
+  ${putAC('tmp')};
 `,
 '244': `// ASHC D(ac,,ac+1) <<a e -> D(ac,,ac+1)
-    NYI("ASHC");
+  W36 hi = ${getAC('ac')};
+  W36 lo = ${getAC('ac+1')};
+  int shift = getShift(ea) % 70;
+  W36 signBit = hi & BIT(0);
+
+  if (shift != 0) {
+
+    if (shift > 0) {		// Left shift
+
+      if (shift <= 35) {	// Shift within a word
+	hi = (hi << shift) | (lo >> (35 - shift));
+	lo <<= shift;
+      } else {			// Big shift longer than a word
+        hi = lo << (70 - shift);
+        lo = 0;
+      }
+    } else if (shift < 0) {	// Right shift
+      shift = -shift;
+
+      if (shift <= 35) {	// Shift within a word
+        lo = (hi << (35 - shift)) | (lo >> shift);
+        hi >>= shift;
+      } else {			// Big shift longer than a word
+        lo = hi >> (70 - shift);
+        hi = 0;
+      }
+    }
+
+    // XXX needs to set flags!
+
+    // Clean any extra bits left outside of 36 bit word. Any nonzero
+    // shift count copies sign bit from original.
+    hi = (hi & ALL1s & ~signBit) | signBit;
+    lo = (lo & ALL1s & ~signBit) | signBit;
+  }
+
+  ${putAC('ac', 'hi')};
+  ${putAC('ac+1', 'lo')};
 `,
 '245': `// ROTC D(ac,,ac+1) <<r e -> D(ac,,ac+1)
-    NYI("ROTC");
+  W36 hi = ${getAC('ac')};
+  W36 lo = ${getAC('ac+1')};
+  int shift = getShift(ea) % 72;
+
+  if (shift != 0) {
+
+    if (shift > 0) {		// Left shift
+
+      if (shift < 36) {		// Shift within a word
+	hi = (hi << shift) | (lo >> (35 - shift));
+	lo <<= shift;
+      } else {			// Big shift longer than a word
+        hi = lo << (72 - shift);
+        lo = 0;
+      }
+    } else if (shift < 0) {	// Right shift
+      shift = -shift;
+
+      if (shift < 36) {		// Shift within a word
+        lo = (hi << (36 - shift)) | (lo >> shift);
+        hi >>= shift;
+      } else {			// Big shift longer than a word
+        lo = hi >> (72 - shift);
+        hi = 0;
+      }
+    }
+
+    // Clean any extra bits left outside of 36 bit word.
+    hi &= ALL1s;
+    lo &= ALL1s;
+  }
+
+  ${putAC('ac', 'hi')};
+  ${putAC('ac+1', 'lo')};
 `,
 '246': `// LSHC D(ac,,ac+1) <<u e -> D(ac,,ac+1)
-    NYI("LSHC");
+  W36 hi = ${getAC('ac')};
+  W36 lo = ${getAC('ac+1')};
+  int shift = getShift(ea) % 72;
+
+  if (shift != 0) {
+
+    if (shift > 0) {		// Left shift
+
+      if (shift < 36) {		// Shift within a word
+	hi = (hi << shift) | (lo >> (35 - shift));
+	lo <<= shift;
+      } else {			// Big shift longer than a word
+        hi = lo << (72 - shift);
+        lo = 0;
+      }
+    } else if (shift < 0) {	// Right shift
+      shift = -shift;
+
+      if (shift < 36) {		// Shift within a word
+        lo = (hi << (36 - shift)) | (lo >> shift);
+        hi >>= shift;
+      } else {			// Big shift longer than a word
+        lo = hi >> (72 - shift);
+        hi = 0;
+      }
+    }
+
+    // Clean any extra bits left outside of 36 bit word.
+    hi &= ALL1s;
+    lo &= ALL1s;
+  }
+
+  ${putAC('ac', 'hi')};
+  ${putAC('ac+1', 'lo')};
 `,
 '252': `// AOBJP
 /*	(ac).l + 1 -> (ac).l
@@ -1600,8 +1849,14 @@ const kl10Instructions = {
 '537': `// HRLES
   ${halfInsn('HRLES')};
 `,
-'25600': `// XCT
-    NYI("XCT");
+'256': `// XCT/PXCT
+
+  if (ac == 0) {
+    iw = ${getMem()};
+    goto XCT_ENTRYPOINT;
+  } else {
+    NYI("PXCT");
+  }
 `,
 '243': `// JFFO
 /*	if (ac) === 0: 0 -> (ac+1)
@@ -1625,11 +1880,6 @@ const kl10Instructions = {
 '257': `// MAP
     NYI("MAP");
 `,
-/*
-'256nn': `// PXCT
-    NYI("PXCT");
-`,
-*/
   '261': `// PUSH
     NYI("PUSH");
 `,
@@ -1645,14 +1895,9 @@ const kl10Instructions = {
 '105': `// ADJSP
     NYI("ADJSP");
 `,
-'13300': `// IBP
-    NYI("IBP");
+'133': `// IBP/ADJBP
+    NYI("IBP/ADJBP");
 `,
-/*
-'133nn': `// ADJBP
-    NYI("ADJBP");
-`,
-*/
 '135': `// LDB
     NYI("LDB");
 `,
@@ -1674,68 +1919,142 @@ const kl10Instructions = {
 '123': `// EXTEND
     NYI("EXTEND");
 `,
-'70144': `// SWPIA
+'700': `// I/O instructions
+  unsigned ioOp = ((op << 4) | ac) << 2;
+
+  switch (ioOp) {
+  case 070000: // APRID
+    W36 tmp =
+      BIT(0) |			// TOPS-20 paging
+      BIT(1) |			// Microcode handles extended addresses
+      BIT(2) |			// Microcode differs in some way from the standard version
+      (0442 << 18) |		// Microcode version number
+      // BIT(18) |		// Line frequency is 50Hz
+      BIT(21) |			// Extended KL10
+      // BIT(22) |		// System has master oscillator
+      04321;			// Processor serial number
+    ${putMem('tmp')};
+    break;
+
+  case 070004: // DATAI APR,
+    NYI("DATAI APR,");
+    break;
+
+  case 070014: // DATAO APR,
+    NYI("DATAO APR,");
+    break;
+
+  case 070044: // DATAI PI,
+    NYI("DATAI PI,");
+    break;
+
+  case 070054: // DATAO PI,
+    NYI("DATAO PI,");
+    break;
+
+  case 070104: // DATAI PAG,
+    NYI("DATAI PAG,");
+    break;
+
+  case 070114: // DATAO PAG,
+    NYI("DATAO PAG,");
+    break;
+
+  case 070120: // CONO PAG,
+    NYI("CONO PAG,");
+    break;
+
+  case 070124: // CONI PAG,
+    NYI("CONI PAG,");
+    break;
+
+  case 070020: // CONO APR,
+    NYI("CONO APR,");
+    break;
+
+  case 070024: // CONI APR,
+    NYI("CONI APR,");
+    break;
+
+  case 070220: // CONO TIM,
+    NYI("CONO TIM,");
+    break;
+
+  case 070224: // CONI TIM,
+    NYI("CONI TIM,");
+    break;
+
+  case 070264: // CONI MTR,
+    NYI("CONI MTR,");
+    break;
+
+  case 070144: // SWPIA
     NYI("SWPIA");
-`,
-'70164': `// SWPIO
+    break;
+  case 070164: // SWPIO
     NYI("SWPIO");
-`,
-'70150': `// SWPVA
+    break;
+  case 070150: // SWPVA
     NYI("SWPVA");
-`,
-'70170': `// SWPVO
+    break;
+  case 070170: // SWPVO
     NYI("SWPVO");
-`,
-'70154': `// SWPUA
+    break;
+  case 070154: // SWPUA
     NYI("SWPUA");
-`,
-'70174': `// SWPUO
+    break;
+  case 070174: // SWPUO
     NYI("SWPUO");
-`,
-'70010': `// WRFIL
+    break;
+  case 070010: // WRFIL
     NYI("WRFIL");
-`,
-'70000': `// APRID
-    NYI("APRID");
-`,
-'70110': `// CLRPT
+    break;
+  case 070110: // CLRPT
     NYI("CLRPT");
-`,
-'70260': `// WRTIME
+    break;
+  case 070260: // WRTIME
     NYI("WRTIME");
-`,
-'70204': `// RDTIME
+    break;
+  case 070204: // RDTIME
     NYI("RDTIME");
-`,
-'70244': `// RDEACT
+    break;
+  case 070244: // RDEACT
     NYI("RDEACT");
-`,
-'70240': `// RDMACT
+    break;
+  case 070240: // RDMACT
     NYI("RDMACT");
-`,
-'70210': `// WRPAE
+    break;
+  case 070210: // WRPAE
     NYI("WRPAE");
-`,
-'70200': `// RDPERF
+    break;
+  case 070200: // RDPERF
     NYI("RDPERF");
-`,
-'70040': `// RDERA
+    break;
+  case 070040: // RDERA
     NYI("RDERA");
-`,
-'70050': `// SBDIAG
+    break;
+  case 070050: // SBDIAG
     NYI("SBDIAG");
+    break;
+
+  default:
+    char nyi[64];
+    sprintf(nyi, "%05o", ioOp);
+    NYI(nyi);
+    break;
+  }
+
+  break;
 `,
 };
 
 
 emit(`\
+#include <assert.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdint.h>
-
-#include <stdio.h>
-#include <stdint.h>
 #include <string.h>
 
 #include "kl10.h"
@@ -1749,8 +2068,21 @@ static void emulate() {
 
   do {
     // XXX Put interrupt, trap, HALT, etc. handling here...
-    W36 iw = memP[pc];
+    W36 iw;
 
+    // If a trap occurs, XCT instruction from appropriate location
+    // instead of next PC, but leave PC alone while doing so. The
+    // location of the trap instruction is the same for user or exec
+    // mode if memP is in the right mode's address map. None of this
+    // happens if paging is not enabled.
+    if ((flags & (flagTR1 | flagTR2)) && pagingEnabled) {
+      volatile ExecutiveProcessTable *eptP = (volatile ExecutiveProcessTable *) memP;
+      iw = (flags & flagTR1) ? eptP->trap1Insn : eptP->stackOverflowInsn;
+    } else {
+      iw  = memP[pc];
+    }
+
+XCT_ENTRYPOINT:
     W36 ea;
     int eaIsLocal = 1;		// XXX THIS IS TEMPORARY UNTIL WE HAVE EXTENDED STUFF
     unsigned op;
@@ -1798,9 +2130,11 @@ ${kl10Instructions[k]}\
 
 
 int main(int argc, char *argv[]) {
-  static W36 memory[256*1024];
   W36 startAddr, lowestAddr, highestAddr;
   char *fileNameP;
+
+  assert(sizeof(ExecutiveProcessTable)/sizeof(W36) == 01000);
+  assert(sizeof(UserProcessTable)/sizeof(W36) == 01000);
 
   if (argc == 2) {
     fileNameP = argv[1];
@@ -1817,6 +2151,17 @@ int main(int argc, char *argv[]) {
   memP = memory;
   tracePC = 1;
   traceAC = 1;
+  traceMem = 1;
   running = 1;
+
+
+  // Initially paging is OFF
+  tops20Paging = 0;
+  pagingEnabled = 0;
+
   emulate();
 }`);
+
+// Local Variables:
+// mode: javascript
+// End:
