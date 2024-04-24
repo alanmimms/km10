@@ -35,12 +35,46 @@ static volatile int tracePC;
 static volatile int traceAC;
 static volatile int traceMem;
 
+// XXX do we need to emulate all eight AC blocks?
 static volatile W36 AC[16];
+
 static volatile W36 pc;
 static volatile W36 flags;
 static volatile W36 *memP;
 
 static int tops20Paging, pagingEnabled;
+
+
+// Currently executing interrupt level.
+static volatile unsigned intLevel;
+
+// Mask of levels that have pending interrupts. Read by CONI PI bits
+// 29-35, written by "hardware".
+static volatile unsigned intLevelsPending;
+
+// Mask of levels requested by software.
+static volatile unsigned intLevelsRequested;
+
+// Mask of levels where an interrupt is in progress. Read by CONI PI
+// bits 21-27.
+static unsigned intLevelsInProgress;
+
+// Mask of enabled interrupt levels.
+static unsigned intLevelsEnabled;
+
+// Master interrupt system enable.
+static int piEnabled;
+
+// These are CONI PI / CONO PI word bits.
+static const W36 DROP_PROGRAM_REQUESTS = BIT(22);
+static const W36 CLEAR_PI = BIT(23);
+static const W36 INITIATE_INTERRUPTS = BIT(24);
+static const W36 TURN_ON_SELECTED_LEVELS = BIT(25);
+static const W36 TURN_OFF_SELECTED_LEVELS = BIT(26);
+static const W36 TURN_OFF_PI = BIT(27);
+static const W36 TURN_ON_PI = BIT(28);
+static const W36 PI_LEVEL_MASK = BIT(28) - 1; // Bits 28..35
+
 
 // Physical memory. This is mmap()ed for each mode we run in and memP
 // is updated to point to the right address space for the current mode.
@@ -73,7 +107,7 @@ static inline W36 checkGetMem(W36 a) {
     tmp = memP[a];
 
   char aBuf[64], vBuf[64];
-  if (traceMem) fprintf(stderr, "                get %s=%s\\n", oct36(aBuf, a), oct36(vBuf, tmp));
+  if (traceMem) fprintf(stderr, "                get %s=%s\\n", octVMA(aBuf, a), oct36(vBuf, tmp));
 
   return tmp;
 }
@@ -89,7 +123,7 @@ static inline void checkPutMem(W36 a, W36 v) {
   }
 
   char aBuf[64], vBuf[64];
-  if (traceMem) fprintf(stderr, "                put %s=%s\\n", oct36(aBuf, a), oct36(vBuf, v));
+  if (traceMem) fprintf(stderr, "                put %s=%s\\n", octVMA(aBuf, a), oct36(vBuf, v));
 }
 
 // XXX This needs nonzero section code added.
@@ -1940,10 +1974,11 @@ const kl10Instructions = {
 `,
 '700': `// I/O instructions
   unsigned ioOp = ((op << 4) | ac) << 2;
+  W36 tmp;
 
   switch (ioOp) {
   case 070000: // APRID
-    W36 tmp =
+    tmp =
       BIT(0) |			// TOPS-20 paging
       BIT(1) |			// Microcode handles extended addresses
       BIT(2) |			// Microcode differs in some way from the standard version
@@ -1972,11 +2007,35 @@ const kl10Instructions = {
     break;
 
   case 070060: // CONO PI,
-    NYI("CONO PI,");
+
+    if (ea & CLEAR_PI) {
+      piEnabled = 0;
+      intLevelsInProgress = 0;
+      intLevelsPending = 0;
+      intLevel = 0;
+    } else if (ea & TURN_ON_PI) {
+      piEnabled = 1;
+    } else if (ea & TURN_OFF_PI) {
+      piEnabled = 0;
+    } else if (ea & DROP_PROGRAM_REQUESTS) {
+      intLevelsRequested &= ~(ea & PI_LEVEL_MASK);
+    } else if (ea & INITIATE_INTERRUPTS) {
+      intLevelsRequested |= ea & PI_LEVEL_MASK;
+    } else if (ea & TURN_OFF_SELECTED_LEVELS) {
+      intLevelsEnabled &= ~(ea & PI_LEVEL_MASK);
+    } else if (ea & TURN_ON_SELECTED_LEVELS) {
+      intLevelsEnabled |= ea & PI_LEVEL_MASK;
+    } 
+
     break;
 
   case 070064: // CONI PI,
-    NYI("CONI PI,");
+    tmp =
+      intLevelsRequested << ShiftForBit(17) |
+      intLevelsInProgress << ShiftForBit(27) |
+      piEnabled << ShiftForBit(28) |
+      intLevelsEnabled << ShiftForBit(35);
+    ${putAC('tmp')};
     break;
 
   case 070104: // DATAI PAG,
@@ -2143,7 +2202,7 @@ XCT_ENTRYPOINT:
       char daBuf[256];
 
       DisassembleToString(iw, daBuf);
-      fprintf(stderr, "%s: [ea=%s] %s\\n", oct36(pcBuf, pc), oct36(eaBuf, ea), daBuf);
+      fprintf(stderr, "%s: [ea=%s] %s\\n", octVMA(pcBuf, pc), octVMA(eaBuf, ea), daBuf);
     }
 
     switch (op) {

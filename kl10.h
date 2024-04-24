@@ -22,6 +22,9 @@ static const W36 BIT18 = BIT(18);
 static const W36 BIT35 = BIT(35);
 
 
+// Returns the bit mask with 1 in PDP10 bits B..E.
+#define MASKFOR(B,E)	((BIT(B) << 1) - BIT(E))
+
 static const W36 RHMASK = 0777777ull;
 static const W36 LHMASK = 0777777000000ull;
 
