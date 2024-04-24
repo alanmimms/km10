@@ -451,6 +451,8 @@ void Disassemble(const W36 iw,
   unsigned d = 0;			/* I/O device */
   const char *mneP = NULL;
 
+  *ioDevPP = NULL;		/* Pessimistically assume not an I/O instruction */
+
   // Handle some special cases first.
   if (op == 0133 && ac != 0) {		/* IBP becomes ADJBP for nonzero AC */
     mneP = "ADJBP";
@@ -505,7 +507,7 @@ void Disassemble(const W36 iw,
       if (ioDevPP) *ioDevPP = ioDevName[d];
       op = Extract(iw, 0, 3);
 
-      switch (Extract(iw, 10, 12)) {
+      switch (Extract(iw, 10, 12) << 2) {
       case 000: mneP = "BLKI"; break;
       case 004: mneP = "DATAI"; break;
       case 010: mneP = "BLKO"; break;
@@ -536,8 +538,9 @@ void Disassemble(const W36 iw,
 
 void DisassembleToString(W36 iw, char *bufferP) {
   const char *mnemonicP;
-  const char *ioDevP;
+  const char *ioDevP = NULL;
   unsigned ac, i, x, y;
+  int nChars;
 
   Disassemble(iw, &mnemonicP, &ioDevP, &ac, &i, &x, &y);
 
@@ -545,10 +548,17 @@ void DisassembleToString(W36 iw, char *bufferP) {
     oct36(bufferP, iw);
   } else {
 
+    // First lay down "mnemonic iodevname," or "mnemonic ac,"
+    if (ioDevP)
+      nChars = sprintf(bufferP, "%s %s,", mnemonicP, ioDevP);
+    else
+      nChars = sprintf(bufferP, "%s %2o,", mnemonicP, ac);
+
+    // Then add the EA stuff
     if (x) {
-      sprintf(bufferP, "%s %2o,%s%o(%o)", mnemonicP, ac, i ? "@" : "", y, x);
+      sprintf(bufferP + nChars, "%s%o(%o)", i ? "@" : "", y, x);
     } else {
-      sprintf(bufferP, "%s %2o,%s%o", mnemonicP, ac, i ? "@" : "", y);
+      sprintf(bufferP + nChars, "%s%o", i ? "@" : "", y);
     }
   }
 }
