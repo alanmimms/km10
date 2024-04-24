@@ -237,11 +237,11 @@ function doSKIP(cond) {
   if (cond === 1) {
     return `\
   ${prefix}
-  ++pc;`;
+  ++nextPC;`;
   } else {
     return `\
   ${prefix}
-  if (${getMem()} ${cond}) ++pc;`;
+  if (TOSIGNED(${getMem()}) ${cond}) ++nextPC;`;
   }
 }
 
@@ -277,7 +277,7 @@ function getERH() {
 
 
 function getELH() {
-  return `RH(ea)`;
+  return `RH(ea) << 18`;
 }
 
 
@@ -287,7 +287,7 @@ function getMemRH() {
 
 
 function getMemLH() {
-  return `LH(memP[ea])`;
+  return `LH(memP[ea]) << 18`;
 }
 
 
@@ -297,22 +297,22 @@ function getEARH() {
 
 
 function getEALH() {
-  return `LH(ea)`;
+  return `LH(ea) << 18`;
 }
 
 
 function skipN() {
-  return `if ((testAC & mask) != 0) ++pc`;
+  return `if ((testAC & mask) != 0) ++nextPC`;
 }
 
 
 function skipE() {
-  return `if ((testAC & mask) == 0) ++pc`;
+  return `if ((testAC & mask) == 0) ++nextPC`;
 }
 
 
 function skipAlways() {
-  return `++pc`;
+  return `++nextPC`;
 }
 
 
@@ -430,6 +430,85 @@ function halfInsn(mne) {
 }
 
 
+// Emit code for the AOS instruction suite. Pass C fragment (e.g., '> 0')
+// for `testCondition` or undefined for never skip.
+function addOneSkip(testCondition) {
+  return `\
+  W36 tmp = ${getMem()};
+
+  // If value overflows, we have to set some flags.
+  if (tmp == ALL1s) {
+    flags |= flagTR1 | flagOV | flagCY1;
+  } else if (tmp == (ALL1s >> 1)) {
+    flags |= flagCY0 | flagCY1;
+  } 
+
+  tmp = TO36(tmp + 1);
+  ${putMem('tmp')};
+  if (ac != 0) ${putAC('tmp')};
+  ${testCondition ? `if (TOSIGNED(tmp) ${testCondition}) ++nextPC;` : ``}
+`;
+}
+
+
+// Emit code for the AOJ instruction suite.
+function addOneJump(testCondition) {
+  return `\
+  W36 tmp = ${getAC()};
+
+  // If value overflows, we have to set some flags.
+  if (tmp == ALL1s) {
+    flags |= flagTR1 | flagOV | flagCY1;
+  } else if (tmp == (ALL1s >> 1)) {
+    flags |= flagCY0 | flagCY1;
+  } 
+
+  tmp = TO36(tmp + 1);
+  ${putAC('tmp')};
+  ${testCondition ? `if (TOSIGNED(tmp) ${testCondition}) nextPC = ea;` : ``}
+`;
+}
+
+
+// Emit code for the SOS instruction suite.
+function subOneSkip(testCondition) {
+  return `\
+  W36 tmp = ${getMem()};
+
+  // If value overflows, we have to set some flags.
+  if (tmp == (ALL1s >> 1)) {
+    flags |= flagTR1 | flagOV | flagCY0;
+  } else if (tmp != 0) {
+    flags |= flagCY0 | flagCY1;
+  } 
+
+  tmp = TO36(tmp - 1);
+  ${putMem('tmp')};
+  if (ac != 0) ${putAC('tmp')};
+  ${testCondition ? `if (TOSIGNED(tmp) ${testCondition}) ++nextPC;` : ``}
+`;
+}
+
+
+// Emit code for the SOJ instruction suite.
+function subOneJump(testCondition) {
+  return `\
+  W36 tmp = ${getAC()};
+
+  // If value overflows, we have to set some flags.
+  if (tmp == (ALL1s >> 1)) {
+    flags |= flagTR1 | flagOV | flagCY0;
+  } else if (tmp != 0) {
+    flags |= flagCY0 | flagCY1;
+  } 
+
+  tmp = TO36(tmp - 1);
+  ${putAC('tmp')};
+  ${testCondition ? `if (TOSIGNED(tmp) ${testCondition}) nextPC = ea;` : ``}
+`;
+}
+
+
 function emit(s) {
   fs.writeFileSync(process.argv[2], s);
 }
@@ -500,8 +579,8 @@ const kl10Instructions = {
 '254': `// JRST
   switch(ac) {		// AC is the JRST function F
   case 000: // JRST
-    pc = ea;
-    goto SKIP_PC_INCR;
+    nextPC = ea;
+    break;
 
   case 001: // PORTAL
     NYI("PORTAL");
@@ -541,16 +620,18 @@ const kl10Instructions = {
   }
 `,
 '264': `// JSR
-    memP[ea] = nonZeroSection(pc) ? (pc & 0007777777777ull) : (pc | flags);
-    pc = ea + 1;
-    flags &= ~(flagFPD | flagAFI | flagTR2 | flagTR1);
-    goto SKIP_PC_INCR;
+  W36 tmp = nonZeroSection(nextPC) ? (nextPC & 0007777777777ull) : (nextPC | flags);
+  ${putMem('tmp')};
+  nextPC = ea + 1;
+  flags &= ~(flagFPD | flagAFI | flagTR2 | flagTR1);
+  break;
 `,
 '265': `// JSP
-    AC[ac] = nonZeroSection(pc) ? (pc & 0007777777777ull) : (pc | flags);
-    pc = ea;
-    flags &= ~(flagFPD | flagAFI | flagTR2 | flagTR1);
-    goto SKIP_PC_INCR;
+  W36 tmp = nonZeroSection(nextPC) ? (nextPC & 0007777777777ull) : (nextPC | flags);
+  ${putAC('tmp')};
+  nextPC = ea;
+  flags &= ~(flagFPD | flagAFI | flagTR2 | flagTR1);
+  break;
 `,
 '330': `// SKIP if ac !== 0: (e) -> (ac)
     ${doSKIP()}
@@ -1214,6 +1295,8 @@ const kl10Instructions = {
   W36 lo = ${getAC('ac+1')};
   int shift = getShift(ea) % 72;
 
+  // XXX these are just shifts right now not rots.
+
   if (shift != 0) {
 
     if (shift > 0) {		// Left shift
@@ -1365,102 +1448,38 @@ const kl10Instructions = {
 '327': `// JUMPG if (ac) > 0: e -> (pc)
     NYI("JUMPG");
 `,
-'340': `// AOJ (ac).aox -> (ac)
-    NYI("AOJ");
-`,
-'341': `// AOJL (ac).aox -> (ac); if (ac) < 0: e -> pc
-    NYI("AOJL");
-`,
-'342': `// AOJE (ac).aox -> (ac); if (ac) === 0: e -> pc
-    NYI("AOJE");
-`,
-'343': `// AOJLE (ac).aox -> (ac); if (ac) <= 0: e -> pc
-    NYI("AOJLE");
-`,
-'344': `// AOJA (ac).aox -> (ac); e -> pc
-    NYI("AOJA");
-`,
-'345': `// AOJGE (ac).aox -> (ac); if (ac) >= 0: e -> pc
-    NYI("AOJGE");
-`,
-'346': `// AOJN (ac).aox -> (ac); if (ac) !== 0: e -> pc
-    NYI("AOJN");
-`,
-'347': `// AOJG (ac).aox -> (ac); if (ac) > 0: e -> pc
-    NYI("AOJC");
-`,
-'360': `// SOJ (ac).sox -> (ac)
-    NYI("SOJ");
-`,
-'361': `// SOJL (ac).sox -> (ac); if (ac) < 0: e -> pc
-    NYI("SOJL");
-`,
-'362': `// SOJE (ac).sox -> (ac); if (ac) === 0: e -> pc
-    NYI("SOJE");
-`,
-'363': `// SOJLE (ac).sox -> (ac); if (ac) <= 0: e -> pc
-    NYI("SOJLE");
-`,
-'364': `// SOJA (ac).sox -> (ac); e -> pc
-    NYI("SOJA");
-`,
-'365': `// SOJGE (ac).sox -> (ac); if (ac) >= 0: e -> pc
-    NYI("SOJGE");
-`,
-'366': `// SOJN (ac).sox -> (ac); if (ac) !== 0: e -> pc
-    NYI("SOJN");
-`,
-'367': `// SOJG (ac).sox -> (ac); if (ac) > 0: e -> pc
-    NYI("SOJG");
-`,
-'350': `// AOS (e).aox -> (e); if ac !== 0: (e) -> (ac)
-    NYI("AOS");
-`,
-'351': `// AOSL (e).aox -> (e); if ac !== 0: (e) -> (ac); if (e) < 0: skip
-    NYI("AOSL");
-`,
-'352': `// AOSE (e).aox -> (e); if ac !== 0: (e) -> (ac); if (e) === 0: skip
-    NYI("AOSE");
-`,
-'353': `// AOSLE (e).aox -> (e); if ac !== 0: (e) -> (ac); if (e) <= 0: skip
-    NYI("AOSLE");
-`,
-'354': `// AOSA (e).aox -> (e); if ac !== 0: (e) -> (ac); skip
-    NYI("AOSA");
-`,
-'355': `// AOSGE (e).aox -> (e); if ac !== 0: (e) -> (ac); if (e) >= 0: skip
-    NYI("AOSGE");
-`,
-'356': `// AOSN (e).aox -> (e); if ac !== 0: (e) -> (ac); if (e) !== 0: skip
-    NYI("AOSN");
-`,
-'357': `// AOSG (e).aox -> (e); if ac !== 0: (e) -> (ac); if (e) > 0: skip
-    NYI("AOSG");
-`,
-'370': `// SOS (e).sox -> (e); if ac !== 0: (e) -> (ac)
-    NYI("SOS");
-`,
-'371': `// SOSL (e).sox -> (e); if ac !== 0: (e) -> (ac); if (e) < 0: skip
-    NYI("SOSL");
-`,
-'372': `// SOSE (e).sox -> (e); if ac !== 0: (e) -> (ac); if (e) === 0: skip
-    NYI("SOSE");
-`,
-'373': `// SOSLE (e).sox -> (e); if ac !== 0: (e) -> (ac); if (e) <= 0: skip
-    NYI("SOSLE");
-`,
-'374': `// SOSA (e).sox -> (e); if ac !== 0: (e) -> (ac); skip
-    NYI("SOSA");
-`,
-'375': `// SOSGE (e).sox -> (e); if ac !== 0: (e) -> (ac); if (e) >= 0: skip
-    NYI("SOSGE");
-`,
-'376': `// SOSN (e).sox -> (e); if ac !== 0: (e) -> (ac); if (e) !== 0: skip
-    NYI("SOSN");
-`,
-'377': `// SOSG (e).sox -> (e); if ac !== 0: (e) -> (ac); if (e) > 0: skip
-    NYI("SOSG");
-`,
+'340': /* AOJ */ addOneJump(),
+'341': /* AOJL */ addOneJump('< 0'),
+'342': /* AOJE */ addOneJump('== 0'),
+'343': /* AOJLE */ addOneJump('<= 0'),
+'344': /* AOJA */ addOneJump('|| 1'),
+'345': /* AOJGE */ addOneJump('>= 0'),
+'346': /* AOJN */ addOneJump('!= 0'),
+'347': /* AOJG */ addOneJump('> 0'),
+'360': /* SOJ */ subOneJump(),
+'361': /* SOJL */ subOneJump('< 0'),
+'362': /* SOJE */ subOneJump('== 0'),
+'363': /* SOJLE */ subOneJump('<= 0'),
+'364': /* SOJA */ subOneJump('|| 1'),
+'365': /* SOJGE */ subOneJump('>= 0'),
+'366': /* SOJN */ subOneJump('!= 0'),
+'367': /* SOJG */ subOneJump('> 0'),
+'350': /* AOS */ addOneSkip(),
+'351': /* AOSL */ addOneSkip('< 0'),
+'352': /* AOSE */ addOneSkip('== 0'),
+'353': /* AOSLE */ addOneSkip('<= 0'),
+'354': /* AOSA */ addOneSkip('|| 1'),
+'355': /* AOSGE */ addOneSkip('>= 0'),
+'356': /* AOSN */ addOneSkip('!= 0'),
+'357': /* AOSG */ addOneSkip('> 0'),
+'370': /* SOS */ subOneSkip(),
+'371': /* SOSL */ subOneSkip('< 0'),
+'372': /* SOSE */ subOneSkip('== 0'),
+'373': /* SOSLE */ subOneSkip('<= 0'),
+'374': /* SOSA */ subOneSkip('|| 1'),
+'375': /* SOSGE */ subOneSkip('>= 0'),
+'376': /* SOSN */ subOneSkip('!= 0'),
+'377': /* SOSG */ subOneSkip('> 0'),
 '600': `// TRN
   (void) 0;
 `,
@@ -1474,10 +1493,10 @@ const kl10Instructions = {
   ${testInsn(getELH, modNone, skipE)}
 `,
 '604': `// TRNA
-  ++pc;
+  ++nextPC;
 `,
 '605': `// TLNA
-  ++pc;
+  ++nextPC;
 `,
 '606': `// TRNN
   ${testInsn(getERH, modNone, skipN)}
@@ -1570,10 +1589,10 @@ const kl10Instructions = {
   ${testInsn(getMemSwapped, modNone, skipE)};
 `,
 '614': `// TDNA
-    ++pc;
+    ++nextPC;
 `,
 '615': `// TSNA
-    ++pc;
+    ++nextPC;
 `,
 '616': `// TDNN if (ac) & (e) !== 0: skip
   ${testInsn(getMem, modNone, skipN)};
@@ -1952,6 +1971,14 @@ const kl10Instructions = {
     NYI("DATAO PI,");
     break;
 
+  case 070060: // CONO PI,
+    NYI("CONO PI,");
+    break;
+
+  case 070064: // CONI PI,
+    NYI("CONI PI,");
+    break;
+
   case 070104: // DATAI PAG,
     NYI("DATAI PAG,");
     break;
@@ -2065,6 +2092,7 @@ emit(`\
 ${macros}
 
 static void emulate() {
+  W36 nextPC = 0;
 
   do {
     // XXX Put interrupt, trap, HALT, etc. handling here...
@@ -2081,6 +2109,10 @@ static void emulate() {
     } else {
       iw  = memP[pc];
     }
+
+    // Initial assumption is that next instruction is what we will
+    // fetch next time through this loop.
+    nextPC = RH(pc + 1);
 
 XCT_ENTRYPOINT:
     W36 ea;
@@ -2122,9 +2154,7 @@ ${kl10Instructions[k]}\
 	  break; }`).join('\n')}
     }
 
-    ++pc;
-
-  SKIP_PC_INCR: ;
+    pc = nextPC;
   } while (running);
 }
 

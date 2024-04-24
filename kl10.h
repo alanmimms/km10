@@ -29,6 +29,16 @@ static const W36 LHMASK = 0777777000000ull;
 static const W36 ALL1s = 0777777777777ull;
 
 
+// Mask off extra bits above 36-bit word
+#define TO36(V)		((V) & ALL1s)
+
+// Determine if V is a 36-bit negative number.
+#define ISNEG(V)	(!!((V) & BIT(0)))
+
+// Convert 36-bit V into a signed long long for math ops.
+#define TOSIGNED(V)	(ISNEG(V) ? (V) | ~ALL1s : TO36(V))
+
+
 // See 1982_ProcRefMan.pdf p.262
 typedef struct DTE20ControlBlock {
   W36 to11BP;
