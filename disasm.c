@@ -564,6 +564,27 @@ void DisassembleToString(W36 iw, char *bufferP) {
 }
 
 
+// Format w as standard 123456,,654321 format and return a pointer
+// to the buffer it's formatted into (which is passed in from caller).
+// This makes printf suck a little less. (Why doesn't printf
+// formatting have an extension API for those who want to add more
+// formatting types?)
+char *oct36(char *bufP, W36 w) {
+  sprintf(bufP, PRI06o32 ",," PRI06o32,
+	  (uint32_t) (w >> 18), (uint32_t) (w & 0777777ul));
+  return bufP;
+}
+
+
+// Format a PC or other virtual address as octal ,, pair.
+char *octVMA(char *bufP, W36 a) {
+  sprintf(bufP, PRI06o32 ",," PRI06o32,
+	  (uint32_t) Extract(a, 6, 17), (uint32_t) Extract(a, 18, 35));
+  return bufP;
+}
+
+
+
 #if TEST_DISASM
 #include "acutest.h"
 

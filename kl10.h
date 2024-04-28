@@ -179,24 +179,6 @@ static inline W36 Extract(W36 w, int s, int e) {
   return (w & ALL1s & (MaskForBit(s - 1) - 1ull)) >> toShift;
 }
 
-
-// Format `w` as standard 123456,,654321 format and return a pointer
-// to the buffer it's formatted into (which is passed in from caller).
-// This makes printf suck a little less. (Why doesn't printf
-// formatting have an extension API for those who want to add more
-// formatting types?)
-static char *oct36(char *bufP, W36 w) {
-  sprintf(bufP, PRI06o32 ",," PRI06o32,
-	  (uint32_t) (w >> 18), (uint32_t) (w & 0777777ul));
-  return bufP;
-}
-
-
-// Format a PC or other virtual address as octal ,, pair.
-static char *octVMA(char *bufP, W36 a) {
-  sprintf(bufP, PRI06o32 ",," PRI06o32,
-	  (uint32_t) (a >> 18) & 0177, (uint32_t) (a & 0777777ul));
-  return bufP;
-}
-
+extern char *oct36(char *bufP, W36 w);
+extern char *octVMA(char *bufP, W36 a);
 #endif

@@ -192,16 +192,16 @@ function getAC(ac) {
 }
 
 
-// Optionally `ac` param can be left off and 'ac' will be used. This
-// makes call sites simpler.
+// Get just the RH of `ac`. Optionally, `ac` param can be left off and
+// 'ac' will be used. This makes call sites simpler.
 function getACRH(ac) {
   if (ac == undefined) ac = 'ac';
   return `checkGetAC(${ac}) & HMASK`;
 }
 
 
-// Optionally `ac` param can be left off and 'ac' will be used. This
-// makes call sites simpler.
+// Get just the LH of `ac`. Optionally, `ac` param can be left off and
+// 'ac' will be used. This makes call sites simpler.
 function getACLH(ac) {
   if (ac == undefined) ac = 'ac';
   return `checkGetAC((${ac}) >> 18) & HMASK`;
@@ -221,8 +221,9 @@ function putAC(ac, value) {
 }
 
 
-// Optionally `ac` param can be left off and 'ac' will be used. This
-// makes call sites simpler.
+// Replace the RH of `ac` with `value` and put its value back.
+// Optionally, `ac` param can be left off and 'ac' will be used.
+// This makes call sites simpler.
 function putACRH(ac, value) {
 
   if (value == undefined) {
@@ -234,8 +235,9 @@ function putACRH(ac, value) {
 }
 
 
-// Optionally `ac` param can be left off and 'ac' will be used. This
-// makes call sites simpler.
+// Replace the LH of `ac` with `value` and put its value back.
+// Optionally, `ac` param can be left off and 'ac' will be used.
+// This makes call sites simpler.
 function putACLH(ac, value) {
 
   if (value == undefined) {
@@ -2224,6 +2226,7 @@ emit(`\
 
 
 ${macros}
+
 
 static void emulate() {
   W36 nextPC = 0;
