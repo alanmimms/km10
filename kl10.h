@@ -41,6 +41,9 @@ static const W36 ALL1s = 0777777777777ull;
 // Convert 36-bit V into a signed long long for math ops.
 #define TOSIGNED(V)	(ISNEG(V) ? (V) | ~ALL1s : TO36(V))
 
+// Extract just the (possibly global) address in A.
+#define JUSTVMA(A)	((A) & MASKFOR(6, 35))
+
 
 // See 1982_ProcRefMan.pdf p.262
 typedef struct DTE20ControlBlock {

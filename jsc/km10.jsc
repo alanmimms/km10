@@ -30,17 +30,17 @@ ${Object.keys(flags)
   .join('\n')}
 
 
-static volatile int running;
-static volatile int tracePC;
-static volatile int traceAC;
-static volatile int traceMem;
+static int running;
+static int tracePC;
+static int traceAC;
+static int traceMem;
 
 // XXX do we need to emulate all eight AC blocks?
-static volatile W36 AC[16];
+static W36 AC[16];
 
-static volatile W36 pc;
-static volatile W36 flags;
-static volatile W36 *memP;
+static W36 pc;
+static W36 flags;
+static W36 *memP;
 
 static int tops20Paging, pagingEnabled;
 
@@ -137,9 +137,10 @@ static inline int section0(W36 a) {
 }
 
 
-static void NYI(const char *mneP) {
-  char buf[64];
-  fprintf(stderr, ">>>>>>>>>>>>>>>>Not yet implemented: %s at %s\\n", mneP, octVMA(buf, pc));
+static void NYI(const W36 iw, const char *mneP) {
+  char iBuf[64], buf[64];
+  fprintf(stderr, ">>>>>>>>>>>>>>>> Not yet implemented: %s  %s at %s <<<<<<<<<<<<<<<<\\n",
+	  oct36(iBuf, iw), mneP, octVMA(buf, pc));
 }
 
 
@@ -148,6 +149,32 @@ static void NYI(const char *mneP) {
 static int getShift(W36 ea) {
   int shift = ea & 0377;
   return (ea & BIT18) ? -shift : shift;
+}
+
+
+// Scrub the specified stack pointer value to just its address and
+// return it.
+static inline W36 justSPAddr(W36 sp) {
+  return (section0(pc) || ISNEG(sp) || (sp & MASKFOR(6, 17)) == 0) ? RH(sp) : JUSTVMA(sp);
+}
+
+
+// Increment or decrement the stack pointer value 'sp' by 'delta' and
+// trap if it is now 'barrierValue'. This also puts 'sp' back into
+// the AC for the current instruction. It returns the address in
+// memory to load or store as a result of the PUSH or POP operation.
+static inline W36 adjustStackPointer(W36 sp, int delta, W36 barrierValue) {
+
+  if (section0(pc) || ISNEG(sp) || (sp & MASKFOR(6, 17)) == 0) {
+    sp = CONS(LH(sp + delta), RH(sp + delta));
+    if (LH(sp) == barrierValue) flags |= flagTR2;
+    sp = RH(sp);
+  } else {			// Global SP pointer
+    sp += delta;
+    sp = JUSTVMA(sp);
+  }
+
+  return sp;
 }
 `;
 
@@ -617,11 +644,11 @@ const kl10Instructions = {
     break;
 
   case 001: // PORTAL
-    NYI("PORTAL");
+    NYI(iw, "PORTAL");
     break;
 
   case 002: // JRSTF
-    NYI("JRSTF");
+    NYI(iw, "JRSTF");
     break;
 
   case 004: // HALT
@@ -629,27 +656,27 @@ const kl10Instructions = {
     break;
 
   case 005: // XJRSTF
-    NYI("XJRSTF");
+    NYI(iw, "XJRSTF");
     break;
 
   case 006: // XJEN
-    NYI("XJEN");
+    NYI(iw, "XJEN");
     break;
 
   case 007: // XPCW
-    NYI("XPCW");
+    NYI(iw, "XPCW");
     break;
 
   case 010: // RSTOR
-    NYI("RSTOR");
+    NYI(iw, "RSTOR");
     break;
 
   case 012: // JEN
-    NYI("JEN");
+    NYI(iw, "JEN");
     break;
 
   case 014: // SFM
-    NYI("SFM");
+    NYI(iw, "SFM");
     break;
   }
 `,
@@ -692,44 +719,44 @@ const kl10Instructions = {
     ${doSKIP('> 0')}
 `,
 '120': `// DMOVE D(e,,e+1) -> D(ac,,ac+1)
-    NYI("DMOVE");
+    NYI(iw, "DMOVE");
 `,
 '121': `// DMOVEN -D(e,,e+1) -> D(ac,,ac+1)
-    NYI("DMOVEN");
+    NYI(iw, "DMOVEN");
 `,
 '124': `// DMOVEM D(ac,,ac+1) -> D(e,,e+1)
-    NYI("DMOVEM");
+    NYI(iw, "DMOVEM");
 `,
 '125': `// DMOVNM -D(ac,,ac+1) -> D(e,,e+1)
-    NYI("DMOVNM");
+    NYI(iw, "DMOVNM");
 `,
 '251': `// BLT
-    NYI("BLT");
+    NYI(iw, "BLT");
 `,
 '204': `// MOVS (e).s -> (ac)
-    NYI("MOVS");
+    NYI(iw, "MOVS");
 `,
 '205': `// MOVSI e,,0 -> (ac)
-    NYI("MOVSI");
+    NYI(iw, "MOVSI");
 `,
 '206': `// MOVSM (ac).s -> (e)
-    NYI("MOVSM");
+    NYI(iw, "MOVSM");
 `,
 '207': `// MOVSS (e).s -> (e); if ac !== 0: (e) -> (ac)
-    NYI("MOVSS");
+    NYI(iw, "MOVSS");
 `,
 '214': `// MOVM |(e)| -> (ac)
-    NYI("MOVM");
+    NYI(iw, "MOVM");
 `,
 '215': `// MOVMI 0,,e -> (ac)
-    NYI("MOVMI");
+    NYI(iw, "MOVMI");
 `,
 '216': `// MOVMM
 /*	|(e)| -> (tmp)
 		(tmp) -> (e)
 		if (tmp) == 400000_000000: 1 -> tr1 ov cy1
 		if (tmp) == 0: 1 -> cy0 cy1 */
-    NYI("MOVMM");
+    NYI(iw, "MOVMM");
 `,
 '217': `// MOVMS
 /*	|(e)| -> (tmp)
@@ -737,250 +764,250 @@ const kl10Instructions = {
       		if ac !== 0: (tmp) -> (ac)
 		if (tmp) == 400000_000000: 1 -> tr1 ov cy1
 		if (tmp) == 0: 1 -> cy0 cy1 */
-    NYI("MOVMS");
+    NYI(iw, "MOVMS");
 `,
 '052': `// PMOVE
-    NYI("PMOVE");
+    NYI(iw, "PMOVE");
 `,
 '053': `// PMOVEM
-    NYI("PMOVEM");
+    NYI(iw, "PMOVEM");
 `,
 '270': `// ADD (ac) + (e) -> (ac)
-    NYI("ADD");
+    NYI(iw, "ADD");
 `,
 '271': `// ADDI (ac) + 0,,e -> (ac)
-    NYI("ADDI");
+    NYI(iw, "ADDI");
 `,
 '272': `// ADDM (ac) + (e) -> (e)
-    NYI("ADDM");
+    NYI(iw, "ADDM");
 `,
 '273': `// ADDB (ac) + (e) -> (ac) (e)
-    NYI("ADDB");
+    NYI(iw, "ADDB");
 `,
 '274': `// SUB (ac) - (e) -> (ac)
-    NYI("SUB");
+    NYI(iw, "SUB");
 `,
 '275': `// SUBI (ac) - 0,,e -> (ac)
-    NYI("SUBI");
+    NYI(iw, "SUBI");
 `,
 '276': `// SUBM (ac) - (e) -> (e)
-    NYI("SUBM");
+    NYI(iw, "SUBM");
 `,
 '277': `// SUBB (ac) - (e) -> (ac) (e)
-    NYI("SUBB");
+    NYI(iw, "SUBB");
 `,
 '220': `// IMUL (ac) * (e) -> (ac).discardHi
-    NYI("IMUL");
+    NYI(iw, "IMUL");
 `,
 '221': `// IMULI (ac) * 0,,e -> (ac).discardHi
-    NYI("IMULI");
+    NYI(iw, "IMULI");
 `,
 '222': `// IMULM (ac) * (e) -> (e).discardHi
-    NYI("IMULM");
+    NYI(iw, "IMULM");
 `,
 '223': `// IMULB (ac) * (e) -> (ac).discardHi (e).discardHi
-    NYI("IMULB");
+    NYI(iw, "IMULB");
 `,
 '224': `// MUL (ac) * (e) -> D(ac,,ac+1)
-    NYI("MUL");
+    NYI(iw, "MUL");
 `,
 '225': `// MULI (ac) * 0,,e -> D(ac,,ac+1)
-    NYI("MULI");
+    NYI(iw, "MULI");
 `,
 '226': `// MULM (ac) * (e) -> (e).discardLo
-    NYI("MULM");
+    NYI(iw, "MULM");
 `,
 '227': `// MULB (ac) * (e) -> (ac,,ac+1) (e).discardLo
-    NYI("MULB");
+    NYI(iw, "MULB");
 `,
 '230': `// IDIV (ac) / (e) -> (ac).quo (ac+1).rem
-    NYI("IDIV");
+    NYI(iw, "IDIV");
 `,
 '231': `// IDIVI (ac) / 0,,e -> (ac).quo (ac+1).rem
-    NYI("IDIVI");
+    NYI(iw, "IDIVI");
 `,
 '232': `// IDIVM (ac) / (e) -> (e).quo
-    NYI("IDIVM");
+    NYI(iw, "IDIVM");
 `,
 '233': `// IDIVB (ac) / (e) -> (ac).quo (ac+1).rem (e).quo
-    NYI("IDIVB");
+    NYI(iw, "IDIVB");
 `,
 '234': `// DIV D(ac,,ac+1) / (e) -> (ac).quo (ac+1).rem
-    NYI("DIV");
+    NYI(iw, "DIV");
 `,
 '235': `// DIVI D(ac,,ac+1) / 0,,e -> (ac).quo (ac+1).rem
-    NYI("DIVI");
+    NYI(iw, "DIVI");
 `,
 '236': `// DIVM D(ac,,ac+1) / (e) -> (e).quo
-    NYI("DIVM");
+    NYI(iw, "DIVM");
 `,
 '237': `// DIVB D(ac,,ac+1) / (e) -> (ac).quo (ac+1).rem (e).quo
-    NYI("DIVB");
+    NYI(iw, "DIVB");
 `,
 '114': `// DADD D(ac,,ac+1) d+ D(e,,e+1) -> D(ac,,ac+1)
-    NYI("DADD");
+    NYI(iw, "DADD");
 `,
 '115': `// DSUB D(ac,,ac+1) d- D(e,,e+1) -> D(ac,,ac+1)
-    NYI("DSUB");
+    NYI(iw, "DSUB");
 `,
 '116': `// DMUL D(ac,,ac+1) d* D(e,,e+1) -> Q(ac,,ac+3)
-    NYI("DMUL");
+    NYI(iw, "DMUL");
 `,
 '117': `// DDIV D(ac,,ac+1) d/ D(e,,e+1) -> Q(ac,,ac+3)
-    NYI("DDIV");
+    NYI(iw, "DDIV");
 `,
 '140': `// FAD (ac) f+ (e) -> (ac)
-    NYI("FAD");
+    NYI(iw, "FAD");
 `,
 '141': `// FADL (ac) fl+ (e) -> D(ac,,ac+1)
-    NYI("FADL");
+    NYI(iw, "FADL");
 `,
 '142': `// FADM (ac) f+ (e) -> (e)
-    NYI("FADM");
+    NYI(iw, "FADM");
 `,
 '143': `// FADB (ac) f+ (e) -> (ac) (e)
-    NYI("FADB");
+    NYI(iw, "FADB");
 `,
 '144': `// FADR (ac) fr+ (e) -> (ac)
-    NYI("FADR");
+    NYI(iw, "FADR");
 `,
 '145': `// FADRI (ac) fr+ e,,0 -> (ac)
-    NYI("FADRI");
+    NYI(iw, "FADRI");
 `,
 '146': `// FADRM (ac) fr+ (e) -> (e)
-    NYI("FADRM");
+    NYI(iw, "FADRM");
 `,
 '147': `// FADRB (ac) fr+ (e) -> (ac) (e)
-    NYI("FADRB");
+    NYI(iw, "FADRB");
 `,
 '150': `// FSB (ac) f- (e) -> (ac)
-    NYI("FSB");
+    NYI(iw, "FSB");
 `,
 '151': `// FSBL (ac) fl- (e) -> D(ac,,ac+1)
-    NYI("FSBL");
+    NYI(iw, "FSBL");
 `,
 '152': `// FSBM (ac) f- (e) -> (e)
-    NYI("FSBM");
+    NYI(iw, "FSBM");
 `,
 '153': `// FSBB (ac) f- (e) -> (ac) (e)
-    NYI("FSBB");
+    NYI(iw, "FSBB");
 `,
 '154': `// FSBR (ac) fr- (e) -> (ac)
-    NYI("FSBR");
+    NYI(iw, "FSBR");
 `,
 '155': `// FSBRI (ac) fr- e,,0 -> (ac)
-    NYI("FSBRI");
+    NYI(iw, "FSBRI");
 `,
 '156': `// FSBRM (ac) fr- (e) -> (e)
-    NYI("FSBRM");
+    NYI(iw, "FSBRM");
 `,
 '157': `// FSBRB (ac) fr- (e) -> (ac) (e)
-    NYI("FSBRB");
+    NYI(iw, "FSBRB");
 `,
 '160': `// FMP (ac) f* (e) -> (ac)
-    NYI("FMP");
+    NYI(iw, "FMP");
 `,
 '161': `// FMPL (ac) fl* (e) -> D(ac,,ac+1)
-    NYI("FMPL");
+    NYI(iw, "FMPL");
 `,
 '162': `// FMPM (ac) f* (e) -> (e)
-    NYI("FMPM");
+    NYI(iw, "FMPM");
 `,
 '163': `// FMPB (ac) f* (e) -> (ac) (e)
-    NYI("FMPB");
+    NYI(iw, "FMPB");
 `,
 '164': `// FMPR (ac) fr* (e) -> (ac)
-    NYI("FMPR");
+    NYI(iw, "FMPR");
 `,
 '165': `// FMPRI (ac) fr* e,,0 -> (ac)
-    NYI("FMPRI");
+    NYI(iw, "FMPRI");
 `,
 '166': `// FMPRM (ac) fr* (e) -> (e)
-    NYI("FMPRM");
+    NYI(iw, "FMPRM");
 `,
 '167': `// FMPRB (ac) fr* (e) -> (ac) (e)
-    NYI("FMPRB");
+    NYI(iw, "FMPRB");
 `,
 '170': `// FDV (ac) f/ (e) -> (ac)
-    NYI("FDV");
+    NYI(iw, "FDV");
 `,
 '171': `// FDVL (ac) fl/ (e) -> D(ac,,ac+1)
-    NYI("FDVL");
+    NYI(iw, "FDVL");
 `,
 '172': `// FDVM (ac) f/ (e) -> (e)
-    NYI("FDVM");
+    NYI(iw, "FDVM");
 `,
 '173': `// FDVB (ac) f/ (e) -> (ac) (e)
-    NYI("FDVB");
+    NYI(iw, "FDVB");
 `,
 '174': `// FDVR (ac) fr/ (e) -> (ac)
-    NYI("FDVR");
+    NYI(iw, "FDVR");
 `,
 '175': `// FDVRI (ac) fr/ e,,0 -> (ac)
-    NYI("FDVRI");
+    NYI(iw, "FDVRI");
 `,
 '176': `// FDVRM (ac) fr/ (e) -> (e)
-    NYI("FDVRM");
+    NYI(iw, "FDVRM");
 `,
 '177': `// FDVRB (ac) fr/ (e) -> (ac) (e)
-    NYI("FDVRB");
+    NYI(iw, "FDVRB");
 `,
 '110': `// DFAD D(ac,,ac+1) d+ D(e,,e+1) -> D(ac,,ac+1)
-    NYI("DFAD");
+    NYI(iw, "DFAD");
 `,
 '111': `// DFSB D(ac,,ac+1) d- D(e,,e+1) -> D(ac,,ac+1)
-    NYI("DFSB");
+    NYI(iw, "DFSB");
 `,
 '112': `// DFMP D(ac,,ac+1) d* D(e,,e+1) -> D(ac,,ac+1)
-    NYI("DFMP");
+    NYI(iw, "DFMP");
 `,
 '113': `// DFDV D(ac,,ac+1) d/ D(e,,e+1) -> D(ac,,ac+1)
-    NYI("DFDV");
+    NYI(iw, "DFDV");
 `,
 '132': `// FSC (ac) f<< e -> (ac)
-    NYI("FSC");
+    NYI(iw, "FSC");
 `,
 '031': `// GFSC D(ac,,ac+1) f<< e -> D(ac,,ac+1)
-    NYI("GFSC");
+    NYI(iw, "GFSC");
 `,
 '127': `// FLTR (e).ifr -> (ac)
-    NYI("FLTR");
+    NYI(iw, "FLTR");
 `,
 '030': `// GFLTR (e).ifrD -> D(ac,,ac+1)
-    NYI("GFLTR");
+    NYI(iw, "GFLTR");
 `,
 '027': `// DGFLTR (e,,e+1).DifrD -> D(ac,,ac+1)
-    NYI("DGFLTR");
+    NYI(iw, "DGFLTR");
 `,
 '122': `// FIX (e).fix -> (ac)
-    NYI("FIX");
+    NYI(iw, "FIX");
 `,
 '126': `// FIXR (e).fixR -> (ac)
-    NYI("FIXR");
+    NYI(iw, "FIXR");
 `,
 '024': `// GFIX (e,,e+1).Dfix -> (ac)
-    NYI("GFIX");
+    NYI(iw, "GFIX");
 `,
 '026': `// GFIXR (e,,e+1).DfixR -> (ac)
-    NYI("GFIXR");
+    NYI(iw, "GFIXR");
 `,
 '023': `// GDFIX (e,,e+1).DfixD -> D(ac,,ac+1)
-    NYI("GDFIX");
+    NYI(iw, "GDFIX");
 `,
 '025': `// GDFIXR (e,,e+1).DfixRD -> D(ac,,ac+1)
-    NYI("GDFIXR");
+    NYI(iw, "GDFIXR");
 `,
 '021': `// GSNGL (e,,e+1).sngl -> (ac)
-    NYI("GSNGL");
+    NYI(iw, "GSNGL");
 `,
 '022': `// GDBLE (e).dble -> D(ac,,ac+1)
-    NYI("GDBLE");
+    NYI(iw, "GDBLE");
 `,
 '130': `// UFA (ac) fu+ (e) -> (ac+1)
-    NYI("UFA");
+    NYI(iw, "UFA");
 `,
 '131': `// DFN {cpu.doDFN(ac, e)}
-    NYI("DFN");
+    NYI(iw, "DFN");
 `,
 '400': `// SETZ 0 -> (ac)
   ${putAC(0)};
@@ -1402,85 +1429,85 @@ const kl10Instructions = {
 /*	(ac).l + 1 -> (ac).l
 		(ac).r + 1 -> (ac).r
       		if (ac) >= 0: e -> (pc) */
-    NYI("AOBJP");
+    NYI(iw, "AOBJP");
 `,
 '253': `// AOBJN
 /*	(ac).l + 1 -> (ac).l
 		(ac).r + 1 -> (ac).r
       		if (ac) < 0: e -> (pc) */
-    NYI("AOBJN");
+    NYI(iw, "AOBJN");
 `,
 '300': `// CAI { }
-    NYI("CAI");
+    NYI(iw, "CAI");
 `,
 '301': `// CAIL if (ac) < e: skip
-    NYI("CAIL");
+    NYI(iw, "CAIL");
 `,
 '302': `// CAIE if (ac) === e: skip
-    NYI("CAIE");
+    NYI(iw, "CAIE");
 `,
 '303': `// CAILE if (ac) <= e: skip
-    NYI("CAILE");
+    NYI(iw, "CAILE");
 `,
 '304': `// CAIA skip
-    NYI("CAIA");
+    NYI(iw, "CAIA");
 `,
 '305': `// CAIGE if (ac) >= e: skip
-    NYI("CAIGE");
+    NYI(iw, "CAIGE");
 `,
 '306': `// CAIN if (ac) !== e: skip
-    NYI("CAIN");
+    NYI(iw, "CAIN");
 `,
 '307': `// CAIG if (ac) > e: skip
-    NYI("CAIG");
+    NYI(iw, "CAIG");
 `,
 '310': `// CAM { }
-    NYI("CAM");
+    NYI(iw, "CAM");
 `,
 '311': `// CAML if (ac) < (e): skip
-    NYI("CAML");
+    NYI(iw, "CAML");
 `,
 '312': `// CAME if (ac) === (e): skip
-    NYI("CAME");
+    NYI(iw, "CAME");
 `,
 '313': `// CAMLE if (ac) <= (e): skip
-    NYI("CAMLE");
+    NYI(iw, "CAMLE");
 `,
 '314': `// CAMA skip
-    NYI("CAMA");
+    NYI(iw, "CAMA");
 `,
 '315': `// CAMGE if (ac) >= (e): skip
-    NYI("CAMGE");
+    NYI(iw, "CAMGE");
 `,
 '316': `// CAMN if (ac) !== (e): skip
-    NYI("CAMN");
+    NYI(iw, "CAMN");
 `,
 '317': `// CAMG if (ac) > (e): skip
-    NYI("CAMG");
+    NYI(iw, "CAMG");
 `,
 '320': `// JUMP { }
-    NYI("JUMP");
+    NYI(iw, "JUMP");
 `,
 '321': `// JUMPL if (ac) < 0: e -> (pc)
-    NYI("JUMPL");
+    NYI(iw, "JUMPL");
 `,
 '322': `// JUMPE if (ac) === 0: e -> (pc)
-    NYI("JUMPE");
+    NYI(iw, "JUMPE");
 `,
 '323': `// JUMPLE if (ac) <= 0: e -> (pc)
-    NYI("JUMPLE");
+    NYI(iw, "JUMPLE");
 `,
 '324': `// JUMPA e -> (pc)
-    NYI("JUMPA");
+    NYI(iw, "JUMPA");
 `,
 '325': `// JUMPGE if (ac) >= 0: e -> (pc)
-    NYI("JUMPGE");
+    NYI(iw, "JUMPGE");
 `,
 '326': `// JUMPN if (ac) !== 0: e -> (pc)
-    NYI("JUMPN");
+    NYI(iw, "JUMPN");
 `,
 '327': `// JUMPG if (ac) > 0: e -> (pc)
-    NYI("JUMPG");
+    NYI(iw, "JUMPG");
 `,
 '340': /* AOJ */ addOneJump(),
 '341': /* AOJL */ addOneJump('< 0'),
@@ -1908,7 +1935,7 @@ const kl10Instructions = {
     iw = ${getMem()};
     goto XCT_ENTRYPOINT;
   } else {
-    NYI("PXCT");
+    NYI(iw, "PXCT");
   }
 `,
 '243': `// JFFO
@@ -1955,58 +1982,55 @@ const kl10Instructions = {
   nextPC = ea;
 `,
 '257': `// MAP
-    NYI("MAP");
+    NYI(iw, "MAP");
 `,
   '261': `// PUSH
-  W36 tmp = ${getAC()};
-  W36 newItem = ${getMem()};
-
-  if (section0(pc) || ISNEG(tmp) || (tmp & MASKFOR(6, 17)) == 0) {
-    tmp = CONS(LH(tmp) + 1, RH(tmp) + 1);
-    ${putMem('RH(tmp)', 'newItem')};
-    ${putAC('tmp')};
-    if (LH(tmp) == 0) flags |= flagTR2;
-  } else if (!section0(pc) && (tmp & BIT(0)) && (tmp & MASKFOR(6,17)) != 0) {
-    ++tmp;
-    ${putMem('tmp', 'newItem')};
-    ${putAC('tmp')};
-  }
+  W36 sp = ${getAC()};
+  sp = adjustStackPointer(sp, +1, 0);
+  ${putAC('sp')};
+  W36 item = ${getMem()};
+  ${putMem('sp', 'item')};
 `,
 '262': `// POP
-    NYI("POP");
+  W36 sp = ${getAC()};
+  W36 spAddr = justSPAddr(sp);
+  W36 item = ${getMem('spAddr')};
+  ${putMem('item')};
+  sp = adjustStackPointer(sp, -1, RHMASK);
+  ${putAC('sp')};
 `,
 '260': `// PUSHJ
-    NYI("PUSHJ");
+    NYI(iw, "PUSHJ");
 `,
 '263': `// POPJ
-    NYI("POPJ");
+    NYI(iw, "POPJ");
 `,
 '105': `// ADJSP
-    NYI("ADJSP");
+    NYI(iw, "ADJSP");
 `,
 '133': `// IBP/ADJBP
-    NYI("IBP/ADJBP");
+    NYI(iw, "IBP/ADJBP");
 `,
 '135': `// LDB
-    NYI("LDB");
+    NYI(iw, "LDB");
 `,
 '137': `// DPB
-    NYI("DPB");
+    NYI(iw, "DPB");
 `,
 '134': `// ILDB
-    NYI("ILDB");
+    NYI(iw, "ILDB");
 `,
 '136': `// IDPB
-    NYI("IDPB");
+    NYI(iw, "IDPB");
 `,
 '001': `// LUUO
-    NYI("LUUO");
+    NYI(iw, "LUUO");
 `,
 '104': `// JSYS
-    NYI("JSYS");
+    NYI(iw, "JSYS");
 `,
 '123': `// EXTEND
-    NYI("EXTEND");
+    NYI(iw, "EXTEND");
 `,
 '700': `// I/O instructions
   unsigned ioOp = ((op << 4) | ac) << 2;
@@ -2027,19 +2051,19 @@ const kl10Instructions = {
     break;
 
   case 070004: // DATAI APR,
-    NYI("DATAI APR,");
+    NYI(iw, "DATAI APR,");
     break;
 
   case 070014: // DATAO APR,
-    NYI("DATAO APR,");
+    NYI(iw, "DATAO APR,");
     break;
 
   case 070044: // DATAI PI,
-    NYI("DATAI PI,");
+    NYI(iw, "DATAI PI,");
     break;
 
   case 070054: // DATAO PI,
-    NYI("DATAO PI,");
+    NYI(iw, "DATAO PI,");
     break;
 
   case 070060: // CONO PI,
@@ -2075,109 +2099,109 @@ const kl10Instructions = {
     break;
 
   case 070104: // DATAI PAG,
-    NYI("DATAI PAG,");
+    NYI(iw, "DATAI PAG,");
     break;
 
   case 070114: // DATAO PAG,
-    NYI("DATAO PAG,");
+    NYI(iw, "DATAO PAG,");
     break;
 
   case 070120: // CONO PAG,
-    NYI("CONO PAG,");
+    NYI(iw, "CONO PAG,");
     break;
 
   case 070124: // CONI PAG,
-    NYI("CONI PAG,");
+    NYI(iw, "CONI PAG,");
     break;
 
   case 070020: // CONO APR,
-    NYI("CONO APR,");
+    NYI(iw, "CONO APR,");
     break;
 
   case 070024: // CONI APR,
-    NYI("CONI APR,");
+    NYI(iw, "CONI APR,");
     break;
 
   case 070220: // CONO TIM,
-    NYI("CONO TIM,");
+    NYI(iw, "CONO TIM,");
     break;
 
   case 070224: // CONI TIM,
-    NYI("CONI TIM,");
+    NYI(iw, "CONI TIM,");
     break;
 
   case 070264: // CONI MTR,
-    NYI("CONI MTR,");
+    NYI(iw, "CONI MTR,");
     break;
 
   case 070144: // SWPIA
-    NYI("SWPIA");
+    NYI(iw, "SWPIA");
     break;
 
   case 070164: // SWPIO
-    NYI("SWPIO");
+    NYI(iw, "SWPIO");
     break;
 
   case 070150: // SWPVA
-    NYI("SWPVA");
+    NYI(iw, "SWPVA");
     break;
 
   case 070170: // SWPVO
-    NYI("SWPVO");
+    NYI(iw, "SWPVO");
     break;
 
   case 070154: // SWPUA
-    NYI("SWPUA");
+    NYI(iw, "SWPUA");
     break;
 
   case 070174: // SWPUO
-    NYI("SWPUO");
+    NYI(iw, "SWPUO");
     break;
 
   case 070010: // WRFIL
-    NYI("WRFIL");
+    NYI(iw, "WRFIL");
     break;
 
   case 070110: // CLRPT
-    NYI("CLRPT");
+    NYI(iw, "CLRPT");
     break;
 
   case 070260: // WRTIME
-    NYI("WRTIME");
+    NYI(iw, "WRTIME");
     break;
 
   case 070204: // RDTIME
-    NYI("RDTIME");
+    NYI(iw, "RDTIME");
     break;
 
   case 070244: // RDEACT
-    NYI("RDEACT");
+    NYI(iw, "RDEACT");
     break;
 
   case 070240: // RDMACT
-    NYI("RDMACT");
+    NYI(iw, "RDMACT");
     break;
 
   case 070210: // WRPAE
-    NYI("WRPAE");
+    NYI(iw, "WRPAE");
     break;
 
   case 070200: // RDPERF
-    NYI("RDPERF");
+    NYI(iw, "RDPERF");
     break;
 
   case 070040: // RDERA
-    NYI("RDERA");
+    NYI(iw, "RDERA");
     break;
 
   case 070050: // SBDIAG
-    NYI("SBDIAG");
+    NYI(iw, "SBDIAG");
     break;
 
   default:
     char nyi[64];
     sprintf(nyi, "%05o", ioOp);
-    NYI(nyi);
+    NYI(iw, nyi);
     break;
   }
 
