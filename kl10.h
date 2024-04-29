@@ -8,6 +8,11 @@
 // A 36-bit PDP10 word.
 typedef uint64_t W36;
 
+// A 72-bit PDP10 doubleword. This is implemented by GCC on all of the
+// 64-bit platforms I know of. I think CLANG has something like this
+// too. Someone, someday might care more than I do right now...
+typedef unsigned __int128 W72;
+
 #define PRI06o32	"%06o"
 #define PRI06o64	"%06lo"
 #define PRI6o32		"%6o"
@@ -21,6 +26,9 @@ static const W36 BIT17 = BIT(17);
 static const W36 BIT18 = BIT(18);
 static const W36 BIT35 = BIT(35);
 
+#define DBIT(N)	((W72) 1u << (71 - (N)))
+static const W72 DBIT0 = DBIT(0);
+
 
 // Returns the bit mask with 1 in PDP10 bits B..E.
 #define MASKFOR(B,E)	((BIT(B) << 1) - BIT(E))
@@ -29,17 +37,32 @@ static const W36 RHMASK = 0777777ull;
 static const W36 LHMASK = 0777777000000ull;
 
 // Bitmask for 36 bits.
-static const W36 ALL1s = 0777777777777ull;
+static const W36 ALL1s = ((W36) 1u << 36) - 1;
+
+// Bitmask for 72 bits.
+static const W72 DALL1s = ((W72) 1u << 72) - 1;
 
 
 // Mask off extra bits above 36-bit word
 #define TO36(V)		((V) & ALL1s)
 
+// Mask off extra bits above 72-bit word
+#define TO72(V)		((V) & DALL1s)
+
 // Determine if V is a 36-bit negative number.
 #define ISNEG(V)	(!!((V) & BIT(0)))
 
+// Determine if V is a 72-bit negative number.
+#define DISNEG(V)	(!!((V) & DBIT(0)))
+
 // Convert 36-bit V into a signed long long for math ops.
 #define TOSIGNED(V)	(ISNEG(V) ? (V) | ~ALL1s : TO36(V))
+
+// Get magnitude of 36-bit V.
+#define MAGNITUDE(V)	((V) & (ALL1s >> 1))
+
+// Convert 72-bit V into a signed __int128 for math ops.
+#define DTOSIGNED(V)	(DISNEG(V) ? (V) | ~DALL1s : TO72(V))
 
 // Extract just the (possibly global) address in A.
 #define JUSTVMA(A)	((A) & MASKFOR(6, 35))
@@ -140,6 +163,11 @@ static inline W36 CONS(W36 lh, W36 rh) {
 }
 
 
+static inline W36 DCONS(W36 lh, W36 rh) {
+  return ((W72) lh << 36) | TO36(rh);
+}
+
+
 static inline W36 RH(W36 w) {
   return w & RHMASK;
 };
@@ -147,6 +175,16 @@ static inline W36 RH(W36 w) {
 
 static inline W36 LH(W36 w) {
   return (w & LHMASK) >> 18;
+}
+
+
+static inline W36 DRH(W72 v) {
+  return (W36) v & ALL1s;
+}
+
+
+static inline W36 DLH(W72 v) {
+  return (W36) (v >> 36) & ALL1s;
 }
 
 
