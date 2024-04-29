@@ -10,7 +10,134 @@
 // * putResult: Put the (possibly normalized) result in its destination.
 // * setPC: Set skip or PC.
 
-module.exports = {
+// Emit code to get the current accumulator content into W36 src.
+function getAC(toName = 'src') {
+  return `W36 ${toName} = fetchAC(ac);
+`;
+}
+
+
+function getE(toName = 'src') {
+  return `W36 ${toName} = fetchMem(ea);
+`;
+}
+
+
+function getI(toName = 'src') {
+  return `W36 ${toName} = ea;
+`;
+}
+
+
+function putE(fromName = 'result') {
+  return `storeMem(ea, ${fromName});
+`;
+}
+
+
+function putEandAC(fromName = 'result') {
+  return `\
+storeMem(ea, ${fromName});
+putAC(${fromName});
+`;
+}
+
+
+function putEandACnon0(fromName = 'result') {
+  return `\
+storeMem(ea, ${fromName});
+do {
+  if (ac != 0) putAC(${fromName});
+} while(0);
+`;
+}
+
+
+function negate() {
+  return `W36 result = -TOSIGNED(src);
+`;
+}
+
+
+function negateFlags() {
+  return `\
+do {
+  if (src == BIT(0)) {
+    flags |= flagTR1 | flagOV | flagCY1;
+  } else if (src == 0) {
+    flags |= flagCY0 | flagCY1;
+  }
+} while(0);
+`;
+}
+
+
+function doAdd() {
+  return `TOSIGNED(src) + TOSIGNED(src2);
+`;
+}
+
+
+function addFlags() {
+  return `\
+do {
+  if (result >= BIT(0)) {
+    flags |= flagTR1 | flagOV | flagCY1;
+  } else if (result < -BIT(0)) {
+    flags |= flagTR1 | flagOV | flagCY1;
+  } else if (src < 0 && src2 << 0 ||
+      (src & BIT(0)) != (src2 & BIT(0)) && (MAGNITUDE(src) == MAGNITUDE(dst)) ||
+      src >= 0 && src2 < 0 && MAGNITUDE(src) > MAGNITUDE(src2) ||
+      src2 >= 0 && src < 0 && MAGNITUDE(src2) > MAGNITUDE(src))
+
+  {
+    flags |= flagCY0 | flagCY1;
+  }
+} while(0);
+`;
+}
+
+
+function getAC_AC1(toName = 'src') {
+  return `W72 ${toName} = DCONS(fetchAC(ac), fetchAC(ac+1));
+`;
+}
+
+
+function getE_E1(toName = 'src') {
+  return `W72 ${toName} = DCONS(fetchMem(ea), fetchMem(ea+1));
+`;
+}
+
+
+function negateD() {
+  return `W72 result = -DTOSIGNED(src);
+`;
+}
+
+
+function negateDFlags() {
+  return `\
+do {
+  // Note this IGNORES low word sign bit.
+  if ((src & ~(W72) BIT(0)) == DBIT(0)) {
+    flags |= flagTR1 | flagOV | flagCY1;
+  } else if (src == 0) {
+    flags |= flagCY0 | flagCY1;
+  }
+} while(0);
+`;
+}
+
+
+// Return a that calls f('src2'). This allows the getter functions to
+// be used for src or src2.
+function makeSrc2(f) {
+  return () => f('src2');
+}
+
+
+const km10Ops = {
   // Full Word Movement
   0o250: {
     mne = "EXCH",
@@ -71,10 +198,13 @@ module.exports = {
   },
   0o120: {
     mne = "DMOVE",
+    getSrc: getE_E1,
+    putResult: putAC_AC1,
   },
   0o121: {
-    mne = "DMOVEN",
+    mne = "DMOVN",
     getSrc: getE_E1,
+    setFlags: negateFlags,
     operate: negateD,
     putResult: putAC_AC1,
   },
@@ -86,6 +216,7 @@ module.exports = {
   0o125: {
     mne = "DMOVNM",
     getSrc: getAC_AC1,
+    setFlags: negateDFlags,
     operate: negateD,
     putResult: putE_E1,
   },
@@ -135,6 +266,11 @@ module.exports = {
   // Fixed Point Arithmetic
   0o270: {
     mne = "ADD",
+    getSrc: getAC,
+    getSrc2: makeSrc2(getE),
+    setFlags: addFlags,
+    operate: doAdd,
+    putResult: putAC,
   },
   0o271: {
     mne = "ADDI",
