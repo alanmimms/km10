@@ -1,86 +1,284 @@
 'use strict';
+const assert = require('assert');
 
 
 // KM10 instruction phases:
 //
-// * (EA is always calculated by Emulate() ahead of instruction phases.)
-// * getSrc: Retrieve the instruction's source data into W36 `src`.
-// * setFlags: Set any flags.
-// * operate: Perform the instructions' operation.
-// * putResult: Put the (possibly normalized) result in its destination.
-// * setPC: Set skip or PC.
+// * (`ea` is always calculated by Emulate() ahead of instruction phases.)
+// * (`eaw` is always fetched by Emulate() ahead of instruction phases.)
+// * `getSrc`: Retrieve the instruction's source data into W36 `src`.
+// * `getSrc2`: Retrieve the instruction's second source data into W36 `src2`.
+// * `setFlags`: Set any flags.
+// * `operate`: Perform the instructions' operation.
+// * `putResult`: Put the (possibly normalized) result in its destination.
+// * `setPC`: Set skip or PC.
 
 // Emit code to get the current accumulator content into W36 src.
 function getAC(toName = 'src') {
-  return `W36 ${toName} = fetchAC(ac);
+  return `\
+  W36 ${toName} = loadAC(ac);
+`;
+}
+
+
+function getACLH(toName = 'src') {
+  return `\
+  W36 ${toName} = LH(loadAC(ac));
+`;
+}
+
+
+function getACRH(toName = 'src') {
+  return `\
+  W36 ${toName} = RH(loadAC(ac));
 `;
 }
 
 
 function getE(toName = 'src') {
-  return `W36 ${toName} = fetchMem(ea);
+  return `\
+  W36 ${toName} = eaw;
+`;
+}
+
+
+function getELH(toName = 'src') {
+  return `\
+  W36 ${toName} = LH(eaw);
+`;
+}
+
+
+function getERH(toName = 'src') {
+  return `\
+  W36 ${toName} = RH(eaw);
+`;
+}
+
+
+function putAC(fromName = 'result') {
+  return `\
+  checkPutAC(ac, ${fromName});
+`;
+}
+
+
+function putACLH(fromName = 'result') {
+  return `\
+  checkPutAC(ac, CONS(${fromName}), checkGetAC());
+`;
+}
+
+
+function putACLHZ(fromName = 'result') {
+  return `\
+  checkPutAC(ac, CONS(${fromName}), 0);
+`;
+}
+
+
+function putACLHE(fromName = 'result') {
+  return `\
+  checkPutAC(ac, CONS(${fromName}),
+                              (${fromName} & BIT(0)) ? ALL1s : 0);
+`;
+}
+
+
+function putACLHO(fromName = 'result') {
+  return `\
+  checkPutAC(ac, CONS(${fromName}), ALL1s);
+`;
+}
+
+
+function putACRH(fromName = 'result') {
+  return `\
+  checkPutAC(ac, CONS(checkGetAC(), ${fromName}));
+`;
+}
+
+
+function putERHandACnon0(fromName = 'result') {
+  return `\
+  storeMem(ea, CONS(eaw, ${fromName})));
+  if (ac != 0) storeAC(ac, CONS(eaw, (${fromName})));
+`;
+}
+
+
+function putERHZandACnon0(fromName = 'result') {
+  return `\
+  storeMem(ea, RH(${fromName}));
+  if (ac != 0) storeAC(ac, RH(${fromName}));
+`;
+}
+
+
+function putAC_AC1(fromName = 'result') {
+  return `\
+  checkPutAC(ac, DLH(${fromName}));
+  checkPutAC(ac+1, DRH(${fromName}));
 `;
 }
 
 
 function getI(toName = 'src') {
-  return `W36 ${toName} = ea;
+  return `\
+  W36 ${toName} = RH(ea);
+`;
+}
+
+
+function getXI(toName = 'src') {
+  return `\
+  W36 ${toName} = ea;
+`;
+}
+
+
+function getILH(toName = 'src') {
+  return `\
+  W36 ${toName} = LH(ea);
+`;
+}
+
+
+function getXILH(toName = 'src') {
+  return `\
+  W36 ${toName} = LH(ea);
 `;
 }
 
 
 function putE(fromName = 'result') {
-  return `storeMem(ea, ${fromName});
+  return `\
+  storeMem(ea, ${fromName});
+`;
+}
+
+
+function putELHZ(fromName = 'result') {
+  return `\
+  storeMem(ea, CONS(${fromName}, 0));
+`;
+}
+
+
+function putELHO(fromName = 'result') {
+  return `\
+  storeMem(ea, CONS(${fromName}, ALL1s));
+`;
+}
+
+
+function putELHE(fromName = 'result') {
+  return `\
+  storeMem(ea, CONS(${fromName},
+                            (${fromName} & BIT(0)) ? ALL1s : 0));
+`;
+}
+
+
+function putELHZandACnon0(fromName = 'result') {
+  return `\
+  storeMem(ea, CONS(${fromName}, 0));
+  if (ac != 0) storeAC(ac, CONS(${fromName}, 0));
+`;
+}
+
+
+function putELHOandACnon0(fromName = 'result') {
+  return `\
+  storeMem(ea, CONS(${fromName}, ALL1s));
+  if (ac != 0) storeAC(ac, CONS(${fromName}, ALL1s));
+`;
+}
+
+
+function putELHEandACnon0(fromName = 'result') {
+  return `\
+  storeMem(ea, CONS(${fromName},
+                            (${fromName} & BIT(0)) ? ALL1s : 0));
+  if (ac != 0) storeAC(ac, CONS(${fromName},
+                                (${fromName} & BIT(0)) ? ALL1s : 0));
+`;
+}
+
+
+function putE_E1(fromName = 'result') {
+  return `\
+  storeMem(ea, DLH(${fromName}));
+  storeMem(ea+1, DRH(${fromName}));
+`;
+}
+
+
+function putELH(fromName = 'result') {
+  return `\
+  storeMem(ea, CONS(${fromName}, eaw));
+`;
+}
+
+
+function putERH(fromName = 'result') {
+  return `\
+  storeMem(ea, CONS(eaw, ${fromName}));
 `;
 }
 
 
 function putEandAC(fromName = 'result') {
   return `\
-storeMem(ea, ${fromName});
-putAC(${fromName});
+  storeMem(ea, ${fromName});
+  storeAC(ac, ${fromName});
 `;
 }
 
 
 function putEandACnon0(fromName = 'result') {
   return `\
-storeMem(ea, ${fromName});
-do {
-  if (ac != 0) putAC(${fromName});
-} while(0);
+  storeMem(ea, ${fromName});
+  if (ac != 0) storeAC(ac, ${fromName});
+`;
+}
+
+
+function putELHandACnon0(fromName = 'result') {
+  return `\
+  storeMem(ea, CONS(${fromName}, eaw);
+  if (ac != 0) storeAC(ac, ${fromName});
 `;
 }
 
 
 function negate() {
-  return `W36 result = -TOSIGNED(src);
+  return `\
+  W36 result = -TOSIGNED(src);
 `;
 }
 
 
 function negateFlags() {
   return `\
-do {
   if (src == BIT(0)) {
     flags |= flagTR1 | flagOV | flagCY1;
   } else if (src == 0) {
     flags |= flagCY0 | flagCY1;
   }
-} while(0);
 `;
 }
 
 
 function doAdd() {
-  return `TOSIGNED(src) + TOSIGNED(src2);
+  return `\
+  W36 result = TOSIGNED(src) + TOSIGNED(src2);
 `;
 }
 
 
 function addFlags() {
   return `\
-do {
   if (result >= BIT(0)) {
     flags |= flagTR1 | flagOV | flagCY1;
   } else if (result < -BIT(0)) {
@@ -93,1321 +291,1410 @@ do {
   {
     flags |= flagCY0 | flagCY1;
   }
-} while(0);
 `;
 }
 
 
 function getAC_AC1(toName = 'src') {
-  return `W72 ${toName} = DCONS(fetchAC(ac), fetchAC(ac+1));
+  return `\
+  W72 ${toName} = DCONS(loadAC(ac), loadAC(ac+1));
 `;
 }
 
 
 function getE_E1(toName = 'src') {
-  return `W72 ${toName} = DCONS(fetchMem(ea), fetchMem(ea+1));
+  return `\
+  W72 ${toName} = DCONS(eaw, loadMem(ea+1));
 `;
 }
 
 
 function negateD() {
-  return `W72 result = -DTOSIGNED(src);
+  return `\
+  W72 result = -DTOSIGNED(src);
 `;
 }
 
 
 function negateDFlags() {
   return `\
-do {
   // Note this IGNORES low word sign bit.
   if ((src & ~(W72) BIT(0)) == DBIT(0)) {
     flags |= flagTR1 | flagOV | flagCY1;
   } else if (src == 0) {
     flags |= flagCY0 | flagCY1;
   }
-} while(0);
 `;
 }
 
 
-// Return a that calls f('src2'). This allows the getter functions to
-// be used for src or src2.
-function makeSrc2(f) {
-  return () => f('src2');
+function doXMOVEI() {
+  return `\
+  // Do XMOVEI here
+`;
+}
+
+
+function setupBLT() {
+  return `\
+  // Setup BLT here
+`;
+}
+
+
+function doBLT() {
+  return `\
+  // Do BLT here
+`;
+}
+
+
+function finishBLT() {
+  return `\
+  // Finish BLT here
+`;
+}
+
+
+function setupXBLT() {
+  return `\
+  // Setup XBLT here
+`;
+}
+
+
+function doXBLT() {
+  return `\
+  // Do XBLT here
+`;
+}
+
+
+function finishXBLT() {
+  return `\
+  // Finish XBLT here
+`;
+}
+
+
+// Return a that calls, e.g., f('src2'). This allows the getter
+// functions to be used for src or src2.
+function makeGetter(f, src = 'src2') {
+  return () => f(src);
 }
 
 
 const km10Ops = {
   // Full Word Movement
   0o250: {
-    mne = "EXCH",
+    mne: "EXCH",
   },
   0o200: {
-    mne = "MOVE",
+    mne: "MOVE",
     getSrc: getE,
     putResult: putAC,
   },
   0o201: {
-    mne = "MOVEI",
+    mne: "MOVEI",
     getSrc: getI,
     putResult: putAC,
   },
   0o202: {
-    mne = "MOVEM",
+    mne: "MOVEM",
     getSrc: getAC,
     putResult: putEandAC,
   },
   0o203: {
-    mne = "MOVES",
+    mne: "MOVES",
     getSrc: getE,
     putResult: putEandACnon0,
   },
   0o210: {
-    mne = "MOVN",
+    mne: "MOVN",
     getSrc: getE,
     setFlags: negateFlags,
     operate: negate,
     putResult: putAC,
   },
   0o211: {
-    mne = "MOVNI",
+    mne: "MOVNI",
     getSrc: getI,
     setFlags: negateFlags,
     operate: negate,
     putResult: putAC,
   },
   0o212: {
-    mne = "MOVNM",
+    mne: "MOVNM",
     getSrc: getAC,
     setFlags: negateFlags,
     operate: negate,
     putResult: putEandAC,
   },
   0o213: {
-    mne = "MOVNS",
+    mne: "MOVNS",
     getSrc: getE,
     setFlags: negateFlags,
     operate: negate,
     putResult: putEandACnon0,
   },
   0o415: {
-    mne = "XMOVEI",
+    mne: "XMOVEI",
     getSrc: getI,
     operate: doXMOVEI,
     putResult: putAC,
   },
   0o120: {
-    mne = "DMOVE",
+    mne: "DMOVE",
     getSrc: getE_E1,
     putResult: putAC_AC1,
   },
   0o121: {
-    mne = "DMOVN",
+    mne: "DMOVN",
     getSrc: getE_E1,
     setFlags: negateFlags,
     operate: negateD,
     putResult: putAC_AC1,
   },
   0o124: {
-    mne = "DMOVEM",
+    mne: "DMOVEM",
     getSrc: getAC_AC1,
     putResult: putE_E1,
   },
   0o125: {
-    mne = "DMOVNM",
+    mne: "DMOVNM",
     getSrc: getAC_AC1,
     setFlags: negateDFlags,
     operate: negateD,
     putResult: putE_E1,
   },
   0o251: {
-    mne = "BLT",
+    mne: "BLT",
     getSrc: setupBLT,
     operate: doBLT,
     putResult: finishBLT,
   },
   0o123020: {
-    mne = "XBLT",
+    mne: "XBLT",
     getSrc: setupXBLT,
     operate: doXBLT,
     putResult: finishXBLT,
   },
   0o204: {
-    mne = "MOVS",
+    mne: "MOVS",
   },
   0o205: {
-    mne = "MOVSI",
+    mne: "MOVSI",
   },
   0o206: {
-    mne = "MOVSM",
+    mne: "MOVSM",
   },
   0o207: {
-    mne = "MOVSS",
+    mne: "MOVSS",
   },
   0o214: {
-    mne = "MOVM",
+    mne: "MOVM",
   },
   0o215: {
-    mne = "MOVMI",
+    mne: "MOVMI",
   },
   0o216: {
-    mne = "MOVMM",
+    mne: "MOVMM",
   },
   0o217: {
-    mne = "MOVMS",
+    mne: "MOVMS",
   },
   0o052: {
-    mne = "PMOVE",
+    mne: "PMOVE",
   },
   0o053: {
-    mne = "PMOVEM",
+    mne: "PMOVEM",
   },
 
   // Fixed Point Arithmetic
   0o270: {
-    mne = "ADD",
+    mne: "ADD",
     getSrc: getAC,
-    getSrc2: makeSrc2(getE),
+    getSrc2: makeGetter(getE),
     setFlags: addFlags,
     operate: doAdd,
     putResult: putAC,
   },
   0o271: {
-    mne = "ADDI",
+    mne: "ADDI",
   },
   0o272: {
-    mne = "ADDM",
+    mne: "ADDM",
   },
   0o273: {
-    mne = "ADDB",
+    mne: "ADDB",
   },
   0o274: {
-    mne = "SUB",
+    mne: "SUB",
   },
   0o275: {
-    mne = "SUBI",
+    mne: "SUBI",
   },
   0o276: {
-    mne = "SUBM",
+    mne: "SUBM",
   },
   0o277: {
-    mne = "SUBB",
+    mne: "SUBB",
   },
   0o220: {
-    mne = "IMUL",
+    mne: "IMUL",
   },
   0o221: {
-    mne = "IMULI",
+    mne: "IMULI",
   },
   0o222: {
-    mne = "IMULM",
+    mne: "IMULM",
   },
   0o223: {
-    mne = "IMULB",
+    mne: "IMULB",
   },
   0o224: {
-    mne = "MUL",
+    mne: "MUL",
   },
   0o225: {
-    mne = "MULI",
+    mne: "MULI",
   },
   0o226: {
-    mne = "MULM",
+    mne: "MULM",
   },
   0o227: {
-    mne = "MULB",
+    mne: "MULB",
   },
   0o230: {
-    mne = "IDIV",
+    mne: "IDIV",
   },
   0o231: {
-    mne = "IDIVI",
+    mne: "IDIVI",
   },
   0o232: {
-    mne = "IDIVM",
+    mne: "IDIVM",
   },
   0o233: {
-    mne = "IDIVB",
+    mne: "IDIVB",
   },
   0o234: {
-    mne = "DIV",
+    mne: "DIV",
   },
   0o235: {
-    mne = "DIVI",
+    mne: "DIVI",
   },
   0o236: {
-    mne = "DIVM",
+    mne: "DIVM",
   },
   0o237: {
-    mne = "DIVB",
+    mne: "DIVB",
   },
   0o114: {
-    mne = "DADD",
+    mne: "DADD",
   },
   0o115: {
-    mne = "DSUB",
+    mne: "DSUB",
   },
   0o116: {
-    mne = "DMUL",
+    mne: "DMUL",
   },
   0o117: {
-    mne = "DDIV",
+    mne: "DDIV",
   },
 
   // Floating Point Arithmetic
   0o140: {
-    mne = "FAD",
+    mne: "FAD",
   },
   0o141: {
-    mne = "FADL",
+    mne: "FADL",
   },
   0o142: {
-    mne = "FADM",
+    mne: "FADM",
   },
   0o143: {
-    mne = "FADB",
+    mne: "FADB",
   },
   0o144: {
-    mne = "FADR",
+    mne: "FADR",
   },
   0o145: {
-    mne = "FADRI",
+    mne: "FADRI",
   },
   0o146: {
-    mne = "FADRM",
+    mne: "FADRM",
   },
   0o147: {
-    mne = "FADRB",
+    mne: "FADRB",
   },
   0o150: {
-    mne = "FSB",
+    mne: "FSB",
   },
   0o151: {
-    mne = "FSBL",
+    mne: "FSBL",
   },
   0o152: {
-    mne = "FSBM",
+    mne: "FSBM",
   },
   0o153: {
-    mne = "FSBB",
+    mne: "FSBB",
   },
   0o154: {
-    mne = "FSBR",
+    mne: "FSBR",
   },
   0o155: {
-    mne = "FSBRI",
+    mne: "FSBRI",
   },
   0o156: {
-    mne = "FSBRM",
+    mne: "FSBRM",
   },
   0o157: {
-    mne = "FSBRB",
+    mne: "FSBRB",
   },
   0o160: {
-    mne = "FMP",
+    mne: "FMP",
   },
   0o161: {
-    mne = "FMPL",
+    mne: "FMPL",
   },
   0o162: {
-    mne = "FMPM",
+    mne: "FMPM",
   },
   0o163: {
-    mne = "FMPB",
+    mne: "FMPB",
   },
   0o164: {
-    mne = "FMPR",
+    mne: "FMPR",
   },
   0o165: {
-    mne = "FMPRI",
+    mne: "FMPRI",
   },
   0o166: {
-    mne = "FMPRM",
+    mne: "FMPRM",
   },
   0o167: {
-    mne = "FMPRB",
+    mne: "FMPRB",
   },
   0o170: {
-    mne = "FDV",
+    mne: "FDV",
   },
   0o171: {
-    mne = "FDVL",
+    mne: "FDVL",
   },
   0o172: {
-    mne = "FDVM",
+    mne: "FDVM",
   },
   0o173: {
-    mne = "FDVB",
+    mne: "FDVB",
   },
   0o174: {
-    mne = "FDVR",
+    mne: "FDVR",
   },
   0o175: {
-    mne = "FDVRI",
+    mne: "FDVRI",
   },
   0o176: {
-    mne = "FDVRM",
+    mne: "FDVRM",
   },
   0o177: {
-    mne = "FDVRB",
+    mne: "FDVRB",
   },
   0o110: {
-    mne = "DFAD",
+    mne: "DFAD",
   },
   0o111: {
-    mne = "DFSB",
+    mne: "DFSB",
   },
   0o112: {
-    mne = "DFMP",
+    mne: "DFMP",
   },
   0o113: {
-    mne = "DFDV",
+    mne: "DFDV",
   },
   0o132: {
-    mne = "FSC",
+    mne: "FSC",
   },
   0o031: {
-    mne = "GFSC",
+    mne: "GFSC",
   },
   0o127: {
-    mne = "FLTR",
+    mne: "FLTR",
   },
   0o030: {
-    mne = "GFLTR",
+    mne: "GFLTR",
   },
   0o027: {
-    mne = "DGFLTR",
+    mne: "DGFLTR",
   },
   0o122: {
-    mne = "FIX",
+    mne: "FIX",
   },
   0o126: {
-    mne = "FIXR",
+    mne: "FIXR",
   },
   0o024: {
-    mne = "GFIX",
+    mne: "GFIX",
   },
   0o026: {
-    mne = "GFIXR",
+    mne: "GFIXR",
   },
   0o023: {
-    mne = "GDFIX",
+    mne: "GDFIX",
   },
   0o025: {
-    mne = "GDFIXR",
+    mne: "GDFIXR",
   },
   0o021: {
-    mne = "GSNGL",
+    mne: "GSNGL",
   },
   0o022: {
-    mne = "GDBLE",
+    mne: "GDBLE",
   },
   0o130: {
-    mne = "UFA",
+    mne: "UFA",
   },
   0o131: {
-    mne = "DFN",
+    mne: "DFN",
   },
 
   // Boolean
   0o400: {
-    mne = "SETZ",
+    mne: "SETZ",
   },
   0o401: {
-    mne = "SETZI",
+    mne: "SETZI",
   },
   0o402: {
-    mne = "SETZM",
+    mne: "SETZM",
   },
   0o403: {
-    mne = "SETZB",
+    mne: "SETZB",
   },
   0o474: {
-    mne = "SETO",
+    mne: "SETO",
   },
   0o475: {
-    mne = "SETOI",
+    mne: "SETOI",
   },
   0o476: {
-    mne = "SETOM",
+    mne: "SETOM",
   },
   0o477: {
-    mne = "SETOB",
+    mne: "SETOB",
   },
   0o424: {
-    mne = "SETA",
+    mne: "SETA",
   },
   0o425: {
-    mne = "SETAI",
+    mne: "SETAI",
   },
   0o426: {
-    mne = "SETAM",
+    mne: "SETAM",
   },
   0o427: {
-    mne = "SETAB",
+    mne: "SETAB",
   },
   0o450: {
-    mne = "SETCA",
+    mne: "SETCA",
   },
   0o451: {
-    mne = "SETCAI",
+    mne: "SETCAI",
   },
   0o452: {
-    mne = "SETCAM",
+    mne: "SETCAM",
   },
   0o453: {
-    mne = "SETCAB",
+    mne: "SETCAB",
   },
   0o414: {
-    mne = "SETM",
+    mne: "SETM",
   },
   0o416: {
-    mne = "SETMM",
+    mne: "SETMM",
   },
   0o417: {
-    mne = "SETMB",
+    mne: "SETMB",
   },
   0o460: {
-    mne = "SETCM",
+    mne: "SETCM",
   },
   0o461: {
-    mne = "SETCMI",
+    mne: "SETCMI",
   },
   0o462: {
-    mne = "SETCMM",
+    mne: "SETCMM",
   },
   0o463: {
-    mne = "SETCMB",
+    mne: "SETCMB",
   },
   0o404: {
-    mne = "AND",
+    mne: "AND",
   },
   0o405: {
-    mne = "ANDI",
+    mne: "ANDI",
   },
   0o406: {
-    mne = "ANDM",
+    mne: "ANDM",
   },
   0o407: {
-    mne = "ANDB",
+    mne: "ANDB",
   },
   0o410: {
-    mne = "ANDCA",
+    mne: "ANDCA",
   },
   0o411: {
-    mne = "ANDCAI",
+    mne: "ANDCAI",
   },
   0o412: {
-    mne = "ANDCAM",
+    mne: "ANDCAM",
   },
   0o413: {
-    mne = "ANDCAB",
+    mne: "ANDCAB",
   },
   0o420: {
-    mne = "ANDCM",
+    mne: "ANDCM",
   },
   0o421: {
-    mne = "ANDCMI",
+    mne: "ANDCMI",
   },
   0o422: {
-    mne = "ANDCMM",
+    mne: "ANDCMM",
   },
   0o423: {
-    mne = "ANDCMB",
+    mne: "ANDCMB",
   },
   0o440: {
-    mne = "ANDCB",
+    mne: "ANDCB",
   },
   0o441: {
-    mne = "ANDCBI",
+    mne: "ANDCBI",
   },
   0o442: {
-    mne = "ANDCBM",
+    mne: "ANDCBM",
   },
   0o443: {
-    mne = "ANDCBB",
+    mne: "ANDCBB",
   },
   0o434: {
-    mne = "IOR",
+    mne: "IOR",
   },
   0o435: {
-    mne = "IORI",
+    mne: "IORI",
   },
   0o436: {
-    mne = "IORM",
+    mne: "IORM",
   },
   0o437: {
-    mne = "IORB",
+    mne: "IORB",
   },
   0o454: {
-    mne = "ORCA",
+    mne: "ORCA",
   },
   0o455: {
-    mne = "ORCAI",
+    mne: "ORCAI",
   },
   0o456: {
-    mne = "ORCAM",
+    mne: "ORCAM",
   },
   0o457: {
-    mne = "ORCAB",
+    mne: "ORCAB",
   },
   0o464: {
-    mne = "ORCM",
+    mne: "ORCM",
   },
   0o465: {
-    mne = "ORCMI",
+    mne: "ORCMI",
   },
   0o466: {
-    mne = "ORCMM",
+    mne: "ORCMM",
   },
   0o467: {
-    mne = "ORCMB",
+    mne: "ORCMB",
   },
   0o470: {
-    mne = "ORCB",
+    mne: "ORCB",
   },
   0o471: {
-    mne = "ORCBI",
+    mne: "ORCBI",
   },
   0o472: {
-    mne = "ORCBM",
+    mne: "ORCBM",
   },
   0o473: {
-    mne = "ORCBB",
+    mne: "ORCBB",
   },
   0o430: {
-    mne = "XOR",
+    mne: "XOR",
   },
   0o431: {
-    mne = "XORI",
+    mne: "XORI",
   },
   0o432: {
-    mne = "XORM",
+    mne: "XORM",
   },
   0o433: {
-    mne = "XORB",
+    mne: "XORB",
   },
   0o444: {
-    mne = "EQV",
+    mne: "EQV",
   },
   0o445: {
-    mne = "EQVI",
+    mne: "EQVI",
   },
   0o446: {
-    mne = "EQVM",
+    mne: "EQVM",
   },
   0o447: {
-    mne = "EQVB",
+    mne: "EQVB",
   },
 
   // Shift and Rotate
   0o240: {
-    mne = "ASH",
+    mne: "ASH",
   },
   0o241: {
-    mne = "ROT",
+    mne: "ROT",
   },
   0o242: {
-    mne = "LSH",
+    mne: "LSH",
   },
   0o244: {
-    mne = "ASHC",
+    mne: "ASHC",
   },
   0o245: {
-    mne = "ROTC",
+    mne: "ROTC",
   },
   0o246: {
-    mne = "LSHC",
+    mne: "LSHC",
   },
 
   // Arithmetic Testing
   0o252: {
-    mne = "AOBJP",
+    mne: "AOBJP",
   },
   0o253: {
-    mne = "AOBJN",
+    mne: "AOBJN",
   },
   0o300: {
-    mne = "CAI",
+    mne: "CAI",
   },
   0o301: {
-    mne = "CAIL",
+    mne: "CAIL",
   },
   0o302: {
-    mne = "CAIE",
+    mne: "CAIE",
   },
   0o303: {
-    mne = "CAILE",
+    mne: "CAILE",
   },
   0o304: {
-    mne = "CAIA",
+    mne: "CAIA",
   },
   0o305: {
-    mne = "CAIGE",
+    mne: "CAIGE",
   },
   0o306: {
-    mne = "CAIN",
+    mne: "CAIN",
   },
   0o307: {
-    mne = "CAIG",
+    mne: "CAIG",
   },
   0o310: {
-    mne = "CAM",
+    mne: "CAM",
   },
   0o311: {
-    mne = "CAML",
+    mne: "CAML",
   },
   0o312: {
-    mne = "CAME",
+    mne: "CAME",
   },
   0o313: {
-    mne = "CAMLE",
+    mne: "CAMLE",
   },
   0o314: {
-    mne = "CAMA",
+    mne: "CAMA",
   },
   0o315: {
-    mne = "CAMGE",
+    mne: "CAMGE",
   },
   0o316: {
-    mne = "CAMN",
+    mne: "CAMN",
   },
   0o317: {
-    mne = "CAMG",
+    mne: "CAMG",
   },
   0o320: {
-    mne = "JUMP",
+    mne: "JUMP",
   },
   0o321: {
-    mne = "JUMPL",
+    mne: "JUMPL",
   },
   0o322: {
-    mne = "JUMPE",
+    mne: "JUMPE",
   },
   0o323: {
-    mne = "JUMPLE",
+    mne: "JUMPLE",
   },
   0o324: {
-    mne = "JUMPA",
+    mne: "JUMPA",
   },
   0o325: {
-    mne = "JUMPGE",
+    mne: "JUMPGE",
   },
   0o326: {
-    mne = "JUMPN",
+    mne: "JUMPN",
   },
   0o327: {
-    mne = "JUMPG",
+    mne: "JUMPG",
   },
   0o330: {
-    mne = "SKIP",
+    mne: "SKIP",
   },
   0o331: {
-    mne = "SKIPL",
+    mne: "SKIPL",
   },
   0o332: {
-    mne = "SKIPE",
+    mne: "SKIPE",
   },
   0o333: {
-    mne = "SKIPLE",
+    mne: "SKIPLE",
   },
   0o334: {
-    mne = "SKIPA",
+    mne: "SKIPA",
   },
   0o335: {
-    mne = "SKIPGE",
+    mne: "SKIPGE",
   },
   0o336: {
-    mne = "SKIPN",
+    mne: "SKIPN",
   },
   0o337: {
-    mne = "SKIPG",
+    mne: "SKIPG",
   },
   0o340: {
-    mne = "AOJ",
+    mne: "AOJ",
   },
   0o341: {
-    mne = "AOJL",
+    mne: "AOJL",
   },
   0o342: {
-    mne = "AOJE",
+    mne: "AOJE",
   },
   0o343: {
-    mne = "AOJLE",
+    mne: "AOJLE",
   },
   0o344: {
-    mne = "AOJA",
+    mne: "AOJA",
   },
   0o345: {
-    mne = "AOJGE",
+    mne: "AOJGE",
   },
   0o346: {
-    mne = "AOJN",
+    mne: "AOJN",
   },
   0o347: {
-    mne = "AOJG",
+    mne: "AOJG",
   },
   0o360: {
-    mne = "SOJ",
+    mne: "SOJ",
   },
   0o361: {
-    mne = "SOJL",
+    mne: "SOJL",
   },
   0o362: {
-    mne = "SOJE",
+    mne: "SOJE",
   },
   0o363: {
-    mne = "SOJLE",
+    mne: "SOJLE",
   },
   0o364: {
-    mne = "SOJA",
+    mne: "SOJA",
   },
   0o365: {
-    mne = "SOJGE",
+    mne: "SOJGE",
   },
   0o366: {
-    mne = "SOJN",
+    mne: "SOJN",
   },
   0o367: {
-    mne = "SOJG",
+    mne: "SOJG",
   },
   0o350: {
-    mne = "AOS",
+    mne: "AOS",
   },
   0o351: {
-    mne = "AOSL",
+    mne: "AOSL",
   },
   0o352: {
-    mne = "AOSE",
+    mne: "AOSE",
   },
   0o353: {
-    mne = "AOSLE",
+    mne: "AOSLE",
   },
   0o354: {
-    mne = "AOSA",
+    mne: "AOSA",
   },
   0o355: {
-    mne = "AOSGE",
+    mne: "AOSGE",
   },
   0o356: {
-    mne = "AOSN",
+    mne: "AOSN",
   },
   0o357: {
-    mne = "AOSG",
+    mne: "AOSG",
   },
   0o370: {
-    mne = "SOS",
+    mne: "SOS",
   },
   0o371: {
-    mne = "SOSL",
+    mne: "SOSL",
   },
   0o372: {
-    mne = "SOSE",
+    mne: "SOSE",
   },
   0o373: {
-    mne = "SOSLE",
+    mne: "SOSLE",
   },
   0o374: {
-    mne = "SOSA",
+    mne: "SOSA",
   },
   0o375: {
-    mne = "SOSGE",
+    mne: "SOSGE",
   },
   0o376: {
-    mne = "SOSN",
+    mne: "SOSN",
   },
   0o377: {
-    mne = "SOSG",
+    mne: "SOSG",
   },
 
   // Logical Testing and Modification
   0o600: {
-    mne = "TRN",
+    mne: "TRN",
   },
   0o601: {
-    mne = "TLN",
+    mne: "TLN",
   },
   0o602: {
-    mne = "TRNE",
+    mne: "TRNE",
   },
   0o603: {
-    mne = "TLNE",
+    mne: "TLNE",
   },
   0o604: {
-    mne = "TRNA",
+    mne: "TRNA",
   },
   0o605: {
-    mne = "TLNA",
+    mne: "TLNA",
   },
   0o606: {
-    mne = "TRNN",
+    mne: "TRNN",
   },
   0o607: {
-    mne = "TLNN",
+    mne: "TLNN",
   },
   0o620: {
-    mne = "TRZ",
+    mne: "TRZ",
   },
   0o621: {
-    mne = "TLZ",
+    mne: "TLZ",
   },
   0o622: {
-    mne = "TRZE",
+    mne: "TRZE",
   },
   0o623: {
-    mne = "TLZE",
+    mne: "TLZE",
   },
   0o624: {
-    mne = "TRZA",
+    mne: "TRZA",
   },
   0o625: {
-    mne = "TLZA",
+    mne: "TLZA",
   },
   0o626: {
-    mne = "TRZN",
+    mne: "TRZN",
   },
   0o627: {
-    mne = "TLZN",
+    mne: "TLZN",
   },
   0o640: {
-    mne = "TRC",
+    mne: "TRC",
   },
   0o641: {
-    mne = "TLC",
+    mne: "TLC",
   },
   0o642: {
-    mne = "TRCE",
+    mne: "TRCE",
   },
   0o643: {
-    mne = "TLCE",
+    mne: "TLCE",
   },
   0o644: {
-    mne = "TRCA",
+    mne: "TRCA",
   },
   0o645: {
-    mne = "TLCA",
+    mne: "TLCA",
   },
   0o646: {
-    mne = "TRCN",
+    mne: "TRCN",
   },
   0o647: {
-    mne = "TLCN",
+    mne: "TLCN",
   },
   0o660: {
-    mne = "TRO",
+    mne: "TRO",
   },
   0o661: {
-    mne = "TLO",
+    mne: "TLO",
   },
   0o662: {
-    mne = "TROE",
+    mne: "TROE",
   },
   0o663: {
-    mne = "TLOE",
+    mne: "TLOE",
   },
   0o664: {
-    mne = "TROA",
+    mne: "TROA",
   },
   0o665: {
-    mne = "TLOA",
+    mne: "TLOA",
   },
   0o666: {
-    mne = "TRON",
+    mne: "TRON",
   },
   0o667: {
-    mne = "TLON",
+    mne: "TLON",
   },
   0o610: {
-    mne = "TDN",
+    mne: "TDN",
   },
   0o611: {
-    mne = "TSN",
+    mne: "TSN",
   },
   0o612: {
-    mne = "TDNE",
+    mne: "TDNE",
   },
   0o613: {
-    mne = "TSNE",
+    mne: "TSNE",
   },
   0o614: {
-    mne = "TDNA",
+    mne: "TDNA",
   },
   0o615: {
-    mne = "TSNA",
+    mne: "TSNA",
   },
   0o616: {
-    mne = "TDNN",
+    mne: "TDNN",
   },
   0o617: {
-    mne = "TSNN",
+    mne: "TSNN",
   },
   0o630: {
-    mne = "TDZ",
+    mne: "TDZ",
   },
   0o631: {
-    mne = "TSZ",
+    mne: "TSZ",
   },
   0o632: {
-    mne = "TDZE",
+    mne: "TDZE",
   },
   0o633: {
-    mne = "TSZE",
+    mne: "TSZE",
   },
   0o634: {
-    mne = "TDZA",
+    mne: "TDZA",
   },
   0o635: {
-    mne = "TSZA",
+    mne: "TSZA",
   },
   0o636: {
-    mne = "TDZN",
+    mne: "TDZN",
   },
   0o637: {
-    mne = "TSZN",
+    mne: "TSZN",
   },
   0o650: {
-    mne = "TDC",
+    mne: "TDC",
   },
   0o651: {
-    mne = "TSC",
+    mne: "TSC",
   },
   0o652: {
-    mne = "TDCE",
+    mne: "TDCE",
   },
   0o653: {
-    mne = "TSCE",
+    mne: "TSCE",
   },
   0o654: {
-    mne = "TDCA",
+    mne: "TDCA",
   },
   0o655: {
-    mne = "TSCA",
+    mne: "TSCA",
   },
   0o656: {
-    mne = "TDCN",
+    mne: "TDCN",
   },
   0o657: {
-    mne = "TSCN",
+    mne: "TSCN",
   },
   0o670: {
-    mne = "TDO",
+    mne: "TDO",
   },
   0o671: {
-    mne = "TSO",
+    mne: "TSO",
   },
   0o672: {
-    mne = "TDOE",
+    mne: "TDOE",
   },
   0o673: {
-    mne = "TSOE",
+    mne: "TSOE",
   },
   0o674: {
-    mne = "TDOA",
+    mne: "TDOA",
   },
   0o675: {
-    mne = "TSOA",
+    mne: "TSOA",
   },
   0o676: {
-    mne = "TDON",
+    mne: "TDON",
   },
   0o677: {
-    mne = "TSON",
+    mne: "TSON",
   },
 
   // Half Word Data Transmission
-  0o500: {
-    mne = "HLL",
-  },
   0o501: {
-    mne = "XHLLI",
+    mne: "XHLLI",
+    getSrc: getXILH,
+    putResult: putACLH,
+  },
+  0o500: {
+    mne: "HLL",
+    getSrc: getELH,
+    putResult: putACLH,
   },
   0o502: {
-    mne = "HLLM",
+    mne: "HLLM",
+    getSrc: getACLH,
+    putResult: putELH,
   },
   0o503: {
-    mne = "HLLS",
+    mne: "HLLS",
+    getSrc: getELH,
+    putResult: putELHandACnon0,
   },
   0o510: {
-    mne = "HLLZ",
+    mne: "HLLZ",
+    getSrc: getELH,
+    putResult: putACLHZ,
   },
   0o511: {
-    mne = "HLLZI",
+    mne: "HLLZI",
+    getSrc: getILH,
+    putResult: putELHZ,
   },
   0o512: {
-    mne = "HLLZM",
+    mne: "HLLZM",
+    getSrc: getACLH,
+    putResult: putELHZ,
   },
   0o513: {
-    mne = "HLLZS",
+    mne: "HLLZS",
+    getSrc: getELH,
+    putResult: putELHZandACnon0,
   },
   0o530: {
-    mne = "HLLE",
+    mne: "HLLE",
+    getSrc: getELH,
+    putResult: putACLHE,
   },
   0o531: {
-    mne = "HLLEI",
+    mne: "HLLEI",
+    getSrc: getILH,
+    putResult: putACLHZ,
   },
   0o532: {
-    mne = "HLLEM",
+    mne: "HLLEM",
+    getSrc: getACLH,
+    putResult: putELHE,
   },
   0o533: {
-    mne = "HLLES",
+    mne: "HLLES",
+    getSrc: getELH,
+    putResult: putELHEandACnon0,
   },
   0o520: {
-    mne = "HLLO",
+    mne: "HLLO",
+    getSrc: getELH,
+    putResult: putACLHO,
   },
   0o521: {
-    mne = "HLLOI",
+    mne: "HLLOI",
+    getSrc: getILH,
+    putResult: putACLHO,
   },
   0o522: {
-    mne = "HLLOM",
+    mne: "HLLOM",
+    getSrc: getACLH,
+    putResult: putELHO,
   },
   0o523: {
-    mne = "HLLOS",
+    mne: "HLLOS",
+    getSrc: getELH,
+    putResult: putELHOandACnon0,
   },
   0o544: {
-    mne = "HLR",
+    mne: "HLR",
+    getSrc: getELH,
+    putResult: putACRH,
   },
   0o545: {
-    mne = "HLRI",
+    mne: "HLRI",
+    getSrc: getILH,
+    putResult: putACRH,
   },
   0o546: {
-    mne = "HLRM",
+    mne: "HLRM",
+    getSrc: getACLH,
+    putResult: putERH,
   },
   0o547: {
-    mne = "HLRS",
+    mne: "HLRS",
+    getSrc: getELH,
+    putResult: putERHandACnon0,
   },
   0o554: {
-    mne = "HLRZ",
+    mne: "HLRZ",
   },
   0o555: {
-    mne = "HLRZI",
+    mne: "HLRZI",
   },
   0o556: {
-    mne = "HLRZM",
+    mne: "HLRZM",
   },
   0o557: {
-    mne = "HLRZS",
+    mne: "HLRZS",
   },
   0o564: {
-    mne = "HLRO",
+    mne: "HLRO",
   },
   0o565: {
-    mne = "HLROI",
+    mne: "HLROI",
   },
   0o566: {
-    mne = "HLROM",
+    mne: "HLROM",
   },
   0o567: {
-    mne = "HLROS",
+    mne: "HLROS",
   },
   0o574: {
-    mne = "HLRE",
+    mne: "HLRE",
   },
   0o575: {
-    mne = "HLREI",
+    mne: "HLREI",
   },
   0o576: {
-    mne = "HLREM",
+    mne: "HLREM",
   },
   0o577: {
-    mne = "HLRES",
+    mne: "HLRES",
   },
   0o540: {
-    mne = "HRR",
+    mne: "HRR",
   },
   0o541: {
-    mne = "HRRI",
+    mne: "HRRI",
   },
   0o542: {
-    mne = "HRRM",
+    mne: "HRRM",
   },
   0o543: {
-    mne = "HRRS",
+    mne: "HRRS",
   },
   0o550: {
-    mne = "HRRZ",
+    mne: "HRRZ",
   },
   0o551: {
-    mne = "HRRZI",
+    mne: "HRRZI",
   },
   0o552: {
-    mne = "HRRZM",
+    mne: "HRRZM",
   },
   0o553: {
-    mne = "HRRZS",
+    mne: "HRRZS",
   },
   0o560: {
-    mne = "HRRO",
+    mne: "HRRO",
   },
   0o561: {
-    mne = "HRROI",
+    mne: "HRROI",
   },
   0o562: {
-    mne = "HRROM",
+    mne: "HRROM",
   },
   0o563: {
-    mne = "HRROS",
+    mne: "HRROS",
   },
   0o570: {
-    mne = "HRRE",
+    mne: "HRRE",
   },
   0o571: {
-    mne = "HRREI",
+    mne: "HRREI",
   },
   0o572: {
-    mne = "HRREM",
+    mne: "HRREM",
   },
   0o573: {
-    mne = "HRRES",
+    mne: "HRRES",
   },
   0o504: {
-    mne = "HRL",
+    mne: "HRL",
   },
   0o505: {
-    mne = "HRLI",
+    mne: "HRLI",
   },
   0o506: {
-    mne = "HRLM",
+    mne: "HRLM",
   },
   0o507: {
-    mne = "HRLS",
+    mne: "HRLS",
   },
   0o514: {
-    mne = "HRLZ",
+    mne: "HRLZ",
   },
   0o515: {
-    mne = "HRLZI",
+    mne: "HRLZI",
   },
   0o516: {
-    mne = "HRLZM",
+    mne: "HRLZM",
   },
   0o517: {
-    mne = "HRLZS",
+    mne: "HRLZS",
   },
   0o524: {
-    mne = "HRLO",
+    mne: "HRLO",
   },
   0o525: {
-    mne = "HRLOI",
+    mne: "HRLOI",
   },
   0o526: {
-    mne = "HRLOM",
+    mne: "HRLOM",
   },
   0o527: {
-    mne = "HRLOS",
+    mne: "HRLOS",
   },
   0o534: {
-    mne = "HRLE",
+    mne: "HRLE",
   },
   0o535: {
-    mne = "HRLEI",
+    mne: "HRLEI",
   },
   0o536: {
-    mne = "HRLEM",
+    mne: "HRLEM",
   },
   0o537: {
-    mne = "HRLES",
+    mne: "HRLES",
   },
 
   // Program Control
   0o256: {
-    mne = "XCT",
+    mne: "XCT",
   },
   0o243: {
-    mne = "JFFO",
+    mne: "JFFO",
   },
   0o255: {
-    mne = "JFCL",
+    mne: "JFCL",
   },
   0o254: {
-    mne = "JRST",
+    mne: "JRST",
   },
   0o264: {
-    mne = "JSR",
+    mne: "JSR",
   },
   0o265: {
-    mne = "JSP",
+    mne: "JSP",
   },
   0o266: {
-    mne = "JSA",
+    mne: "JSA",
   },
   0o267: {
-    mne = "JRA",
+    mne: "JRA",
   },
   0o257: {
-    mne = "MAP",
+    mne: "MAP",
   },
 
   // Stack
   0o261: {
-    mne = "PUSH",
+    mne: "PUSH",
   },
   0o262: {
-    mne = "POP",
+    mne: "POP",
   },
   0o260: {
-    mne = "PUSHJ",
+    mne: "PUSHJ",
   },
   0o263: {
-    mne = "POPJ",
+    mne: "POPJ",
   },
   0o105: {
-    mne = "ADJSP",
+    mne: "ADJSP",
   },
 
   // Byte Manipulation
   0o133: {
-    mne = "IBP",
+    mne: "IBP",
   },
   0o135: {
-    mne = "LDB",
+    mne: "LDB",
   },
   0o137: {
-    mne = "DPB",
+    mne: "DPB",
   },
   0o134: {
-    mne = "ILDB",
+    mne: "ILDB",
   },
   0o136: {
-    mne = "IDPB",
+    mne: "IDPB",
   },
 
   // UUO
   0o001: {
-    mne = "LUUO",
+    mne: "LUUO",
   },
   0o104: {
-    mne = "JSYS",
+    mne: "JSYS",
   },
 
   // EXTEND
   0o123: {
-    mne = "EXTEND",
+    mne: "EXTEND",
   },
 
   // I/O instructions
   0o70000: {
-    mne = "APRID",
+    mne: "APRID",
   },
 
   0o070004: {
-    mne = "DATAI APR,",
+    mne: "DATAI APR,",
   },
 
   0o070014: {
-    mne = "DATAO APR,",
+    mne: "DATAO APR,",
   },
 
   0o070044: {
-    mne = "DATAI PI,",
+    mne: "DATAI PI,",
   },
 
   0o070054: {
-    mne = "DATAO PI,",
+    mne: "DATAO PI,",
   },
 
   0o070060: {
-    mne = "CONO PI,",
-    code = `\
+    mne: "CONO PI,",
+    code: `\
     if (ea & CLEAR_PI) {
       piEnabled = 0;
       intLevelsInProgress = 0;
@@ -1430,8 +1717,8 @@ const km10Ops = {
   },
 
   0o070064: {
-    mne = "CONI PI,",
-    code = `\
+    mne: "CONI PI,",
+    code: `\
     tmp =
       intLevelsRequested << ShiftForBit(17) |
       intLevelsInProgress << ShiftForBit(27) |
@@ -1442,103 +1729,134 @@ const km10Ops = {
   },
 
   0o070104: {
-    mne = "DATAI PAG,",
+    mne: "DATAI PAG,",
   },
 
   0o070114: {
-    mne = "DATAO PAG,",
+    mne: "DATAO PAG,",
   },
 
   0o070120: {
-    mne = "CONO PAG,",
+    mne: "CONO PAG,",
   },
 
   0o070124: {
-    mne = "CONI PAG,",
+    mne: "CONI PAG,",
   },
 
   0o070020: {
-    mne = "CONO APR,",
+    mne: "CONO APR,",
   },
 
   0o070024: {
-    mne = "CONI APR,",
+    mne: "CONI APR,",
   },
 
   0o070220: {
-    mne = "CONO TIM,",
+    mne: "CONO TIM,",
   },
 
   0o070224: {
-    mne = "CONI TIM,",
+    mne: "CONI TIM,",
   },
 
   0o070264: {
-    mne = "CONI MTR,",
+    mne: "CONI MTR,",
   },
 
   0o070144: {
-    mne = "SWPIA",
+    mne: "SWPIA",
   },
 
   0o070164: {
-    mne = "SWPIO",
+    mne: "SWPIO",
   },
 
   0o070150: {
-    mne = "SWPVA",
+    mne: "SWPVA",
   },
 
   0o070170: {
-    mne = "SWPVO",
+    mne: "SWPVO",
   },
 
   0o070154: {
-    mne = "SWPUA",
+    mne: "SWPUA",
   },
 
   0o070174: {
-    mne = "SWPUO",
+    mne: "SWPUO",
   },
 
   0o070010: {
-    mne = "WRFIL",
+    mne: "WRFIL",
   },
 
   0o070110: {
-    mne = "CLRPT",
+    mne: "CLRPT",
   },
 
   0o070260: {
-    mne = "WRTIME",
+    mne: "WRTIME",
   },
 
   0o070204: {
-    mne = "RDTIME",
+    mne: "RDTIME",
   },
 
   0o070244: {
-    mne = "RDEACT",
+    mne: "RDEACT",
   },
 
   0o070240: {
-    mne = "RDMACT",
+    mne: "RDMACT",
   },
 
   0o070210: {
-    mne = "WRPAE",
+    mne: "WRPAE",
   },
 
   0o070200: {
-    mne = "RDPERF",
+    mne: "RDPERF",
   },
 
   0o070040: {
-    mne = "RDERA",
+    mne: "RDERA",
   },
 
   0o070050: {
-    mne = "SBDIAG",
+    mne: "SBDIAG",
   },
 };
 
+
+// This returns the C code for the cases in the switch statement in
+// Emulate(). Each includes a `break` or `continue`, where `break`
+// means the end-of-instruction `pc = nextPC` should occur, and
+// `continue` means it should not.
+function emitAllCases() {
+  return Object.entries(km10Ops)
+    .map(([opcode, insn]) => `\
+case ${opcode.toString(8).padStart(7, '0')}: { // ${insn.mne}
+${insn.getSrc && insn.getSrc() || ''}\
+${insn.getSrc2 && insn.getSrc2() || ''}\
+${insn.setFlags && insn.setFlags() || ''}\
+${insn.operate && insn.operate() || ''}\
+${insn.putResult && insn.putResult() || ''}\
+${insn.code || ''}\
+  break;
+}
+`)
+    .join('\n');
+}
+
+
+module.exports = {
+  km10Ops,
+  emitAllCases,
+};
+
+
+if (process.argv[2] == 'TEST') {
+  console.log(emitAllCases());
+}

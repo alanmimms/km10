@@ -158,23 +158,23 @@ typedef struct UserProcessTable {
 } UserProcessTable;
 
 
-static inline W36 CONS(W36 lh, W36 rh) {
-  return ((lh & RHMASK) << 18) | (rh & RHMASK);
-}
-
-
-static inline W36 DCONS(W36 lh, W36 rh) {
-  return ((W72) lh << 36) | TO36(rh);
-}
-
-
 static inline W36 RH(W36 w) {
   return w & RHMASK;
 };
 
 
 static inline W36 LH(W36 w) {
-  return (w & LHMASK) >> 18;
+  return RH(w >> 18);
+}
+
+
+static inline W36 CONS(W36 lh, W36 rh) {
+  return (RH(lh) << 18) | (RH(rh));
+}
+
+
+static inline W36 DCONS(W36 lh, W36 rh) {
+  return ((W72) lh << 36) | TO36(rh);
 }
 
 
