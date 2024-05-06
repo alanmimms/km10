@@ -23,39 +23,46 @@ struct W36 {
       unsigned lhu: 18;
     };
 
+    // This is done this way instead of doing union/struct for the
+    // various views of the upper halfword because I could NOT get g++
+    // to correctly bit-align the op field.
     struct ATTRPACKED {
       unsigned y: 18;
       unsigned x: 4;
       unsigned i: 1;
-
-      union {
-
-	struct ATTRPACKED {
-	  unsigned ac: 4;
-	  unsigned op: 9;
-	};
-	
-	struct ATTRPACKED {
-	  unsigned ioOp: 3;
-	  unsigned ioDev: 7;
-	  unsigned ioSeven: 3;
-	};
-
-	unsigned ioAll: 13;
-      };
     };
 
     struct ATTRPACKED {
-      unsigned vma: 24;
-      unsigned pcFlags: 12;
+      unsigned: 23;
+      unsigned ac: 4;
+      unsigned op: 9;
+    };
+	
+    struct ATTRPACKED {
+      unsigned: 23;
+      unsigned ioOp: 3;
+      unsigned ioDev: 7;
+      unsigned ioSeven: 3;
     };
 
-    std::uint64_t u64;
+    struct ATTRPACKED {
+      unsigned: 23;
+      unsigned ioAll: 13;
+    };
+
+    struct ATTRPACKED {
+      unsigned vma: 23;
+      unsigned pcFlags: 13;
+    };
   };
 
-  W36(uint64_t w = 0) : u64(w) {}
+
+  // Constructors
+  W36(uint64_t w = 0) : u(w) {}
   W36(unsigned aLH, unsigned aRH) : rhu(aRH), lhu(aRH) {}
 
+
+  // Accessors
   operator std::uint64_t() {return u;}
 
   void putLH(unsigned aLH) {lhu = aLH;}
@@ -67,6 +74,8 @@ struct W36 {
   std::int64_t getLHextend() const {return (std::int64_t) lhs;}
   std::int64_t getRHextend() const {return (std::int64_t) rhs;}
 
+
+  // Formatters
   std::string fmtVMA() const {
     std::ostringstream s;
     s << std::setw(2) << std::setfill('0') << std::oct << (lhu & 077)
@@ -84,6 +93,7 @@ struct W36 {
   }
 
 
+  // Disassembly of instruction words
   std::string disasm() {
     std::ostringstream s;
     bool isIO = false;
@@ -596,3 +606,5 @@ struct W36 {
     return s.str();
   }
 };
+
+#undef ATTRPACKED
