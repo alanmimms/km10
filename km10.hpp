@@ -10,6 +10,8 @@
 
 #include "w36.hpp"
 
+using namespace std;
+
 
 class KM10 {
 public:
@@ -61,12 +63,12 @@ public:
   uint64_t maxInsns;
 
   inline static bool loadLog{true};
-  inline static std::ofstream loadLogS{"load.log"};
+  inline static ofstream loadLogS{"load.log"};
 
-  KM10(const uint64_t memorySize, uint64_t aMaxInsns = UINT64_MAX)
+  KM10(W36 *physicalMemoryP, uint64_t aMaxInsns = UINT64_MAX)
     : AC(),
       pc(0, 0),
-      memP (new W36[memorySize]),
+      memP(physicalMemoryP),
       maxInsns(aMaxInsns)
   {
   }
@@ -164,6 +166,7 @@ public:
 
   void emulate() {
     W36 iw;
+    W36 nextPC;
 
     uint64_t nInsns = 0;
 
@@ -178,10 +181,11 @@ public:
 	iw = memP[pc.vma];
       }
 
-      W36 nextPC(pc.lhu, pc.rhu + 1);
+      nextPC.lhu = pc.lhu;
+      nextPC.rhu = pc.rhu + 1;
 
     XCT_ENTRYPOINT:
-      W36 eaw(iw);
+      W36 eaw{iw};
       W36 ea{};
       bool eaIsLocal = 1;
 
@@ -200,13 +204,18 @@ public:
       }
 
       if (tracePC) {
-	std::cout << pc.fmtVMA()
+	cout << pc.fmtVMA()
 		  << " " << iw.fmt36()
 		  << ": [ea=" << ea.fmtVMA() << "] "
-		  << iw.disasm() << std::endl;
+		  << iw.disasm() << endl;
       }
 
       switch (iw.op) {
+
+      case 0254:		// JRST
+	nextPC.u = ea.u;
+	break;
+
       default:
 	break;
       }
@@ -287,33 +296,33 @@ public:
 
   // This takes a "word" from the comma-delimited A10 format and
   // converts it from its ASCIIized form into an 16-bit integer value.
-  // On entry, *pp must point to the first character of a token. On
-  // exit, *pp points to the start of the next token or else the NUL at
-  // the end of the string.
+  // On entry, inS must be at the first character of a token. On exit,
+  // inS is at the start of the next token or else the NUL at the end
+  // of the string.
   //
   // Example:
-  //     |      <---- *pp points to the 'A' on entry
-  //     |   |  <---- and to the 'E' four chars later at exit.
+  //     |<---- inS is at the 'A' on entry
+  //     |   |<---- and at the 'E' four chars later at exit.
   // T ^,AEh,E,LF@,E,O?m,FC,E,Aru,Lj@,F,AEv,F@@,E,,AJB,L,AnT,F@@,E,Arz,Lk@,F,AEw,F@@,E,E,ND@,K,B,NJ@,E,B`K
 
-  static auto getWord(std::ifstream &inS) -> uint16_t {
-    uint16_t v = 0;
+  static auto getWord(ifstream &inS, [[maybe_unused]] const char *whyP) -> uint16_t {
+    unsigned v = 0;
 
     for (;;) {
       char ch = inS.get();
-      if (loadLog) loadLogS << "getWord ch=" << std::oct << ch << std::endl;
+      if (loadLog) loadLogS << "getWord[" << whyP << "] ch=" << oct << ch << endl;
       if (ch == EOF || ch == ',' || ch == '\n') break;
       v = (v << 6) | (ch & 077);
     }
 
-    if (loadLog) loadLogS << "getWord returns 0" << std::oct << v << std::endl;
+    if (loadLog) loadLogS << "getWord[" << whyP << "] returns 0" << oct << v << endl;
     return v;
   }
 
 
   // Load the specified .A10 format file into memory.
   void loadA10(const char *fileNameP) {
-    std::ifstream inS(fileNameP);
+    ifstream inS(fileNameP);
     unsigned addr = 0;
     unsigned highestAddr = 0;
     unsigned lowestAddr = 0777777;
@@ -323,11 +332,11 @@ public:
 
       if (recType == EOF) break;
 
-      if (loadLog) loadLogS << "recType=" << recType << std::endl;
+      if (loadLog) loadLogS << "recType=" << recType << endl;
 
       if (recType == ';') {
 	// Just ignore comment lines
-	inS.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+	inS.ignore(numeric_limits<streamsize>::max(), '\n');
 	continue;
       }
 
@@ -335,34 +344,33 @@ public:
       inS.get();
 
       // Count of words on this line.
-      uint16_t wc = getWord(inS);
+      uint16_t wc = getWord(inS, "wc");
 
-      addr = getWord(inS);
+      addr = getWord(inS, "addr");
       addr |= wc & 0xC000;
       wc &= ~0xC000;
 
-      if (loadLog) loadLogS << "addr=" << std::setw(6) << std::setfill('0') << std::oct << addr << std::endl;
-      if (loadLog) loadLogS << "wc=" << wc << std::endl;
+      if (loadLog) loadLogS << "addr=" << setw(6) << setfill('0') << oct << addr << endl;
+      if (loadLog) loadLogS << "wc=" << wc << endl;
 
       unsigned zeroCount;
-      unsigned offset;
 
       switch (recType) {
       case 'Z':
-	zeroCount = getWord(inS);
+	zeroCount = getWord(inS, "zeroCount");
 
 	if (zeroCount == 0) zeroCount = 64*1024;
 
-	if (loadLog) loadLogS << "zeroCount=0" << std::oct << zeroCount << std::endl;
+	if (loadLog) loadLogS << "zeroCount=0" << oct << zeroCount << endl;
 
-	inS.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+	inS.ignore(numeric_limits<streamsize>::max(), '\n');
 
 	for (unsigned offset = 0; offset < zeroCount; ++offset) {
 	  unsigned a = addr + offset;
 
 	  if (a > highestAddr) highestAddr = a;
 	  if (a < lowestAddr) lowestAddr = a;
-	  memP[a] = W36();
+	  memP[a].u = 0;
 	}
 
 	break;
@@ -370,10 +378,10 @@ public:
       case 'T':
 	if (wc == 0) {pc.lhu = 0; pc.rhu = addr;}
 
-	for (offset = 0; offset < wc; ++offset) {
-	  uint64_t w0 = getWord(inS);
-	  uint64_t w1 = getWord(inS);
-	  uint64_t w2 = getWord(inS);
+	for (unsigned offset = 0; offset < wc/3; ++offset) {
+	  uint64_t w0 = getWord(inS, "w0");
+	  uint64_t w1 = getWord(inS, "w1");
+	  uint64_t w2 = getWord(inS, "w2");
 	  uint64_t w = ((w2 & 0x0F) << 32) | (w1 << 16) | w0;
 	  uint64_t a = addr + offset;
 	  W36 w36(w);
@@ -383,21 +391,17 @@ public:
 	  if (a < lowestAddr) lowestAddr = a;
 
 	  if (loadLog) {
-	    loadLogS << "mem[" << a36.fmtVMA() << "]="
-		     << w36.fmt36() << " "
-		     << w36.disasm() << std::endl;
+	    loadLogS << "mem[" << a36.fmtVMA() << "]=" << w36.fmt36() << " " << w36.disasm() << endl;
 	  }
 
 	  memP[a].u = w;
 	}
 
-	inS.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+	inS.ignore(numeric_limits<streamsize>::max(), '\n');
 	break;
       
       default:
-	std::cerr << "ERROR: Unknown record type '" << recType
-		  << "' in file '" << fileNameP << "'"
-		  << std::endl;
+	cerr << "ERROR: Unknown record type '" << recType << "' in file '" << fileNameP << "'" << endl;
 	break;      
       }
     }
