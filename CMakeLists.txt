@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.0)
 project(km10)
 
 set(COptionsForALL -Wall -g)
+set(CPPOptionsForALL -Wall -g)
 
 include_directories("${PROJECT_SOURCE_DIR}/acutest/include")
 
@@ -22,6 +23,8 @@ add_custom_command(
   DEPENDS ${PROJECT_SOURCE_DIR}/jsc/km10.jsc
 )
 
-add_executable(km10 km10.c loada10.c disasm.c)
-target_compile_options(km10 PUBLIC -DTEST_KM10=1 ${COptionsForALL})
+add_executable(km10js km10.c loada10.c disasm.c)
+target_compile_options(km10js PUBLIC -DTEST_KM10=1 ${COptionsForALL})
 
+add_executable(km10 km10.cpp)
+target_compile_options(km10 PUBLIC --std=c++17 -DTEST_KM10=1 ${CPPOptionsForALL})
