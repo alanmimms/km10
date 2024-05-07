@@ -7,10 +7,11 @@
 #include <fstream>
 #include <iostream>
 #include <limits>
-
-#include "w36.hpp"
+#include <functional>
 
 using namespace std;
+
+#include "w36.hpp"
 
 
 class KM10 {
@@ -19,8 +20,7 @@ public:
   W36 pc;
 
   union Flags {
-
-    struct {
+    struct ATTRPACKED {
       unsigned: 23;
       
       unsigned ndv;
@@ -40,9 +40,10 @@ public:
       unsigned ov;
     };
 
-    uint64_t w: 36;
+    uint64_t u: 36;
   } flags;
 
+  // Pointer to current virtual memory mapping in emulator.
   W36 *memP;
 
   bool tops20Paging;
@@ -65,6 +66,8 @@ public:
   inline static bool loadLog{true};
   inline static ofstream loadLogS{"load.log"};
 
+
+  // Constructors
   KM10(W36 *physicalMemoryP, uint64_t aMaxInsns = UINT64_MAX)
     : AC(),
       pc(0, 0),
@@ -165,10 +168,54 @@ public:
 
 
   void emulate() {
-    W36 iw;
-    W36 nextPC;
+    W36 iw{};
+    W36 ea{};
+    W36 nextPC = pc;
 
     uint64_t nInsns = 0;
+
+    auto memGet = [&]() -> W36 {
+      W36 value = memP[ea.u];;
+      if (traceMem) cerr << " ; " << ea.fmtVMA() << ": " << value.fmt36();
+      return value;
+    };
+
+    auto memPut = [&](W36 value) -> void {
+      memP[ea.u] = value;
+      if (traceMem) cerr << " ; " << ea.fmtVMA() << "<-" << value.fmt36();
+    };
+
+    auto acGet = [&]() -> W36 {
+      W36 value = AC[iw.ac];
+      if (traceMem) cerr << " ; ac" << oct << iw.ac << ": " << value.fmt36();
+      return value;
+    };
+
+    auto acPut = [&](W36 value) -> void {
+      AC[iw.ac] = value;
+      if (traceMem) cerr << " ; ac" << oct << iw.ac << "<-" << value.fmt36();
+    };
+
+    // Condition testing predicates
+    function<bool(W36)> isLT 	= [&](W36 v) -> bool {return v.s <  0;};
+    function<bool(W36)> isLE 	= [&](W36 v) -> bool {return v.s <= 0;};
+    function<bool(W36)> isGT 	= [&](W36 v) -> bool {return v.s >  0;};
+    function<bool(W36)> isGE 	= [&](W36 v) -> bool {return v.s >= 0;};
+    function<bool(W36)> isNE 	= [&](W36 v) -> bool {return v.s != 0;};
+    function<bool(W36)> isEQ 	= [&](W36 v) -> bool {return v.s == 0;};
+    function<bool(W36)> always = [&](W36 v) -> bool {return true;};
+    function<bool(W36)> never  = [&](W36 v) -> bool {return false;};
+
+    auto doSKIP = [&](function<bool(W36)> &condF) -> void {
+      W36 eaw = memGet();
+
+      if (condF(eaw)) {
+	if (traceMem) cerr << " [skip]";
+	++nextPC.rhu;
+      }
+      
+      if (iw.ac != 0) acPut(eaw);
+    };
 
     do {
 
@@ -186,7 +233,6 @@ public:
 
     XCT_ENTRYPOINT:
       W36 eaw{iw};
-      W36 ea{};
       bool eaIsLocal = 1;
 
       // While we keep getting indirection, loop for new EA words.
@@ -204,16 +250,60 @@ public:
       }
 
       if (tracePC) {
-	cout << pc.fmtVMA()
-		  << " " << iw.fmt36()
-		  << ": [ea=" << ea.fmtVMA() << "] "
-		  << iw.disasm() << endl;
+	cerr << pc.fmtVMA()
+	     << " " << iw.fmt36()
+	     << ": [ea=" << ea.fmtVMA() << "] "
+	     << setw(20) << left << iw.disasm();
       }
 
       switch (iw.op) {
 
+      case 0330:		// SKIP
+	doSKIP(never);
+	break;
+
+      case 0331:		// SKIPL
+	doSKIP(isLT);
+	break;
+
+      case 0332:		// SKIPE
+	doSKIP(isEQ);
+	break;
+
+      case 0333:		// SKIPLE
+	doSKIP(isLE);
+	break;
+
+      case 0334:		// SKIPA
+	doSKIP(always);
+	break;
+
+      case 0335:		// SKIPGE
+	doSKIP(isGE);
+	break;
+
+      case 0336:		// SKIPN
+	doSKIP(isNE);
+	break;
+
+      case 0337:		// SKIPGT
+	doSKIP(isGT);
+	break;
+
       case 0254:		// JRST
 	nextPC.u = ea.u;
+	break;
+
+      case 0264:		// JSR
+	memPut(pc.isSection0() ? nextPC.u | flags.u : nextPC.vma);
+	nextPC.u = ea.u + 1;	// XXX Wrap?
+	flags.fpd = flags.afi = flags.tr2 = flags.tr1 = 0;
+	break;
+
+      case 0265:		// JSP
+	acPut(pc.isSection0() ? nextPC.u | flags.u : nextPC.vma);
+	nextPC.u = ea.u + 1;	// XXX Wrap?
+	flags.fpd = flags.afi = flags.tr2 = flags.tr1 = 0;
 	break;
 
       default:
@@ -221,6 +311,7 @@ public:
       }
 
       pc = nextPC;
+      if (tracePC) cerr << endl;
     } while (running);
   }
 

@@ -4,6 +4,7 @@
 #include <sstream>
 #include <iomanip>
 
+// This is used in km10.hpp as well
 #define ATTRPACKED    __attribute__((packed))
 
 struct W36 {
@@ -73,6 +74,8 @@ struct W36 {
 
   std::int64_t getLHextend() const {return (std::int64_t) lhs;}
   std::int64_t getRHextend() const {return (std::int64_t) rhs;}
+
+  bool isSection0() const {return (vma >> 18) == 0u;}
 
 
   // Formatters
@@ -606,5 +609,3 @@ struct W36 {
     return s.str();
   }
 };
-
-#undef ATTRPACKED
