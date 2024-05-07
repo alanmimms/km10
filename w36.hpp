@@ -101,6 +101,8 @@ struct W36 {
     std::ostringstream s;
     bool isIO = false;
 
+    s << setw(6) << left;
+
     // Handle some special cases first.
     if (op == 0133 && ac != 0) {		/* IBP becomes ADJBP for nonzero AC */
       s << "ADJBP";
