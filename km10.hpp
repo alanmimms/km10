@@ -174,39 +174,60 @@ public:
 
     uint64_t nInsns = 0;
 
-    auto memGet = [&]() -> W36 {
+    function<W36()> memGet = [&]() -> W36 {
       W36 value = memP[ea.u];;
       if (traceMem) cerr << " ; " << ea.fmtVMA() << ": " << value.fmt36();
       return value;
     };
 
-    auto memPut = [&](W36 value) -> void {
+    function<void(W36)> memPut = [&](W36 value) -> void {
       memP[ea.u] = value;
       if (traceMem) cerr << " ; " << ea.fmtVMA() << "<-" << value.fmt36();
     };
 
-    auto acGet = [&]() -> W36 {
+    function<W36()> acGet = [&]() -> W36 {
       W36 value = AC[iw.ac];
       if (traceMem) cerr << " ; ac" << oct << iw.ac << ": " << value.fmt36();
       return value;
     };
 
-    auto acPut = [&](W36 value) -> void {
+    function<W36()> acGetRH = [&]() -> W36 {
+      W36 value{0, AC[iw.ac].rhu};
+      if (traceMem) cerr << " ; acRH" << oct << iw.ac << ": " << value.fmt36();
+      return value;
+    };
+
+    function<W36()> acGetLH = [&]() -> W36 {
+      W36 value{0, AC[iw.ac].lhu};
+      if (traceMem) cerr << " ; acLH" << oct << iw.ac << ": " << value.fmt36();
+      return value;
+    };
+
+    function<void(W36)> acPut = [&](W36 value) -> void {
       AC[iw.ac] = value;
       if (traceMem) cerr << " ; ac" << oct << iw.ac << "<-" << value.fmt36();
     };
 
     // Condition testing predicates
-    function<bool(W36)> isLT 	= [&](W36 v) -> bool {return v.s <  0;};
-    function<bool(W36)> isLE 	= [&](W36 v) -> bool {return v.s <= 0;};
-    function<bool(W36)> isGT 	= [&](W36 v) -> bool {return v.s >  0;};
-    function<bool(W36)> isGE 	= [&](W36 v) -> bool {return v.s >= 0;};
-    function<bool(W36)> isNE 	= [&](W36 v) -> bool {return v.s != 0;};
-    function<bool(W36)> isEQ 	= [&](W36 v) -> bool {return v.s == 0;};
-    function<bool(W36)> always = [&](W36 v) -> bool {return true;};
-    function<bool(W36)> never  = [&](W36 v) -> bool {return false;};
+    function<bool(W36 toTest)> isLT0  = [&](W36 v) -> bool const {return v.s <  0;};
+    function<bool(W36 toTest)> isLE0  = [&](W36 v) -> bool const {return v.s <= 0;};
+    function<bool(W36 toTest)> isGT0  = [&](W36 v) -> bool const {return v.s >  0;};
+    function<bool(W36 toTest)> isGE0  = [&](W36 v) -> bool const {return v.s >= 0;};
+    function<bool(W36 toTest)> isNE0  = [&](W36 v) -> bool const {return v.s != 0;};
+    function<bool(W36 toTest)> isEQ0  = [&](W36 v) -> bool const {return v.s == 0;};
+    function<bool(W36 toTest)> always = [&](W36 v) -> bool const {return true;};
+    function<bool(W36 toTest)> never  = [&](W36 v) -> bool const {return false;};
 
-    auto doSKIP = [&](function<bool(W36)> &condF) -> void {
+    auto doJUMP = [&](function<bool(W36 toTest)> &condF) -> void {
+      W36 eaw = memGet();
+
+      if (condF(eaw)) {
+	if (traceMem) cerr << " [jump]";
+	nextPC.rhu = ea;
+      }
+    };
+
+    auto doSKIP = [&](function<bool(W36 toTest)> &condF) -> void {
       W36 eaw = memGet();
 
       if (condF(eaw)) {
@@ -216,6 +237,57 @@ public:
       
       if (iw.ac != 0) acPut(eaw);
     };
+
+    function<W36(W36)> noModification = [&](W36 fromSrc) -> auto const {return fromSrc;};
+    function<W36(W36)> zeroMask = [&](W36 fromSrc) -> auto const {return fromSrc.u & ~(uint64_t) ea.rhu;};
+    function<W36(W36)> onesMask = [&](W36 fromSrc) -> auto const {return fromSrc.u | ea.rhu;};
+    function<W36(W36)> compMask = [&](W36 fromSrc) -> auto const {return fromSrc.u ^ ea.rhu;};
+
+    auto doTxxxx = [&](function<W36()> &doGetF,
+		       function<W36(W36 fromSrc)> &doModifyF,
+		       function<bool(W36 toTest)> &condF) -> void
+    {
+      W36 eaw = doGetF() & ea;
+
+      if (condF(eaw)) {
+	if (traceMem) cerr << " [skip]";
+	++nextPC.rhu;
+      }
+      
+      acPut(doModifyF(eaw));
+    };
+
+    function<void(W36)> noStore = [](W36 toSrc) -> void {};
+
+    auto doTDSxxx = [&](function<W36(W36 fromSrc)> &doModifyF,
+			function<bool(W36 toTest)> &condF,
+			function<void(W36 toSrc)> &doStoreF)
+    {
+      W36 eaw = memGet();
+
+      if (condF(eaw)) {
+	if (traceMem) cerr << " [skip]";
+	++nextPC.rhu;
+      }
+      
+      doStoreF(doModifyF(eaw));
+    };
+
+    auto doHxxxx = [&](function<W36()> &doGetF,
+		       function<W36(W36 fromSrc)> &doModifyF,
+		       function<bool(W36 toTest)> &condF) -> void
+    {
+      W36 eaw = doGetF() & ea;
+
+      if (condF(eaw)) {
+	if (traceMem) cerr << " [skip]";
+	++nextPC.rhu;
+      }
+      
+      eaw = doModifyF(eaw);
+      if (iw.ac != 0) acPut(eaw);
+    };
+
 
     do {
 
@@ -252,26 +324,58 @@ public:
       if (tracePC) {
 	cerr << pc.fmtVMA()
 	     << " " << iw.fmt36()
-	     << ": [ea=" << ea.fmtVMA() << "] "
+	     << ": [ea=" << ea.fmtVMA() << "]  "
 	     << setw(20) << left << iw.disasm();
       }
 
       switch (iw.op) {
+
+      case 0320:		// JUMP
+	doJUMP(never);
+	break;
+
+      case 0321:		// JUMPL
+	doJUMP(isLT0);
+	break;
+
+      case 0322:		// JUMPE
+	doJUMP(isEQ0);
+	break;
+
+      case 0323:		// JUMPLE
+	doJUMP(isLE0);
+	break;
+
+      case 0324:		// JUMPA
+	doJUMP(always);
+	break;
+
+      case 0325:		// JUMPGE
+	doJUMP(isGE0);
+	break;
+
+      case 0326:		// JUMPN
+	doJUMP(isNE0);
+	break;
+
+      case 0327:		// JUMPG
+	doJUMP(isGT0);
+	break;
 
       case 0330:		// SKIP
 	doSKIP(never);
 	break;
 
       case 0331:		// SKIPL
-	doSKIP(isLT);
+	doSKIP(isLT0);
 	break;
 
       case 0332:		// SKIPE
-	doSKIP(isEQ);
+	doSKIP(isEQ0);
 	break;
 
       case 0333:		// SKIPLE
-	doSKIP(isLE);
+	doSKIP(isLE0);
 	break;
 
       case 0334:		// SKIPA
@@ -279,15 +383,15 @@ public:
 	break;
 
       case 0335:		// SKIPGE
-	doSKIP(isGE);
+	doSKIP(isGE0);
 	break;
 
       case 0336:		// SKIPN
-	doSKIP(isNE);
+	doSKIP(isNE0);
 	break;
 
       case 0337:		// SKIPGT
-	doSKIP(isGT);
+	doSKIP(isGT0);
 	break;
 
       case 0254:		// JRST
@@ -304,6 +408,198 @@ public:
 	acPut(pc.isSection0() ? nextPC.u | flags.u : nextPC.vma);
 	nextPC.u = ea.u + 1;	// XXX Wrap?
 	flags.fpd = flags.afi = flags.tr2 = flags.tr1 = 0;
+	break;
+
+      case 0600:		// TRN
+	doTxxxx(acGetRH, noModification, never);
+	break;
+
+      case 0601:		// TLN
+	doTxxxx(acGetLH, noModification, never);
+	break;
+
+      case 0602:		// TRNE
+	doTxxxx(acGetRH, noModification, isEQ0);
+	break;
+
+      case 0603:		// TLNE
+	doTxxxx(acGetLH, noModification, isEQ0);
+	break;
+
+      case 0604:		// TRNA
+	doTxxxx(acGetRH, noModification, always);
+	break;
+
+      case 0605:		// TLNA
+	doTxxxx(acGetLH, noModification, always);
+	break;
+
+      case 0606:		// TRNN
+	doTxxxx(acGetRH, noModification, isNE0);
+	break;
+
+      case 0607:		// TLNN
+	doTxxxx(acGetLH, noModification, isNE0);
+	break;
+
+      case 0620:		// TRZ
+	doTxxxx(acGetRH, zeroMask, never);
+	break;
+
+      case 0621:		// TLZ
+	doTxxxx(acGetLH, zeroMask, never);
+	break;
+
+      case 0622:		// TRZE
+	doTxxxx(acGetRH, zeroMask, isEQ0);
+	break;
+
+      case 0623:		// TLZE
+	doTxxxx(acGetLH, zeroMask, isEQ0);
+	break;
+
+      case 0624:		// TRZA
+	doTxxxx(acGetRH, zeroMask, always);
+	break;
+
+      case 0625:		// TLZA
+	doTxxxx(acGetLH, zeroMask, always);
+	break;
+
+      case 0626:		// TRZN
+	doTxxxx(acGetRH, zeroMask, isNE0);
+	break;
+
+      case 0627:		// TLZN
+	doTxxxx(acGetLH, zeroMask, isNE0);
+	break;
+
+      case 0640:		// TRC
+	doTxxxx(acGetRH, compMask, never);
+	break;
+
+      case 0641:		// TLC
+	doTxxxx(acGetLH, compMask, never);
+	break;
+
+      case 0642:		// TRCE
+	doTxxxx(acGetRH, compMask, isEQ0);
+	break;
+
+      case 0643:		// TLCE
+	doTxxxx(acGetLH, compMask, isEQ0);
+	break;
+
+      case 0644:		// TRCA
+	doTxxxx(acGetRH, compMask, always);
+	break;
+
+      case 0645:		// TLCA
+	doTxxxx(acGetLH, compMask, always);
+	break;
+
+      case 0646:		// TRCN
+	doTxxxx(acGetRH, compMask, isNE0);
+	break;
+
+      case 0647:		// TLCN
+	doTxxxx(acGetLH, compMask, isNE0);
+	break;
+
+      case 0660:		// TRO
+	doTxxxx(acGetRH, onesMask, never);
+	break;
+
+      case 0661:		// TLO
+	doTxxxx(acGetLH, onesMask, never);
+	break;
+
+      case 0662:		// TROE
+	doTxxxx(acGetRH, onesMask, isEQ0);
+	break;
+
+      case 0663:		// TLOE
+	doTxxxx(acGetLH, onesMask, isEQ0);
+	break;
+
+      case 0664:		// TROA
+	doTxxxx(acGetRH, onesMask, always);
+	break;
+
+      case 0665:		// TLOA
+	doTxxxx(acGetLH, onesMask, always);
+	break;
+
+      case 0666:		// TRON
+	doTxxxx(acGetRH, onesMask, isNE0);
+	break;
+
+      case 0667:		// TLON
+	doTxxxx(acGetLH, onesMask, isNE0);
+	break;
+
+      case 0610:		// TDN
+	doTDSxxx(noModification, never, memPut);
+	break;
+
+      case 0611:		// TSN
+	doTDSxxx(noModification, never, noStore);
+	break;
+
+      case 0612:		// TDNE
+	doTDSxxx(noModification, isEQ0, memPut);
+	break;
+
+      case 0613:		// TSNE
+	doTDSxxx(noModification, isEQ0, noStore);
+	break;
+
+      case 0614:		// TDNA
+	doTDSxxx(noModification, always, memPut);
+	break;
+
+      case 0615:		// TSNA
+	doTDSxxx(noModification, always, noStore);
+	break;
+
+      case 0616:		// TDNN
+	doTDSxxx(noModification, isNE0, memPut);
+	break;
+
+      case 0617:		// TSNN
+	doTDSxxx(noModification, isNE0, noStore);
+	break;
+
+      case 0630:		// TDZ
+	doTDSxxx(zeroMask, never, memPut);
+	break;
+
+      case 0631:		// TSZ
+	doTDSxxx(zeroMask, never, noStore);
+	break;
+
+      case 0632:		// TDZE
+	doTDSxxx(zeroMask, isEQ0, memPut);
+	break;
+
+      case 0633:		// TSZE
+	doTDSxxx(zeroMask, isEQ0, noStore);
+	break;
+
+      case 0634:		// TDZA
+	doTDSxxx(zeroMask, always, memPut);
+	break;
+
+      case 0635:		// TSZA
+	doTDSxxx(zeroMask, always, noStore);
+	break;
+
+      case 0636:		// TDZN
+	doTDSxxx(zeroMask, isNE0, memPut);
+	break;
+
+      case 0637:		// TSZN
+	doTDSxxx(zeroMask, isNE0, noStore);
 	break;
 
       default:
