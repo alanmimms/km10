@@ -65,7 +65,7 @@ struct W36 {
 
   // Constructors
   W36(uint64_t w = 0) : u(w) {}
-  W36(unsigned aLH, unsigned aRH) : rhu(aRH), lhu(aRH) {}
+  W36(unsigned lh, unsigned rh) : rhu(rh), lhu(lh) {}
 
 
   // Accessors

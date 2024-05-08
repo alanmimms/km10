@@ -213,7 +213,7 @@ public:
 
     uint64_t nInsns = 0;
 
-    auto nyi = [&] {cout << " [not yet implemented]";};
+    auto nyi = [&] {cerr << " [not yet implemented]";};
 
     function<W36(W36)> swap = [&](W36 src) {return W36(src.rhu, src.lhu);};
 
@@ -279,14 +279,14 @@ public:
     function<W36()> immediate = [&]() -> W36 {return W36(pc.isSection0() ? 0 : ea.lhu, ea.rhu);};
 
     // Condition testing predicates
-    function<bool(W36 toTest)> isLT0  = [&](W36 v) -> bool const {return v.s <  0;};
-    function<bool(W36 toTest)> isLE0  = [&](W36 v) -> bool const {return v.s <= 0;};
-    function<bool(W36 toTest)> isGT0  = [&](W36 v) -> bool const {return v.s >  0;};
-    function<bool(W36 toTest)> isGE0  = [&](W36 v) -> bool const {return v.s >= 0;};
-    function<bool(W36 toTest)> isNE0  = [&](W36 v) -> bool const {return v.s != 0;};
-    function<bool(W36 toTest)> isEQ0  = [&](W36 v) -> bool const {return v.s == 0;};
-    function<bool(W36 toTest)> always = [&](W36 v) -> bool const {return true;};
-    function<bool(W36 toTest)> never  = [&](W36 v) -> bool const {return false;};
+    function<bool(W36)> isLT0  = [&](W36 v) -> bool const {return v.s <  0;};
+    function<bool(W36)> isLE0  = [&](W36 v) -> bool const {return v.s <= 0;};
+    function<bool(W36)> isGT0  = [&](W36 v) -> bool const {return v.s >  0;};
+    function<bool(W36)> isGE0  = [&](W36 v) -> bool const {return v.s >= 0;};
+    function<bool(W36)> isNE0  = [&](W36 v) -> bool const {return v.s != 0;};
+    function<bool(W36)> isEQ0  = [&](W36 v) -> bool const {return v.s == 0;};
+    function<bool(W36)> always = [&](W36 v) -> bool const {return true;};
+    function<bool(W36)> never  = [&](W36 v) -> bool const {return false;};
 
     auto doJUMP = [&](function<bool(W36 toTest)> &condF) -> void {
       W36 eaw = memGet();
@@ -401,6 +401,28 @@ public:
     };
 
 
+    // Binary comparison predicates
+    function<bool(W36,W36)> isLT    = [&](W36 v1, W36 v2) -> bool const {return v1.s <  v2.s;};
+    function<bool(W36,W36)> isLE    = [&](W36 v1, W36 v2) -> bool const {return v1.s <= v2.s;};
+    function<bool(W36,W36)> isGT    = [&](W36 v1, W36 v2) -> bool const {return v1.s >  v2.s;};
+    function<bool(W36,W36)> isGE    = [&](W36 v1, W36 v2) -> bool const {return v1.s >= v2.s;};
+    function<bool(W36,W36)> isNE    = [&](W36 v1, W36 v2) -> bool const {return v1.s != v2.s;};
+    function<bool(W36,W36)> isEQ    = [&](W36 v1, W36 v2) -> bool const {return v1.s == v2.s;};
+    function<bool(W36,W36)> always2 = [&](W36 v1, W36 v2) -> bool const {return true;};
+    function<bool(W36,W36)> never2  = [&](W36 v1, W36 v2) -> bool const {return false;};
+
+    auto doCAXXX = [&](function<W36()> &doGetSrc1F,
+		       function<W36()> &doGetSrc2F,
+		       function<bool(W36 src1, W36 src2)> &condF) -> void
+    {
+
+      if (condF(doGetSrc1F(), doGetSrc2F())) {
+	if (traceMem) cerr << " [skip]";
+	++nextPC.rhu;
+      }
+    };
+
+
     do {
 
       if (nInsns++ > maxInsns) running = false;
@@ -512,6 +534,30 @@ public:
 	memPut(tmp);
 	break;
 
+      case 0252:		// AOBJP
+	tmp = acGet();
+	tmp = W36(tmp.lhu + 1, tmp.rhu + 1);
+	acPut(tmp);
+
+	if (tmp.s >= 0) {
+	  if (traceMem) cerr << " [jump]";
+	  nextPC = ea;
+	}
+
+	break;
+
+      case 0253:		// AOBJN
+	tmp = acGet();
+	tmp = W36(tmp.lhu + 1, tmp.rhu + 1);
+	acPut(tmp);
+
+	if (tmp.s < 0) {
+	  if (traceMem) cerr << " [jump]";
+	  nextPC = ea;
+	}
+
+	break;
+
       case 0254:		// JRST
 	nextPC.u = ea.u;
 	break;
@@ -526,6 +572,70 @@ public:
 	acPut(pc.isSection0() ? nextPC.u | flags.u : nextPC.vma);
 	nextPC.u = ea.u + 1;	// XXX Wrap?
 	flags.fpd = flags.afi = flags.tr2 = flags.tr1 = 0;
+	break;
+
+      case 0300:		// CAI
+	doCAXXX(acGet, immediate, never2);
+	break;
+
+      case 0301:		// CAIL
+	doCAXXX(acGet, immediate, isLT);
+	break;
+
+      case 0302:		// CAIE
+	doCAXXX(acGet, immediate, isEQ);
+	break;
+
+      case 0303:		// CAILE
+	doCAXXX(acGet, immediate, isLE);
+	break;
+
+      case 0304:		// CAIA
+	doCAXXX(acGet, immediate, always2);
+	break;
+
+      case 0305:		// CAIGE
+	doCAXXX(acGet, immediate, isGE);
+	break;
+
+      case 0306:		// CAIN
+	doCAXXX(acGet, immediate, isNE);
+	break;
+
+      case 0307:		// CAIG
+	doCAXXX(acGet, immediate, isGT);
+	break;
+
+      case 0310:		// CAM
+	doCAXXX(acGet, memGet, never2);
+	break;
+
+      case 0311:		// CAML
+	doCAXXX(acGet, memGet, isLT);
+	break;
+
+      case 0312:		// CAME
+	doCAXXX(acGet, memGet, isEQ);
+	break;
+
+      case 0313:		// CAMLE
+	doCAXXX(acGet, memGet, isLE);
+	break;
+
+      case 0314:		// CAMA
+	doCAXXX(acGet, memGet, always2);
+	break;
+
+      case 0315:		// CAMGE
+	doCAXXX(acGet, memGet, isGE);
+	break;
+
+      case 0316:		// CAMN
+	doCAXXX(acGet, memGet, isNE);
+	break;
+
+      case 0317:		// CAMG
+	doCAXXX(acGet, memGet, isGT);
 	break;
 
       case 0320:		// JUMP
