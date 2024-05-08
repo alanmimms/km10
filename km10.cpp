@@ -17,7 +17,7 @@ Usage:
     return -1;
   }
 
-  KM10 km10(memory, 20);
+  KM10 km10(memory, 40);
 
   km10.loadA10(argv[1]);
   cerr << "[Loaded " << argv[1]

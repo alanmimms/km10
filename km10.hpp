@@ -319,7 +319,7 @@ public:
 
     function<void(W36)> noStore = [](W36 toSrc) -> void {};
 
-    auto doTxxxx = [&](function<W36()> &doGetF,
+    auto doTXXXX = [&](function<W36()> &doGetF,
 		       function<W36(W36 fromSrc)> &doModifyF,
 		       function<bool(W36 toTest)> &condF,
 		       function<void(W36 toSrc)> &doStoreF) -> void
@@ -352,7 +352,21 @@ public:
     function<W36(W36)> onesL = [&](W36 dst) -> auto const {return W36(  W36::halfOnes, dst.rhu);};
     function<W36(W36)> extnL = [&](W36 dst) -> auto const {return W36(extnOf(dst.rhu), dst.rhu);};
 
-    auto doHxxxx = [&](function<W36()> &doGetSrcF,
+    // binary doModifyF functions
+    function<W36(W36,W36)> andWord = [&](W36 s1, W36 s2) -> auto const {return s1.u & s2.u;};
+    function<W36(W36,W36)> andCWord = [&](W36 s1, W36 s2) -> auto const {return s1.u & ~s2.u;};
+    function<W36(W36,W36)> andCBWord = [&](W36 s1, W36 s2) -> auto const {return ~s1.u & ~s2.u;};
+    function<W36(W36,W36)> iorWord = [&](W36 s1, W36 s2) -> auto const {return s1.u | s2.u;};
+    function<W36(W36,W36)> iorCWord = [&](W36 s1, W36 s2) -> auto const {return s1.u | ~s2.u;};
+    function<W36(W36,W36)> iorCBWord = [&](W36 s1, W36 s2) -> auto const {return ~s1.u | ~s2.u;};
+    function<W36(W36,W36)> xorWord = [&](W36 s1, W36 s2) -> auto const {return s1.u ^ s2.u;};
+    function<W36(W36,W36)> xorCWord = [&](W36 s1, W36 s2) -> auto const {return s1.u ^ ~s2.u;};
+    function<W36(W36,W36)> xorCBWord = [&](W36 s1, W36 s2) -> auto const {return ~s1.u ^ ~s2.u;};
+    function<W36(W36,W36)> eqvWord = [&](W36 s1, W36 s2) -> auto const {return ~(s1.u ^ s2.u);};
+    function<W36(W36,W36)> eqvCWord = [&](W36 s1, W36 s2) -> auto const {return ~(s1.u ^ ~s2.u);};
+    function<W36(W36,W36)> eqvCBWord = [&](W36 s1, W36 s2) -> auto const {return ~(~s1.u ^ ~s2.u);};
+    
+    auto doHXXXX = [&](function<W36()> &doGetSrcF,
 		       function<W36()> &doGetDstF,
 		       function<W36(W36 src, W36 dst)> &doCopyF,
 		       function<W36(W36 dst)> &doModifyF,
@@ -362,7 +376,7 @@ public:
     };
 
 
-    auto doMOVxx = [&](function<W36()> &doGetSrcF,
+    auto doMOVXX = [&](function<W36()> &doGetSrcF,
 		       function<W36(W36 dst)> &doModifyF,
 		       function<void(W36 v)> &doPutDstF) -> void
     {
@@ -370,11 +384,20 @@ public:
     };
 
 
-    auto doSETxx = [&](function<W36()> &doGetSrcF,
+    auto doSETXX = [&](function<W36()> &doGetSrcF,
 		       function<W36(W36 dst)> &doModifyF,
 		       function<void(W36 v)> &doPutDstF) -> void
     {
       doPutDstF(doModifyF(doGetSrcF()));
+    };
+
+
+    auto doBinOpXX = [&](function<W36()> &doGetSrc1F,
+			 function<W36()> &doGetSrc2F,
+			 function<W36(W36 src1, W36 src2)> &doModifyF,
+			 function<void(W36 v)> &doPutDstF) -> void
+    {
+      doPutDstF(doModifyF(doGetSrc1F(), doGetSrc2F()));
     };
 
 
@@ -420,67 +443,67 @@ public:
       switch (iw.op) {
 
       case 0200:		// MOVE
-	doMOVxx(memGet, noModification, acPut);
+	doMOVXX(memGet, noModification, acPut);
 	break;
 
       case 0201:		// MOVEI
-	doMOVxx(immediate, noModification, acPut);
+	doMOVXX(immediate, noModification, acPut);
 	break;
 
       case 0202:		// MOVEM
-	doMOVxx(acGet, noModification, memPut);
+	doMOVXX(acGet, noModification, memPut);
 	break;
 
       case 0203:		// MOVES
-	doMOVxx(acGet, noModification, selfPut);
+	doMOVXX(acGet, noModification, selfPut);
 	break;
 
       case 0204:		// MOVS
-	doMOVxx(memGet, swap, acPut);
+	doMOVXX(memGet, swap, acPut);
 	break;
 
       case 0205:		// MOVSI
-	doMOVxx(immediate, swap, acPut);
+	doMOVXX(immediate, swap, acPut);
 	break;
 
       case 0206:		// MOVSM
-	doMOVxx(acGet, swap, memPut);
+	doMOVXX(acGet, swap, memPut);
 	break;
 
       case 0207:		// MOVSS
-	doMOVxx(acGet, swap, selfPut);
+	doMOVXX(acGet, swap, selfPut);
 	break;
 
       case 0210:		// MOVN
-	doMOVxx(memGet, negate, acPut);
+	doMOVXX(memGet, negate, acPut);
 	break;
 
       case 0211:		// MOVNI
-	doMOVxx(immediate, negate, acPut);
+	doMOVXX(immediate, negate, acPut);
 	break;
 
       case 0212:		// MOVNM
-	doMOVxx(acGet, negate, memPut);
+	doMOVXX(acGet, negate, memPut);
 	break;
 
       case 0213:		// MOVNS
-	doMOVxx(acGet, negate, selfPut);
+	doMOVXX(acGet, negate, selfPut);
 	break;
 
       case 0214:		// MOVM
-	doMOVxx(memGet, magnitude, acPut);
+	doMOVXX(memGet, magnitude, acPut);
 	break;
 
       case 0215:		// MOVMI
-	doMOVxx(immediate, magnitude, acPut);
+	doMOVXX(immediate, magnitude, acPut);
 	break;
 
       case 0216:		// MOVMM
-	doMOVxx(acGet, magnitude, memPut);
+	doMOVXX(acGet, magnitude, memPut);
 	break;
 
       case 0217:		// MOVMS
-	doMOVxx(acGet, magnitude, selfPut);
+	doMOVXX(acGet, magnitude, selfPut);
 	break;
 
       case 0250:		// EXCH
@@ -570,547 +593,707 @@ public:
 	break;
 
       case 0400:		// SETZ
-	doSETxx(memGet, zeroWord, acPut);
+	doSETXX(memGet, zeroWord, acPut);
 	break;
 
       case 0401:		// SETZI
-	doSETxx(immediate, zeroWord, acPut);
+	doSETXX(immediate, zeroWord, acPut);
 	break;
 
       case 0402:		// SETZM
-	doSETxx(memGet, zeroWord, memPut);
+	doSETXX(memGet, zeroWord, memPut);
 	break;
 
       case 0403:		// SETZB
-	doSETxx(memGet, zeroWord, bothPut);
+	doSETXX(memGet, zeroWord, bothPut);
+	break;
+
+      case 0404:		// AND
+	doBinOpXX(memGet, acGet, andWord, acPut);
+	break;
+
+      case 0405:		// ANDI
+	doBinOpXX(immediate, acGet, andWord, acPut);
+	break;
+
+      case 0406:		// ANDM
+	doBinOpXX(memGet, acGet, andWord, memPut);
+	break;
+
+      case 0407:		// ANDB
+	doBinOpXX(memGet, acGet, andWord, bothPut);
+	break;
+
+      case 0410:		// ANDCA
+	doBinOpXX(memGet, acGet, andCWord, acPut);
+	break;
+
+      case 0411:		// ANDCAI
+	doBinOpXX(immediate, acGet, andCWord, acPut);
+	break;
+
+      case 0412:		// ANDCAM
+	doBinOpXX(memGet, acGet, andCWord, memPut);
+	break;
+
+      case 0413:		// ANDCAB
+	doBinOpXX(memGet, acGet, andCWord, bothPut);
 	break;
 
       case 0414:		// SETM
-	doSETxx(acGet, noModification, memPut);
+	doSETXX(acGet, noModification, memPut);
 	break;
 
       case 0415:		// SETMI
-	doSETxx(immediate, noModification, memPut);
+	doSETXX(immediate, noModification, memPut);
 	break;
 
       case 0416:		// SETMM
-	doSETxx(acGet, noModification, memPut);
+	doSETXX(acGet, noModification, memPut);
 	break;
 
       case 0417:		// SETMB
-	doSETxx(acGet, noModification, bothPut);
+	doSETXX(acGet, noModification, bothPut);
+	break;
+
+      case 0420:		// ANDCM
+	doBinOpXX(acGet, memGet, andCWord, acPut);
+	break;
+
+      case 0421:		// ANDCMI
+	doBinOpXX(acGet, immediate, andCWord, acPut);
+	break;
+
+      case 0422:		// ANDCMM
+	doBinOpXX(acGet, memGet, andCWord, memPut);
+	break;
+
+      case 0423:		// ANDCMB
+	doBinOpXX(acGet, memGet, andCWord, bothPut);
 	break;
 
       case 0424:		// SETA
-	doSETxx(acGet, noModification, acPut);
+	doSETXX(acGet, noModification, acPut);
 	break;
 
       case 0425:		// SETAI
-	doSETxx(immediate, noModification, acPut);
+	doSETXX(immediate, noModification, acPut);
 	break;
 
       case 0426:		// SETAM
-	doSETxx(acGet, noModification, memPut);
+	doSETXX(acGet, noModification, memPut);
 	break;
 
       case 0427:		// SETAB
-	doSETxx(acGet, noModification, bothPut);
+	doSETXX(acGet, noModification, bothPut);
+	break;
+
+      case 0430:		// XOR
+	doBinOpXX(memGet, acGet, xorWord, acPut);
+	break;
+
+      case 0431:		// XORI
+	doBinOpXX(immediate, acGet, xorWord, acPut);
+	break;
+
+      case 0432:		// XORM
+	doBinOpXX(memGet, acGet, xorWord, memPut);
+	break;
+
+      case 0433:		// XORB
+	doBinOpXX(memGet, acGet, xorWord, bothPut);
+	break;
+
+      case 0434:		// IOR
+	doBinOpXX(memGet, acGet, iorWord, acPut);
+	break;
+
+      case 0435:		// IORI
+	doBinOpXX(immediate, acGet, iorWord, acPut);
+	break;
+
+      case 0436:		// IORM
+	doBinOpXX(memGet, acGet, iorWord, memPut);
+	break;
+
+      case 0437:		// IORB
+	doBinOpXX(memGet, acGet, iorWord, bothPut);
+	break;
+
+      case 0440:		// ANDCBM
+	doBinOpXX(acGet, memGet, andCBWord, acPut);
+	break;
+
+      case 0441:		// ANDCBMI
+	doBinOpXX(acGet, immediate, andCBWord, acPut);
+	break;
+
+      case 0442:		// ANDCBMM
+	doBinOpXX(acGet, memGet, andCBWord, memPut);
+	break;
+
+      case 0443:		// ANDCBMB
+	doBinOpXX(acGet, memGet, andCBWord, bothPut);
+	break;
+
+      case 0444:		// EQV
+	doBinOpXX(memGet, acGet, eqvWord, acPut);
+	break;
+
+      case 0445:		// EQVI
+	doBinOpXX(immediate, acGet, eqvWord, acPut);
+	break;
+
+      case 0446:		// EQVM
+	doBinOpXX(memGet, acGet, eqvWord, memPut);
+	break;
+
+      case 0447:		// EQVB
+	doBinOpXX(memGet, acGet, eqvWord, bothPut);
 	break;
 
       case 0450:		// SETCA
-	doSETxx(acGet, compWord, acPut);
+	doSETXX(acGet, compWord, acPut);
 	break;
 
       case 0451:		// SETCAI
-	doSETxx(immediate, compWord, acPut);
+	doSETXX(immediate, compWord, acPut);
 	break;
 
       case 0452:		// SETCAM
-	doSETxx(acGet, compWord, memPut);
+	doSETXX(acGet, compWord, memPut);
 	break;
 
       case 0453:		// SETCAB
-	doSETxx(acGet, compWord, bothPut);
+	doSETXX(acGet, compWord, bothPut);
+	break;
+
+      case 0454:		// ORCA
+	doBinOpXX(memGet, acGet, iorCWord, acPut);
+	break;
+
+      case 0455:		// ORCAI
+	doBinOpXX(immediate, acGet, iorCWord, acPut);
+	break;
+
+      case 0456:		// ORCAM
+	doBinOpXX(memGet, acGet, iorCWord, memPut);
+	break;
+
+      case 0457:		// ORCAB
+	doBinOpXX(memGet, acGet, iorCWord, bothPut);
 	break;
 
       case 0460:		// SETCM
-	doSETxx(acGet, compWord, memPut);
+	doSETXX(acGet, compWord, memPut);
 	break;
 
       case 0461:		// SETCMI
-	doSETxx(immediate, compWord, memPut);
+	doSETXX(immediate, compWord, memPut);
 	break;
 
       case 0462:		// SETCMM
-	doSETxx(acGet, compWord, memPut);
+	doSETXX(acGet, compWord, memPut);
 	break;
 
       case 0463:		// SETCMB
-	doSETxx(acGet, compWord, bothPut);
+	doSETXX(acGet, compWord, bothPut);
+	break;
+
+      case 0464:		// ORCM
+	doBinOpXX(acGet, memGet, iorCWord, acPut);
+	break;
+
+      case 0465:		// ORCMI
+	doBinOpXX(acGet, immediate, iorCWord, acPut);
+	break;
+
+      case 0466:		// ORCMM
+	doBinOpXX(acGet, memGet, iorCWord, memPut);
+	break;
+
+      case 0467:		// ORCMB
+	doBinOpXX(acGet, memGet, iorCWord, bothPut);
+	break;
+
+      case 0470:		// ORCB
+	doBinOpXX(acGet, memGet, iorCBWord, acPut);
+	break;
+
+      case 0471:		// ORCBI
+	doBinOpXX(acGet, immediate, iorCBWord, acPut);
+	break;
+
+      case 0472:		// ORCBM
+	doBinOpXX(acGet, memGet, iorCBWord, memPut);
+	break;
+
+      case 0473:		// ORCBB
+	doBinOpXX(acGet, memGet, iorCBWord, bothPut);
 	break;
 
       case 0474:		// SETO
-	doSETxx(memGet, onesWord, acPut);
+	doSETXX(memGet, onesWord, acPut);
 	break;
 
       case 0475:		// SETOI
-	doSETxx(immediate, onesWord, acPut);
+	doSETXX(immediate, onesWord, acPut);
 	break;
 
       case 0476:		// SETOM
-	doSETxx(memGet, onesWord, memPut);
+	doSETXX(memGet, onesWord, memPut);
 	break;
 
       case 0477:		// SETOB
-	doSETxx(memGet, onesWord, bothPut);
+	doSETXX(memGet, onesWord, bothPut);
 	break;
 
       case 0500:		// HLL
-	doHxxxx(memGet, acGet, copyHLL, noModification, acPut);
+	doHXXXX(memGet, acGet, copyHLL, noModification, acPut);
 	break;
 
       case 0501:		// HLLI/XHLLI
-	doHxxxx(acGet, immediate, copyHLL, noModification, acPut);
+	doHXXXX(acGet, immediate, copyHLL, noModification, acPut);
 	break;
 
       case 0502:		// HLLM
-	doHxxxx(acGet, memGet, copyHLL, noModification, memPut);
+	doHXXXX(acGet, memGet, copyHLL, noModification, memPut);
 	break;
 
       case 0503:		// HLLS
-	doHxxxx(memGet, memGet, copyHLL, noModification, selfPut);
+	doHXXXX(memGet, memGet, copyHLL, noModification, selfPut);
 	break;
 
       case 0504:		// HRL
-	doHxxxx(memGet, acGet, copyHRL, noModification, acPut);
+	doHXXXX(memGet, acGet, copyHRL, noModification, acPut);
 	break;
 
       case 0505:		// HRLI
-	doHxxxx(acGet, immediate, copyHRL, noModification, acPut);
+	doHXXXX(acGet, immediate, copyHRL, noModification, acPut);
 	break;
 
       case 0506:		// HRLM
-	doHxxxx(acGet, memGet, copyHRL, noModification, memPut);
+	doHXXXX(acGet, memGet, copyHRL, noModification, memPut);
 	break;
 
       case 0507:		// HRLS
-	doHxxxx(memGet, memGet, copyHRL, noModification, selfPut);
+	doHXXXX(memGet, memGet, copyHRL, noModification, selfPut);
 	break;
 
       case 0510:		// HLLZ
-	doHxxxx(memGet, acGet, copyHLL, zeroR, acPut);
+	doHXXXX(memGet, acGet, copyHLL, zeroR, acPut);
 	break;
 
       case 0511:		// HLLZI
-	doHxxxx(acGet, immediate, copyHLL, zeroR, acPut);
+	doHXXXX(acGet, immediate, copyHLL, zeroR, acPut);
 	break;
 
       case 0512:		// HLLZM
-	doHxxxx(acGet, memGet, copyHLL, zeroR, memPut);
+	doHXXXX(acGet, memGet, copyHLL, zeroR, memPut);
 	break;
 
       case 0513:		// HLLZS
-	doHxxxx(memGet, memGet, copyHLL, zeroR, selfPut);
+	doHXXXX(memGet, memGet, copyHLL, zeroR, selfPut);
 	break;
 
       case 0514:		// HRLZ
-	doHxxxx(memGet, acGet, copyHRL, zeroR, acPut);
+	doHXXXX(memGet, acGet, copyHRL, zeroR, acPut);
 	break;
 
       case 0515:		// HRLZI
-	doHxxxx(acGet, immediate, copyHRL, zeroR, acPut);
+	doHXXXX(acGet, immediate, copyHRL, zeroR, acPut);
 	break;
 
       case 0516:		// HRLZM
-	doHxxxx(acGet, memGet, copyHRL, zeroR, memPut);
+	doHXXXX(acGet, memGet, copyHRL, zeroR, memPut);
 	break;
 
       case 0517:		// HRLZS
-	doHxxxx(memGet, memGet, copyHRL, zeroR, selfPut);
+	doHXXXX(memGet, memGet, copyHRL, zeroR, selfPut);
 	break;
 
       case 0520:		// HLLO
-	doHxxxx(memGet, acGet, copyHLL, onesR, acPut);
+	doHXXXX(memGet, acGet, copyHLL, onesR, acPut);
 	break;
 
       case 0521:		// HLLOI
-	doHxxxx(acGet, immediate, copyHLL, onesR, acPut);
+	doHXXXX(acGet, immediate, copyHLL, onesR, acPut);
 	break;
 
       case 0522:		// HLLOM
-	doHxxxx(acGet, memGet, copyHLL, onesR, memPut);
+	doHXXXX(acGet, memGet, copyHLL, onesR, memPut);
 	break;
 
       case 0523:		// HLLOS
-	doHxxxx(memGet, memGet, copyHLL, onesR, selfPut);
+	doHXXXX(memGet, memGet, copyHLL, onesR, selfPut);
 	break;
 
       case 0524:		// HRLO
-	doHxxxx(memGet, acGet, copyHRL, onesR, acPut);
+	doHXXXX(memGet, acGet, copyHRL, onesR, acPut);
 	break;
 
       case 0525:		// HRLOI
-	doHxxxx(acGet, immediate, copyHRL, onesR, acPut);
+	doHXXXX(acGet, immediate, copyHRL, onesR, acPut);
 	break;
 
       case 0526:		// HRLOM
-	doHxxxx(acGet, memGet, copyHRL, onesR, memPut);
+	doHXXXX(acGet, memGet, copyHRL, onesR, memPut);
 	break;
 
       case 0527:		// HRLOS
-	doHxxxx(memGet, memGet, copyHRL, onesR, selfPut);
+	doHXXXX(memGet, memGet, copyHRL, onesR, selfPut);
 	break;
 
       case 0530:		// HLLE
-	doHxxxx(memGet, acGet, copyHLL, extnR, acPut);
+	doHXXXX(memGet, acGet, copyHLL, extnR, acPut);
 	break;
 
       case 0531:		// HLLEI
-	doHxxxx(acGet, immediate, copyHLL, extnR, acPut);
+	doHXXXX(acGet, immediate, copyHLL, extnR, acPut);
 	break;
 
       case 0532:		// HLLEM
-	doHxxxx(acGet, memGet, copyHLL, extnR, memPut);
+	doHXXXX(acGet, memGet, copyHLL, extnR, memPut);
 	break;
 
       case 0533:		// HLLES
-	doHxxxx(memGet, memGet, copyHLL, extnR, selfPut);
+	doHXXXX(memGet, memGet, copyHLL, extnR, selfPut);
 	break;
 
       case 0534:		// HRLE
-	doHxxxx(memGet, acGet, copyHRL, extnR, acPut);
+	doHXXXX(memGet, acGet, copyHRL, extnR, acPut);
 	break;
 
       case 0535:		// HRLEI
-	doHxxxx(acGet, immediate, copyHRL, extnR, acPut);
+	doHXXXX(acGet, immediate, copyHRL, extnR, acPut);
 	break;
 
       case 0536:		// HRLEM
-	doHxxxx(acGet, memGet, copyHRL, extnR, memPut);
+	doHXXXX(acGet, memGet, copyHRL, extnR, memPut);
 	break;
 
       case 0537:		// HRLES
-	doHxxxx(memGet, memGet, copyHRL, extnR, selfPut);
+	doHXXXX(memGet, memGet, copyHRL, extnR, selfPut);
 	break;
 
       case 0540:		// HRR
-	doHxxxx(memGet, acGet, copyHRR, noModification, acPut);
+	doHXXXX(memGet, acGet, copyHRR, noModification, acPut);
 	break;
 
       case 0541:		// HRRI
-	doHxxxx(acGet, immediate, copyHRR, noModification, acPut);
+	doHXXXX(acGet, immediate, copyHRR, noModification, acPut);
 	break;
 
       case 0542:		// HRRM
-	doHxxxx(acGet, memGet, copyHRR, noModification, memPut);
+	doHXXXX(acGet, memGet, copyHRR, noModification, memPut);
 	break;
 
       case 0543:		// HRRS
-	doHxxxx(memGet, memGet, copyHRR, noModification, selfPut);
+	doHXXXX(memGet, memGet, copyHRR, noModification, selfPut);
 	break;
 
       case 0544:		// HLR
-	doHxxxx(memGet, acGet, copyHLR, noModification, acPut);
+	doHXXXX(memGet, acGet, copyHLR, noModification, acPut);
 	break;
 
       case 0545:		// HLRI
-	doHxxxx(acGet, immediate, copyHLR, noModification, acPut);
+	doHXXXX(acGet, immediate, copyHLR, noModification, acPut);
 	break;
 
       case 0546:		// HLRM
-	doHxxxx(acGet, memGet, copyHLR, noModification, memPut);
+	doHXXXX(acGet, memGet, copyHLR, noModification, memPut);
 	break;
 
       case 0547:		// HLRS
-	doHxxxx(memGet, memGet, copyHLR, noModification, selfPut);
+	doHXXXX(memGet, memGet, copyHLR, noModification, selfPut);
 	break;
 
       case 0550:		// HRRZ
-	doHxxxx(memGet, acGet, copyHRR, zeroL, acPut);
+	doHXXXX(memGet, acGet, copyHRR, zeroL, acPut);
 	break;
 
       case 0551:		// HRRZI
-	doHxxxx(acGet, immediate, copyHRR, zeroL, acPut);
+	doHXXXX(acGet, immediate, copyHRR, zeroL, acPut);
 	break;
 
       case 0552:		// HRRZM
-	doHxxxx(acGet, memGet, copyHRR, zeroL, memPut);
+	doHXXXX(acGet, memGet, copyHRR, zeroL, memPut);
 	break;
 
       case 0553:		// HRRZS
-	doHxxxx(memGet, memGet, copyHRR, zeroL, selfPut);
+	doHXXXX(memGet, memGet, copyHRR, zeroL, selfPut);
 	break;
 
       case 0554:		// HLRZ
-	doHxxxx(memGet, acGet, copyHLR, zeroL, acPut);
+	doHXXXX(memGet, acGet, copyHLR, zeroL, acPut);
 	break;
 
       case 0555:		// HLRZI
-	doHxxxx(acGet, immediate, copyHLR, zeroL, acPut);
+	doHXXXX(acGet, immediate, copyHLR, zeroL, acPut);
 	break;
 
       case 0556:		// HLRZM
-	doHxxxx(acGet, memGet, copyHLR, zeroL, memPut);
+	doHXXXX(acGet, memGet, copyHLR, zeroL, memPut);
 	break;
 
       case 0557:		// HLRZS
-	doHxxxx(memGet, memGet, copyHLR, zeroL, selfPut);
+	doHXXXX(memGet, memGet, copyHLR, zeroL, selfPut);
 	break;
 
       case 0560:		// HRRO
-	doHxxxx(memGet, acGet, copyHRR, onesL, acPut);
+	doHXXXX(memGet, acGet, copyHRR, onesL, acPut);
 	break;
 
       case 0561:		// HRROI
-	doHxxxx(acGet, immediate, copyHRR, onesL, acPut);
+	doHXXXX(acGet, immediate, copyHRR, onesL, acPut);
 	break;
 
       case 0562:		// HRROM
-	doHxxxx(acGet, memGet, copyHRR, onesL, memPut);
+	doHXXXX(acGet, memGet, copyHRR, onesL, memPut);
 	break;
 
       case 0563:		// HRROS
-	doHxxxx(memGet, memGet, copyHRR, onesL, selfPut);
+	doHXXXX(memGet, memGet, copyHRR, onesL, selfPut);
 	break;
 
       case 0564:		// HLRO
-	doHxxxx(memGet, acGet, copyHLR, onesL, acPut);
+	doHXXXX(memGet, acGet, copyHLR, onesL, acPut);
 	break;
 
       case 0565:		// HLROI
-	doHxxxx(acGet, immediate, copyHLR, onesL, acPut);
+	doHXXXX(acGet, immediate, copyHLR, onesL, acPut);
 	break;
 
       case 0566:		// HLROM
-	doHxxxx(acGet, memGet, copyHLR, onesL, memPut);
+	doHXXXX(acGet, memGet, copyHLR, onesL, memPut);
 	break;
 
       case 0567:		// HLROS
-	doHxxxx(memGet, memGet, copyHLR, onesL, selfPut);
+	doHXXXX(memGet, memGet, copyHLR, onesL, selfPut);
 	break;
 
       case 0570:		// HRRE
-	doHxxxx(memGet, acGet, copyHRR, extnL, acPut);
+	doHXXXX(memGet, acGet, copyHRR, extnL, acPut);
 	break;
 
       case 0571:		// HRREI
-	doHxxxx(acGet, immediate, copyHRR, extnL, acPut);
+	doHXXXX(acGet, immediate, copyHRR, extnL, acPut);
 	break;
 
       case 0572:		// HRREM
-	doHxxxx(acGet, memGet, copyHRR, extnL, memPut);
+	doHXXXX(acGet, memGet, copyHRR, extnL, memPut);
 	break;
 
       case 0573:		// HRRES
-	doHxxxx(memGet, memGet, copyHRR, extnL, selfPut);
+	doHXXXX(memGet, memGet, copyHRR, extnL, selfPut);
 	break;
 
       case 0574:		// HLRE
-	doHxxxx(memGet, acGet, copyHLR, extnL, acPut);
+	doHXXXX(memGet, acGet, copyHLR, extnL, acPut);
 	break;
 
       case 0575:		// HLREI
-	doHxxxx(acGet, immediate, copyHLR, extnL, acPut);
+	doHXXXX(acGet, immediate, copyHLR, extnL, acPut);
 	break;
 
       case 0576:		// HLREM
-	doHxxxx(acGet, memGet, copyHLR, extnL, memPut);
+	doHXXXX(acGet, memGet, copyHLR, extnL, memPut);
 	break;
 
       case 0577:		// HLRES
-	doHxxxx(memGet, memGet, copyHLR, extnL, selfPut);
+	doHXXXX(memGet, memGet, copyHLR, extnL, selfPut);
 	break;
 
       case 0600:		// TRN
-	doTxxxx(acGetRH, noModification, never, memPut);
+	doTXXXX(acGetRH, noModification, never, memPut);
 	break;
 
       case 0601:		// TLN
-	doTxxxx(acGetLH, noModification, never, memPut);
+	doTXXXX(acGetLH, noModification, never, memPut);
 	break;
 
       case 0602:		// TRNE
-	doTxxxx(acGetRH, noModification, isEQ0, memPut);
+	doTXXXX(acGetRH, noModification, isEQ0, memPut);
 	break;
 
       case 0603:		// TLNE
-	doTxxxx(acGetLH, noModification, isEQ0, memPut);
+	doTXXXX(acGetLH, noModification, isEQ0, memPut);
 	break;
 
       case 0604:		// TRNA
-	doTxxxx(acGetRH, noModification, always, memPut);
+	doTXXXX(acGetRH, noModification, always, memPut);
 	break;
 
       case 0605:		// TLNA
-	doTxxxx(acGetLH, noModification, always, memPut);
+	doTXXXX(acGetLH, noModification, always, memPut);
 	break;
 
       case 0606:		// TRNN
-	doTxxxx(acGetRH, noModification, isNE0, memPut);
+	doTXXXX(acGetRH, noModification, isNE0, memPut);
 	break;
 
       case 0607:		// TLNN
-	doTxxxx(acGetLH, noModification, isNE0, memPut);
+	doTXXXX(acGetLH, noModification, isNE0, memPut);
 	break;
 
       case 0620:		// TRZ
-	doTxxxx(acGetRH, zeroMask, never, memPut);
+	doTXXXX(acGetRH, zeroMask, never, memPut);
 	break;
 
       case 0621:		// TLZ
-	doTxxxx(acGetLH, zeroMask, never, memPut);
+	doTXXXX(acGetLH, zeroMask, never, memPut);
 	break;
 
       case 0622:		// TRZE
-	doTxxxx(acGetRH, zeroMask, isEQ0, memPut);
+	doTXXXX(acGetRH, zeroMask, isEQ0, memPut);
 	break;
 
       case 0623:		// TLZE
-	doTxxxx(acGetLH, zeroMask, isEQ0, memPut);
+	doTXXXX(acGetLH, zeroMask, isEQ0, memPut);
 	break;
 
       case 0624:		// TRZA
-	doTxxxx(acGetRH, zeroMask, always, memPut);
+	doTXXXX(acGetRH, zeroMask, always, memPut);
 	break;
 
       case 0625:		// TLZA
-	doTxxxx(acGetLH, zeroMask, always, memPut);
+	doTXXXX(acGetLH, zeroMask, always, memPut);
 	break;
 
       case 0626:		// TRZN
-	doTxxxx(acGetRH, zeroMask, isNE0, memPut);
+	doTXXXX(acGetRH, zeroMask, isNE0, memPut);
 	break;
 
       case 0627:		// TLZN
-	doTxxxx(acGetLH, zeroMask, isNE0, memPut);
+	doTXXXX(acGetLH, zeroMask, isNE0, memPut);
 	break;
 
       case 0640:		// TRC
-	doTxxxx(acGetRH, compMask, never, memPut);
+	doTXXXX(acGetRH, compMask, never, memPut);
 	break;
 
       case 0641:		// TLC
-	doTxxxx(acGetLH, compMask, never, memPut);
+	doTXXXX(acGetLH, compMask, never, memPut);
 	break;
 
       case 0642:		// TRCE
-	doTxxxx(acGetRH, compMask, isEQ0, memPut);
+	doTXXXX(acGetRH, compMask, isEQ0, memPut);
 	break;
 
       case 0643:		// TLCE
-	doTxxxx(acGetLH, compMask, isEQ0, memPut);
+	doTXXXX(acGetLH, compMask, isEQ0, memPut);
 	break;
 
       case 0644:		// TRCA
-	doTxxxx(acGetRH, compMask, always, memPut);
+	doTXXXX(acGetRH, compMask, always, memPut);
 	break;
 
       case 0645:		// TLCA
-	doTxxxx(acGetLH, compMask, always, memPut);
+	doTXXXX(acGetLH, compMask, always, memPut);
 	break;
 
       case 0646:		// TRCN
-	doTxxxx(acGetRH, compMask, isNE0, memPut);
+	doTXXXX(acGetRH, compMask, isNE0, memPut);
 	break;
 
       case 0647:		// TLCN
-	doTxxxx(acGetLH, compMask, isNE0, memPut);
+	doTXXXX(acGetLH, compMask, isNE0, memPut);
 	break;
 
       case 0660:		// TRO
-	doTxxxx(acGetRH, onesMask, never, memPut);
+	doTXXXX(acGetRH, onesMask, never, memPut);
 	break;
 
       case 0661:		// TLO
-	doTxxxx(acGetLH, onesMask, never, memPut);
+	doTXXXX(acGetLH, onesMask, never, memPut);
 	break;
 
       case 0662:		// TROE
-	doTxxxx(acGetRH, onesMask, isEQ0, memPut);
+	doTXXXX(acGetRH, onesMask, isEQ0, memPut);
 	break;
 
       case 0663:		// TLOE
-	doTxxxx(acGetLH, onesMask, isEQ0, memPut);
+	doTXXXX(acGetLH, onesMask, isEQ0, memPut);
 	break;
 
       case 0664:		// TROA
-	doTxxxx(acGetRH, onesMask, always, memPut);
+	doTXXXX(acGetRH, onesMask, always, memPut);
 	break;
 
       case 0665:		// TLOA
-	doTxxxx(acGetLH, onesMask, always, memPut);
+	doTXXXX(acGetLH, onesMask, always, memPut);
 	break;
 
       case 0666:		// TRON
-	doTxxxx(acGetRH, onesMask, isNE0, memPut);
+	doTXXXX(acGetRH, onesMask, isNE0, memPut);
 	break;
 
       case 0667:		// TLON
-	doTxxxx(acGetLH, onesMask, isNE0, memPut);
+	doTXXXX(acGetLH, onesMask, isNE0, memPut);
 	break;
 
       case 0610:		// TDN
-	doTxxxx(memGet, noModification, never, memPut);
+	doTXXXX(memGet, noModification, never, memPut);
 	break;
 
       case 0611:		// TSN
-	doTxxxx(memGetSwapped, noModification, never, noStore);
+	doTXXXX(memGetSwapped, noModification, never, noStore);
 	break;
 
       case 0612:		// TDNE
-	doTxxxx(memGet, noModification, isEQ0, memPut);
+	doTXXXX(memGet, noModification, isEQ0, memPut);
 	break;
 
       case 0613:		// TSNE
-	doTxxxx(memGetSwapped, noModification, isEQ0, noStore);
+	doTXXXX(memGetSwapped, noModification, isEQ0, noStore);
 	break;
 
       case 0614:		// TDNA
-	doTxxxx(memGet, noModification, always, memPut);
+	doTXXXX(memGet, noModification, always, memPut);
 	break;
 
       case 0615:		// TSNA
-	doTxxxx(memGetSwapped, noModification, always, noStore);
+	doTXXXX(memGetSwapped, noModification, always, noStore);
 	break;
 
       case 0616:		// TDNN
-	doTxxxx(memGet, noModification, isNE0, memPut);
+	doTXXXX(memGet, noModification, isNE0, memPut);
 	break;
 
       case 0617:		// TSNN
-	doTxxxx(memGetSwapped, noModification, isNE0, noStore);
+	doTXXXX(memGetSwapped, noModification, isNE0, noStore);
 	break;
 
       case 0630:		// TDZ
-	doTxxxx(memGet, zeroMask, never, memPut);
+	doTXXXX(memGet, zeroMask, never, memPut);
 	break;
 
       case 0631:		// TSZ
-	doTxxxx(memGetSwapped, zeroMask, never, noStore);
+	doTXXXX(memGetSwapped, zeroMask, never, noStore);
 	break;
 
       case 0632:		// TDZE
-	doTxxxx(memGet, zeroMask, isEQ0, memPut);
+	doTXXXX(memGet, zeroMask, isEQ0, memPut);
 	break;
 
       case 0633:		// TSZE
-	doTxxxx(memGetSwapped, zeroMask, isEQ0, noStore);
+	doTXXXX(memGetSwapped, zeroMask, isEQ0, noStore);
 	break;
 
       case 0634:		// TDZA
-	doTxxxx(memGet, zeroMask, always, memPut);
+	doTXXXX(memGet, zeroMask, always, memPut);
 	break;
 
       case 0635:		// TSZA
-	doTxxxx(memGetSwapped, zeroMask, always, noStore);
+	doTXXXX(memGetSwapped, zeroMask, always, noStore);
 	break;
 
       case 0636:		// TDZN
-	doTxxxx(memGet, zeroMask, isNE0, memPut);
+	doTXXXX(memGet, zeroMask, isNE0, memPut);
 	break;
 
       case 0637:		// TSZN
-	doTxxxx(memGetSwapped, zeroMask, isNE0, noStore);
+	doTXXXX(memGetSwapped, zeroMask, isNE0, noStore);
 	break;
 
       case 0700:
