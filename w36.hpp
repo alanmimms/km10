@@ -58,6 +58,11 @@ struct W36 {
   };
 
 
+  // Constants
+  static inline const auto halfOnes = 0777777u;
+  static inline const auto allOnes = 07777777'777777ull;
+  static inline const auto mostNegative = 1ull << 35;
+
   // Constructors
   W36(uint64_t w = 0) : u(w) {}
   W36(unsigned aLH, unsigned aRH) : rhu(aRH), lhu(aRH) {}
