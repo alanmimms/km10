@@ -23,21 +23,21 @@ public:
     struct ATTRPACKED {
       unsigned: 23;
       
-      unsigned ndv;
-      unsigned fuf;
-      unsigned tr1;
-      unsigned tr2;
-      unsigned afi;
-      unsigned pub;
-      unsigned pcu;
-      unsigned usrIO;
-      unsigned usr;
-      unsigned fpd;
-      unsigned fov;
-      unsigned cy0;
-      unsigned cy1;
-      unsigned pcp;
-      unsigned ov;
+      unsigned ndv: 1;
+      unsigned fuf: 1;
+      unsigned tr1: 1;
+      unsigned tr2: 1;
+      unsigned afi: 1;
+      unsigned pub: 1;
+      unsigned pcu: 1;
+      unsigned usrIO: 1;
+      unsigned usr: 1;
+      unsigned fpd: 1;
+      unsigned fov: 1;
+      unsigned cy0: 1;
+      unsigned cy1: 1;
+      unsigned pcp: 1;
+      unsigned ov: 1;
     };
 
     uint64_t u: 36;
@@ -48,20 +48,58 @@ public:
 
   bool tops20Paging;
   bool pagingEnabled;
-
-  unsigned intLevel;
-  unsigned intLevelsPending;
-  unsigned intLevelsRequested;
-  unsigned intLevelsInProgress;
-  unsigned intLevelsEnabled;
-  bool piEnabled;
-
   bool running;
   bool tracePC;
   bool traceAC;
   bool traceMem;
 
   uint64_t maxInsns;
+
+
+  // PI CONO function bits
+  union PIFunctions {
+    PIFunctions(unsigned v) :u(v) {};
+
+    struct ATTRPACKED {
+      unsigned levels: 7;
+
+      unsigned turnPIOn: 1;
+      unsigned turnPIOff: 1;
+
+      unsigned levelsOff: 1;
+      unsigned levelsOn: 1;
+      unsigned levelsInitiate: 1;
+      
+      unsigned clearPI: 1;
+      unsigned dropRequests: 1;
+      unsigned: 1;
+
+      unsigned writeEvenParityDir: 1;
+      unsigned writeEvenParityData: 1;
+      unsigned writeEvenParityAddr: 1;
+    };
+
+    unsigned u: 18;
+  };
+
+  // PI state and CONI bits
+  union PIState {
+
+    struct ATTRPACKED {
+      unsigned levelsEnabled: 7;
+      unsigned piEnabled: 1;
+      unsigned intInProgress: 7;
+      unsigned writeEvenParityDir: 1;
+      unsigned writeEvenParityData: 1;
+      unsigned writeEvenParityAddr: 1;
+      unsigned levelsRequested: 7;
+      unsigned: 11;
+    };
+
+    uint64_t u: 36;
+
+    PIState(uint64_t v) :u(v) {};
+  } piState;
 
   inline static bool loadLog{true};
   inline static ofstream loadLogS{"load.log"};
@@ -72,9 +110,9 @@ public:
     : AC(),
       pc(0, 0),
       memP(physicalMemoryP),
-      maxInsns(aMaxInsns)
-  {
-  }
+      maxInsns(aMaxInsns),
+      piState(0)
+  { }
 
 
   // See 1982_ProcRefMan.pdf p.262
@@ -175,10 +213,19 @@ public:
 
     uint64_t nInsns = 0;
 
+    auto nyi = [&] {cout << " [not yet implemented]";};
+
     function<W36(W36)> swap = [&](W36 src) {return W36(src.rhu, src.lhu);};
 
     function<W36(W36)> negate = [&](W36 src) {
       W36 v(-src.s);
+      if (src.u == W36::mostNegative) flags.tr1 = flags.ov = flags.cy1 = 1;
+      if (src.u == 0) flags.cy0 = flags.cy1 = 1;
+      return v;
+    };
+
+    function<W36(W36)> magnitude = [&](W36 src) {
+      W36 v(src.s < 0 ? -src.s : src.s);
       if (src.u == W36::mostNegative) flags.tr1 = flags.ov = flags.cy1 = 1;
       return v;
     };
@@ -224,10 +271,12 @@ public:
       if (iw.ac != 0) acPut(value);
     };
 
-    function<W36()> immediate = [&]() -> W36 {return W36(0, ea.rhu);};
+    function<void(W36)> bothPut = [&](W36 value) -> void {
+      acPut(value);
+      memPut(value);
+    };
 
-    // For the likes of XHLLI.
-    function<W36()> immediateX = [&]() -> W36 {return ea;};
+    function<W36()> immediate = [&]() -> W36 {return W36(pc.isSection0() ? 0 : ea.lhu, ea.rhu);};
 
     // Condition testing predicates
     function<bool(W36 toTest)> isLT0  = [&](W36 v) -> bool const {return v.s <  0;};
@@ -263,6 +312,10 @@ public:
     function<W36(W36)> zeroMask = [&](W36 fromSrc) -> auto const {return fromSrc.u & ~(uint64_t) ea.rhu;};
     function<W36(W36)> onesMask = [&](W36 fromSrc) -> auto const {return fromSrc.u | ea.rhu;};
     function<W36(W36)> compMask = [&](W36 fromSrc) -> auto const {return fromSrc.u ^ ea.rhu;};
+
+    function<W36(W36)> zeroWord = [&](W36 fromSrc) -> auto const {return 0;};
+    function<W36(W36)> onesWord = [&](W36 fromSrc) -> auto const {return W36::allOnes;};
+    function<W36(W36)> compWord = [&](W36 fromSrc) -> auto const {return ~fromSrc.u;};
 
     function<void(W36)> noStore = [](W36 toSrc) -> void {};
 
@@ -310,6 +363,14 @@ public:
 
 
     auto doMOVxx = [&](function<W36()> &doGetSrcF,
+		       function<W36(W36 dst)> &doModifyF,
+		       function<void(W36 v)> &doPutDstF) -> void
+    {
+      doPutDstF(doModifyF(doGetSrcF()));
+    };
+
+
+    auto doSETxx = [&](function<W36()> &doGetSrcF,
 		       function<W36(W36 dst)> &doModifyF,
 		       function<void(W36 v)> &doPutDstF) -> void
     {
@@ -406,6 +467,22 @@ public:
 	doMOVxx(acGet, negate, selfPut);
 	break;
 
+      case 0214:		// MOVM
+	doMOVxx(memGet, magnitude, acPut);
+	break;
+
+      case 0215:		// MOVMI
+	doMOVxx(immediate, magnitude, acPut);
+	break;
+
+      case 0216:		// MOVMM
+	doMOVxx(acGet, magnitude, memPut);
+	break;
+
+      case 0217:		// MOVMS
+	doMOVxx(acGet, magnitude, selfPut);
+	break;
+
       case 0250:		// EXCH
 	tmp = acGet();
 	acPut(memGet());
@@ -492,18 +569,108 @@ public:
 	doSKIP(isGT0);
 	break;
 
+      case 0400:		// SETZ
+	doSETxx(memGet, zeroWord, acPut);
+	break;
+
+      case 0401:		// SETZI
+	doSETxx(immediate, zeroWord, acPut);
+	break;
+
+      case 0402:		// SETZM
+	doSETxx(memGet, zeroWord, memPut);
+	break;
+
+      case 0403:		// SETZB
+	doSETxx(memGet, zeroWord, bothPut);
+	break;
+
+      case 0414:		// SETM
+	doSETxx(acGet, noModification, memPut);
+	break;
+
+      case 0415:		// SETMI
+	doSETxx(immediate, noModification, memPut);
+	break;
+
+      case 0416:		// SETMM
+	doSETxx(acGet, noModification, memPut);
+	break;
+
+      case 0417:		// SETMB
+	doSETxx(acGet, noModification, bothPut);
+	break;
+
+      case 0424:		// SETA
+	doSETxx(acGet, noModification, acPut);
+	break;
+
+      case 0425:		// SETAI
+	doSETxx(immediate, noModification, acPut);
+	break;
+
+      case 0426:		// SETAM
+	doSETxx(acGet, noModification, memPut);
+	break;
+
+      case 0427:		// SETAB
+	doSETxx(acGet, noModification, bothPut);
+	break;
+
+      case 0450:		// SETCA
+	doSETxx(acGet, compWord, acPut);
+	break;
+
+      case 0451:		// SETCAI
+	doSETxx(immediate, compWord, acPut);
+	break;
+
+      case 0452:		// SETCAM
+	doSETxx(acGet, compWord, memPut);
+	break;
+
+      case 0453:		// SETCAB
+	doSETxx(acGet, compWord, bothPut);
+	break;
+
+      case 0460:		// SETCM
+	doSETxx(acGet, compWord, memPut);
+	break;
+
+      case 0461:		// SETCMI
+	doSETxx(immediate, compWord, memPut);
+	break;
+
+      case 0462:		// SETCMM
+	doSETxx(acGet, compWord, memPut);
+	break;
+
+      case 0463:		// SETCMB
+	doSETxx(acGet, compWord, bothPut);
+	break;
+
+      case 0474:		// SETO
+	doSETxx(memGet, onesWord, acPut);
+	break;
+
+      case 0475:		// SETOI
+	doSETxx(immediate, onesWord, acPut);
+	break;
+
+      case 0476:		// SETOM
+	doSETxx(memGet, onesWord, memPut);
+	break;
+
+      case 0477:		// SETOB
+	doSETxx(memGet, onesWord, bothPut);
+	break;
+
       case 0500:		// HLL
 	doHxxxx(memGet, acGet, copyHLL, noModification, acPut);
 	break;
 
       case 0501:		// HLLI/XHLLI
-
-	if (pc.isSection0()) {
-	  doHxxxx(acGet, immediate, copyHLL, noModification, acPut);
-	} else {
-	  doHxxxx(acGet, immediateX, copyHLL, noModification, acPut);
-	}
-	
+	doHxxxx(acGet, immediate, copyHLL, noModification, acPut);
 	break;
 
       case 0502:		// HLLM
@@ -946,7 +1113,50 @@ public:
 	doTxxxx(memGetSwapped, zeroMask, isNE0, noStore);
 	break;
 
+      case 0700:
+
+	switch ((unsigned) iw.ioAll << 2) {
+	case 070060: {		// CONO PI,
+	  PIFunctions pi(ea);
+
+	  if (pi.clearPI) {
+	    piState.u = 0;
+	  } else {
+	    piState.writeEvenParityDir = pi.writeEvenParityDir;
+	    piState.writeEvenParityData = pi.writeEvenParityData;
+	    piState.writeEvenParityAddr = pi.writeEvenParityAddr;
+
+	    if (pi.turnPIOn) {
+	      piState.piEnabled = 1;
+	    } else if (pi.turnPIOff) {
+	      piState.piEnabled = 0;
+	    } else if (pi.dropRequests != 0) {
+	      piState.levelsRequested &= ~pi.levels;
+	    } else if (pi.levelsInitiate) {
+	      piState.levelsRequested |= pi.levels;
+	    } else if (pi.levelsOff) {
+	      piState.levelsEnabled &= ~pi.levels;
+	    } else if (pi.levelsOn) {
+	      piState.levelsEnabled |= pi.levels;
+	    }
+	  }
+
+	  break;
+	}
+
+	case 070064:		// CONI PI,
+	  memPut(piState.u);
+	  break;
+
+	default:
+	  nyi();
+	  break;
+	}
+
+	break;
+
       default:
+	nyi();
 	break;
       }
 
