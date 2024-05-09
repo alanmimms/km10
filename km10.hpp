@@ -1870,6 +1870,8 @@ public:
 	case 070020: {		// CONO APR,
 	  APRFunctions func(eaw.u);
 
+	  if (traceMem) cerr << " ; " << oct << setw(6) << eaw.rhu;
+
 	  if (func.clear) {
 	    aprState.active.u &= ~func.select.u;
 	  } else if (func.set) {
@@ -1910,6 +1912,8 @@ public:
 	case 070060: {		// CONO PI,
 	  PIFunctions pi(ea);
 
+	  if (traceMem) cerr << " ; " << oct << setw(6) << eaw.rhu;
+
 	  if (pi.clearPI) {
 	    piState.u = 0;
 	  } else {
@@ -1940,6 +1944,7 @@ public:
 	  break;
 
 	case 070120:		// CONO PAG,
+	  if (traceMem) cerr << " ; " << oct << setw(6) << eaw.rhu;
 	  pagState.u = iw.y;
 	  break;
 
