@@ -19,10 +19,9 @@ public:
   W36 AC[16];
   W36 pc;
 
-  union Flags {
+  union ProgramFlags {
+
     struct ATTRPACKED {
-      unsigned: 23;
-      
       unsigned ndv: 1;
       unsigned fuf: 1;
       unsigned tr1: 1;
@@ -36,16 +35,14 @@ public:
       unsigned fov: 1;
       unsigned cy0: 1;
       unsigned cy1: 1;
-      unsigned pcp: 1;
       unsigned ov: 1;
     };
 
-    uint64_t u: 36;
+    unsigned u: 13;
   } flags;
 
   // Pointer to current virtual memory mapping in emulator.
   W36 *memP;
-
 
   bool running;
   bool tracePC;
@@ -75,6 +72,7 @@ public:
 
   // CONI APR interrupt flags
   union APRFlags {
+
     struct ATTRPACKED {
       unsigned sweepDone: 1;
       unsigned powerFailure: 1;
@@ -315,6 +313,18 @@ public:
   };
 
 
+  union FlagsDWord {
+    struct ATTRPACKED {
+      unsigned processorDependent: 18; // What does KL10 use here?
+      unsigned: 6;
+      ProgramFlags flags;
+      unsigned pc: 30;
+      unsigned: 6;
+    };
+
+    uint64_t u: 36;
+  };
+
   // Constructors
   KM10(W36 *physicalMemoryP, uint64_t aMaxInsns = UINT64_MAX)
     : memP(physicalMemoryP),
@@ -324,6 +334,10 @@ public:
 
   // Accessors
   bool userMode() {return false;}
+
+  W36 flagsWord() {
+    return W36((unsigned) flags.u << 4, pc.rhu);
+  }
 
   // Logging
   inline static bool loadLog{true};
@@ -426,7 +440,7 @@ public:
 
       if (pc.isSection0() || ac.lhs < 0 || (ac.lhu & 0007777) == 0) {
 	ac = W36(ac.lhu + 1, ac.rhu + 1);
-	memPutN(W36(ac.rhu), memGet());
+	memPutN(memGet(), ac.rhu);
 
 	if (ac.lhu == 0) flags.tr2 = 1;
       } else {
@@ -435,18 +449,21 @@ public:
       }
     };
 
-    function<void()> doPop = [&] {
+    function<W36()> doPop = [&] {
       W36 ac = acGet();
+      W36 poppedWord;
 
       if (pc.isSection0() || ac.lhs < 0 || (ac.lhu & 0007777) == 0) {
-	memPut(memGetN(ac.rhu));
+	poppedWord = memGetN(ac.rhu);
 	ac = W36(ac.lhu - 1, ac.rhu - 1);
 
 	if (ac.lhs == -1) flags.tr2 = 1;
       } else {
-	memPut(memGetN(W36(ac.lhu & 07777, ac.rhu)));
+	poppedWord = memGetN(W36(ac.lhu & 07777, ac.rhu));
 	ac = ac - 1;
       }
+
+      return poppedWord;
     };
 
     function<void(W36)> selfPut = [&](W36 value) -> void {
@@ -819,8 +836,24 @@ public:
 	  break;
 	}
 
+      case 0260:		// PUSHJ
+	// Note this sets the flags that are cleared by PUSHJ before
+	// doPush() since doPush() can set flags.tr2.
+	flags.fpd = flags.afi = flags.tr1 = flags.tr2 = 0;
+	doPush(flagsWord());
+	nextPC = ea;
+	break;
+
       case 0261:		// PUSH
 	doPush(memGet());
+	break;
+
+      case 0262:		// POP
+	memPut(doPop());
+	break;
+
+      case 0263:		// POPJ
+	pc = doPop();
 	break;
 
       case 0264:		// JSR
