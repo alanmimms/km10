@@ -545,12 +545,12 @@ public:
     function<W36(W36,W36)> copyHLR = [&](W36 src, W36 dst) -> auto const {return W36(dst.rhu, src.lhu);};
 
     // doModifyF functions
-    function<W36(W36)> zeroR = [&](W36 dst) -> auto const {return W36(dst.lhu,               0);};
-    function<W36(W36)> onesR = [&](W36 dst) -> auto const {return W36(dst.lhu,   W36::halfOnes);};
-    function<W36(W36)> extnR = [&](W36 dst) -> auto const {return W36(dst.lhu, extnOf(dst.lhu));};
-    function<W36(W36)> zeroL = [&](W36 dst) -> auto const {return W36(              0, dst.rhu);};
-    function<W36(W36)> onesL = [&](W36 dst) -> auto const {return W36(  W36::halfOnes, dst.rhu);};
-    function<W36(W36)> extnL = [&](W36 dst) -> auto const {return W36(extnOf(dst.rhu), dst.rhu);};
+    function<W36(W36)> zeroR = [&](W36 v) -> auto const {return W36(v.lhu, 0);};
+    function<W36(W36)> onesR = [&](W36 v) -> auto const {return W36(v.lhu, W36::halfOnes);};
+    function<W36(W36)> extnR = [&](W36 v) -> auto const {return W36(v.lhu, extnOf(v.lhu));};
+    function<W36(W36)> zeroL = [&](W36 v) -> auto const {return W36(0, v.rhu);};
+    function<W36(W36)> onesL = [&](W36 v) -> auto const {return W36(W36::halfOnes, v.rhu);};
+    function<W36(W36)> extnL = [&](W36 v) -> auto const {return W36(extnOf(v.rhu), v.rhu);};
 
     // binary doModifyF functions
     function<W36(W36,W36)> andWord = [&](W36 s1, W36 s2) -> auto const {return s1.u & s2.u;};
@@ -659,7 +659,6 @@ public:
 
     // The instruction loop
     do {
-
       if (nInsns++ > maxInsns) running = false;
 
       if ((flags.tr1 || flags.tr2) && pagState.enablePager) {
@@ -669,11 +668,11 @@ public:
 	iw = memP[pc.vma];
       }
 
-      nextPC.lhu = pc.lhu;
-      nextPC.rhu = pc.rhu + 1;
-
     XCT_ENTRYPOINT:
       W36 eaw{iw};
+
+      nextPC.lhu = pc.lhu;
+      nextPC.rhu = pc.rhu + 1;
 
       // While we keep getting indirection, loop for new EA words.
       // XXX this only works for non-extended addressing.
@@ -784,6 +783,28 @@ public:
 	acPut(memGet());
 	memPut(tmp);
 	break;
+
+      case 0251: {		// BLT
+	W36 ac(acGet());
+	bool saveTraceMem = traceMem;
+
+	traceMem = false;
+
+	do {
+
+	  // Note this isn't bug-for-bug compatible with KL10. See
+	  // footnote [2] in 1982_ProcRefMan.pdf p.58. We do
+	  // wraparound.
+	  memPutN(memGetN(W36(ea.lhu, ac.lhu)), W36(ea.lhu, ac.rhu));
+	  ac = W36(ac.lhu + 1, ac.rhu + 1);
+
+	  // Put it back for traps or page faults.
+	  acPut(ac);
+	} while (ac.rhu < ea.rhu);
+
+	traceMem = saveTraceMem;
+	break;
+      }
 
       case 0252:		// AOBJP
 	tmp = acGet();
@@ -1396,7 +1417,7 @@ public:
 	break;
 
       case 0501:		// HLLI/XHLLI
-	doHXXXX(acGet, immediate, copyHLL, noModification, acPut);
+	doHXXXX(immediate, acGet, copyHLL, noModification, acPut);
 	break;
 
       case 0502:		// HLLM
@@ -1412,7 +1433,7 @@ public:
 	break;
 
       case 0505:		// HRLI
-	doHXXXX(acGet, immediate, copyHRL, noModification, acPut);
+	doHXXXX(immediate, acGet, copyHRL, noModification, acPut);
 	break;
 
       case 0506:		// HRLM
@@ -1428,7 +1449,7 @@ public:
 	break;
 
       case 0511:		// HLLZI
-	doHXXXX(acGet, immediate, copyHLL, zeroR, acPut);
+	doHXXXX(immediate, acGet, copyHLL, zeroR, acPut);
 	break;
 
       case 0512:		// HLLZM
@@ -1444,7 +1465,7 @@ public:
 	break;
 
       case 0515:		// HRLZI
-	doHXXXX(acGet, immediate, copyHRL, zeroR, acPut);
+	doHXXXX(immediate, acGet, copyHRL, zeroR, acPut);
 	break;
 
       case 0516:		// HRLZM
@@ -1460,7 +1481,7 @@ public:
 	break;
 
       case 0521:		// HLLOI
-	doHXXXX(acGet, immediate, copyHLL, onesR, acPut);
+	doHXXXX(immediate, acGet, copyHLL, onesR, acPut);
 	break;
 
       case 0522:		// HLLOM
@@ -1476,7 +1497,7 @@ public:
 	break;
 
       case 0525:		// HRLOI
-	doHXXXX(acGet, immediate, copyHRL, onesR, acPut);
+	doHXXXX(immediate, acGet, copyHRL, onesR, acPut);
 	break;
 
       case 0526:		// HRLOM
@@ -1492,7 +1513,7 @@ public:
 	break;
 
       case 0531:		// HLLEI
-	doHXXXX(acGet, immediate, copyHLL, extnR, acPut);
+	doHXXXX(immediate, acGet, copyHLL, extnR, acPut);
 	break;
 
       case 0532:		// HLLEM
@@ -1508,7 +1529,7 @@ public:
 	break;
 
       case 0535:		// HRLEI
-	doHXXXX(acGet, immediate, copyHRL, extnR, acPut);
+	doHXXXX(immediate, acGet, copyHRL, extnR, acPut);
 	break;
 
       case 0536:		// HRLEM
@@ -1524,7 +1545,7 @@ public:
 	break;
 
       case 0541:		// HRRI
-	doHXXXX(acGet, immediate, copyHRR, noModification, acPut);
+	doHXXXX(immediate, acGet, copyHRR, noModification, acPut);
 	break;
 
       case 0542:		// HRRM
@@ -1540,7 +1561,7 @@ public:
 	break;
 
       case 0545:		// HLRI
-	doHXXXX(acGet, immediate, copyHLR, noModification, acPut);
+	doHXXXX(immediate, acGet, copyHLR, noModification, acPut);
 	break;
 
       case 0546:		// HLRM
@@ -1556,7 +1577,7 @@ public:
 	break;
 
       case 0551:		// HRRZI
-	doHXXXX(acGet, immediate, copyHRR, zeroL, acPut);
+	doHXXXX(immediate, acGet, copyHRR, zeroL, acPut);
 	break;
 
       case 0552:		// HRRZM
@@ -1572,7 +1593,7 @@ public:
 	break;
 
       case 0555:		// HLRZI
-	doHXXXX(acGet, immediate, copyHLR, zeroL, acPut);
+	doHXXXX(immediate, acGet, copyHLR, zeroL, acPut);
 	break;
 
       case 0556:		// HLRZM
@@ -1588,7 +1609,7 @@ public:
 	break;
 
       case 0561:		// HRROI
-	doHXXXX(acGet, immediate, copyHRR, onesL, acPut);
+	doHXXXX(immediate, acGet, copyHRR, onesL, acPut);
 	break;
 
       case 0562:		// HRROM
@@ -1604,7 +1625,7 @@ public:
 	break;
 
       case 0565:		// HLROI
-	doHXXXX(acGet, immediate, copyHLR, onesL, acPut);
+	doHXXXX(immediate, acGet, copyHLR, onesL, acPut);
 	break;
 
       case 0566:		// HLROM
@@ -1620,7 +1641,7 @@ public:
 	break;
 
       case 0571:		// HRREI
-	doHXXXX(acGet, immediate, copyHRR, extnL, acPut);
+	doHXXXX(immediate, acGet, copyHRR, extnL, acPut);
 	break;
 
       case 0572:		// HRREM
@@ -1636,7 +1657,7 @@ public:
 	break;
 
       case 0575:		// HLREI
-	doHXXXX(acGet, immediate, copyHLR, extnL, acPut);
+	doHXXXX(immediate, acGet, copyHLR, extnL, acPut);
 	break;
 
       case 0576:		// HLREM
