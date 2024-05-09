@@ -288,7 +288,7 @@ public:
     function<bool(W36)> always = [&](W36 v) -> bool const {return true;};
     function<bool(W36)> never  = [&](W36 v) -> bool const {return false;};
 
-    auto doJUMP = [&](function<bool(W36 toTest)> &condF) -> void {
+    auto doJUMP = [&](function<bool(W36)> &condF) -> void {
       W36 eaw = memGet();
 
       if (condF(eaw)) {
@@ -297,7 +297,7 @@ public:
       }
     };
 
-    auto doSKIP = [&](function<bool(W36 toTest)> &condF) -> void {
+    auto doSKIP = [&](function<bool(W36)> &condF) -> void {
       W36 eaw = memGet();
 
       if (condF(eaw)) {
@@ -320,9 +320,9 @@ public:
     function<void(W36)> noStore = [](W36 toSrc) -> void {};
 
     auto doTXXXX = [&](function<W36()> &doGetF,
-		       function<W36(W36 fromSrc)> &doModifyF,
-		       function<bool(W36 toTest)> &condF,
-		       function<void(W36 toSrc)> &doStoreF) -> void
+		       function<W36(W36)> &doModifyF,
+		       function<bool(W36)> &condF,
+		       function<void(W36)> &doStoreF) -> void
     {
       W36 eaw = doGetF() & ea;
 
@@ -339,10 +339,10 @@ public:
     };
 
     // doCopyF functions
-    function<W36(W36, W36)> copyHRR = [&](W36 src, W36 dst) -> auto const {return W36(dst.lhu, src.rhu);};
-    function<W36(W36, W36)> copyHRL = [&](W36 src, W36 dst) -> auto const {return W36(src.rhu, dst.rhu);};
-    function<W36(W36, W36)> copyHLL = [&](W36 src, W36 dst) -> auto const {return W36(src.lhu, dst.rhu);};
-    function<W36(W36, W36)> copyHLR = [&](W36 src, W36 dst) -> auto const {return W36(dst.rhu, src.lhu);};
+    function<W36(W36,W36)> copyHRR = [&](W36 src, W36 dst) -> auto const {return W36(dst.lhu, src.rhu);};
+    function<W36(W36,W36)> copyHRL = [&](W36 src, W36 dst) -> auto const {return W36(src.rhu, dst.rhu);};
+    function<W36(W36,W36)> copyHLL = [&](W36 src, W36 dst) -> auto const {return W36(src.lhu, dst.rhu);};
+    function<W36(W36,W36)> copyHLR = [&](W36 src, W36 dst) -> auto const {return W36(dst.rhu, src.lhu);};
 
     // doModifyF functions
     function<W36(W36)> zeroR = [&](W36 dst) -> auto const {return W36(dst.lhu,               0);};
@@ -368,25 +368,25 @@ public:
     
     auto doHXXXX = [&](function<W36()> &doGetSrcF,
 		       function<W36()> &doGetDstF,
-		       function<W36(W36 src, W36 dst)> &doCopyF,
-		       function<W36(W36 dst)> &doModifyF,
-		       function<void(W36 v)> &doPutDstF) -> void
+		       function<W36(W36,W36)> &doCopyF,
+		       function<W36(W36)> &doModifyF,
+		       function<void(W36)> &doPutDstF) -> void
     {
       doPutDstF(doModifyF(doCopyF(doGetSrcF(), doGetDstF())));
     };
 
 
     auto doMOVXX = [&](function<W36()> &doGetSrcF,
-		       function<W36(W36 dst)> &doModifyF,
-		       function<void(W36 v)> &doPutDstF) -> void
+		       function<W36(W36)> &doModifyF,
+		       function<void(W36)> &doPutDstF) -> void
     {
       doPutDstF(doModifyF(doGetSrcF()));
     };
 
 
     auto doSETXX = [&](function<W36()> &doGetSrcF,
-		       function<W36(W36 dst)> &doModifyF,
-		       function<void(W36 v)> &doPutDstF) -> void
+		       function<W36(W36)> &doModifyF,
+		       function<void(W36)> &doPutDstF) -> void
     {
       doPutDstF(doModifyF(doGetSrcF()));
     };
@@ -394,8 +394,8 @@ public:
 
     auto doBinOpXX = [&](function<W36()> &doGetSrc1F,
 			 function<W36()> &doGetSrc2F,
-			 function<W36(W36 src1, W36 src2)> &doModifyF,
-			 function<void(W36 v)> &doPutDstF) -> void
+			 function<W36(W36,W36)> &doModifyF,
+			 function<void(W36)> &doPutDstF) -> void
     {
       doPutDstF(doModifyF(doGetSrc1F(), doGetSrc2F()));
     };
@@ -413,7 +413,7 @@ public:
 
     auto doCAXXX = [&](function<W36()> &doGetSrc1F,
 		       function<W36()> &doGetSrc2F,
-		       function<bool(W36 src1, W36 src2)> &condF) -> void
+		       function<bool(W36,W36)> &condF) -> void
     {
 
       if (condF(doGetSrc1F(), doGetSrc2F())) {
@@ -423,6 +423,41 @@ public:
     };
 
 
+    function<void()> skipAction = [&] {++nextPC.u;};
+    function<void()> jumpAction = [&] {nextPC.u = ea;};
+
+    auto doAOSOXX = [&](function<W36()> &doGetF,
+			const signed delta,
+			function<void(W36)> &doPutF,
+			function<bool(W36)> &condF,
+			function<void()> &actionF) -> void
+    {
+      W36 v = doGetF();
+
+      if (delta > 0) {		// Increment
+
+	if (v.u == W36::allOnes >> 1) {
+	  flags.tr1 = flags.ov  = flags.cy1 = 1;
+	} else if (v.s == -1) {
+	  flags.cy0 = flags.cy1 = 1;
+	}
+      } else {			// Decrement
+
+	if (v.u == W36::mostNegative) {
+	  flags.tr1 = flags.ov = flags.cy0 = 1;
+	} else if (v.u != 0) {
+	  flags.cy0 = flags.cy1 = 1;
+	}
+      }
+
+      v.s += delta;
+      doPutF(v);
+
+      if (condF(v)) actionF();
+    };
+
+
+    // The instruction loop
     do {
 
       if (nInsns++ > maxInsns) running = false;
@@ -700,6 +735,134 @@ public:
 
       case 0337:		// SKIPGT
 	doSKIP(isGT0);
+	break;
+
+      case 0340:		// AOJ
+	doAOSOXX(acGet, 1, acPut, never, jumpAction);
+	break;
+
+      case 0341:		// AOJL
+	doAOSOXX(acGet, 1, acPut, isLT0, jumpAction);
+	break;
+
+      case 0342:		// AOJE
+	doAOSOXX(acGet, 1, acPut, isEQ0, jumpAction);
+	break;
+
+      case 0343:		// AOJLE
+	doAOSOXX(acGet, 1, acPut, isLE0, jumpAction);
+	break;
+
+      case 0344:		// AOJA
+	doAOSOXX(acGet, 1, acPut, always, jumpAction);
+	break;
+
+      case 0345:		// AOJGE
+	doAOSOXX(acGet, 1, acPut, isGE0, jumpAction);
+	break;
+
+      case 0346:		// AOJN
+	doAOSOXX(acGet, 1, acPut, never, jumpAction);
+	break;
+
+      case 0347:		// AOJG
+	doAOSOXX(acGet, 1, acPut, isGT0, jumpAction);
+	break;
+
+      case 0350:		// AOS
+	doAOSOXX(acGet, 1, acPut, never, skipAction);
+	break;
+
+      case 0351:		// AOSL
+	doAOSOXX(acGet, 1, acPut, isLT0, skipAction);
+	break;
+
+      case 0352:		// AOSE
+	doAOSOXX(acGet, 1, acPut, isEQ0, skipAction);
+	break;
+
+      case 0353:		// AOSLE
+	doAOSOXX(acGet, 1, acPut, isLE0, skipAction);
+	break;
+
+      case 0354:		// AOSA
+	doAOSOXX(acGet, 1, acPut, always, skipAction);
+	break;
+
+      case 0355:		// AOSGE
+	doAOSOXX(acGet, 1, acPut, isGE0, skipAction);
+	break;
+
+      case 0356:		// AOSN
+	doAOSOXX(acGet, 1, acPut, never, skipAction);
+	break;
+
+      case 0357:		// AOSG
+	doAOSOXX(acGet, 1, acPut, isGT0, skipAction);
+	break;
+
+      case 0360:		// SOJ
+	doAOSOXX(acGet, -1, acPut, never, jumpAction);
+	break;
+
+      case 0361:		// SOJL
+	doAOSOXX(acGet, -1, acPut, isLT0, jumpAction);
+	break;
+
+      case 0362:		// SOJE
+	doAOSOXX(acGet, -1, acPut, isEQ0, jumpAction);
+	break;
+
+      case 0363:		// SOJLE
+	doAOSOXX(acGet, -1, acPut, isLE0, jumpAction);
+	break;
+
+      case 0364:		// SOJA
+	doAOSOXX(acGet, -1, acPut, always, jumpAction);
+	break;
+
+      case 0365:		// SOJGE
+	doAOSOXX(acGet, -1, acPut, isGE0, jumpAction);
+	break;
+
+      case 0366:		// SOJN
+	doAOSOXX(acGet, -1, acPut, never, jumpAction);
+	break;
+
+      case 0367:		// SOJG
+	doAOSOXX(acGet, -1, acPut, isGT0, jumpAction);
+	break;
+
+      case 0370:		// SOS
+	doAOSOXX(acGet, -1, acPut, never, skipAction);
+	break;
+
+      case 0371:		// SOSL
+	doAOSOXX(acGet, -1, acPut, isLT0, skipAction);
+	break;
+
+      case 0372:		// SOSE
+	doAOSOXX(acGet, -1, acPut, isEQ0, skipAction);
+	break;
+
+      case 0373:		// SOSLE
+	doAOSOXX(acGet, -1, acPut, isLE0, skipAction);
+	break;
+
+      case 0374:		// SOSA
+	doAOSOXX(acGet, -1, acPut, always, skipAction);
+	break;
+
+      case 0375:		// SOSGE
+	doAOSOXX(acGet, -1, acPut, isGE0, skipAction);
+	break;
+
+      case 0376:		// SOSN
+	doAOSOXX(acGet, -1, acPut, never, skipAction);
+	break;
+
+      case 0377:		// SOSG
+	doAOSOXX(acGet, -1, acPut, isGT0, skipAction);
 	break;
 
       case 0400:		// SETZ
