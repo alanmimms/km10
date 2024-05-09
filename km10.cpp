@@ -29,10 +29,6 @@ Usage:
   km10.traceMem = 1;
   km10.running = 1;
 
-  // Initially paging is OFF
-  km10.tops20Paging = 0;
-  km10.pagingEnabled = 0;
-
   km10.emulate();
 
   return 0;

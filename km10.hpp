@@ -46,8 +46,7 @@ public:
   // Pointer to current virtual memory mapping in emulator.
   W36 *memP;
 
-  bool tops20Paging;
-  bool pagingEnabled;
+
   bool running;
   bool tracePC;
   bool traceAC;
@@ -55,6 +54,96 @@ public:
 
   uint64_t maxInsns;
 
+
+  // CONO PAG state bits
+  union PAGState {
+
+    struct ATTRPACKED {
+      unsigned execBasePage: 13;
+      unsigned enablePager: 1;
+      unsigned tops2Paging: 1;
+      unsigned: 1;
+      unsigned cacheStrategyLoad: 1;
+      unsigned cacheStrategyLook: 1;
+    };
+
+    unsigned u: 18;
+
+    PAGState() :u(0) {};
+  } pagState;
+
+
+  // CONI APR interrupt flags
+  union APRFlags {
+    struct ATTRPACKED {
+      unsigned sweepDone: 1;
+      unsigned powerFailure: 1;
+      unsigned addrParity: 1;
+      unsigned cacheDirParity: 1;
+      unsigned mbParity: 1;
+      unsigned ioPageFail: 1;
+      unsigned noMemory: 1;
+      unsigned sbusError: 1;
+    };
+
+    unsigned u: 8;
+  };
+  
+  // CONI APR status bits (some used in CONO APR)
+  union APRState {
+
+    struct ATTRPACKED {
+      unsigned intLevel: 3;
+      unsigned intRequest: 1;
+
+      APRFlags active;
+      unsigned: 4;
+
+      unsigned sweepBusy: 1;
+      unsigned: 5;
+
+      APRFlags enabled;
+
+      unsigned: 6;
+    };
+
+    uint64_t u: 36;
+  } aprState;
+
+
+  // CONO APR function bits
+  union APRFunctions {
+
+    struct ATTRPACKED {
+      unsigned intLevel: 3;
+      unsigned: 1;
+
+      APRFlags select;
+
+      unsigned set: 1;
+      unsigned clear: 1;
+      unsigned disable: 1;
+      unsigned enable: 1;
+
+      unsigned clearIO: 1;
+      unsigned: 1;
+    };
+
+    unsigned u: 18;
+
+    APRFunctions(unsigned v) :u(v) {};
+  };
+
+  struct APRLevels {
+    unsigned sweepDone: 3;
+    unsigned powerFailure: 3;
+    unsigned addrParity: 3;
+    unsigned cacheDirParity: 3;
+    unsigned mbParity: 3;
+    unsigned ioPageFail: 3;
+    unsigned noMemory: 3;
+    unsigned sbusError: 3;
+  } aprLevels;
 
   // PI CONO function bits
   union PIFunctions {
@@ -98,22 +187,43 @@ public:
 
     uint64_t u: 36;
 
-    PIState(uint64_t v) :u(v) {};
+    PIState() :u(0) {};
   } piState;
 
-  inline static bool loadLog{true};
-  inline static ofstream loadLogS{"load.log"};
 
+  // APRID value see 1982_ProcRefMan.pdf p.244
+  inline static const union {
 
-  // Constructors
-  KM10(W36 *physicalMemoryP, uint64_t aMaxInsns = UINT64_MAX)
-    : AC(),
-      pc(0, 0),
-      memP(physicalMemoryP),
-      maxInsns(aMaxInsns),
-      piState(0)
-  { }
+    struct ATTRPACKED {
+      unsigned serialNumber: 12;
 
+      unsigned: 1;
+      unsigned masterOscillator: 1;
+      unsigned extendedKL10: 1;
+      unsigned channelSupported: 1;
+      unsigned cacheSupported: 1;
+      unsigned AC50Hz: 1;
+
+      unsigned microcodeVersion: 9;
+      unsigned: 6;
+      unsigned exoticMicrocode: 1;
+      unsigned extendedAddressing: 1;
+      unsigned tops20Paging: 1;
+    };
+
+    uint64_t u: 36;
+  } aprIDValue = {
+    04321,			// Processor serial number
+    1,				// Master oscillator
+    1,				// Extended KL10
+    1,				// Channel support
+    0,				// No cache support
+    0,				// 60Hz,
+    0442,			// Microcode version number
+    0,				// "Exotic" microcode
+    1,				// Microcode handles extended addresses
+    1,				// TOPS-20 paging
+  };
 
   // See 1982_ProcRefMan.pdf p.262
   struct DTE20ControlBlock {
@@ -205,6 +315,22 @@ public:
   };
 
 
+  // Constructors
+  KM10(W36 *physicalMemoryP, uint64_t aMaxInsns = UINT64_MAX)
+    : memP(physicalMemoryP),
+      maxInsns(aMaxInsns)
+  { }
+
+
+  // Accessors
+  bool userMode() {return false;}
+
+  // Logging
+  inline static bool loadLog{true};
+  inline static ofstream loadLogS{"load.log"};
+
+
+  // The instruction emulator
   void emulate() {
     W36 iw{};
     W36 ea{};
@@ -230,22 +356,15 @@ public:
       return v;
     };
 
-    function<W36()> memGet = [&]() -> W36 {
-      W36 value = memP[ea.u];;
-      if (traceMem) cerr << " ; " << ea.fmtVMA() << ": " << value.fmt36();
-      return value;
-    };
-
-    function<W36()> memGetSwapped = [&]() -> W36 {return swap(memGet());};
-
-    function<void(W36)> memPut = [&](W36 value) -> void {
-      memP[ea.u] = value;
-      if (traceMem) cerr << " ; " << ea.fmtVMA() << "<-" << value.fmt36();
-    };
-
     function<W36()> acGet = [&]() -> W36 {
       W36 value = AC[iw.ac];
       if (traceMem) cerr << " ; ac" << oct << iw.ac << ": " << value.fmt36();
+      return value;
+    };
+
+    function<W36(unsigned)> acGetEA = [&](unsigned ac) -> W36 {
+      W36 value = AC[ac];
+      if (traceMem) cerr << " ; ac" << oct << ac << ": " << value.fmt36();
       return value;
     };
 
@@ -264,6 +383,24 @@ public:
     function<void(W36)> acPut = [&](W36 value) -> void {
       AC[iw.ac] = value;
       if (traceMem) cerr << " ; ac" << oct << iw.ac << "<-" << value.fmt36();
+    };
+
+    function<W36()> memGet = [&]() -> W36 {
+      W36 value = ea.u < 020 ? acGetEA(ea.u) : memP[ea.u];
+      if (traceMem) cerr << " ; " << ea.fmtVMA() << ": " << value.fmt36();
+      return value;
+    };
+
+    function<W36()> memGetSwapped = [&]() -> W36 {return swap(memGet());};
+
+    function<void(W36)> memPut = [&](W36 value) -> void {
+
+      if (ea.u < 020)
+	acPut(value);
+      else 
+	memP[ea.u] = value;
+
+      if (traceMem) cerr << " ; " << ea.fmtVMA() << "<-" << value.fmt36();
     };
 
     function<void(W36)> selfPut = [&](W36 value) -> void {
@@ -462,7 +599,7 @@ public:
 
       if (nInsns++ > maxInsns) running = false;
 
-      if ((flags.tr1 || flags.tr2) && pagingEnabled) {
+      if ((flags.tr1 || flags.tr2) && pagState.enablePager) {
 	ExecutiveProcessTable *eptP = (ExecutiveProcessTable *) memP;
 	iw = flags.tr1 ? eptP->trap1Insn : eptP->stackOverflowInsn;
       } else {
@@ -474,7 +611,6 @@ public:
 
     XCT_ENTRYPOINT:
       W36 eaw{iw};
-      bool eaIsLocal = 1;
 
       // While we keep getting indirection, loop for new EA words.
       // XXX this only works for non-extended addressing.
@@ -596,6 +732,16 @@ public:
       case 0254:		// JRST
 	nextPC.u = ea.u;
 	break;
+
+      case 0256:		// XCT/PXCT
+
+	if (userMode() || iw.ac == 0) {
+	  iw = eaw;
+	  goto XCT_ENTRYPOINT;
+	} else {
+	  nyi();
+	  break;
+	}
 
       case 0264:		// JSR
 	memPut(pc.isSection0() ? nextPC.u | flags.u : nextPC.vma);
@@ -1572,6 +1718,45 @@ public:
       case 0700:
 
 	switch ((unsigned) iw.ioAll << 2) {
+	case 070000: 		// APRID
+	  memPut(aprIDValue.u);
+	  break;
+
+	case 070020: {		// CONO APR,
+	  APRFunctions func(eaw.u);
+
+	  if (func.clear) {
+	    aprState.active.u &= ~func.select.u;
+	  } else if (func.set) {
+	    aprState.active.u |= func.select.u;
+
+	    if (func.intLevel != 0) {
+	      if (func.select.sweepDone != 0)      aprLevels.sweepDone = func.intLevel;
+	      if (func.select.powerFailure != 0)   aprLevels.powerFailure = func.intLevel;
+	      if (func.select.addrParity != 0)     aprLevels.addrParity = func.intLevel;
+	      if (func.select.cacheDirParity != 0) aprLevels.cacheDirParity = func.intLevel;
+	      if (func.select.mbParity != 0)       aprLevels.mbParity = func.intLevel;
+	      if (func.select.ioPageFail != 0)     aprLevels.ioPageFail = func.intLevel;
+	      if (func.select.noMemory != 0)       aprLevels.noMemory = func.intLevel;
+	      if (func.select.sbusError != 0)      aprLevels.sbusError = func.intLevel;
+	    }
+	  } else if (func.enable) {
+	    aprState.enabled.u |= func.select.u;
+	  } else if (func.disable) {
+	    aprState.enabled.u &= ~func.select.u;
+	  }
+
+	  if (func.clearIO) {
+	    nyi();
+	  }
+
+	  }
+	  break;
+
+	case 070024:		// CONI APR,
+	  memPut(aprState.u);
+	  break;
+
 	case 070060: {		// CONO PI,
 	  PIFunctions pi(ea);
 
@@ -1602,6 +1787,14 @@ public:
 
 	case 070064:		// CONI PI,
 	  memPut(piState.u);
+	  break;
+
+	case 070120:		// CONO PAG,
+	  pagState.u = iw.y;
+	  break;
+
+	case 070124:		// CONI PAG,
+	  memPut(W36(memGet().lhu, pagState.u));
 	  break;
 
 	default:
