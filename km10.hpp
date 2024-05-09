@@ -356,10 +356,14 @@ public:
       return v;
     };
 
-    function<W36()> acGet = [&]() -> W36 {
-      W36 value = AC[iw.ac];
-      if (traceMem) cerr << " ; ac" << oct << iw.ac << ": " << value.fmt36();
+    function<W36(unsigned)> acGetN = [&](unsigned acN) -> W36 {
+      W36 value = AC[acN];
+      if (traceMem) cerr << " ; ac" << oct << acN << ": " << value.fmt36();
       return value;
+    };
+
+    function<W36()> acGet = [&]() -> W36 {
+      return acGetN(iw.ac);
     };
 
     function<W36(unsigned)> acGetEA = [&](unsigned ac) -> W36 {
@@ -380,9 +384,13 @@ public:
       return value;
     };
 
+    function<void(W36,unsigned)> acPutN = [&](W36 value, unsigned acN) -> void {
+      AC[acN] = value;
+      if (traceMem) cerr << " ; ac" << oct << acN << "<-" << value.fmt36();
+    };
+
     function<void(W36)> acPut = [&](W36 value) -> void {
-      AC[iw.ac] = value;
-      if (traceMem) cerr << " ; ac" << oct << iw.ac << "<-" << value.fmt36();
+      acPutN(value, iw.ac);
     };
 
     function<W36()> memGet = [&]() -> W36 {
@@ -391,16 +399,54 @@ public:
       return value;
     };
 
+    function<W36(W36)> memGetN = [&](W36 a) -> W36 {
+      W36 value = a.u < 020 ? acGetEA(a.u) : memP[a.u];
+      if (traceMem) cerr << " ; " << a.fmtVMA() << ": " << value.fmt36();
+      return value;
+    };
+
     function<W36()> memGetSwapped = [&]() -> W36 {return swap(memGet());};
 
-    function<void(W36)> memPut = [&](W36 value) -> void {
+    function<void(W36,W36)> memPutN = [&](W36 value, W36 a) -> void {
 
-      if (ea.u < 020)
+      if (a.u < 020)
 	acPut(value);
       else 
-	memP[ea.u] = value;
+	memP[a.u] = value;
 
-      if (traceMem) cerr << " ; " << ea.fmtVMA() << "<-" << value.fmt36();
+      if (traceMem) cerr << " ; " << a.fmtVMA() << "<-" << value.fmt36();
+    };
+
+    function<void(W36)> memPut = [&](W36 value) -> void {
+      memPutN(value, ea);
+    };
+
+    function<void(W36)> doPush = [&](W36 v) -> void {
+      W36 ac = acGet();
+
+      if (pc.isSection0() || ac.lhs < 0 || (ac.lhu & 0007777) == 0) {
+	ac = W36(ac.lhu + 1, ac.rhu + 1);
+	memPutN(W36(ac.rhu), memGet());
+
+	if (ac.lhu == 0) flags.tr2 = 1;
+      } else {
+	ac = ac + 1;
+	memPutN(W36(ac.lhu & 0007777, ac.rhu), memGet());
+      }
+    };
+
+    function<void()> doPop = [&] {
+      W36 ac = acGet();
+
+      if (pc.isSection0() || ac.lhs < 0 || (ac.lhu & 0007777) == 0) {
+	memPut(memGetN(ac.rhu));
+	ac = W36(ac.lhu - 1, ac.rhu - 1);
+
+	if (ac.lhs == -1) flags.tr2 = 1;
+      } else {
+	memPut(memGetN(W36(ac.lhu & 07777, ac.rhu)));
+	ac = ac - 1;
+      }
     };
 
     function<void(W36)> selfPut = [&](W36 value) -> void {
@@ -699,6 +745,23 @@ public:
 	doMOVXX(acGet, magnitude, selfPut);
 	break;
 
+      case 0243: 		// JFFO
+	tmp = acGet();
+
+	if (tmp != 0) {
+	  unsigned count = 0;
+
+	  while (tmp.s >= 0) {
+	    ++count;
+	    tmp.u <<= 1;
+	  }
+
+	  tmp.u = count;
+	}
+
+	acPutN(tmp, iw.ac + 1);
+	break;
+
       case 0250:		// EXCH
 	tmp = acGet();
 	acPut(memGet());
@@ -729,8 +792,21 @@ public:
 
 	break;
 
-      case 0254:		// JRST
-	nextPC.u = ea.u;
+      case 0254:		// JRST family
+
+	if (iw.ac == 0) {	// JRST
+	  nextPC.u = ea.u;
+	} else {
+	  nyi();
+	}
+
+	break;
+
+      case 0255:		// JFCL
+	if ((iw.ac & 8) && flags.ov)  {flags.ov = 0; nextPC = ea;}
+	if ((iw.ac & 4) && flags.cy0) {flags.cy0 = 0; nextPC = ea;}
+	if ((iw.ac & 2) && flags.cy1) {flags.cy1 = 0; nextPC = ea;}
+	if ((iw.ac & 1) && flags.fov) {flags.fov = 0; nextPC = ea;}
 	break;
 
       case 0256:		// XCT/PXCT
@@ -743,6 +819,10 @@ public:
 	  break;
 	}
 
+      case 0261:		// PUSH
+	doPush(memGet());
+	break;
+
       case 0264:		// JSR
 	memPut(pc.isSection0() ? nextPC.u | flags.u : nextPC.vma);
 	nextPC.u = ea.u + 1;	// XXX Wrap?
@@ -753,6 +833,17 @@ public:
 	acPut(pc.isSection0() ? nextPC.u | flags.u : nextPC.vma);
 	nextPC.u = ea.u + 1;	// XXX Wrap?
 	flags.fpd = flags.afi = flags.tr2 = flags.tr1 = 0;
+	break;
+
+      case 0266:		// JSA
+	memPut(acGet());
+	acPut(W36(ea.lhu, pc.rhu));
+	pc = ea.u + 1;
+	break;
+
+      case 0267:		// JRA
+	acPut(memGetN(acGet()));
+	pc = ea;
 	break;
 
       case 0300:		// CAI
@@ -1730,6 +1821,11 @@ public:
 	  } else if (func.set) {
 	    aprState.active.u |= func.select.u;
 
+	    // This block argues the APR state needs to be
+	    // metaprogrammed with C++17 parameter pack superpowers
+	    // instead of this old fashioned mnaual method. This might
+	    // be an interesting thing to do in the future. For now,
+	    // it's done the 1940s hard way.
 	    if (func.intLevel != 0) {
 	      if (func.select.sweepDone != 0)      aprLevels.sweepDone = func.intLevel;
 	      if (func.select.powerFailure != 0)   aprLevels.powerFailure = func.intLevel;
