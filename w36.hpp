@@ -86,17 +86,17 @@ struct W36 {
   // Formatters
   std::string fmtVMA() const {
     std::ostringstream s;
-    s << std::setw(2) << std::setfill('0') << std::oct << (lhu & 077)
+    s << std::setw(2) << right << std::setfill('0') << std::oct << (lhu & 077)
       << ",,"
-      << std::setw(6) << std::setfill('0') << std::oct << rhu;
+      << std::setw(6) << right << std::setfill('0') << std::oct << rhu;
     return s.str();
   }
 
   std::string fmt36() const {
     std::ostringstream s;
-    s << std::setw(6) << std::setfill('0') << std::oct << lhu
+    s << right << std::setw(6) << std::setfill('0') << std::oct << lhu
       << ",,"
-      << std::setw(6) << std::setfill('0') << std::oct << rhu;
+      << right << std::setw(6) << std::setfill('0') << std::oct << rhu;
     return s.str();
   }
 
@@ -106,7 +106,7 @@ struct W36 {
     std::ostringstream s;
     bool isIO = false;
 
-    s << setw(6) << left;
+    s << setw(6) << right;
 
     // Handle some special cases first.
     if (op == 0133 && ac != 0) {		/* IBP becomes ADJBP for nonzero AC */
@@ -609,7 +609,7 @@ struct W36 {
 
     if (i != 0) s << "@";
 
-    s << std::setfill('0') << std::setw(6) << std::oct << y;
+    s << std::oct << y;
 
     if (x != 0) s << "(" << std::oct << x << ")";
 

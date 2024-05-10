@@ -440,12 +440,11 @@ public:
 
       if (pc.isSection0() || ac.lhs < 0 || (ac.lhu & 0007777) == 0) {
 	ac = W36(ac.lhu + 1, ac.rhu + 1);
-	memPutN(memGet(), ac.rhu);
-
+	memPutN(v, ac.rhu);
 	if (ac.lhu == 0) flags.tr2 = 1;
       } else {
 	ac = ac + 1;
-	memPutN(W36(ac.lhu & 0007777, ac.rhu), memGet());
+	memPutN(W36(ac.lhu & 0007777, ac.rhu), v);
       }
     };
 
@@ -454,9 +453,8 @@ public:
       W36 poppedWord;
 
       if (pc.isSection0() || ac.lhs < 0 || (ac.lhu & 0007777) == 0) {
-	poppedWord = memGetN(ac.rhu);
+	poppedWord = memGetN(ac.rhu).rhu;
 	ac = W36(ac.lhu - 1, ac.rhu - 1);
-
 	if (ac.lhs == -1) flags.tr2 = 1;
       } else {
 	poppedWord = memGetN(W36(ac.lhu & 07777, ac.rhu));
@@ -691,8 +689,8 @@ public:
       if (tracePC) {
 	cerr << pc.fmtVMA()
 	     << " " << iw.fmt36()
-	     << ": [ea=" << ea.fmtVMA() << "]  "
-	     << setw(20) << left << iw.disasm();
+//	     << ": [ea=" << ea.fmtVMA() << "]  "
+	     << "  " << setw(20) << left << iw.disasm();
       }
 
       switch (iw.op) {
@@ -874,7 +872,7 @@ public:
 	break;
 
       case 0263:		// POPJ
-	pc = doPop();
+	nextPC = doPop();
 	break;
 
       case 0264:		// JSR
