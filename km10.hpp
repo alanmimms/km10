@@ -440,12 +440,17 @@ public:
 
       if (pc.isSection0() || ac.lhs < 0 || (ac.lhu & 0007777) == 0) {
 	ac = W36(ac.lhu + 1, ac.rhu + 1);
-	memPutN(v, ac.rhu);
-	if (ac.lhu == 0) flags.tr2 = 1;
+
+	if (ac.lhu == 0)
+	  flags.tr2 = 1;
+	else			// Correct? Don't access memory for full stack?
+	  memPutN(v, ac.rhu);
       } else {
 	ac = ac + 1;
-	memPutN(W36(ac.lhu & 0007777, ac.rhu), v);
+	memPutN(ac.vma, v);
       }
+
+      acPut(ac);
     };
 
     function<W36()> doPop = [&] {
@@ -453,14 +458,15 @@ public:
       W36 poppedWord;
 
       if (pc.isSection0() || ac.lhs < 0 || (ac.lhu & 0007777) == 0) {
-	poppedWord = memGetN(ac.rhu).rhu;
+	poppedWord = memGetN(ac.rhu);
 	ac = W36(ac.lhu - 1, ac.rhu - 1);
 	if (ac.lhs == -1) flags.tr2 = 1;
       } else {
-	poppedWord = memGetN(W36(ac.lhu & 07777, ac.rhu));
+	poppedWord = memGetN(ac.vma);
 	ac = ac - 1;
       }
 
+      acPut(ac);
       return poppedWord;
     };
 
@@ -872,7 +878,7 @@ public:
 	break;
 
       case 0263:		// POPJ
-	nextPC = doPop();
+	nextPC.rhu = doPop().rhu;
 	break;
 
       case 0264:		// JSR
