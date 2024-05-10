@@ -602,7 +602,7 @@ struct W36 {
       default: s << std::setfill('0') << std::oct << ioDev; break;
       }
     } else {
-      s << std::oct << ac;
+      s << std::oct << setw(2) << right << ac;
     }
 
     s << ",";

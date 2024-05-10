@@ -694,8 +694,13 @@ public:
 
       if (tracePC) {
 	cerr << pc.fmtVMA()
-	     << " " << iw.fmt36()
-//	     << ": [ea=" << ea.fmtVMA() << "]  "
+//	     << " " << iw.fmt36()
+	     << setfill('0')
+	     << " " << setw(3) << right << iw.op
+	     << " " << setw(2) << right << iw.ac
+	     << " " << setw(1) << iw.i
+	     << " " << setw(2) << right << iw.x
+	     << " " << setw(6) << right << iw.y
 	     << "  " << setw(20) << left << iw.disasm();
       }
 
