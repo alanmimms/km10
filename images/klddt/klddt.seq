@@ -45,7 +45,6 @@
 	USE  OR  RELIABILITY  OF  ITS SOFTWARE IN EQUIPMENT WHICH IS NOT
 	SUPPLIED BY DIGITAL EQUIPMENT CORPORATION.
 					MAINDEC-10-DDQDB.TXT (KLDDT)
-						PAGE 1                                                                     SEQ 0002
 
 			TABLE OF CONTENTS
 			-----------------
@@ -63,8 +62,6 @@
 3.0	HISTORY FILE
 
 4.0	LISTING
-;KLDDT.HLP	VER 0.12	5-MAY-78
-                                                                                                                           SEQ 0003
 1.	TYPE-OUT MODES
 
 $S	SYMBOLIC INSTRUCTIONS
@@ -108,8 +105,6 @@ _	REPEAT LAST TYPEOUT AS A SYMBOLIC INSTRUCTION
 [	TYPEOUT LOCATION POINTED TO AS A NUMBER
 ]	TYPEOUT LOCATION POINTED TO AS A SYMBOLIC INSTRUCTION
 LF	EXAMINE ADR+1
-;KLDDT.HLP	VER 0.12	5-MAY-78
-                                                                                                                           SEQ 0004
 7.	TYPING IN
 
 INST	TYPE IN SYMBOLIC INSTRUCTION
@@ -149,10 +144,6 @@ $NB	THE POINTERS ASSOCIATED WITH THE NTH BREAKPOINT
 -	SUBTRACTION
 *	MULTIPLICATION
 '	DIVISION
-;KLDDT.HLP	VER 0.12	5-MAY-78
-                                                                                                                           SEQ 0005
-11.	FIELD DELIMITERS IN SYMBOLIC TYPE IN
-
 SPACE	DELIMITS OP-CODE FIELDS
 ,	DELIMITS ACCUMULATOR FIELD
 L,,R	DELIMIT HALF WORDS
@@ -193,8 +184,7 @@ N$M	INSERT ANOTHER QUANTITY IN MASK
 16.	ZEROING MEMORY
 
 FIRST<LAST$$Z  ZERO MEMORY FIRST THRU LAST
-;KLDDT.HLP	VER 0.12	5-MAY-78
-                                                                                                                           SEQ 0006
+
 17.	SINGLE STEP EXECUTE
 
 $X	EXECUTE A SINGLE INSTRUCTION, THEN INCREMENT THE PC
@@ -237,8 +227,6 @@ RUBOUT	DELETE LAST TYPED CHARACTER
 ^R	(CONTROL R) RETYPE LAST LINE
 
 [END OF KLDDT.HLP]
-DECSYSTEM10 DIAGNOSTICS DDT
-MAINDEC-10-DDQDB                                                                                                           SEQ 0007
 
 --------------
 
