@@ -4,15 +4,22 @@
 #include <sstream>
 #include <iomanip>
 
+using namespace std;
+
+
+typedef unsigned __int128 uint128_t;
+typedef signed __int128 int128_t;
+
+
 // This is used in km10.hpp as well
 #define ATTRPACKED    __attribute__((packed))
 
 struct W36 {
 
   union {
-    std::int64_t s: 36;
+    int64_t s: 36;
 
-    std::uint64_t u: 36;
+    uint64_t u: 36;
 
     struct ATTRPACKED {
       signed rhs: 18;
@@ -61,7 +68,8 @@ struct W36 {
   // Constants
   static inline const auto halfOnes = 0777777u;
   static inline const auto allOnes = 07777777'777777ull;
-  static inline const auto mostNegative = 1ull << 35;
+  static inline const uint64_t mostNegative = 1ull << 35;
+  static inline const int64_t signedMostNegative = 1ull << 35;
 
   // Constructors
   W36(uint64_t w = 0) : u(w) {}
@@ -69,7 +77,7 @@ struct W36 {
 
 
   // Accessors
-  operator std::uint64_t() {return u;}
+  operator uint64_t() {return u;}
 
   void putLH(unsigned aLH) {lhu = aLH;}
   void putRH(unsigned aRH) {rhu = aRH;}
@@ -77,40 +85,40 @@ struct W36 {
   unsigned getLH() const {return lhu;}
   unsigned getRH() const {return rhu;}
 
-  std::int64_t getLHextend() const {return (std::int64_t) lhs;}
-  std::int64_t getRHextend() const {return (std::int64_t) rhs;}
+  int64_t getLHextend() const {return (int64_t) lhs;}
+  int64_t getRHextend() const {return (int64_t) rhs;}
 
   bool isSection0() const {return (vma >> 18) == 0u;}
 
 
   // Formatters
-  std::string fmtVMA() const {
-    std::ostringstream s;
-    s << std::setw(2) << right << std::setfill('0') << std::oct << (lhu & 077)
+  string fmtVMA() const {
+    ostringstream s;
+    s << setw(2) << right << setfill('0') << oct << (lhu & 077)
       << ",,"
-      << std::setw(6) << right << std::setfill('0') << std::oct << rhu;
+      << setw(6) << right << setfill('0') << oct << rhu;
     return s.str();
   }
 
-  std::string fmt18() const {
-    std::ostringstream s;
-    s << right << std::setw(6) << std::setfill('0') << std::oct << rhu;
+  string fmt18() const {
+    ostringstream s;
+    s << right << setw(6) << setfill('0') << oct << rhu;
     return s.str();
   }
 
 
-  std::string fmt36() const {
-    std::ostringstream s;
-    s << right << std::setw(6) << std::setfill('0') << std::oct << lhu
+  string fmt36() const {
+    ostringstream s;
+    s << right << setw(6) << setfill('0') << oct << lhu
       << ",,"
-      << right << std::setw(6) << std::setfill('0') << std::oct << rhu;
+      << right << setw(6) << setfill('0') << oct << rhu;
     return s.str();
   }
 
 
   // Disassembly of instruction words
-  std::string disasm() {
-    std::ostringstream s;
+  string disasm() {
+    ostringstream s;
     bool isIO = false;
 
     s << setw(6) << right;
@@ -590,7 +598,7 @@ struct W36 {
       case 0123: s << "EXTEND"; break;
 
       default:
-	s << "??? " << std::setfill('0') << std::setw(3) << std::oct << op;
+	s << "??? " << setfill('0') << setw(3) << oct << op;
 	break;
       }
     }
@@ -606,20 +614,38 @@ struct W36 {
       case 03: s << "CCA"; break;
       case 04: s << "TIM"; break;
       case 05: s << "MTR"; break;
-      default: s << std::setfill('0') << std::oct << ioDev; break;
+      default: s << setfill('0') << oct << ioDev; break;
       }
     } else {
-      s << std::oct << setw(2) << right << ac;
+      s << oct << setw(2) << right << ac;
     }
 
     s << ",";
 
     if (i != 0) s << "@";
 
-    s << std::oct << y;
+    s << oct << y;
 
-    if (x != 0) s << "(" << std::oct << x << ")";
+    if (x != 0) s << "(" << oct << x << ")";
 
     return s.str();
   }
+};
+
+
+struct W72 {
+
+  union {
+    int128_t s: 72;
+
+    uint128_t u: 72;
+
+    struct ATTRPACKED {
+      uint64_t lo: 36;
+      uint64_t hi: 36;
+    };
+  };
+
+  W72(int128_t v) :s(v) {}
+  W72(W36 aHi, W36 aLo) :lo(aLo), hi(aHi) {}
 };

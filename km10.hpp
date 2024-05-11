@@ -424,6 +424,11 @@ public:
       acPutN(value, iw.ac);
     };
 
+    function<void(W36,W36)> acPut2 = [&](W36 hi, W36 lo) -> void {
+      acPutN(hi, iw.ac);
+      acPutN(lo, iw.ac+1);
+    };
+
     function<W36()> memGet = [&]() -> W36 {
       W36 value = ea.u < 020 ? acGetEA(ea.u) : memP[ea.u];
       if (traceMem) cerr << " ; " << ea.fmtVMA() << ": " << value.fmt36();
@@ -450,6 +455,10 @@ public:
 
     function<void(W36)> memPut = [&](W36 value) -> void {
       memPutN(value, ea);
+    };
+
+    function<void(W36,W36)> memPut2 = [&](W36 hi, W36 lo) -> void {
+      memPutN(hi, ea);
     };
 
     function<void(W36)> doPush = [&](W36 v) -> void {
@@ -495,6 +504,12 @@ public:
     function<void(W36)> bothPut = [&](W36 value) -> void {
       acPut(value);
       memPut(value);
+    };
+
+    function<void(W36,W36)> bothPut2 = [&](W36 hi, W36 lo) -> void {
+      acPutN(hi, iw.ac);
+      acPutN(lo, iw.ac+1);
+      memPut(hi);
     };
 
     function<W36()> immediate = [&]() -> W36 {return W36(pc.isSection0() ? 0 : ea.lhu, ea.rhu);};
@@ -586,6 +601,62 @@ public:
     function<W36(W36,W36)> eqvWord = [&](W36 s1, W36 s2) -> auto const {return ~(s1.u ^ s2.u);};
     function<W36(W36,W36)> eqvCWord = [&](W36 s1, W36 s2) -> auto const {return ~(s1.u ^ ~s2.u);};
     function<W36(W36,W36)> eqvCBWord = [&](W36 s1, W36 s2) -> auto const {return ~(~s1.u ^ ~s2.u);};
+
+    function<W36(W36,W36)> addWord = [&](W36 s1, W36 s2) -> auto const {
+      uint64_t sum = (uint64_t) s1.u + (uint64_t) s2.u;
+      if (sum >= W36::mostNegative) flags.tr1 = flags.ov = flags.cy1 = 1;
+      if ((int64_t) sum < -(int64_t) W36::mostNegative) flags.ov = flags.cy0 = 1;
+       return sum;
+    };
+    
+    function<W36(W36,W36)> subWord = [&](W36 s1, W36 s2) -> auto const {
+      int64_t diff = (int64_t) s1.u - (int64_t) s2.u;
+      if (diff >= (int64_t) W36::mostNegative) flags.tr1 = flags.ov = flags.cy1 = 1;
+      if (diff < -(int64_t) W36::mostNegative) flags.ov = flags.cy0 = 1;
+       return diff;
+    };
+    
+    function<tuple<W36,W36>(W36,W36)> mulWord = [&](W36 s1, W36 s2) -> auto const {
+      W72 prod = (int128_t) s1.s * (int128_t) s2.s;
+
+      if (s1.s == W36::signedMostNegative && s2.s == W36::signedMostNegative) {
+	flags.tr1 = flags.ov = flags.cy1 = 1;
+      }
+
+      return tuple<W36,W36>(W36(prod.hi), W36(prod.lo));
+    };
+    
+    function<W36(W36,W36)> imulWord = [&](W36 s1, W36 s2) -> auto const {
+      int128_t prod = (int128_t) s1.s * (int128_t) s2.s;
+
+      if (s1.s == W36::signedMostNegative && s2.s == W36::signedMostNegative) {
+	flags.tr1 = flags.ov = flags.cy1 = 1;
+      }
+
+      return W36((prod < 0 ? W36::mostNegative : 0) | ((W36::allOnes >> 1) & prod));
+    };
+    
+    function<tuple<W36,W36>(W36,W36)> divWord = [&](W36 s1, W36 s2) -> auto const {
+      int128_t d = (int128_t) s1.s / (int128_t) s2.s;
+      int128_t r = (int128_t) s1.s % (int128_t) s2.s;
+
+      if (s1.s == W36::signedMostNegative && s2.s == W36::signedMostNegative) {
+	flags.tr1 = flags.ov = flags.cy1 = 1;
+      }
+
+      return tuple<W36,W36>(d, r);
+    };
+    
+    function<tuple<W36,W36>(W36,W36)> idivWord = [&](W36 s1, W36 s2) -> auto const {
+      int128_t d = (int128_t) s1.s * (int128_t) s2.s;
+      int128_t r = (int128_t) s1.s % (int128_t) s2.s;
+
+      if (s1.s == W36::signedMostNegative && s2.s == W36::signedMostNegative) {
+	flags.tr1 = flags.ov = flags.cy1 = 1;
+      }
+
+      return tuple<W36,W36>(d, r);
+    };
     
     auto doHXXXX = [&](function<W36()> &doGetSrcF,
 		       function<W36()> &doGetDstF,
@@ -619,6 +690,16 @@ public:
 			 function<void(W36)> &doPutDstF) -> void
     {
       doPutDstF(doModifyF(doGetSrc1F(), doGetSrc2F()));
+    };
+
+
+    auto doBinOp2XX = [&](function<W36()> &doGetSrc1F,
+			  function<W36()> &doGetSrc2F,
+			  function<tuple<W36,W36>(W36,W36)> &doModifyF,
+			  function<void(W36,W36)> &doPutDstF) -> void
+    {
+      auto [hi, lo] = doModifyF(doGetSrc1F(), doGetSrc2F());
+      doPutDstF(hi, lo);
     };
 
 
@@ -786,6 +867,82 @@ public:
 	doMOVXX(acGet, magnitude, selfPut);
 	break;
 
+      case 0220:		// IMUL
+	doBinOpXX(memGet, acGet, imulWord, acPut);
+	break;
+
+      case 0221:		// IMULI
+	doBinOpXX(immediate, acGet, imulWord, acPut);
+	break;
+
+      case 0222:		// IMULM
+	doBinOpXX(memGet, acGet, imulWord, memPut);
+	break;
+
+      case 0223:		// IMULB
+	doBinOpXX(memGet, acGet, imulWord, bothPut);
+	break;
+
+      case 0224:		// MUL
+	doBinOp2XX(memGet, acGet, mulWord, acPut2);
+	break;
+
+      case 0225:		// MULI
+	doBinOp2XX(immediate, acGet, mulWord, acPut2);
+	break;
+
+      case 0226:		// MULM
+	doBinOp2XX(memGet, acGet, mulWord, memPut2);
+	break;
+
+      case 0227:		// MULB
+	doBinOp2XX(memGet, acGet, mulWord, bothPut2);
+	break;
+
+      case 0230:		// IDIV
+	doBinOp2XX(memGet, acGet, idivWord, acPut2);
+	break;
+
+      case 0231:		// IDIVI
+	doBinOp2XX(immediate, acGet, idivWord, acPut2);
+	break;
+
+      case 0232:		// IDIVM
+	doBinOp2XX(memGet, acGet, idivWord, memPut2);
+	break;
+
+      case 0233:		// IDIVB
+	doBinOp2XX(memGet, acGet, idivWord, bothPut2);
+	break;
+
+      case 0234:		// DIV
+	doBinOp2XX(memGet, acGet, divWord, acPut2);
+	break;
+
+      case 0235:		// DIVI
+	doBinOp2XX(immediate, acGet, divWord, acPut2);
+	break;
+
+      case 0236:		// DIVM
+	doBinOp2XX(memGet, acGet, divWord, memPut2);
+	break;
+
+      case 0237:		// DIVB
+	doBinOp2XX(memGet, acGet, divWord, bothPut2);
+	break;
+
+      case 0242: {		// LSH
+	W36 a(acGet());
+
+	if (ea.rhs > 0)
+	  a.u <<= ea.rhs;
+	else if (ea.rhs < 0)
+	  a.u >>= -ea.rhs;
+
+	acPut(a);
+	break;
+      }
+
       case 0243: 		// JFFO
 	tmp = acGet();
 
@@ -803,6 +960,19 @@ public:
 	acPutN(tmp, iw.ac + 1);
 	break;
 
+      case 0246: {		// LSHC
+	W72 a(acGet(), acGetN(iw.ac+1));
+
+	if (ea.rhs > 0)
+	  a.u <<= ea.rhs;
+	else if (ea.rhs < 0)
+	  a.u >>= -ea.rhs;
+
+	acPut(a.hi);
+	acPutN(a.lo, iw.ac+1);
+	break;
+      }
+
       case 0250:		// EXCH
 	tmp = acGet();
 	acPut(memGet());
@@ -816,17 +986,22 @@ public:
 	traceMem = false;
 
 	do {
+	  W36 srcA(ea.lhu, ac.lhu);
+	  W36 dstA(ea.lhu, ac.rhu);
+
+	  cerr << endl << "BLT src=" << srcA.vma << "  dst=" << dstA.vma << endl;
 
 	  // Note this isn't bug-for-bug compatible with KL10. See
 	  // footnote [2] in 1982_ProcRefMan.pdf p.58. We do
 	  // wraparound.
-	  memPutN(memGetN(W36(ea.lhu, ac.lhu)), W36(ea.lhu, ac.rhu));
+	  memPutN(memGetN(srcA), dstA);
 	  ac = W36(ac.lhu + 1, ac.rhu + 1);
 
 	  // Put it back for traps or page faults.
 	  acPut(ac);
-	} while (ac.rhu < ea.rhu);
+	} while (ac.rhu <= ea.rhu);
 
+	cerr << "BLT at end ac=" << ac.fmt36() << endl;
 	traceMem = saveTraceMem;
 	break;
       }
@@ -875,7 +1050,7 @@ public:
       case 0256:		// XCT/PXCT
 
 	if (userMode() || iw.ac == 0) {
-	  iw = eaw;
+	  iw = memGet();
 	  goto XCT_ENTRYPOINT;
 	} else {
 	  nyi();
@@ -923,6 +1098,38 @@ public:
       case 0267:		// JRA
 	acPut(memGetN(acGet()));
 	pc = ea;
+	break;
+
+      case 0270:		// ADD
+	doBinOpXX(memGet, acGet, addWord, acPut);
+	break;
+
+      case 0271:		// ADDI
+	doBinOpXX(immediate, acGet, addWord, acPut);
+	break;
+
+      case 0272:		// ADDM
+	doBinOpXX(memGet, acGet, addWord, memPut);
+	break;
+
+      case 0273:		// ADDB
+	doBinOpXX(memGet, acGet, addWord, bothPut);
+	break;
+
+      case 0274:		// SUB
+	doBinOpXX(memGet, acGet, subWord, acPut);
+	break;
+
+      case 0275:		// SUBI
+	doBinOpXX(immediate, acGet, subWord, acPut);
+	break;
+
+      case 0276:		// SUBM
+	doBinOpXX(memGet, acGet, subWord, memPut);
+	break;
+
+      case 0277:		// SUBB
+	doBinOpXX(memGet, acGet, subWord, bothPut);
 	break;
 
       case 0300:		// CAI
