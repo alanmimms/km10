@@ -19,26 +19,43 @@ public:
   W36 AC[16];
   W36 pc;
 
-  union ProgramFlags {
+  union ATTRPACKED ProgramFlags {
 
     struct ATTRPACKED {
+      unsigned: 5;
       unsigned ndv: 1;
       unsigned fuf: 1;
       unsigned tr1: 1;
       unsigned tr2: 1;
       unsigned afi: 1;
       unsigned pub: 1;
-      unsigned pcu: 1;
       unsigned usrIO: 1;
       unsigned usr: 1;
       unsigned fpd: 1;
       unsigned fov: 1;
-      unsigned cy0: 1;
       unsigned cy1: 1;
+      unsigned cy0: 1;
       unsigned ov: 1;
     };
 
-    unsigned u: 13;
+    struct ATTRPACKED {
+      unsigned: 5;
+      unsigned: 1;
+      unsigned: 1;
+      unsigned: 1;
+      unsigned: 1;
+      unsigned: 1;
+      unsigned: 1;
+      unsigned pcu: 1;
+      unsigned: 1;
+      unsigned: 1;
+      unsigned: 1;
+      unsigned: 1;
+      unsigned: 1;
+      unsigned pcp: 1;
+    };
+
+    unsigned lhu: 18;
   } flags;
 
   // Pointer to current virtual memory mapping in emulator.
@@ -316,7 +333,7 @@ public:
   union FlagsDWord {
     struct ATTRPACKED {
       unsigned processorDependent: 18; // What does KL10 use here?
-      unsigned: 6;
+      unsigned: 1;
       ProgramFlags flags;
       unsigned pc: 30;
       unsigned: 6;
@@ -329,14 +346,14 @@ public:
   KM10(W36 *physicalMemoryP, uint64_t aMaxInsns = UINT64_MAX)
     : memP(physicalMemoryP),
       maxInsns(aMaxInsns)
-  { }
+  { flags.lhu = 0; }
 
 
   // Accessors
-  bool userMode() {return false;}
+  bool userMode() {return !!flags.usr;}
 
-  W36 flagsWord() {
-    return W36((unsigned) flags.u << 4, pc.rhu);
+  W36 flagsWord(unsigned pc) {
+    return W36(flags.lhu, pc);
   }
 
   // Logging
@@ -693,15 +710,14 @@ public:
       }
 
       if (tracePC) {
-	cerr << pc.fmtVMA()
-//	     << " " << iw.fmt36()
+	cerr << pc.fmt18() << " "
 	     << setfill('0')
 	     << " " << setw(3) << right << iw.op
 	     << " " << setw(2) << right << iw.ac
 	     << " " << setw(1) << iw.i
 	     << " " << setw(2) << right << iw.x
 	     << " " << setw(6) << right << iw.y
-	     << "  " << setw(20) << left << iw.disasm();
+	     << "  " << setw(20) << setfill(' ') << left << iw.disasm();
       }
 
       switch (iw.op) {
@@ -870,7 +886,7 @@ public:
 	// Note this sets the flags that are cleared by PUSHJ before
 	// doPush() since doPush() can set flags.tr2.
 	flags.fpd = flags.afi = flags.tr1 = flags.tr2 = 0;
-	doPush(flagsWord());
+	doPush(pc.isSection0() ? flagsWord(nextPC.rhu) : W36(nextPC.vma));
 	nextPC = ea;
 	break;
 
@@ -887,21 +903,21 @@ public:
 	break;
 
       case 0264:		// JSR
-	memPut(pc.isSection0() ? nextPC.u | flags.u : nextPC.vma);
+	memPut(pc.isSection0() ? flagsWord(nextPC.rhu) : W36(nextPC.vma));
 	nextPC.u = ea.u + 1;	// XXX Wrap?
 	flags.fpd = flags.afi = flags.tr2 = flags.tr1 = 0;
 	break;
 
       case 0265:		// JSP
-	acPut(pc.isSection0() ? nextPC.u | flags.u : nextPC.vma);
 	nextPC.u = ea.u + 1;	// XXX Wrap?
+	acPut(pc.isSection0() ? flagsWord(nextPC.rhu) : W36(nextPC.vma));
 	flags.fpd = flags.afi = flags.tr2 = flags.tr1 = 0;
 	break;
 
       case 0266:		// JSA
 	memPut(acGet());
-	acPut(W36(ea.lhu, pc.rhu));
 	pc = ea.u + 1;
+	acPut(W36(ea.lhu, pc.rhu));
 	break;
 
       case 0267:		// JRA
@@ -1879,7 +1895,7 @@ public:
 	case 070020: {		// CONO APR,
 	  APRFunctions func(eaw.u);
 
-	  if (traceMem) cerr << " ; " << oct << setw(6) << eaw.rhu;
+	  if (traceMem) cerr << " ; " << eaw.fmt18();
 
 	  if (func.clear) {
 	    aprState.active.u &= ~func.select.u;
@@ -1921,7 +1937,7 @@ public:
 	case 070060: {		// CONO PI,
 	  PIFunctions pi(ea);
 
-	  if (traceMem) cerr << " ; " << oct << setw(6) << eaw.rhu;
+	  if (traceMem) cerr << " ; " << oct << eaw.fmt18();
 
 	  if (pi.clearPI) {
 	    piState.u = 0;
@@ -1953,7 +1969,7 @@ public:
 	  break;
 
 	case 070120:		// CONO PAG,
-	  if (traceMem) cerr << " ; " << oct << setw(6) << eaw.rhu;
+	  if (traceMem) cerr << " ; " << eaw.fmt18();
 	  pagState.u = iw.y;
 	  break;
 
@@ -1974,7 +1990,7 @@ public:
       }
 
       pc = nextPC;
-      if (tracePC) cerr << endl;
+      if (tracePC || traceMem) cerr << endl;
     } while (running);
   }
 

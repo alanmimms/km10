@@ -92,6 +92,13 @@ struct W36 {
     return s.str();
   }
 
+  std::string fmt18() const {
+    std::ostringstream s;
+    s << right << std::setw(6) << std::setfill('0') << std::oct << rhu;
+    return s.str();
+  }
+
+
   std::string fmt36() const {
     std::ostringstream s;
     s << right << std::setw(6) << std::setfill('0') << std::oct << lhu
