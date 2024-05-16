@@ -5,13 +5,18 @@
 #include <sstream>
 #include <iomanip>
 #include <fstream>
-#include <iostream>
+#include <ostream>
 #include <limits>
 #include <functional>
+#include <set>
 
 using namespace std;
 
+
+#include "logging.hpp"
 #include "w36.hpp"
+#include "device.hpp"
+#include "dte20.hpp"
 
 
 class KM10 {
@@ -61,197 +66,8 @@ public:
   // Pointer to current virtual memory mapping in emulator.
   W36 *memP;
 
+  // The "RUN flop"
   bool running;
-  bool tracePC;
-  bool traceAC;
-  bool traceMem;
-
-  uint64_t maxInsns;
-
-
-  // CONO PAG state bits
-  union PAGState {
-
-    struct ATTRPACKED {
-      unsigned execBasePage: 13;
-      unsigned enablePager: 1;
-      unsigned tops2Paging: 1;
-      unsigned: 1;
-      unsigned cacheStrategyLoad: 1;
-      unsigned cacheStrategyLook: 1;
-    };
-
-    unsigned u: 18;
-
-    PAGState() :u(0) {};
-  } pagState;
-
-
-  // CONI APR interrupt flags
-  union APRFlags {
-
-    struct ATTRPACKED {
-      unsigned sweepDone: 1;
-      unsigned powerFailure: 1;
-      unsigned addrParity: 1;
-      unsigned cacheDirParity: 1;
-      unsigned mbParity: 1;
-      unsigned ioPageFail: 1;
-      unsigned noMemory: 1;
-      unsigned sbusError: 1;
-    };
-
-    unsigned u: 8;
-  };
-  
-  // CONI APR status bits (some used in CONO APR)
-  union APRState {
-
-    struct ATTRPACKED {
-      unsigned intLevel: 3;
-      unsigned intRequest: 1;
-
-      APRFlags active;
-      unsigned: 4;
-
-      unsigned sweepBusy: 1;
-      unsigned: 5;
-
-      APRFlags enabled;
-
-      unsigned: 6;
-    };
-
-    uint64_t u: 36;
-  } aprState;
-
-
-  // CONO APR function bits
-  union APRFunctions {
-
-    struct ATTRPACKED {
-      unsigned intLevel: 3;
-      unsigned: 1;
-
-      APRFlags select;
-
-      unsigned set: 1;
-      unsigned clear: 1;
-      unsigned disable: 1;
-      unsigned enable: 1;
-
-      unsigned clearIO: 1;
-      unsigned: 1;
-    };
-
-    unsigned u: 18;
-
-    APRFunctions(unsigned v) :u(v) {};
-  };
-
-  struct APRLevels {
-    unsigned sweepDone: 3;
-    unsigned powerFailure: 3;
-    unsigned addrParity: 3;
-    unsigned cacheDirParity: 3;
-    unsigned mbParity: 3;
-    unsigned ioPageFail: 3;
-    unsigned noMemory: 3;
-    unsigned sbusError: 3;
-  } aprLevels;
-
-  // PI CONO function bits
-  union PIFunctions {
-    PIFunctions(unsigned v) :u(v) {};
-
-    struct ATTRPACKED {
-      unsigned levels: 7;
-
-      unsigned turnPIOn: 1;
-      unsigned turnPIOff: 1;
-
-      unsigned levelsOff: 1;
-      unsigned levelsOn: 1;
-      unsigned levelsInitiate: 1;
-      
-      unsigned clearPI: 1;
-      unsigned dropRequests: 1;
-      unsigned: 1;
-
-      unsigned writeEvenParityDir: 1;
-      unsigned writeEvenParityData: 1;
-      unsigned writeEvenParityAddr: 1;
-    };
-
-    unsigned u: 18;
-  };
-
-  // PI state and CONI bits
-  union PIState {
-
-    struct ATTRPACKED {
-      unsigned levelsEnabled: 7;
-      unsigned piEnabled: 1;
-      unsigned intInProgress: 7;
-      unsigned writeEvenParityDir: 1;
-      unsigned writeEvenParityData: 1;
-      unsigned writeEvenParityAddr: 1;
-      unsigned levelsRequested: 7;
-      unsigned: 11;
-    };
-
-    uint64_t u: 36;
-
-    PIState() :u(0) {};
-  } piState;
-
-
-  // APRID value see 1982_ProcRefMan.pdf p.244
-  inline static const union {
-
-    struct ATTRPACKED {
-      unsigned serialNumber: 12;
-
-      unsigned: 1;
-      unsigned masterOscillator: 1;
-      unsigned extendedKL10: 1;
-      unsigned channelSupported: 1;
-      unsigned cacheSupported: 1;
-      unsigned AC50Hz: 1;
-
-      unsigned microcodeVersion: 9;
-      unsigned: 6;
-      unsigned exoticMicrocode: 1;
-      unsigned extendedAddressing: 1;
-      unsigned tops20Paging: 1;
-    };
-
-    uint64_t u: 36;
-  } aprIDValue = {
-    04321,			// Processor serial number
-    1,				// Master oscillator
-    1,				// Extended KL10
-    1,				// Channel support
-    0,				// No cache support
-    0,				// 60Hz,
-    0442,			// Microcode version number
-    0,				// "Exotic" microcode
-    1,				// Microcode handles extended addresses
-    1,				// TOPS-20 paging
-  };
-
-  // See 1982_ProcRefMan.pdf p.262
-  struct DTE20ControlBlock {
-    W36 to11BP;
-    W36 to10BP;
-    W36 vectorInsn;
-    W36 reserved;
-    W36 examineAreaSize;
-    W36 examineAreaReloc;
-    W36 depositAreaSize;
-    W36 depositAreaReloc;
-  };
-
 
   // See 1982_ProcRefMan.pdf p.230
   struct ExecutiveProcessTable {
@@ -271,7 +87,7 @@ public:
 
     W36 reserved64_137[44];
   
-    DTE20ControlBlock dte20[4];	// 140
+    DTE20::ControlBlock dte[4];	// 140
 
     W36 reserved200_420[145];
 
@@ -342,11 +158,238 @@ public:
     uint64_t u: 36;
   };
 
+
+  struct APRDevice: Device {
+
+    // CONI APR interrupt flags
+    union Flags {
+
+      struct ATTRPACKED {
+	unsigned sweepDone: 1;
+	unsigned powerFailure: 1;
+	unsigned addrParity: 1;
+	unsigned cacheDirParity: 1;
+	unsigned mbParity: 1;
+	unsigned ioPageFail: 1;
+	unsigned noMemory: 1;
+	unsigned sbusError: 1;
+      };
+
+      unsigned u: 8;
+    };
+  
+    // CONI APR status bits
+    union State {
+
+      struct ATTRPACKED {
+	unsigned intLevel: 3;
+	unsigned intRequest: 1;
+
+	Flags active;
+	unsigned: 4;
+
+	unsigned sweepBusy: 1;
+	unsigned: 5;
+
+	Flags enabled;
+
+	unsigned: 6;
+      };
+
+      uint64_t u: 36;
+    } state;
+
+
+    // CONO APR function bits
+    union Functions {
+
+      struct ATTRPACKED {
+	unsigned intLevel: 3;
+	unsigned: 1;
+
+	Flags select;
+
+	unsigned set: 1;
+	unsigned clear: 1;
+	unsigned disable: 1;
+	unsigned enable: 1;
+
+	unsigned clearIO: 1;
+	unsigned: 1;
+      };
+
+      unsigned u: 18;
+
+      Functions(unsigned v) :u(v) {};
+    };
+
+    struct Levels {
+      unsigned sweepDone: 3;
+      unsigned powerFailure: 3;
+      unsigned addrParity: 3;
+      unsigned cacheDirParity: 3;
+      unsigned mbParity: 3;
+      unsigned ioPageFail: 3;
+      unsigned noMemory: 3;
+      unsigned sbusError: 3;
+    } levels;
+
+
+    // APRID value see 1982_ProcRefMan.pdf p.244
+    static inline const union {
+
+      struct ATTRPACKED {
+	unsigned serialNumber: 12;
+
+	unsigned: 1;
+	unsigned masterOscillator: 1;
+	unsigned extendedKL10: 1;
+	unsigned channelSupported: 1;
+	unsigned cacheSupported: 1;
+	unsigned AC50Hz: 1;
+
+	unsigned microcodeVersion: 9;
+	unsigned: 6;
+	unsigned exoticMicrocode: 1;
+	unsigned extendedAddressing: 1;
+	unsigned tops20Paging: 1;
+      };
+
+      uint64_t u: 36;
+    } apridValue{
+      04321,	// Processor serial number (always octal?)
+	1,	// Master oscillator
+	1,	// Extended KL10
+	1,	// Channel support
+	0,	// No cache support
+	0,	// 60Hz,
+	0442,	// Microcode version number
+	0,	// "Exotic" microcode
+	1,	// Microcode handles extended addresses
+	1,	// TOPS-20 paging
+	};
+
+
+    // Constructors
+    APRDevice()
+      : Device(0000, "APR")
+    {
+    }
+
+
+    // I/O instruction handlers
+    void clearIO() {
+      state.u = 0;
+    }
+  } apr;
+
+
+  struct PIDevice: Device {
+
+    // PI CONO function bits
+    union Functions {
+      Functions(unsigned v) :u(v) {};
+
+      struct ATTRPACKED {
+	unsigned levels: 7;
+
+	unsigned turnPIOn: 1;
+	unsigned turnPIOff: 1;
+
+	unsigned levelsOff: 1;
+	unsigned levelsOn: 1;
+	unsigned levelsInitiate: 1;
+      
+	unsigned clearPI: 1;
+	unsigned dropRequests: 1;
+	unsigned: 1;
+
+	unsigned writeEvenParityDir: 1;
+	unsigned writeEvenParityData: 1;
+	unsigned writeEvenParityAddr: 1;
+      };
+
+      unsigned u: 18;
+    };
+
+    // PI state and CONI bits
+    union State {
+
+      struct ATTRPACKED {
+	unsigned levelsEnabled: 7;
+	unsigned piEnabled: 1;
+	unsigned intInProgress: 7;
+	unsigned writeEvenParityDir: 1;
+	unsigned writeEvenParityData: 1;
+	unsigned writeEvenParityAddr: 1;
+	unsigned levelsRequested: 7;
+	unsigned: 11;
+      };
+
+      uint64_t u: 36;
+
+      State() :u(0) {};
+    } state;
+
+
+    // Constructors
+    PIDevice():
+      Device(0060, "PI")
+    {
+      state.u = 0;
+    }
+
+
+    // I/O instruction handlers
+    void clearIO() {
+      state.u = 0;
+    }
+  } pi;
+
+  struct PAGDevice: Device {
+
+    // CONO PAG state bits
+    union State {
+
+      struct ATTRPACKED {
+	unsigned execBasePage: 13;
+	unsigned enablePager: 1;
+	unsigned tops2Paging: 1;
+	unsigned: 1;
+	unsigned cacheStrategyLoad: 1;
+	unsigned cacheStrategyLook: 1;
+      };
+
+      unsigned u: 18;
+    } state;
+
+
+    // Constructors
+    PAGDevice():
+      Device(0120, "PAG")
+    {
+      state.u = 0;
+    }
+
+
+    // Accessors
+    bool pagerEnabled() {
+      return state.enablePager;
+    }
+
+    // I/O instruction handlers
+    void clearIO() {
+      state.u = 0;
+    }
+  } pag;
+
+
   // Constructors
-  KM10(W36 *physicalMemoryP, uint64_t aMaxInsns = UINT64_MAX)
-    : memP(physicalMemoryP),
-      maxInsns(aMaxInsns)
-  { flags.lhu = 0; }
+  KM10(W36 *physicalMemoryP)
+    : memP(physicalMemoryP)
+  {
+    flags.lhu = 0;
+  }
 
 
   // Accessors
@@ -356,12 +399,8 @@ public:
     return W36(flags.lhu, pc);
   }
 
-  // Logging
-  inline static bool loadLog{true};
-  inline static ofstream loadLogS{"load.log"};
 
-
-  // The instruction emulator
+  // The instruction emulator. Call this to start or continue running.
   void emulate() {
     W36 iw{};
     W36 ea{};
@@ -369,8 +408,6 @@ public:
     W36 tmp;
 
     uint64_t nInsns = 0;
-
-    auto nyi = [&] {cerr << " [not yet implemented]";};
 
     function<W36(W36)> swap = [&](W36 src) {return W36(src.rhu, src.lhu);};
 
@@ -389,7 +426,7 @@ public:
 
     function<W36(unsigned)> acGetN = [&](unsigned acN) -> W36 {
       W36 value = AC[acN];
-      if (traceMem) cerr << " ; ac" << oct << acN << ": " << value.fmt36();
+      if (logging.mem) logging.s << " ; ac" << oct << acN << ": " << value.fmt36();
       return value;
     };
 
@@ -399,25 +436,25 @@ public:
 
     function<W36(unsigned)> acGetEA = [&](unsigned ac) -> W36 {
       W36 value = AC[ac];
-      if (traceMem) cerr << " ; ac" << oct << ac << ": " << value.fmt36();
+      if (logging.mem) logging.s << " ; ac" << oct << ac << ": " << value.fmt36();
       return value;
     };
 
     function<W36()> acGetRH = [&]() -> W36 {
       W36 value{0, AC[iw.ac].rhu};
-      if (traceMem) cerr << " ; acRH" << oct << iw.ac << ": " << value.fmt36();
+      if (logging.mem) logging.s << " ; acRH" << oct << iw.ac << ": " << value.fmt36();
       return value;
     };
 
     function<W36()> acGetLH = [&]() -> W36 {
       W36 value{0, AC[iw.ac].lhu};
-      if (traceMem) cerr << " ; acLH" << oct << iw.ac << ": " << value.fmt36();
+      if (logging.mem) logging.s << " ; acLH" << oct << iw.ac << ": " << value.fmt36();
       return value;
     };
 
     function<void(W36,unsigned)> acPutN = [&](W36 value, unsigned acN) -> void {
       AC[acN] = value;
-      if (traceMem) cerr << " ; ac" << oct << acN << "<-" << value.fmt36();
+      if (logging.mem) logging.s << " ; ac" << oct << acN << "<-" << value.fmt36();
     };
 
     function<void(W36)> acPut = [&](W36 value) -> void {
@@ -429,16 +466,14 @@ public:
       acPutN(lo, iw.ac+1);
     };
 
-    function<W36()> memGet = [&]() -> W36 {
-      W36 value = ea.u < 020 ? acGetEA(ea.u) : memP[ea.u];
-      if (traceMem) cerr << " ; " << ea.fmtVMA() << ": " << value.fmt36();
+    function<W36(W36)> memGetN = [&](W36 a) -> W36 {
+      W36 value = a.u < 020 ? acGetEA(a.u) : memP[a.u];
+      if (logging.mem) logging.s << " ; " << a.fmtVMA() << ": " << value.fmt36();
       return value;
     };
 
-    function<W36(W36)> memGetN = [&](W36 a) -> W36 {
-      W36 value = a.u < 020 ? acGetEA(a.u) : memP[a.u];
-      if (traceMem) cerr << " ; " << a.fmtVMA() << ": " << value.fmt36();
-      return value;
+    function<W36()> memGet = [&]() -> W36 {
+      return memGetN(ea);
     };
 
     function<W36()> memGetSwapped = [&]() -> W36 {return swap(memGet());};
@@ -450,14 +485,14 @@ public:
       else 
 	memP[a.u] = value;
 
-      if (traceMem) cerr << " ; " << a.fmtVMA() << "<-" << value.fmt36();
+      if (logging.mem) logging.s << " ; " << a.fmtVMA() << "<-" << value.fmt36();
     };
 
     function<void(W36)> memPut = [&](W36 value) -> void {
       memPutN(value, ea);
     };
 
-    function<void(W36,W36)> memPut2 = [&](W36 hi, W36 lo) -> void {
+    function<void(W36,W36)> memPutHi = [&](W36 hi, W36 lo) -> void {
       memPutN(hi, ea);
     };
 
@@ -528,7 +563,7 @@ public:
       W36 eaw = memGet();
 
       if (condF(eaw)) {
-	if (traceMem) cerr << " [jump]";
+	if (logging.mem) logging.s << " [jump]";
 	nextPC.rhu = ea;
       }
     };
@@ -537,7 +572,7 @@ public:
       W36 eaw = memGet();
 
       if (condF(eaw)) {
-	if (traceMem) cerr << " [skip]";
+	if (logging.mem) logging.s << " [skip]";
 	++nextPC.rhu;
       }
       
@@ -563,7 +598,7 @@ public:
       W36 eaw = doGetF() & ea;
 
       if (condF(eaw)) {
-	if (traceMem) cerr << " [skip]";
+	if (logging.mem) logging.s << " [skip]";
 	++nextPC.rhu;
       }
       
@@ -606,14 +641,14 @@ public:
       uint64_t sum = (uint64_t) s1.u + (uint64_t) s2.u;
       if (sum >= W36::mostNegative) flags.tr1 = flags.ov = flags.cy1 = 1;
       if ((int64_t) sum < -(int64_t) W36::mostNegative) flags.ov = flags.cy0 = 1;
-       return sum;
+      return sum;
     };
     
     function<W36(W36,W36)> subWord = [&](W36 s1, W36 s2) -> auto const {
       int64_t diff = (int64_t) s1.u - (int64_t) s2.u;
       if (diff >= (int64_t) W36::mostNegative) flags.tr1 = flags.ov = flags.cy1 = 1;
       if (diff < -(int64_t) W36::mostNegative) flags.ov = flags.cy0 = 1;
-       return diff;
+      return diff;
     };
     
     function<tuple<W36,W36>(W36,W36)> mulWord = [&](W36 s1, W36 s2) -> auto const {
@@ -719,7 +754,7 @@ public:
     {
 
       if (condF(doGetSrc1F(), doGetSrc2F())) {
-	if (traceMem) cerr << " [skip]";
+	if (logging.mem) logging.s << " [skip]";
 	++nextPC.rhu;
       }
     };
@@ -761,9 +796,9 @@ public:
 
     // The instruction loop
     do {
-      if (nInsns++ > maxInsns) running = false;
+      if (nInsns++ > logging.maxInsns) running = false;
 
-      if ((flags.tr1 || flags.tr2) && pagState.enablePager) {
+      if ((flags.tr1 || flags.tr2) && pag.pagerEnabled()) {
 	ExecutiveProcessTable *eptP = (ExecutiveProcessTable *) memP;
 	iw = flags.tr1 ? eptP->trap1Insn : eptP->stackOverflowInsn;
       } else {
@@ -790,15 +825,15 @@ public:
 	}
       }
 
-      if (tracePC) {
-	cerr << pc.fmt18() << " "
-	     << setfill('0')
-	     << " " << setw(3) << right << iw.op
-	     << " " << setw(2) << right << iw.ac
-	     << " " << setw(1) << iw.i
-	     << " " << setw(2) << right << iw.x
-	     << " " << setw(6) << right << iw.y
-	     << "  " << setw(20) << setfill(' ') << left << iw.disasm();
+      if (logging.pc) {
+	logging.s << pc.fmt18() << " "
+		  << setfill('0')
+		  << " " << setw(3) << right << iw.op
+		  << " " << setw(2) << right << iw.ac
+		  << " " << setw(1) << iw.i
+		  << " " << setw(2) << right << iw.x
+		  << " " << setw(6) << right << iw.y
+		  << "  " << setw(20) << setfill(' ') << left << iw.disasm();
       }
 
       switch (iw.op) {
@@ -892,7 +927,7 @@ public:
 	break;
 
       case 0226:		// MULM
-	doBinOp2XX(memGet, acGet, mulWord, memPut2);
+	doBinOp2XX(memGet, acGet, mulWord, memPutHi);
 	break;
 
       case 0227:		// MULB
@@ -908,7 +943,7 @@ public:
 	break;
 
       case 0232:		// IDIVM
-	doBinOp2XX(memGet, acGet, idivWord, memPut2);
+	doBinOp2XX(memGet, acGet, idivWord, memPutHi);
 	break;
 
       case 0233:		// IDIVB
@@ -924,7 +959,7 @@ public:
 	break;
 
       case 0236:		// DIVM
-	doBinOp2XX(memGet, acGet, divWord, memPut2);
+	doBinOp2XX(memGet, acGet, divWord, memPutHi);
 	break;
 
       case 0237:		// DIVB
@@ -981,15 +1016,16 @@ public:
 
       case 0251: {		// BLT
 	W36 ac(acGet());
-	bool saveTraceMem = traceMem;
+	bool mem = logging.mem;
 
-	traceMem = false;
+	logging.mem = false;
+	static const string prefix{"\n                                                 ; "};
 
 	do {
 	  W36 srcA(ea.lhu, ac.lhu);
 	  W36 dstA(ea.lhu, ac.rhu);
 
-	  cerr << endl << "BLT src=" << srcA.vma << "  dst=" << dstA.vma << endl;
+	  logging.s << prefix << "BLT src=" << srcA.vma << "  dst=" << dstA.vma;
 
 	  // Note this isn't bug-for-bug compatible with KL10. See
 	  // footnote [2] in 1982_ProcRefMan.pdf p.58. We do
@@ -1001,8 +1037,8 @@ public:
 	  acPut(ac);
 	} while (ac.rhu <= ea.rhu);
 
-	cerr << "BLT at end ac=" << ac.fmt36() << endl;
-	traceMem = saveTraceMem;
+	logging.s << prefix << "BLT at end ac=" << ac.fmt36();
+	logging.mem = mem;
 	break;
       }
 
@@ -1012,7 +1048,7 @@ public:
 	acPut(tmp);
 
 	if (tmp.s >= 0) {
-	  if (traceMem) cerr << " [jump]";
+	  if (logging.mem) logging.s << " [jump]";
 	  nextPC = ea;
 	}
 
@@ -1024,7 +1060,7 @@ public:
 	acPut(tmp);
 
 	if (tmp.s < 0) {
-	  if (traceMem) cerr << " [jump]";
+	  if (logging.mem) logging.s << " [jump]";
 	  nextPC = ea;
 	}
 
@@ -1035,7 +1071,7 @@ public:
 	if (iw.ac == 0) {	// JRST
 	  nextPC.u = ea.u;
 	} else {
-	  nyi();
+	  Logging::nyi();
 	}
 
 	break;
@@ -1053,7 +1089,7 @@ public:
 	  iw = memGet();
 	  goto XCT_ENTRYPOINT;
 	} else {
-	  nyi();
+	  Logging::nyi();
 	  break;
 	}
 
@@ -2092,112 +2128,132 @@ public:
 	doTXXXX(memGetSwapped, zeroMask, isNE0, noStore);
 	break;
 
-      case 0700:
-
-	switch ((unsigned) iw.ioAll << 2) {
-	case 070000: 		// APRID
-	  memPut(aprIDValue.u);
-	  break;
-
-	case 070020: {		// CONO APR,
-	  APRFunctions func(eaw.u);
-
-	  if (traceMem) cerr << " ; " << eaw.fmt18();
-
-	  if (func.clear) {
-	    aprState.active.u &= ~func.select.u;
-	  } else if (func.set) {
-	    aprState.active.u |= func.select.u;
-
-	    // This block argues the APR state needs to be
-	    // metaprogrammed with C++17 parameter pack superpowers
-	    // instead of this old fashioned mnaual method. This might
-	    // be an interesting thing to do in the future. For now,
-	    // it's done the 1940s hard way.
-	    if (func.intLevel != 0) {
-	      if (func.select.sweepDone != 0)      aprLevels.sweepDone = func.intLevel;
-	      if (func.select.powerFailure != 0)   aprLevels.powerFailure = func.intLevel;
-	      if (func.select.addrParity != 0)     aprLevels.addrParity = func.intLevel;
-	      if (func.select.cacheDirParity != 0) aprLevels.cacheDirParity = func.intLevel;
-	      if (func.select.mbParity != 0)       aprLevels.mbParity = func.intLevel;
-	      if (func.select.ioPageFail != 0)     aprLevels.ioPageFail = func.intLevel;
-	      if (func.select.noMemory != 0)       aprLevels.noMemory = func.intLevel;
-	      if (func.select.sbusError != 0)      aprLevels.sbusError = func.intLevel;
-	    }
-	  } else if (func.enable) {
-	    aprState.enabled.u |= func.select.u;
-	  } else if (func.disable) {
-	    aprState.enabled.u &= ~func.select.u;
-	  }
-
-	  if (func.clearIO) {
-	    nyi();
-	  }
-
-	  }
-	  break;
-
-	case 070024:		// CONI APR,
-	  memPut(aprState.u);
-	  break;
-
-	case 070060: {		// CONO PI,
-	  PIFunctions pi(ea);
-
-	  if (traceMem) cerr << " ; " << oct << eaw.fmt18();
-
-	  if (pi.clearPI) {
-	    piState.u = 0;
-	  } else {
-	    piState.writeEvenParityDir = pi.writeEvenParityDir;
-	    piState.writeEvenParityData = pi.writeEvenParityData;
-	    piState.writeEvenParityAddr = pi.writeEvenParityAddr;
-
-	    if (pi.turnPIOn) {
-	      piState.piEnabled = 1;
-	    } else if (pi.turnPIOff) {
-	      piState.piEnabled = 0;
-	    } else if (pi.dropRequests != 0) {
-	      piState.levelsRequested &= ~pi.levels;
-	    } else if (pi.levelsInitiate) {
-	      piState.levelsRequested |= pi.levels;
-	    } else if (pi.levelsOff) {
-	      piState.levelsEnabled &= ~pi.levels;
-	    } else if (pi.levelsOn) {
-	      piState.levelsEnabled |= pi.levels;
-	    }
-	  }
-
-	  break;
-	}
-
-	case 070064:		// CONI PI,
-	  memPut(piState.u);
-	  break;
-
-	case 070120:		// CONO PAG,
-	  if (traceMem) cerr << " ; " << eaw.fmt18();
-	  pagState.u = iw.y;
-	  break;
-
-	case 070124:		// CONI PAG,
-	  memPut(W36(memGet().lhu, pagState.u));
-	  break;
-
-	default:
-	  nyi();
-	  break;
-	}
-
-	break;
-
       default:
-	nyi();
+
+	if (iw.ioSeven != 7) {	// Only handle I/O instructions this way
+	  Logging::nyi();
+	  continue;
+	}
+
+	logging.s << " ; ioDev=" << oct << iw.ioDev << " ioOp=" << oct << iw.ioOp;
+
+	switch (iw.ioDev) {
+	case 000:		// APR
+
+	  switch (iw.ioOp) {
+	  case W36::BLKI:	// APRID
+	    memPut(apr.apridValue.u);
+	    break;
+
+	  case W36::BLKO:	// WRFIL
+	    Logging::nyi();
+	    break;
+
+	  case W36::CONO: {	// WRAPR
+	    APRDevice::Functions func(ea.u);
+
+	    if (logging.mem) logging.s << " ; " << ea.fmt18();
+
+	    if (func.clear) {
+	      apr.state.active.u &= ~func.select.u;
+	    } else if (func.set) {
+	      apr.state.active.u |= func.select.u;
+
+	      // This block argues the APR state needs to be
+	      // metaprogrammed with C++17 parameter pack superpowers
+	      // instead of this old fashioned mnaual method. This might
+	      // be an interesting thing to do in the future. For now,
+	      // it's done the 1940s hard way.
+	      if (func.intLevel != 0) {
+		if (func.select.sweepDone != 0)      apr.levels.sweepDone = func.intLevel;
+		if (func.select.powerFailure != 0)   apr.levels.powerFailure = func.intLevel;
+		if (func.select.addrParity != 0)     apr.levels.addrParity = func.intLevel;
+		if (func.select.cacheDirParity != 0) apr.levels.cacheDirParity = func.intLevel;
+		if (func.select.mbParity != 0)       apr.levels.mbParity = func.intLevel;
+		if (func.select.ioPageFail != 0)     apr.levels.ioPageFail = func.intLevel;
+		if (func.select.noMemory != 0)       apr.levels.noMemory = func.intLevel;
+		if (func.select.sbusError != 0)      apr.levels.sbusError = func.intLevel;
+	      }
+	    } else if (func.enable) {
+	      apr.state.enabled.u |= func.select.u;
+	    } else if (func.disable) {
+	      apr.state.enabled.u &= ~func.select.u;
+	    }
+
+	    if (func.clearIO) {
+	      for (auto [ioDev, devP]: Device::devices) devP->clearIO();
+	    }
+	    break;
+	  }
+
+	  case W36::CONI:	// RDAPR
+	    Logging::nyi();
+	    break;
+
+	  default:
+	    Logging::nyi();
+	    break;
+	  }
+
+	  break;
+
+	case 001:		// PI
+
+	  switch (iw.ioOp) {
+	  case W36::CONO: {
+	    PIDevice::Functions pif(ea);
+
+	    if (logging.mem) logging.s << " ; " << oct << ea.fmt18();
+
+	    if (pif.clearPI) {
+	      logging.s << " ; CLEAR I/O SYSTEM";
+	      Device::clearAll();
+	    } else {
+	      pi.state.writeEvenParityDir = pif.writeEvenParityDir;
+	      pi.state.writeEvenParityData = pif.writeEvenParityData;
+	      pi.state.writeEvenParityAddr = pif.writeEvenParityAddr;
+
+	      if (pif.turnPIOn) {
+		pi.state.piEnabled = 1;
+	      } else if (pif.turnPIOff) {
+		pi.state.piEnabled = 0;
+	      } else if (pif.dropRequests != 0) {
+		pi.state.levelsRequested &= ~pif.levels;
+	      } else if (pif.levelsInitiate) {
+		pi.state.levelsRequested |= pif.levels;
+	      } else if (pif.levelsOff) {
+		pi.state.levelsEnabled &= ~pif.levels;
+	      } else if (pif.levelsOn) {
+		pi.state.levelsEnabled |= pif.levels;
+	      }
+	    }
+	    break;
+	  }
+
+	  case W36::CONI:
+	    memPut(pi.state.u);
+	    break;
+
+	  default:
+	    Logging::nyi();
+	    break;
+	  }
+
+	  break;
+
+	case 024:		// PAG
+	  break;
+
+	default:		// All other devices
+	  Device::handleIO(iw, ea);
+	  break;
+	}
+
 	break;
       }
 
       pc = nextPC;
-      if (tracePC || traceMem) cerr << endl;
+      if (logging.pc || logging.mem) logging.s << endl;
     } while (running);
   }
 
@@ -2287,12 +2343,12 @@ public:
 
     for (;;) {
       char ch = inS.get();
-      if (loadLog) loadLogS << "getWord[" << whyP << "] ch=" << oct << ch << endl;
+      if (logging.load) logging.s << "getWord[" << whyP << "] ch=" << oct << ch << endl;
       if (ch == EOF || ch == ',' || ch == '\n') break;
       v = (v << 6) | (ch & 077);
     }
 
-    if (loadLog) loadLogS << "getWord[" << whyP << "] returns 0" << oct << v << endl;
+    if (logging.load) logging.s << "getWord[" << whyP << "] returns 0" << oct << v << endl;
     return v;
   }
 
@@ -2309,7 +2365,7 @@ public:
 
       if (recType == EOF) break;
 
-      if (loadLog) loadLogS << "recType=" << recType << endl;
+      if (logging.load) logging.s << "recType=" << recType << endl;
 
       if (recType == ';') {
 	// Just ignore comment lines
@@ -2327,8 +2383,8 @@ public:
       addr |= wc & 0xC000;
       wc &= ~0xC000;
 
-      if (loadLog) loadLogS << "addr=" << setw(6) << setfill('0') << oct << addr << endl;
-      if (loadLog) loadLogS << "wc=" << wc << endl;
+      if (logging.load) logging.s << "addr=" << setw(6) << setfill('0') << oct << addr << endl;
+      if (logging.load) logging.s << "wc=" << wc << endl;
 
       unsigned zeroCount;
 
@@ -2338,7 +2394,7 @@ public:
 
 	if (zeroCount == 0) zeroCount = 64*1024;
 
-	if (loadLog) loadLogS << "zeroCount=0" << oct << zeroCount << endl;
+	if (logging.load) logging.s << "zeroCount=0" << oct << zeroCount << endl;
 
 	inS.ignore(numeric_limits<streamsize>::max(), '\n');
 
@@ -2367,8 +2423,8 @@ public:
 	  if (a > highestAddr) highestAddr = a;
 	  if (a < lowestAddr) lowestAddr = a;
 
-	  if (loadLog) {
-	    loadLogS << "mem[" << a36.fmtVMA() << "]=" << w36.fmt36() << " " << w36.disasm() << endl;
+	  if (logging.load) {
+	    logging.s << "mem[" << a36.fmtVMA() << "]=" << w36.fmt36() << " " << w36.disasm() << endl;
 	  }
 
 	  memP[a].u = w;
@@ -2378,7 +2434,7 @@ public:
 	break;
       
       default:
-	cerr << "ERROR: Unknown record type '" << recType << "' in file '" << fileNameP << "'" << endl;
+	logging.s << "ERROR: Unknown record type '" << recType << "' in file '" << fileNameP << "'" << endl;
 	break;      
       }
     }

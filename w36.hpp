@@ -4,6 +4,8 @@
 #include <sstream>
 #include <iomanip>
 
+#include "logging.hpp"
+
 using namespace std;
 
 
@@ -15,6 +17,17 @@ typedef signed __int128 int128_t;
 #define ATTRPACKED    __attribute__((packed))
 
 struct W36 {
+
+  enum IOOp {
+    BLKI,
+    DATAI,
+    BLKO,
+    DATAO,
+    CONO,
+    CONI,
+    CONSZ,
+    CONSO
+  };
 
   union {
     int64_t s: 36;
@@ -48,7 +61,7 @@ struct W36 {
 	
     struct ATTRPACKED {
       unsigned: 23;
-      unsigned ioOp: 3;
+      IOOp ioOp: 3;
       unsigned ioDev: 7;
       unsigned ioSeven: 3;
     };

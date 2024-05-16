@@ -1,15 +1,21 @@
-#include "km10.hpp"
 #include <iostream>
-#include <cassert>
-
 using namespace std;
 
 
+#include "km10.hpp"
+
+#include "logging.hpp"
+#include "device.hpp"
+#include "dte20.hpp"
+
+
+Logging logging{};
+
+
 int main(int argc, char *argv[]) {
-  assert(sizeof(W36) == 8);
   static W36 memory[4 * 1024 * 1024];
 
-  if (argc != 2) {
+  if (argc < 2) {
     cerr << R"(
 Usage:
     )" << argv[0] << R"( <filename to load>
@@ -17,18 +23,22 @@ Usage:
     return -1;
   }
 
-  KM10 km10(memory, 1000);
+  logging.ac = true;
+  logging.pc = true;
+  logging.mem = true;
+  //  logging.load = true;
+  logging.maxInsns = 1000*1000;
+
+  Device::devices[040] = new DTE20{040, "DTE"};
+
+  KM10 km10(memory);
 
   km10.loadA10(argv[1]);
-  cerr << "[Loaded " << argv[1]
+  logging.s << "[Loaded " << argv[1]
 	    << "  start=" << km10.pc.fmtVMA()
 	    << "]" << endl;
 
-  km10.tracePC = 1;
-  km10.traceAC = 1;
-  km10.traceMem = 1;
-  km10.running = 1;
-
+  km10.running = true;
   km10.emulate();
 
   return 0;
