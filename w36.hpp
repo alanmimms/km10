@@ -89,6 +89,9 @@ struct W36 {
   W36(unsigned lh, unsigned rh) : rhu(rh), lhu(lh) {}
 
 
+  constexpr static uint64_t bit(unsigned n) {return 1ull << (35 - n);}
+
+
   // Accessors
   operator uint64_t() {return u;}
 

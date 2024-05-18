@@ -1,4 +1,5 @@
 #include <iostream>
+#include <assert.h>
 using namespace std;
 
 
@@ -13,7 +14,8 @@ Logging logging{};
 
 
 int main(int argc, char *argv[]) {
-  static W36 memory[4 * 1024 * 1024];
+  assert(sizeof(Memory::ExecutiveProcessTable) == 512 * 8);
+  assert(sizeof(Memory::UserProcessTable) == 512 * 8);
 
   if (argc < 2) {
     cerr << R"(
@@ -29,7 +31,10 @@ Usage:
   //  logging.load = true;
   logging.maxInsns = 1000*1000;
 
-  Device::devices[040] = new DTE20{040, "DTE"};
+  Memory memory(4 * 1024 * 1024);
+
+  DTE20 dte{040, "DTE", memory};
+  Device::devices[040] = &dte;
 
   KM10 km10(memory);
 
