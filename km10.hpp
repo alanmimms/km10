@@ -735,11 +735,11 @@ public:
 	iw = memP[pc.vma];
       }
 
-    XCT_ENTRYPOINT:
-      W36 eaw{iw};
-
       nextPC.lhu = pc.lhu;
       nextPC.rhu = pc.rhu + 1;
+
+    XCT_ENTRYPOINT:
+      W36 eaw{iw};
 
       // While we keep getting indirection, loop for new EA words.
       // XXX this only works for non-extended addressing.
@@ -1016,7 +1016,9 @@ public:
       case 0256:		// XCT/PXCT
 
 	if (userMode() || iw.ac == 0) {
+	  pc = ea;
 	  iw = memGet();
+	  if (logging.mem) logging.s << "; ";
 	  goto XCT_ENTRYPOINT;
 	} else {
 	  Logging::nyi();
