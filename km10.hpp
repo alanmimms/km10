@@ -308,6 +308,12 @@ public:
   } pag;
 
 
+
+  APRDevice *aprP;
+  PIDevice *piP;
+  PAGDevice *pagP;
+
+
   // Constructors
   KM10(Memory &aMemory)
     : memory(aMemory)
