@@ -209,8 +209,11 @@ struct DTE20: Device {
 
 	  // Lamely sleep until KL grabs the previous char
 	  while (memoryP->eptP->DTEKLNotReadyForChar) usleep(100);
+
 	  memoryP->eptP->DTEto10Arg = buf[k];
 	  memoryP->eptP->DTEKLNotReadyForChar = W36::allOnes;
+
+	  // XXX ring the 10's doorbell here
 	}
       }
 

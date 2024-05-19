@@ -491,9 +491,8 @@ public:
     function<bool(W36)> never  = [&](W36 v) -> bool const {return false;};
 
     auto doJUMP = [&](function<bool(W36)> &condF) -> void {
-      W36 eaw = memGet();
 
-      if (condF(eaw)) {
+      if (condF(acGet())) {
 	if (logging.mem) logging.s << " [jump]";
 	nextPC.rhu = ea;
       }
@@ -923,18 +922,18 @@ public:
 	  tmp.u = count;
 	}
 
-	acPutN(tmp, iw.ac + 1);
+	acPutN(tmp, iw.ac+1);
 	break;
 
       case 0246: {		// LSHC
 	W72 a(acGet(), acGetN(iw.ac+1));
 
 	if (ea.rhs > 0)
-	  a.u <<= ea.rhs;
+	  a.u <<= ea.rhs & 0377;
 	else if (ea.rhs < 0)
-	  a.u >>= -ea.rhs;
+	  a.u >>= -(ea.rhs & 0377);
 
-	acPut(a.hi);
+	acPutN(a.hi, iw.ac+0);
 	acPutN(a.lo, iw.ac+1);
 	break;
       }
