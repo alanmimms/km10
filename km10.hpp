@@ -16,6 +16,7 @@ using namespace std;
 #include "logging.hpp"
 #include "memory.hpp"
 #include "w36.hpp"
+#include "bytepointer.hpp"
 #include "device.hpp"
 #include "dte20.hpp"
 
@@ -737,6 +738,9 @@ public:
       nextPC.rhu = pc.rhu + 1;
 
     XCT_ENTRYPOINT:
+      // When we XCT we have already set PC to point to the
+      // instruction to be XCTed and nextPC is pointing after the XCT.
+
       if (nInsns++ > logging.maxInsns) running = false;
 
       W36 eaw{iw};
@@ -767,6 +771,11 @@ public:
       }
 
       switch (iw.op) {
+
+      case 0135: {		// LDB
+	BytePointer bp(memGet());
+	break;
+      }
 
       case 0200:		// MOVE
 	doMOVXX(memGet, noModification, acPut);
