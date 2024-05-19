@@ -5,7 +5,9 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <termios.h>
+#include <poll.h>
 #include <cstdlib>
+#include <cstdio>
 
 #include <stdexcept>
 #include <thread>
@@ -38,7 +40,14 @@ struct DTE20: Device {
     /* register the tty reset with the exit handler */
     if (atexit(resetTTY) != 0) throw runtime_error("atexit: can't register tty reset");
 
-    setRAW();
+    //    setRAW();
+
+    int pipeFDs[2];
+    st = pipe(pipeFDs);
+    if (st < 0) perror("Error creation console I/O pipe");
+
+    fromIOLoopFD = pipeFDs[0];
+    toIOLoopFD = pipeFDs[1];
 
     consoleIOThread = thread(&consoleIOLoop);
   }
@@ -62,10 +71,12 @@ struct DTE20: Device {
       unsigned clearReload11: 1;
       unsigned to11Doorbell: 1;
 
-      unsigned: 14;
+      unsigned: 4;
     };
 
-    uint64_t u: 36;
+    unsigned u: 18;
+
+    CONOMask(unsigned ea) { u = ea; }
   };
 
   unsigned piAssigned;
@@ -77,10 +88,29 @@ struct DTE20: Device {
     SECONDARY,			// Also called MONITOR mode
   } protocolMode;
 
+  // See klcom.mem p.50
+  enum DTECMD {
+    ctyOutput = 010,
+    enterSecondaryProtocol,
+    enterPrimaryProtocol,
+  };
+
+  union MonitorCommand {
+
+    struct ATTRPACKED {
+      unsigned data: 8;
+      unsigned fn: 8;
+    };
+
+    unsigned u;
+  };
+
   inline static Memory *memoryP;
 
   thread consoleIOThread;
   bool consoleIOThreadDone;
+  inline static int toIOLoopFD;
+  inline static int fromIOLoopFD;
 
   inline static bool isRaw{false};
   inline static int ttyFD{-1};
@@ -112,8 +142,37 @@ struct DTE20: Device {
 
 
   virtual void doCONO(W36 iw, W36 ea) {
+    CONOMask req(ea);
     logging.s << " ; DTE CONO " << oct << ea;
-    Logging::nyi();
+
+    if (req.to11Doorbell) {
+      char buf;
+
+      logging.s << " to11DoorBell";
+
+      MonitorCommand mc{memoryP->eptP->DTEto11Arg.rhu};
+
+      switch (mc.fn) {
+      case ctyOutput:
+	buf = mc.data;
+	write(1, &buf, 1);
+	break;
+
+      case enterSecondaryProtocol:
+	cerr << "DTE20 enter secondary protocol command with data " << mc.data << " (ignored)." << endl;
+	break;
+
+      case enterPrimaryProtocol:
+	cerr << "DTE20 enter primary protocol command with data " << mc.data << " (ignored)." << endl;
+	break;
+
+      default:
+	cerr << "Unimplemented DTECMD: " << oct << mc.fn << " with data " << mc.data << " (ignored)." << endl;
+	break;
+      }
+    } else {
+      Logging::nyi();
+    }
   }
 
 
@@ -124,18 +183,37 @@ struct DTE20: Device {
 
   // TTY handlers and stuff
   static void consoleIOLoop() {
+    struct pollfd polls[] = {
+      {.fd=ttyFD, .events=POLLIN, .revents=0},
+      {.fd=fromIOLoopFD, .events=POLLIN, .revents=0},
+    };
 
     while (true) {
-      char buf[64];
-      int st = read(ttyFD, buf, sizeof(buf));
-      if (st < 0) throw runtime_error("Error in console TTY read()");
+      int st = poll(polls, sizeof(polls) / sizeof(polls[0]), -1);
 
-      for (int k=0; k < st; ++k) {
+      if (st < 0) {
+	perror("Error polling for console I/O");
+	continue;
+      }
 
-	// Lamely sleep until KL grabs the previous char
-	while (memoryP->eptP->DTEKLNotReadyForChar) usleep(100);
-	memoryP->eptP->DTEto10Arg = buf[k];
-	memoryP->eptP->DTEKLNotReadyForChar = W36::allOnes;
+      if ((polls[0].revents & POLLIN) != 0) {
+	char buf[64];
+	int st = read(ttyFD, buf, sizeof(buf));
+	if (st < 0) throw runtime_error("Error in console TTY read()");
+
+	for (int k=0; k < st; ++k) {
+
+	  // Lamely sleep until KL grabs the previous char
+	  while (memoryP->eptP->DTEKLNotReadyForChar) usleep(100);
+	  memoryP->eptP->DTEto10Arg = buf[k];
+	  memoryP->eptP->DTEKLNotReadyForChar = W36::allOnes;
+	}
+      }
+
+      // Handle messages from our parent thread (usually we're just
+      // told to fuck off and die).
+      if ((polls[1].revents & POLLIN) != 0) {
+	return;			// XXX for now just fuck off on any pipe data
       }
     }
   }

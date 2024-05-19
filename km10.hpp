@@ -727,7 +727,6 @@ public:
 
     // The instruction loop
     do {
-      if (nInsns++ > logging.maxInsns) running = false;
 
       if ((flags.tr1 || flags.tr2) && pag.pagerEnabled()) {
 	iw = flags.tr1 ? memory.eptP->trap1Insn : memory.eptP->stackOverflowInsn;
@@ -739,6 +738,8 @@ public:
       nextPC.rhu = pc.rhu + 1;
 
     XCT_ENTRYPOINT:
+      if (nInsns++ > logging.maxInsns) running = false;
+
       W36 eaw{iw};
 
       // While we keep getting indirection, loop for new EA words.

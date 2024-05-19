@@ -29,7 +29,7 @@ Usage:
   logging.pc = true;
   logging.mem = true;
   //  logging.load = true;
-  logging.maxInsns = 1000*1000;
+  logging.maxInsns = 100*1000;
 
   Memory memory(4 * 1024 * 1024);
 
