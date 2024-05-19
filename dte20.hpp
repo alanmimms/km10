@@ -62,11 +62,13 @@ struct DTE20: Device {
 
     struct ATTRPACKED {
       unsigned: 3;
-      unsigned pi0Enable: 1;
+      unsigned pi0Enable: 1;	// 32
       unsigned piEnable: 1;
       unsigned clearTo10: 1;
       unsigned clearTo11: 1;
+      unsigned: 2;
       unsigned clear11PI: 1;
+      unsigned: 1;
       unsigned setReload11: 1;
       unsigned clearReload11: 1;
       unsigned to11Doorbell: 1;
@@ -148,14 +150,16 @@ struct DTE20: Device {
     if (req.to11Doorbell) {
       char buf;
 
-      logging.s << " to11DoorBell";
-
       MonitorCommand mc{memoryP->eptP->DTEto11Arg.rhu};
 
+      logging.s << " to11DoorBell arg=" << oct << memoryP->eptP->DTEto11Arg.rhu;
+
       switch (mc.fn) {
+      case 0:			// XXX This should not be required?!
       case ctyOutput:
 	buf = mc.data;
 	write(1, &buf, 1);
+	memoryP->eptP->DTEMonitorOpComplete = W36(W36::allOnes);
 	break;
 
       case enterSecondaryProtocol:

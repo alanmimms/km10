@@ -412,7 +412,7 @@ public:
     function<void(W36,W36)> memPutN = [&](W36 value, W36 a) -> void {
 
       if (a.u < 020)
-	acPut(value);
+	acPutN(value, a.u);
       else 
 	memP[a.u] = value;
 
