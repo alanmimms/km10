@@ -141,7 +141,7 @@ struct BytePointerG2: BytePointer {
   // BytePointerXXX instance based on type of BytePointer data it
   // finds at `ea`..
 BytePointer BytePointer::makeFrom(W36 ea, Memory &memory) {
-  W36 w1(memory.memGetN(ea));
+  W36 w1(ea);
 
   if (w1.u >> 30 > 36) {		// Must be a one word 30-bit global BP
     return BytePointerG1(w1);
