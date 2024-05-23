@@ -23,8 +23,8 @@ using namespace std;
 
 class KM10 {
 public:
-  W36 AC[16];
   W36 pc;
+  W36 ACbanks[8][16];
 
   union ATTRPACKED ProgramFlags {
 
@@ -62,11 +62,10 @@ public:
       unsigned pcp: 1;
     };
 
-    unsigned lhu: 18;
+    unsigned u: 18;
   } flags;
 
   Memory memory;
-  W36 *memP;
 
   // The "RUN flop"
   bool running;
@@ -208,7 +207,7 @@ public:
     }
   } apr;
 
-
+  
   struct PIDevice: Device {
 
     // PI CONO function bits
@@ -319,8 +318,8 @@ public:
   KM10(Memory &aMemory)
     : memory(aMemory)
   {
-    memP = memory.memP;
-    flags.lhu = 0;
+    memory.AC = ACbanks[0];
+    flags.u = 0;
   }
 
 
@@ -328,10 +327,11 @@ public:
   bool userMode() {return !!flags.usr;}
 
   W36 flagsWord(unsigned pc) {
-    return W36(flags.lhu, pc);
+    return W36(flags.u, pc);
   }
 
 
+  ////////////////////////////////////////////////////////////////////////////////
   // The instruction emulator. Call this to start or continue running.
   void emulate() {
     W36 iw{};
@@ -341,126 +341,37 @@ public:
 
     uint64_t nInsns = 0;
 
-    function<W36(W36)> swap = [&](W36 src) {return W36(src.rhu, src.lhu);};
-
-    function<W36(W36)> negate = [&](W36 src) {
-      W36 v(-src.s);
-      if (src.u == W36::mostNegative) flags.tr1 = flags.ov = flags.cy1 = 1;
-      if (src.u == 0) flags.cy0 = flags.cy1 = 1;
-      return v;
-    };
-
-    function<W36(W36)> magnitude = [&](W36 src) {
-      W36 v(src.s < 0 ? -src.s : src.s);
-      if (src.u == W36::mostNegative) flags.tr1 = flags.ov = flags.cy1 = 1;
-      return v;
-    };
-
-    function<W36(unsigned)> acGetN = [&](unsigned acN) -> W36 {
-      W36 value = AC[acN];
-      if (logging.mem) logging.s << " ; ac" << oct << acN << ": " << value.fmt36();
-      return value;
-    };
-
     function<W36()> acGet = [&]() -> W36 {
-      return acGetN(iw.ac);
-    };
-
-    function<W36(unsigned)> acGetEA = [&](unsigned ac) -> W36 {
-      W36 value = AC[ac];
-      if (logging.mem) logging.s << " ; ac" << oct << ac << ": " << value.fmt36();
-      return value;
+      return memory.acGetN(iw.ac);
     };
 
     function<W36()> acGetRH = [&]() -> W36 {
-      W36 value{0, AC[iw.ac].rhu};
+      W36 value{0, acGet().rhu};
       if (logging.mem) logging.s << " ; acRH" << oct << iw.ac << ": " << value.fmt36();
       return value;
     };
 
     function<W36()> acGetLH = [&]() -> W36 {
-      W36 value{0, AC[iw.ac].lhu};
+      W36 value{0, acGet().lhu};
       if (logging.mem) logging.s << " ; acLH" << oct << iw.ac << ": " << value.fmt36();
       return value;
     };
 
-    function<void(W36,unsigned)> acPutN = [&](W36 value, unsigned acN) -> void {
-      AC[acN] = value;
-      if (logging.mem) logging.s << " ; ac" << oct << acN << "<-" << value.fmt36();
-    };
-
     function<void(W36)> acPut = [&](W36 value) -> void {
-      acPutN(value, iw.ac);
+      memory.acPutN(value, iw.ac);
     };
 
     function<void(W36,W36)> acPut2 = [&](W36 hi, W36 lo) -> void {
-      acPutN(hi, iw.ac);
-      acPutN(lo, iw.ac+1);
-    };
-
-    function<W36(W36)> memGetN = [&](W36 a) -> W36 {
-      W36 value = a.u < 020 ? acGetEA(a.u) : memP[a.u];
-      if (logging.mem) logging.s << " ; " << a.fmtVMA() << ": " << value.fmt36();
-      return value;
+      memory.acPutN(hi, iw.ac);
+      memory.acPutN(lo, iw.ac+1);
     };
 
     function<W36()> memGet = [&]() -> W36 {
-      return memGetN(ea);
-    };
-
-    function<W36()> memGetSwapped = [&]() -> W36 {return swap(memGet());};
-
-    function<void(W36,W36)> memPutN = [&](W36 value, W36 a) -> void {
-
-      if (a.u < 020)
-	acPutN(value, a.u);
-      else 
-	memP[a.u] = value;
-
-      if (logging.mem) logging.s << " ; " << a.fmtVMA() << "<-" << value.fmt36();
+      return memory.memGetN(ea);
     };
 
     function<void(W36)> memPut = [&](W36 value) -> void {
-      memPutN(value, ea);
-    };
-
-    function<void(W36,W36)> memPutHi = [&](W36 hi, W36 lo) -> void {
-      memPutN(hi, ea);
-    };
-
-    function<void(W36)> doPush = [&](W36 v) -> void {
-      W36 ac = acGet();
-
-      if (pc.isSection0() || ac.lhs < 0 || (ac.lhu & 0007777) == 0) {
-	ac = W36(ac.lhu + 1, ac.rhu + 1);
-
-	if (ac.lhu == 0)
-	  flags.tr2 = 1;
-	else			// Correct? Don't access memory for full stack?
-	  memPutN(v, ac.rhu);
-      } else {
-	ac = ac + 1;
-	memPutN(ac.vma, v);
-      }
-
-      acPut(ac);
-    };
-
-    function<W36()> doPop = [&] {
-      W36 ac = acGet();
-      W36 poppedWord;
-
-      if (pc.isSection0() || ac.lhs < 0 || (ac.lhu & 0007777) == 0) {
-	poppedWord = memGetN(ac.rhu);
-	ac = W36(ac.lhu - 1, ac.rhu - 1);
-	if (ac.lhs == -1) flags.tr2 = 1;
-      } else {
-	poppedWord = memGetN(ac.vma);
-	ac = ac - 1;
-      }
-
-      acPut(ac);
-      return poppedWord;
+      memory.memPutN(value, ea);
     };
 
     function<void(W36)> selfPut = [&](W36 value) -> void {
@@ -474,10 +385,29 @@ public:
     };
 
     function<void(W36,W36)> bothPut2 = [&](W36 hi, W36 lo) -> void {
-      acPutN(hi, iw.ac);
-      acPutN(lo, iw.ac+1);
+      memory.acPutN(hi, iw.ac);
+      memory.acPutN(lo, iw.ac+1);
       memPut(hi);
     };
+
+    function<W36(W36)> swap = [&](W36 src) -> W36 {return W36(src.rhu, src.lhu);};
+
+    function<W36(W36)> negate = [&](W36 src) -> W36 {
+      W36 v(-src.s);
+      if (src.u == W36::mostNegative) flags.tr1 = flags.ov = flags.cy1 = 1;
+      if (src.u == 0) flags.cy0 = flags.cy1 = 1;
+      return v;
+    };
+
+    function<W36(W36)> magnitude = [&](W36 src) -> W36 {
+      W36 v(src.s < 0 ? -src.s : src.s);
+      if (src.u == W36::mostNegative) flags.tr1 = flags.ov = flags.cy1 = 1;
+      return v;
+    };
+
+    function<W36()> memGetSwapped = [&]() -> W36 {return swap(memGet());};
+
+    function<void(W36,W36)> memPutHi = [&](W36 hi, W36 lo) -> void {memPut(hi);};
 
     function<W36()> immediate = [&]() -> W36 {return W36(pc.isSection0() ? 0 : ea.lhu, ea.rhu);};
 
@@ -536,9 +466,46 @@ public:
       doStoreF(doModifyF(eaw));
     };
 
-    function<unsigned(unsigned)> extnOf = [&](unsigned v) -> auto const {
+    auto doPush = [&](W36 v, W36 acN) -> void {
+      W36 ac = memory.acGetN(acN);
+
+      if (pc.isSection0() || ac.lhs < 0 || (ac.lhu & 0007777) == 0) {
+	ac = W36(ac.lhu + 1, ac.rhu + 1);
+
+	if (ac.lhu == 0)
+	  flags.tr2 = 1;
+	else			// Correct? Don't access memory for full stack?
+	  memory.memPutN(v, ac.rhu);
+      } else {
+	ac = ac + 1;
+	memory.memPutN(ac.vma, v);
+      }
+
+      memory.acPutN(ac, acN);
+    };
+
+    auto doPop = [&](unsigned acN) -> W36 {
+      W36 ac = memory.acGetN(acN);
+      W36 poppedWord;
+
+      if (pc.isSection0() || ac.lhs < 0 || (ac.lhu & 0007777) == 0) {
+	poppedWord = memory.memGetN(ac.rhu);
+	ac = W36(ac.lhu - 1, ac.rhu - 1);
+	if (ac.lhs == -1) flags.tr2 = 1;
+      } else {
+	poppedWord = memory.memGetN(ac.vma);
+	ac = ac - 1;
+      }
+
+      memory.acPutN(ac, acN);
+      return poppedWord;
+    };
+
+
+    auto extnOf = [&](const unsigned v) -> unsigned const {
       return (v & 04000000) ? W36::halfOnes : 0;
     };
+
 
     // doCopyF functions
     function<W36(W36,W36)> copyHRR = [&](W36 src, W36 dst) -> auto const {return W36(dst.lhu, src.rhu);};
@@ -731,7 +698,7 @@ public:
       if ((flags.tr1 || flags.tr2) && pag.pagerEnabled()) {
 	iw = flags.tr1 ? memory.eptP->trap1Insn : memory.eptP->stackOverflowInsn;
       } else {
-	iw = memP[pc.vma];
+	iw = memory.memGetN(pc.vma);
       }
 
       nextPC.lhu = pc.lhu;
@@ -743,21 +710,7 @@ public:
 
       if (nInsns++ > logging.maxInsns) running = false;
 
-      W36 eaw{iw};
-
-      // While we keep getting indirection, loop for new EA words.
-      // XXX this only works for non-extended addressing.
-      for (;;) {
-	ea.y = eaw.y;		// Initial assumption
-
-	if (eaw.x != 0) ea.rhu += AC[eaw.x];
-
-	if (eaw.i != 0) {	// Indirection
-	  eaw = memP[ea.y];
-	} else {		// No indexing or indirection
-	  break;
-	}
-      }
+      ea.u = memory.getEA(iw.i, iw.x, iw.y);
 
       if (logging.pc) {
 	logging.s << pc.fmt18() << " "
@@ -773,7 +726,7 @@ public:
       switch (iw.op) {
 
       case 0135: {		// LDB
-	BytePointer bp(memGet());
+	BytePointer bp{BytePointer::makeFrom(memGet(), memory)};
 	break;
       }
 
@@ -931,19 +884,19 @@ public:
 	  tmp.u = count;
 	}
 
-	acPutN(tmp, iw.ac+1);
+	memory.acPutN(tmp, iw.ac+1);
 	break;
 
       case 0246: {		// LSHC
-	W72 a(acGet(), acGetN(iw.ac+1));
+	W72 a(acGet(), memory.acGetN(iw.ac+1));
 
 	if (ea.rhs > 0)
 	  a.u <<= ea.rhs & 0377;
 	else if (ea.rhs < 0)
 	  a.u >>= -(ea.rhs & 0377);
 
-	acPutN(a.hi, iw.ac+0);
-	acPutN(a.lo, iw.ac+1);
+	memory.acPutN(a.hi, iw.ac+0);
+	memory.acPutN(a.lo, iw.ac+1);
 	break;
       }
 
@@ -969,7 +922,7 @@ public:
 	  // Note this isn't bug-for-bug compatible with KL10. See
 	  // footnote [2] in 1982_ProcRefMan.pdf p.58. We do
 	  // wraparound.
-	  memPutN(memGetN(srcA), dstA);
+	  memory.memPutN(memory.memGetN(srcA), dstA);
 	  ac = W36(ac.lhu + 1, ac.rhu + 1);
 
 	  // Put it back for traps or page faults.
@@ -1038,20 +991,20 @@ public:
 	// Note this sets the flags that are cleared by PUSHJ before
 	// doPush() since doPush() can set flags.tr2.
 	flags.fpd = flags.afi = flags.tr1 = flags.tr2 = 0;
-	doPush(pc.isSection0() ? flagsWord(nextPC.rhu) : W36(nextPC.vma));
+	doPush(pc.isSection0() ? flagsWord(nextPC.rhu) : W36(nextPC.vma), iw.ac);
 	nextPC = ea;
 	break;
 
       case 0261:		// PUSH
-	doPush(memGet());
+	doPush(memGet(), iw.ac);
 	break;
 
       case 0262:		// POP
-	memPut(doPop());
+	memPut(doPop(iw.ac));
 	break;
 
       case 0263:		// POPJ
-	nextPC.rhu = doPop().rhu;
+	nextPC.rhu = doPop(iw.ac).rhu;
 	break;
 
       case 0264:		// JSR
@@ -1073,7 +1026,7 @@ public:
 	break;
 
       case 0267:		// JRA
-	acPut(memGetN(acGet()));
+	acPut(memory.memGetN(acGet()));
 	pc = ea;
 	break;
 
@@ -2344,7 +2297,7 @@ public:
 
 	  if (a > highestAddr) highestAddr = a;
 	  if (a < lowestAddr) lowestAddr = a;
-	  memP[a].u = 0;
+	  memory.memP[a].u = 0;
 	}
 
 	break;
@@ -2368,7 +2321,7 @@ public:
 	    logging.s << "mem[" << a36.fmtVMA() << "]=" << w36.fmt36() << " " << w36.disasm() << endl;
 	  }
 
-	  memP[a].u = w;
+	  memory.memP[a].u = w;
 	}
 
 	inS.ignore(numeric_limits<streamsize>::max(), '\n');

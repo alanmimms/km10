@@ -89,7 +89,11 @@ struct W36 {
   W36(unsigned lh, unsigned rh) : rhu(rh), lhu(lh) {}
 
 
+  // Return mask for PDP10 bit number `n`.
   constexpr static uint64_t bit(unsigned n) {return 1ull << (35 - n);}
+
+  // Return rightmost `s` bit mask.
+  constexpr static uint64_t mask(unsigned s) {return (1ull << s) - 1;}
 
 
   // Accessors

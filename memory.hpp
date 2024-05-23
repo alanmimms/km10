@@ -134,4 +134,66 @@ struct Memory {
 
     W36 reserved600_777[128];	// 600
   } *uptP;
+
+
+  W36 *AC;
+
+  W36 acGetN(unsigned n) {
+    W36 value = AC[n];
+    if (logging.mem) logging.s << " ; ac" << oct << n << ": " << value.fmt36();
+    return value;
+  }
+
+
+  W36 acGetEA(unsigned ac) {
+    W36 value = AC[ac];
+    if (logging.mem) logging.s << " ; ac" << oct << ac << ": " << value.fmt36();
+    return value;
+  }
+
+
+  void acPutN(W36 value, unsigned acN) {
+    AC[acN] = value;
+    if (logging.mem) logging.s << " ; ac" << oct << acN << "<-" << value.fmt36();
+  }
+
+  W36 memGetN(W36 a) {
+    W36 value = a.u < 020 ? acGetEA(a.u) : memP[a.u];
+    if (logging.mem) logging.s << " ; " << a.fmtVMA() << ": " << value.fmt36();
+    return value;
+  }
+
+  void memPutN(W36 value, W36 a) {
+
+    if (a.u < 020)
+      acPutN(value, a.u);
+    else 
+      memP[a.u] = value;
+
+    if (logging.mem) logging.s << " ; " << a.fmtVMA() << "<-" << value.fmt36();
+  }
+
+
+  // Effective address calculation
+  unsigned getEA(unsigned i, unsigned x, unsigned y) {
+    W36 ea(0);
+    W36 eaw(0);
+    eaw.i = i;
+    eaw.x = x;
+    eaw.y = y;
+
+    // While we keep getting indirection, loop for new EA words.
+    // XXX this only works for non-extended addressing.
+    for (;;) {
+      ea.y = eaw.y;	// Initial assumption
+
+      if (eaw.x != 0) ea.rhu += acGetN(eaw.x);
+
+      if (eaw.i != 0) {	// Indirection
+	eaw = memGetN(ea.y);
+      } else {		// No indexing or indirection
+	return ea.u;
+      }
+    }
+  }
 };
