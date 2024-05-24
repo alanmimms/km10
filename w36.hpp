@@ -93,7 +93,10 @@ struct W36 {
   constexpr static uint64_t bit(unsigned n) {return 1ull << (35 - n);}
 
   // Return rightmost `s` bit mask.
-  constexpr static uint64_t mask(unsigned s) {return (1ull << s) - 1;}
+  constexpr static uint64_t rMask(unsigned s) {return (1ull << s) - 1;}
+
+  // Return `s` bit mask at location `p` (like a byte pointer).
+  constexpr static uint64_t bMask(unsigned p, unsigned s) {return rMask(s) << p;}
 
 
   // Accessors

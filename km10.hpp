@@ -725,8 +725,27 @@ public:
 
       switch (iw.op) {
 
+      case 0133: {		// IBP/ADJBP
+	BytePointer bp{BytePointer::makeFrom(memGet(), memory)};
+
+	if (iw.ac == 0) {	// IBP
+	  bp.inc(memory);
+	} else {		// ADJBP
+	  bp.adjust(iw.ac, memory);
+	}
+
+	break;
+      }
+
       case 0135: {		// LDB
 	BytePointer bp{BytePointer::makeFrom(memGet(), memory)};
+	acPut(bp.getByte(memory));
+	break;
+      }
+
+      case 0137: {		// DPB
+	BytePointer bp{BytePointer::makeFrom(memGet(), memory)};
+	bp.putByte(acGet(), memory);
 	break;
       }
 
