@@ -20,13 +20,11 @@ using namespace std;
 // type of bytepointer, using methods provided by each type and a
 // factory that creates instances based on the source data it finds.
 struct BytePointer {
-  static BytePointer makeFrom(W36 ea, Memory &memory);
+  static BytePointer *makeFrom(W36 ea, Memory &memory);
 
   typedef tuple<unsigned, unsigned, unsigned> PSA;
 
-  virtual PSA getPSA(Memory &memory) {
-    return PSA();
-  }
+  virtual PSA getPSA(Memory &memory) = 0;
 
   virtual bool isTwoWords() {
     return false;
@@ -34,8 +32,8 @@ struct BytePointer {
 
   unsigned getByte(Memory &memory) {
     auto [p, s, a] = getPSA(memory);
-    W36 w(memory.memGetN(a));
-    return (w.u >> p) & W36::rMask(s);
+    cerr << "P=" << oct << p << " S=" << oct << s << " A=" << W36(a).fmtVMA() << endl;
+    return (memory.memGetN(a) >> p) & W36::rMask(s);
   }
 
   void putByte(W36 v, Memory &memory) {
@@ -294,15 +292,14 @@ struct BytePointerG2: BytePointer {
   // The magic BytePointer factory that creates the right
   // BytePointerXXX instance based on type of BytePointer data it
   // finds at `ea`..
-BytePointer BytePointer::makeFrom(W36 ea, Memory &memory) {
+BytePointer *BytePointer::makeFrom(W36 ea, Memory &memory) {
   W36 w1(ea);
 
   if (w1.u >> 30 > 36) {		// Must be a one word 30-bit global BP
-    return BytePointerG1(w1);
+    return new BytePointerG1(w1);
   } else if (w1.u & W36::bit(12)) {	// Must be a two word global BP
-    return BytePointerG2(W72(w1, memory.memGetN(ea+1)));
+    return new BytePointerG2(W72(w1, memory.memGetN(ea+1)));
   } else {				// Must be a one word local BP
-    return BytePointerL1(w1);
+    return new BytePointerL1(w1);
   }
 }
-

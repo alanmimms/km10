@@ -115,20 +115,18 @@ struct W36 {
 
 
   // Formatters
-  string fmtVMA() const {
-    ostringstream s;
-    s << setw(2) << right << setfill('0') << oct << (lhu & 077)
-      << ",,"
-      << setw(6) << right << setfill('0') << oct << rhu;
-    return s.str();
-  }
-
   string fmt18() const {
     ostringstream s;
     s << right << setw(6) << setfill('0') << oct << rhu;
     return s.str();
   }
 
+
+  string fmtVMA() const {
+    ostringstream s;
+    s << (lhu & 07) << fmt18();
+    return s.str();
+  }
 
   string fmt36() const {
     ostringstream s;
@@ -143,8 +141,6 @@ struct W36 {
   string disasm() {
     ostringstream s;
     bool isIO = false;
-
-    s << setw(6) << right;
 
     // Handle some special cases first.
     if (op == 0133 && ac != 0) {		/* IBP becomes ADJBP for nonzero AC */
@@ -626,7 +622,7 @@ struct W36 {
       }
     }
 
-    s << " ";
+    s << "\t";
 
     if (isIO) {
 
@@ -645,11 +641,17 @@ struct W36 {
 
     s << ",";
 
-    if (i != 0) s << "@";
+    ostringstream eas;
 
-    s << oct << y;
+    if (i != 0) eas << "@";
 
-    if (x != 0) s << "(" << oct << x << ")";
+    if (x == 0) {
+      eas << oct << left << y;
+    } else {
+      eas << oct << y << "(" << oct << x << ")";
+    }
+
+    s << setw(13) << left << eas.str();
 
     return s.str();
   }

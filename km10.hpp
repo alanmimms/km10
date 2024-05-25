@@ -708,44 +708,47 @@ public:
       // When we XCT we have already set PC to point to the
       // instruction to be XCTed and nextPC is pointing after the XCT.
 
-      if (nInsns++ > logging.maxInsns) running = false;
-
-      ea.u = memory.getEA(iw.i, iw.x, iw.y);
+      if (nInsns++ > logging.maxInsns) {
+	cerr << "[" << dec << logging.maxInsns << " instructions executed at pc="
+	     << pc.fmtVMA() << "]" << endl;
+	running = false;
+      }
 
       if (logging.pc) {
-	logging.s << pc.fmt18() << " "
-		  << setfill('0')
-		  << " " << setw(3) << right << iw.op
-		  << " " << setw(2) << right << iw.ac
+	logging.s << setfill('0')
+		  << " " << setw(3) << iw.op
+		  << " " << setw(2) << iw.ac
 		  << " " << setw(1) << iw.i
-		  << " " << setw(2) << right << iw.x
-		  << " " << setw(6) << right << iw.y
-		  << "  " << setw(20) << setfill(' ') << left << iw.disasm();
+		  << " " << setw(2) << iw.x
+		  << " " << setw(6) << iw.y
+		  << "  " << iw.disasm();
       }
+
+      ea.u = memory.getEA(iw.i, iw.x, iw.y);
 
       switch (iw.op) {
 
       case 0133: {		// IBP/ADJBP
-	BytePointer bp{BytePointer::makeFrom(memGet(), memory)};
+	BytePointer *bp = BytePointer::makeFrom(memGet(), memory);
 
 	if (iw.ac == 0) {	// IBP
-	  bp.inc(memory);
+	  bp->inc(memory);
 	} else {		// ADJBP
-	  bp.adjust(iw.ac, memory);
+	  bp->adjust(iw.ac, memory);
 	}
 
 	break;
       }
 
       case 0135: {		// LDB
-	BytePointer bp{BytePointer::makeFrom(memGet(), memory)};
-	acPut(bp.getByte(memory));
+	BytePointer *bp = BytePointer::makeFrom(memGet(), memory);
+	acPut(bp->getByte(memory));
 	break;
       }
 
       case 0137: {		// DPB
-	BytePointer bp{BytePointer::makeFrom(memGet(), memory)};
-	bp.putByte(acGet(), memory);
+	BytePointer *bp = BytePointer::makeFrom(memGet(), memory);
+	bp->putByte(acGet(), memory);
 	break;
       }
 
