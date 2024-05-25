@@ -979,9 +979,17 @@ public:
 
       case 0254:		// JRST family
 
-	if (iw.ac == 0) {	// JRST
+	switch (iw.ac) {
+	case 000:		// JRST
 	  nextPC.u = ea.u;
-	} else {
+	  break;
+
+	case 004:		// HALT
+	  cerr << "[HALT at " << pc.fmtVMA() << "]" << endl;
+	  running = false;
+	  break;
+
+	default:
 	  Logging::nyi();
 	}
 

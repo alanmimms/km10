@@ -54,6 +54,7 @@ struct DTE20: Device {
 
   ~DTE20() {
     consoleIOThreadDone = true;
+    write(toIOLoopFD, "bye", 3);
     consoleIOThread.join();
   }
 

@@ -44,9 +44,13 @@ struct BytePointer {
     memory.memPutN((w.u & ~W36::bMask(p, s)) | ((v & W36::rMask(p)) << p), a);
   }
 
-  virtual void inc(Memory &memory);
 
-  virtual bool adjust(unsigned ac, Memory &memory);
+  virtual void inc(Memory &memory) {
+  }
+
+  virtual bool adjust(unsigned ac, Memory &memory) {
+    return false;
+  }
 };
 
 
@@ -158,6 +162,7 @@ struct BytePointerL1: BytePointer {
     // byte itself) and the capacity to the right of the byte. If these
     // add up to zero, then the byte can't fit in a word, and we return
     // to the user with no divide set.
+    int delta = memory.acGetN(ac);
     int bpwL = 0;
     int bpwR = 0;
 
@@ -172,6 +177,19 @@ struct BytePointerL1: BytePointer {
     // No bytes fit in a word, so return error.
     if (bpw == 0) return true;
 
+    // Compute number of words forward or backward from current
+    // implied by the byte count delta. This is done by counting from
+    // the leftmost byte in the current word as KL microcode does it.
+    int deltaW = (delta - bpwL) / bpw;
+
+    y += deltaW;
+
+    // Compute the number of bytes from the leftmost in the new word
+    // to advance or retreat by.
+    int deltaB = delta % bpw;
+
+    p += s * deltaB;
+
     // Step 2: generate a modified adjustment count and compute the
     // number of words to move and the relative byte position within
     // the word. All adjustments are done relative to the first byte
@@ -181,6 +199,7 @@ struct BytePointerL1: BytePointer {
     // offset the remainder by the capacity if it is non zero.
 
     memory.acPutN(u, ac);
+    return false;
   }
 };
 
@@ -215,6 +234,13 @@ struct BytePointerG1: BytePointer {
   virtual PSA getPSA(Memory &memory) {
     auto [p, s] = toPS[(u >> 30) - 37];
     return PSA(p, s, memory.getEA(0, 0, a));
+  }
+
+  virtual void inc(Memory &memory) {
+  }
+
+  virtual bool adjust(unsigned ac, Memory &memory) {
+    return false;
   }
 };
 
@@ -254,6 +280,13 @@ struct BytePointerG2: BytePointer {
 
   virtual bool isTwoWords() {
     return true;
+  }
+
+  virtual void inc(Memory &memory) {
+  }
+
+  virtual bool adjust(unsigned ac, Memory &memory) {
+    return false;
   }
 };
 
