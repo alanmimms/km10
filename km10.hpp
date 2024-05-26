@@ -440,14 +440,18 @@ public:
       if (iw.ac != 0) acPut(eaw);
     };
 
-    function<W36(W36)> noModification = [&](W36 fromSrc) -> auto const {return fromSrc;};
-    function<W36(W36)> zeroMask = [&](W36 fromSrc) -> auto const {return fromSrc.u & ~(uint64_t) ea.rhu;};
-    function<W36(W36)> onesMask = [&](W36 fromSrc) -> auto const {return fromSrc.u | ea.rhu;};
-    function<W36(W36)> compMask = [&](W36 fromSrc) -> auto const {return fromSrc.u ^ ea.rhu;};
+    function<W36(W36)> noModification = [&](W36 s) -> auto const {return s;};
+    function<W36(W36)> dirMask   = [&](W36 s) -> auto const {return s.u & memGet().rhu;};
+    function<W36(W36)> zeroMaskR = [&](W36 s) -> auto const {return s.u & ~(uint64_t) ea.rhu;};
+    function<W36(W36)> zeroMaskL = [&](W36 s) -> auto const {return s.u & ~((uint64_t) ea.rhu << 18);};
+    function<W36(W36)> onesMaskR = [&](W36 s) -> auto const {return s.u | ea.rhu;};
+    function<W36(W36)> onesMaskL = [&](W36 s) -> auto const {return s.u | ((uint64_t) ea.rhu << 18);};
+    function<W36(W36)> compMaskR = [&](W36 s) -> auto const {return s.u ^ ea.rhu;};
+    function<W36(W36)> compMaskL = [&](W36 s) -> auto const {return s.u ^ ((uint64_t) ea.rhu << 18);};
 
-    function<W36(W36)> zeroWord = [&](W36 fromSrc) -> auto const {return 0;};
-    function<W36(W36)> onesWord = [&](W36 fromSrc) -> auto const {return W36::allOnes;};
-    function<W36(W36)> compWord = [&](W36 fromSrc) -> auto const {return ~fromSrc.u;};
+    function<W36(W36)> zeroWord = [&](W36 s) -> auto const {return 0;};
+    function<W36(W36)> onesWord = [&](W36 s) -> auto const {return W36::allOnes;};
+    function<W36(W36)> compWord = [&](W36 s) -> auto const {return ~s.u;};
 
     function<void(W36)> noStore = [](W36 toSrc) -> void {};
 
@@ -1861,135 +1865,135 @@ public:
 	break;
 
       case 0600:		// TRN
-	doTXXXX(acGetRH, noModification, never, memPut);
+	doTXXXX(acGetRH, noModification, never, noStore);
 	break;
 
       case 0601:		// TLN
-	doTXXXX(acGetLH, noModification, never, memPut);
+	doTXXXX(acGetLH, noModification, never, noStore);
 	break;
 
       case 0602:		// TRNE
-	doTXXXX(acGetRH, noModification, isEQ0, memPut);
+	doTXXXX(acGetRH, noModification, isEQ0, noStore);
 	break;
 
       case 0603:		// TLNE
-	doTXXXX(acGetLH, noModification, isEQ0, memPut);
+	doTXXXX(acGetLH, noModification, isEQ0, noStore);
 	break;
 
       case 0604:		// TRNA
-	doTXXXX(acGetRH, noModification, always, memPut);
+	doTXXXX(acGetRH, noModification, always, noStore);
 	break;
 
       case 0605:		// TLNA
-	doTXXXX(acGetLH, noModification, always, memPut);
+	doTXXXX(acGetLH, noModification, always, noStore);
 	break;
 
       case 0606:		// TRNN
-	doTXXXX(acGetRH, noModification, isNE0, memPut);
+	doTXXXX(acGetRH, noModification, isNE0, noStore);
 	break;
 
       case 0607:		// TLNN
-	doTXXXX(acGetLH, noModification, isNE0, memPut);
+	doTXXXX(acGetLH, noModification, isNE0, noStore);
 	break;
 
       case 0620:		// TRZ
-	doTXXXX(acGetRH, zeroMask, never, memPut);
+	doTXXXX(acGetRH, zeroMaskR, never, acPut);
 	break;
 
       case 0621:		// TLZ
-	doTXXXX(acGetLH, zeroMask, never, memPut);
+	doTXXXX(acGetLH, zeroMaskL, never, acPut);
 	break;
 
       case 0622:		// TRZE
-	doTXXXX(acGetRH, zeroMask, isEQ0, memPut);
+	doTXXXX(acGetRH, zeroMaskR, isEQ0, acPut);
 	break;
 
       case 0623:		// TLZE
-	doTXXXX(acGetLH, zeroMask, isEQ0, memPut);
+	doTXXXX(acGetLH, zeroMaskL, isEQ0, acPut);
 	break;
 
       case 0624:		// TRZA
-	doTXXXX(acGetRH, zeroMask, always, memPut);
+	doTXXXX(acGetRH, zeroMaskR, always, acPut);
 	break;
 
       case 0625:		// TLZA
-	doTXXXX(acGetLH, zeroMask, always, memPut);
+	doTXXXX(acGetLH, zeroMaskL, always, acPut);
 	break;
 
       case 0626:		// TRZN
-	doTXXXX(acGetRH, zeroMask, isNE0, memPut);
+	doTXXXX(acGetRH, zeroMaskR, isNE0, acPut);
 	break;
 
       case 0627:		// TLZN
-	doTXXXX(acGetLH, zeroMask, isNE0, memPut);
+	doTXXXX(acGetLH, zeroMaskL, isNE0, acPut);
 	break;
 
       case 0640:		// TRC
-	doTXXXX(acGetRH, compMask, never, memPut);
+	doTXXXX(acGetRH, compMaskR, never, acPut);
 	break;
 
       case 0641:		// TLC
-	doTXXXX(acGetLH, compMask, never, memPut);
+	doTXXXX(acGetLH, compMaskL, never, acPut);
 	break;
 
       case 0642:		// TRCE
-	doTXXXX(acGetRH, compMask, isEQ0, memPut);
+	doTXXXX(acGetRH, compMaskR, isEQ0, acPut);
 	break;
 
       case 0643:		// TLCE
-	doTXXXX(acGetLH, compMask, isEQ0, memPut);
+	doTXXXX(acGetLH, compMaskL, isEQ0, acPut);
 	break;
 
       case 0644:		// TRCA
-	doTXXXX(acGetRH, compMask, always, memPut);
+	doTXXXX(acGetRH, compMaskR, always, acPut);
 	break;
 
       case 0645:		// TLCA
-	doTXXXX(acGetLH, compMask, always, memPut);
+	doTXXXX(acGetLH, compMaskL, always, acPut);
 	break;
 
       case 0646:		// TRCN
-	doTXXXX(acGetRH, compMask, isNE0, memPut);
+	doTXXXX(acGetRH, compMaskR, isNE0, acPut);
 	break;
 
       case 0647:		// TLCN
-	doTXXXX(acGetLH, compMask, isNE0, memPut);
+	doTXXXX(acGetLH, compMaskL, isNE0, acPut);
 	break;
 
       case 0660:		// TRO
-	doTXXXX(acGetRH, onesMask, never, memPut);
+	doTXXXX(acGetRH, onesMaskR, never, acPut);
 	break;
 
       case 0661:		// TLO
-	doTXXXX(acGetLH, onesMask, never, memPut);
+	doTXXXX(acGetLH, onesMaskL, never, acPut);
 	break;
 
       case 0662:		// TROE
-	doTXXXX(acGetRH, onesMask, isEQ0, memPut);
+	doTXXXX(acGetRH, onesMaskR, isEQ0, acPut);
 	break;
 
       case 0663:		// TLOE
-	doTXXXX(acGetLH, onesMask, isEQ0, memPut);
+	doTXXXX(acGetLH, onesMaskL, isEQ0, acPut);
 	break;
 
       case 0664:		// TROA
-	doTXXXX(acGetRH, onesMask, always, memPut);
+	doTXXXX(acGetRH, onesMaskR, always, acPut);
 	break;
 
       case 0665:		// TLOA
-	doTXXXX(acGetLH, onesMask, always, memPut);
+	doTXXXX(acGetLH, onesMaskL, always, acPut);
 	break;
 
       case 0666:		// TRON
-	doTXXXX(acGetRH, onesMask, isNE0, memPut);
+	doTXXXX(acGetRH, onesMaskR, isNE0, acPut);
 	break;
 
       case 0667:		// TLON
-	doTXXXX(acGetLH, onesMask, isNE0, memPut);
+	doTXXXX(acGetLH, onesMaskL, isNE0, acPut);
 	break;
 
       case 0610:		// TDN
-	doTXXXX(memGet, noModification, never, memPut);
+	doTXXXX(memGet, noModification, never, noStore);
 	break;
 
       case 0611:		// TSN
@@ -1997,7 +2001,7 @@ public:
 	break;
 
       case 0612:		// TDNE
-	doTXXXX(memGet, noModification, isEQ0, memPut);
+	doTXXXX(memGet, noModification, isEQ0, noStore);
 	break;
 
       case 0613:		// TSNE
@@ -2005,7 +2009,7 @@ public:
 	break;
 
       case 0614:		// TDNA
-	doTXXXX(memGet, noModification, always, memPut);
+	doTXXXX(memGet, noModification, always, noStore);
 	break;
 
       case 0615:		// TSNA
@@ -2013,7 +2017,7 @@ public:
 	break;
 
       case 0616:		// TDNN
-	doTXXXX(memGet, noModification, isNE0, memPut);
+	doTXXXX(memGet, noModification, isNE0, noStore);
 	break;
 
       case 0617:		// TSNN
@@ -2021,35 +2025,35 @@ public:
 	break;
 
       case 0630:		// TDZ
-	doTXXXX(memGet, zeroMask, never, memPut);
+	doTXXXX(memGet, dirMask, never, acPut);
 	break;
 
       case 0631:		// TSZ
-	doTXXXX(memGetSwapped, zeroMask, never, noStore);
+	doTXXXX(memGetSwapped, dirMask, never, acPut);
 	break;
 
       case 0632:		// TDZE
-	doTXXXX(memGet, zeroMask, isEQ0, memPut);
+	doTXXXX(memGet, dirMask, isEQ0, acPut);
 	break;
 
       case 0633:		// TSZE
-	doTXXXX(memGetSwapped, zeroMask, isEQ0, noStore);
+	doTXXXX(memGetSwapped, dirMask, isEQ0, acPut);
 	break;
 
       case 0634:		// TDZA
-	doTXXXX(memGet, zeroMask, always, memPut);
+	doTXXXX(memGet, dirMask, always, acPut);
 	break;
 
       case 0635:		// TSZA
-	doTXXXX(memGetSwapped, zeroMask, always, noStore);
+	doTXXXX(memGetSwapped, dirMask, always, acPut);
 	break;
 
       case 0636:		// TDZN
-	doTXXXX(memGet, zeroMask, isNE0, memPut);
+	doTXXXX(memGet, dirMask, isNE0, acPut);
 	break;
 
       case 0637:		// TSZN
-	doTXXXX(memGetSwapped, zeroMask, isNE0, noStore);
+	doTXXXX(memGetSwapped, dirMask, isNE0, acPut);
 	break;
 
       default:

@@ -32,7 +32,6 @@ struct BytePointer {
 
   unsigned getByte(Memory &memory) {
     auto [p, s, a] = getPSA(memory);
-    cerr << "P=" << oct << p << " S=" << oct << s << " A=" << W36(a).fmtVMA() << endl;
     return (memory.memGetN(a) >> p) & W36::rMask(s);
   }
 
