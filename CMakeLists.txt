@@ -4,9 +4,13 @@ project(km10)
 set(COptionsForALL -Wall -g)
 set(CPPOptionsForALL -Wall -g)
 
-include_directories("${PROJECT_SOURCE_DIR}/acutest/include")
-
 include(FetchContent)
+
+FetchContent_Declare(acutest
+    GIT_REPOSITORY "https://github.com/mity/acutest.git"
+    GIT_TAG "origin/master"
+)
+FetchContent_MakeAvailable(acutest)
 
 FetchContent_Declare(replxx
     GIT_REPOSITORY "https://github.com/AmokHuginnsson/replxx.git"
