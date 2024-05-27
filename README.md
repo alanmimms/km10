@@ -32,6 +32,29 @@ emulates:
   * Address break functionality.
 
 
+# Building
+
+First, clone the project using
+```
+git clone --recurse-submodules https://github.com/alanmimms/km10.git
+```
+
+Install `cmake` at least version 3.14.
+
+Create a `build` directory and change directory to it and run `cmake`.
+```
+cd km10 ; mkdir -p build ; cd build ; cmake -DCMAKE_BUILD_TYPE=Debug ..
+```
+
+Now you can build the project.
+```
+make
+```
+
+When this completes, run `./km10 --help` to see built in help for the
+command line.
+
+
 # Instruction Execution Sequence
 
 * `noIncPC` is set when PC should not increment before next fetch.

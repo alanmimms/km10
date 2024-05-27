@@ -2,6 +2,8 @@
 #include <assert.h>
 using namespace std;
 
+#include "cmdlime/commandlinereader.h"
+
 
 #include "km10.hpp"
 
@@ -13,18 +15,13 @@ using namespace std;
 Logging logging{};
 
 
-int main(int argc, char *argv[]) {
-  assert(sizeof(Memory::ExecutiveProcessTable) == 512 * 8);
-  assert(sizeof(Memory::UserProcessTable) == 512 * 8);
+struct CmdlimeConfig: cmdlime::Config {
+  CMDLIME_PARAM(load, string)("../images/klddt/klddt.a10") << ".A10 file to load";
+  CMDLIME_FLAG(debug) << "run the built-in debugger instead of starting execution";
+};
 
-  if (argc < 2) {
-    cerr << R"(
-Usage:
-    )" << argv[0] << R"( <filename to load>
-)";
-    return -1;
-  }
 
+int run(const CmdlimeConfig& cmd) {
   logging.ac = true;
   logging.pc = true;
   logging.mem = true;
@@ -37,13 +34,26 @@ Usage:
 
   KM10 km10(memory);
 
-  km10.loadA10(argv[1]);
-  logging.s << "[Loaded " << argv[1]
+  km10.loadA10(cmd.load.c_str());
+  logging.s << "[Loaded " << cmd.load
 	    << "  start=" << km10.pc.fmtVMA()
 	    << "]" << endl;
 
-  km10.running = true;
-  km10.emulate();
+  if (cmd.debug) {
+  } else {
+    km10.running = true;
+    km10.emulate();
+  }
 
   return 0;
+}
+
+
+int main(int argc, char *argv[]) {
+  assert(sizeof(Memory::ExecutiveProcessTable) == 512 * 8);
+  assert(sizeof(Memory::UserProcessTable) == 512 * 8);
+
+  auto cmdlineReader = cmdlime::CommandLineReader("km10");
+  cmdlineReader.setVersionInfo("km10 0.1");
+  return cmdlineReader.exec<CmdlimeConfig>(argc, argv, run);
 }

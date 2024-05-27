@@ -196,7 +196,7 @@ int LoadA10(const char *fileNameP, W36 *memP, W36 *startAddrP, W36 *lowestAddrP,
 
 
 #if TEST_LOADA10
-#include "acutest.h"
+#include "acutest/include/acutest.h"
 #include "disasm.h"
 
 
