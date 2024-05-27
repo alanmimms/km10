@@ -2,8 +2,7 @@
 #include <assert.h>
 using namespace std;
 
-#include "cmdlime/commandlinereader.h"
-
+#include <gflags/gflags.h>
 
 #include "km10.hpp"
 
@@ -16,13 +15,15 @@ using namespace std;
 Logging logging{};
 
 
-struct CmdlimeConfig: cmdlime::Config {
-  CMDLIME_PARAM(load, string)("../images/klddt/klddt.a10") << ".A10 file to load";
-  CMDLIME_FLAG(debug) << "run the built-in debugger instead of starting execution";
-};
+DEFINE_string(load, "../images/klddt/klddt.a10", ".A10 file to load");
+DEFINE_bool(debug, false, "run the build-in debugger instead of starting execution");
 
 
-int run(const CmdlimeConfig& cmd) {
+int main(int argc, char *argv[]) {
+  assert(sizeof(KMState::ExecutiveProcessTable) == 512 * 8);
+  assert(sizeof(KMState::UserProcessTable) == 512 * 8);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+
   logging.ac = true;
   logging.pc = true;
   logging.mem = true;
@@ -46,14 +47,4 @@ int run(const CmdlimeConfig& cmd) {
   }
 
   return 0;
-}
-
-
-int main(int argc, char *argv[]) {
-  assert(sizeof(KMState::ExecutiveProcessTable) == 512 * 8);
-  assert(sizeof(KMState::UserProcessTable) == 512 * 8);
-
-  auto cmdlineReader = cmdlime::CommandLineReader("km10");
-  cmdlineReader.setVersionInfo("km10 0.1");
-  return cmdlineReader.exec<CmdlimeConfig>(argc, argv, run);
 }
