@@ -1,11 +1,3 @@
-[submodule "https://github.com/mity/acutest.git"]
-	url = acutest
-[submodule "cmdlime"]
-	path = cmdlime
-	url = https://github.com/kamchatka-volcano/cmdlime.git
-[submodule "linse"]
-	path = linse
-	url = https://github.com/wx257osn2/linse.git
 [submodule "replxx"]
 	path = replxx
 	url = https://github.com/AmokHuginnsson/replxx.git
