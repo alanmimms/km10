@@ -36,10 +36,10 @@ int main(int argc, char *argv[]) {
 
   KM10 km10(state);
 
-  km10.loadA10(cmd.load.c_str());
-  cerr << "[Loaded " << cmd.load << "  start=" << state.pc.fmtVMA() << "]" << endl;
+  km10.loadA10(FLAGS_load.c_str());
+  cerr << "[Loaded " << FLAGS_load << "  start=" << state.pc.fmtVMA() << "]" << endl;
 
-  if (cmd.debug) {
+  if (FLAGS_debug) {
     Debugger dbg(state);
   } else {
     km10.running = true;
