@@ -3,3 +3,6 @@
 	url = https://github.com/AmokHuginnsson/replxx.git
 [submodule "acutest"]
 	url = https://github.com/mity/acutest.git
+[submodule "googletest"]
+	path = googletest
+	url = https://github.com/google/googletest.git
