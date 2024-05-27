@@ -7,8 +7,8 @@ using namespace std;
 #include "w36.hpp"
 
 
-struct Memory {
-  Memory(unsigned nWords) {
+struct KMState {
+  KMState(unsigned nWords) {
     physicalP = (W36 *) mmap(nullptr,
 			     nWords * sizeof(uint64_t),
 			     PROT_READ | PROT_WRITE,
@@ -36,6 +36,61 @@ struct Memory {
   // Pointer to user mode virtual memory mapping.
   W36 *userMemP;
   
+
+  W36 pc;
+
+  union ATTRPACKED ProgramFlags {
+
+    struct ATTRPACKED {
+      unsigned: 5;
+      unsigned ndv: 1;
+      unsigned fuf: 1;
+      unsigned tr1: 1;
+      unsigned tr2: 1;
+      unsigned afi: 1;
+      unsigned pub: 1;
+      unsigned usrIO: 1;
+      unsigned usr: 1;
+      unsigned fpd: 1;
+      unsigned fov: 1;
+      unsigned cy1: 1;
+      unsigned cy0: 1;
+      unsigned ov: 1;
+    };
+
+    struct ATTRPACKED {
+      unsigned: 5;
+      unsigned: 1;
+      unsigned: 1;
+      unsigned: 1;
+      unsigned: 1;
+      unsigned: 1;
+      unsigned: 1;
+      unsigned pcu: 1;
+      unsigned: 1;
+      unsigned: 1;
+      unsigned: 1;
+      unsigned: 1;
+      unsigned: 1;
+      unsigned pcp: 1;
+    };
+
+    unsigned u: 18;
+  } flags;
+
+
+  union FlagsDWord {
+    struct ATTRPACKED {
+      unsigned processorDependent: 18; // What does KL10 use here?
+      unsigned: 1;
+      ProgramFlags flags;
+      unsigned pc: 30;
+      unsigned: 6;
+    };
+
+    uint64_t u: 36;
+  };
+
 
   // See 1982_ProcRefMan.pdf p.230
   struct ExecutiveProcessTable {
@@ -195,5 +250,13 @@ struct Memory {
 	return ea.u;
       }
     }
+  }
+
+
+  // Accessors
+  bool userMode() {return !!flags.usr;}
+
+  W36 flagsWord(unsigned pc) {
+    return W36(flags.u, pc);
   }
 };

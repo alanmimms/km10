@@ -14,7 +14,7 @@ using namespace std;
 
 
 #include "logging.hpp"
-#include "memory.hpp"
+#include "kmstate.hpp"
 #include "w36.hpp"
 #include "bytepointer.hpp"
 #include "device.hpp"
@@ -23,64 +23,12 @@ using namespace std;
 
 class KM10 {
 public:
-  W36 pc;
   W36 ACbanks[8][16];
 
-  union ATTRPACKED ProgramFlags {
-
-    struct ATTRPACKED {
-      unsigned: 5;
-      unsigned ndv: 1;
-      unsigned fuf: 1;
-      unsigned tr1: 1;
-      unsigned tr2: 1;
-      unsigned afi: 1;
-      unsigned pub: 1;
-      unsigned usrIO: 1;
-      unsigned usr: 1;
-      unsigned fpd: 1;
-      unsigned fov: 1;
-      unsigned cy1: 1;
-      unsigned cy0: 1;
-      unsigned ov: 1;
-    };
-
-    struct ATTRPACKED {
-      unsigned: 5;
-      unsigned: 1;
-      unsigned: 1;
-      unsigned: 1;
-      unsigned: 1;
-      unsigned: 1;
-      unsigned: 1;
-      unsigned pcu: 1;
-      unsigned: 1;
-      unsigned: 1;
-      unsigned: 1;
-      unsigned: 1;
-      unsigned: 1;
-      unsigned pcp: 1;
-    };
-
-    unsigned u: 18;
-  } flags;
-
-  Memory memory;
+  KMState state;
 
   // The "RUN flop"
   bool running;
-
-  union FlagsDWord {
-    struct ATTRPACKED {
-      unsigned processorDependent: 18; // What does KL10 use here?
-      unsigned: 1;
-      ProgramFlags flags;
-      unsigned pc: 30;
-      unsigned: 6;
-    };
-
-    uint64_t u: 36;
-  };
 
 
   struct APRDevice: Device {
@@ -315,34 +263,27 @@ public:
 
 
   // Constructors
-  KM10(Memory &aMemory)
-    : memory(aMemory)
+  KM10(KMState &aState)
+    : state(aState)
   {
-    memory.AC = ACbanks[0];
-    flags.u = 0;
+    state.AC = ACbanks[0];
+    state.flags.u = 0;
   }
 
 
-  // Accessors
-  bool userMode() {return !!flags.usr;}
-
-  W36 flagsWord(unsigned pc) {
-    return W36(flags.u, pc);
-  }
-
-
+  
   ////////////////////////////////////////////////////////////////////////////////
   // The instruction emulator. Call this to start or continue running.
   void emulate() {
     W36 iw{};
     W36 ea{};
-    W36 nextPC = pc;
+    W36 nextPC = state.pc;
     W36 tmp;
 
     uint64_t nInsns = 0;
 
     function<W36()> acGet = [&]() -> W36 {
-      return memory.acGetN(iw.ac);
+      return state.acGetN(iw.ac);
     };
 
     function<W36()> acGetRH = [&]() -> W36 {
@@ -358,20 +299,20 @@ public:
     };
 
     function<void(W36)> acPut = [&](W36 value) -> void {
-      memory.acPutN(value, iw.ac);
+      state.acPutN(value, iw.ac);
     };
 
     function<void(W36,W36)> acPut2 = [&](W36 hi, W36 lo) -> void {
-      memory.acPutN(hi, iw.ac);
-      memory.acPutN(lo, iw.ac+1);
+      state.acPutN(hi, iw.ac);
+      state.acPutN(lo, iw.ac+1);
     };
 
     function<W36()> memGet = [&]() -> W36 {
-      return memory.memGetN(ea);
+      return state.memGetN(ea);
     };
 
     function<void(W36)> memPut = [&](W36 value) -> void {
-      memory.memPutN(value, ea);
+      state.memPutN(value, ea);
     };
 
     function<void(W36)> selfPut = [&](W36 value) -> void {
@@ -385,8 +326,8 @@ public:
     };
 
     function<void(W36,W36)> bothPut2 = [&](W36 hi, W36 lo) -> void {
-      memory.acPutN(hi, iw.ac);
-      memory.acPutN(lo, iw.ac+1);
+      state.acPutN(hi, iw.ac);
+      state.acPutN(lo, iw.ac+1);
       memPut(hi);
     };
 
@@ -394,14 +335,14 @@ public:
 
     function<W36(W36)> negate = [&](W36 src) -> W36 {
       W36 v(-src.s);
-      if (src.u == W36::mostNegative) flags.tr1 = flags.ov = flags.cy1 = 1;
-      if (src.u == 0) flags.cy0 = flags.cy1 = 1;
+      if (src.u == W36::mostNegative) state.flags.tr1 = state.flags.ov = state.flags.cy1 = 1;
+      if (src.u == 0) state.flags.cy0 = state.flags.cy1 = 1;
       return v;
     };
 
     function<W36(W36)> magnitude = [&](W36 src) -> W36 {
       W36 v(src.s < 0 ? -src.s : src.s);
-      if (src.u == W36::mostNegative) flags.tr1 = flags.ov = flags.cy1 = 1;
+      if (src.u == W36::mostNegative) state.flags.tr1 = state.flags.ov = state.flags.cy1 = 1;
       return v;
     };
 
@@ -409,7 +350,7 @@ public:
 
     function<void(W36,W36)> memPutHi = [&](W36 hi, W36 lo) -> void {memPut(hi);};
 
-    function<W36()> immediate = [&]() -> W36 {return W36(pc.isSection0() ? 0 : ea.lhu, ea.rhu);};
+    function<W36()> immediate = [&]() -> W36 {return W36(state.pc.isSection0() ? 0 : ea.lhu, ea.rhu);};
 
     // Condition testing predicates
     function<bool(W36)> isLT0  = [&](W36 v) -> bool const {return v.s <  0;};
@@ -471,37 +412,37 @@ public:
     };
 
     auto doPush = [&](W36 v, W36 acN) -> void {
-      W36 ac = memory.acGetN(acN);
+      W36 ac = state.acGetN(acN);
 
-      if (pc.isSection0() || ac.lhs < 0 || (ac.lhu & 0007777) == 0) {
+      if (state.pc.isSection0() || ac.lhs < 0 || (ac.lhu & 0007777) == 0) {
 	ac = W36(ac.lhu + 1, ac.rhu + 1);
 
 	if (ac.lhu == 0)
-	  flags.tr2 = 1;
+	  state.flags.tr2 = 1;
 	else			// Correct? Don't access memory for full stack?
-	  memory.memPutN(v, ac.rhu);
+	  state.memPutN(v, ac.rhu);
       } else {
 	ac = ac + 1;
-	memory.memPutN(ac.vma, v);
+	state.memPutN(ac.vma, v);
       }
 
-      memory.acPutN(ac, acN);
+      state.acPutN(ac, acN);
     };
 
     auto doPop = [&](unsigned acN) -> W36 {
-      W36 ac = memory.acGetN(acN);
+      W36 ac = state.acGetN(acN);
       W36 poppedWord;
 
-      if (pc.isSection0() || ac.lhs < 0 || (ac.lhu & 0007777) == 0) {
-	poppedWord = memory.memGetN(ac.rhu);
+      if (state.pc.isSection0() || ac.lhs < 0 || (ac.lhu & 0007777) == 0) {
+	poppedWord = state.memGetN(ac.rhu);
 	ac = W36(ac.lhu - 1, ac.rhu - 1);
-	if (ac.lhs == -1) flags.tr2 = 1;
+	if (ac.lhs == -1) state.flags.tr2 = 1;
       } else {
-	poppedWord = memory.memGetN(ac.vma);
+	poppedWord = state.memGetN(ac.vma);
 	ac = ac - 1;
       }
 
-      memory.acPutN(ac, acN);
+      state.acPutN(ac, acN);
       return poppedWord;
     };
 
@@ -541,15 +482,15 @@ public:
 
     function<W36(W36,W36)> addWord = [&](W36 s1, W36 s2) -> auto const {
       uint64_t sum = (uint64_t) s1.u + (uint64_t) s2.u;
-      if (sum >= W36::mostNegative) flags.tr1 = flags.ov = flags.cy1 = 1;
-      if ((int64_t) sum < -(int64_t) W36::mostNegative) flags.ov = flags.cy0 = 1;
+      if (sum >= W36::mostNegative) state.flags.tr1 = state.flags.ov = state.flags.cy1 = 1;
+      if ((int64_t) sum < -(int64_t) W36::mostNegative) state.flags.ov = state.flags.cy0 = 1;
       return sum;
     };
     
     function<W36(W36,W36)> subWord = [&](W36 s1, W36 s2) -> auto const {
       int64_t diff = (int64_t) s1.u - (int64_t) s2.u;
-      if (diff >= (int64_t) W36::mostNegative) flags.tr1 = flags.ov = flags.cy1 = 1;
-      if (diff < -(int64_t) W36::mostNegative) flags.ov = flags.cy0 = 1;
+      if (diff >= (int64_t) W36::mostNegative) state.flags.tr1 = state.flags.ov = state.flags.cy1 = 1;
+      if (diff < -(int64_t) W36::mostNegative) state.flags.ov = state.flags.cy0 = 1;
       return diff;
     };
     
@@ -557,7 +498,7 @@ public:
       W72 prod = (int128_t) s1.s * (int128_t) s2.s;
 
       if (s1.s == W36::signedMostNegative && s2.s == W36::signedMostNegative) {
-	flags.tr1 = flags.ov = flags.cy1 = 1;
+	state.flags.tr1 = state.flags.ov = state.flags.cy1 = 1;
       }
 
       return tuple<W36,W36>(W36(prod.hi), W36(prod.lo));
@@ -567,7 +508,7 @@ public:
       int128_t prod = (int128_t) s1.s * (int128_t) s2.s;
 
       if (s1.s == W36::signedMostNegative && s2.s == W36::signedMostNegative) {
-	flags.tr1 = flags.ov = flags.cy1 = 1;
+	state.flags.tr1 = state.flags.ov = state.flags.cy1 = 1;
       }
 
       return W36((prod < 0 ? W36::mostNegative : 0) | ((W36::allOnes >> 1) & prod));
@@ -578,7 +519,7 @@ public:
       int128_t r = (int128_t) s1.s % (int128_t) s2.s;
 
       if (s1.s == W36::signedMostNegative && s2.s == W36::signedMostNegative) {
-	flags.tr1 = flags.ov = flags.cy1 = 1;
+	state.flags.tr1 = state.flags.ov = state.flags.cy1 = 1;
       }
 
       return tuple<W36,W36>(d, r);
@@ -589,7 +530,7 @@ public:
       int128_t r = (int128_t) s1.s % (int128_t) s2.s;
 
       if (s1.s == W36::signedMostNegative && s2.s == W36::signedMostNegative) {
-	flags.tr1 = flags.ov = flags.cy1 = 1;
+	state.flags.tr1 = state.flags.ov = state.flags.cy1 = 1;
       }
 
       return tuple<W36,W36>(d, r);
@@ -676,16 +617,16 @@ public:
       if (delta > 0) {		// Increment
 
 	if (v.u == W36::allOnes >> 1) {
-	  flags.tr1 = flags.ov  = flags.cy1 = 1;
+	  state.flags.tr1 = state.flags.ov  = state.flags.cy1 = 1;
 	} else if (v.s == -1) {
-	  flags.cy0 = flags.cy1 = 1;
+	  state.flags.cy0 = state.flags.cy1 = 1;
 	}
       } else {			// Decrement
 
 	if (v.u == W36::mostNegative) {
-	  flags.tr1 = flags.ov = flags.cy0 = 1;
+	  state.flags.tr1 = state.flags.ov = state.flags.cy0 = 1;
 	} else if (v.u != 0) {
-	  flags.cy0 = flags.cy1 = 1;
+	  state.flags.cy0 = state.flags.cy1 = 1;
 	}
       }
 
@@ -699,14 +640,14 @@ public:
     // The instruction loop
     do {
 
-      if ((flags.tr1 || flags.tr2) && pag.pagerEnabled()) {
-	iw = flags.tr1 ? memory.eptP->trap1Insn : memory.eptP->stackOverflowInsn;
+      if ((state.flags.tr1 || state.flags.tr2) && pag.pagerEnabled()) {
+	iw = state.flags.tr1 ? state.eptP->trap1Insn : state.eptP->stackOverflowInsn;
       } else {
-	iw = memory.memGetN(pc.vma);
+	iw = state.memGetN(state.pc.vma);
       }
 
-      nextPC.lhu = pc.lhu;
-      nextPC.rhu = pc.rhu + 1;
+      nextPC.lhu = state.pc.lhu;
+      nextPC.rhu = state.pc.rhu + 1;
 
     XCT_ENTRYPOINT:
       // When we XCT we have already set PC to point to the
@@ -714,7 +655,7 @@ public:
 
       if (nInsns++ > logging.maxInsns) {
 	cerr << "[" << dec << logging.maxInsns << " instructions executed at pc="
-	     << pc.fmtVMA() << "]" << endl;
+	     << state.pc.fmtVMA() << "]" << endl;
 	running = false;
       }
 
@@ -728,31 +669,31 @@ public:
 		  << "  " << iw.disasm();
       }
 
-      ea.u = memory.getEA(iw.i, iw.x, iw.y);
+      ea.u = state.getEA(iw.i, iw.x, iw.y);
 
       switch (iw.op) {
 
       case 0133: {		// IBP/ADJBP
-	BytePointer *bp = BytePointer::makeFrom(memGet(), memory);
+	BytePointer *bp = BytePointer::makeFrom(memGet(), state);
 
 	if (iw.ac == 0) {	// IBP
-	  bp->inc(memory);
+	  bp->inc(state);
 	} else {		// ADJBP
-	  bp->adjust(iw.ac, memory);
+	  bp->adjust(iw.ac, state);
 	}
 
 	break;
       }
 
       case 0135: {		// LDB
-	BytePointer *bp = BytePointer::makeFrom(memGet(), memory);
-	acPut(bp->getByte(memory));
+	BytePointer *bp = BytePointer::makeFrom(memGet(), state);
+	acPut(bp->getByte(state));
 	break;
       }
 
       case 0137: {		// DPB
-	BytePointer *bp = BytePointer::makeFrom(memGet(), memory);
-	bp->putByte(acGet(), memory);
+	BytePointer *bp = BytePointer::makeFrom(memGet(), state);
+	bp->putByte(acGet(), state);
 	break;
       }
 
@@ -910,19 +851,19 @@ public:
 	  tmp.u = count;
 	}
 
-	memory.acPutN(tmp, iw.ac+1);
+	state.acPutN(tmp, iw.ac+1);
 	break;
 
       case 0246: {		// LSHC
-	W72 a(acGet(), memory.acGetN(iw.ac+1));
+	W72 a(acGet(), state.acGetN(iw.ac+1));
 
 	if (ea.rhs > 0)
 	  a.u <<= ea.rhs & 0377;
 	else if (ea.rhs < 0)
 	  a.u >>= -(ea.rhs & 0377);
 
-	memory.acPutN(a.hi, iw.ac+0);
-	memory.acPutN(a.lo, iw.ac+1);
+	state.acPutN(a.hi, iw.ac+0);
+	state.acPutN(a.lo, iw.ac+1);
 	break;
       }
 
@@ -948,7 +889,7 @@ public:
 	  // Note this isn't bug-for-bug compatible with KL10. See
 	  // footnote [2] in 1982_ProcRefMan.pdf p.58. We do
 	  // wraparound.
-	  memory.memPutN(memory.memGetN(srcA), dstA);
+	  state.memPutN(state.memGetN(srcA), dstA);
 	  ac = W36(ac.lhu + 1, ac.rhu + 1);
 
 	  // Put it back for traps or page faults.
@@ -992,7 +933,7 @@ public:
 	  break;
 
 	case 004:		// HALT
-	  cerr << "[HALT at " << pc.fmtVMA() << "]" << endl;
+	  cerr << "[HALT at " << state.pc.fmtVMA() << "]" << endl;
 	  running = false;
 	  break;
 
@@ -1003,16 +944,16 @@ public:
 	break;
 
       case 0255:		// JFCL
-	if ((iw.ac & 8) && flags.ov)  {flags.ov = 0; nextPC = ea;}
-	if ((iw.ac & 4) && flags.cy0) {flags.cy0 = 0; nextPC = ea;}
-	if ((iw.ac & 2) && flags.cy1) {flags.cy1 = 0; nextPC = ea;}
-	if ((iw.ac & 1) && flags.fov) {flags.fov = 0; nextPC = ea;}
+	if ((iw.ac & 8) && state.flags.ov)  {state.flags.ov = 0; nextPC = ea;}
+	if ((iw.ac & 4) && state.flags.cy0) {state.flags.cy0 = 0; nextPC = ea;}
+	if ((iw.ac & 2) && state.flags.cy1) {state.flags.cy1 = 0; nextPC = ea;}
+	if ((iw.ac & 1) && state.flags.fov) {state.flags.fov = 0; nextPC = ea;}
 	break;
 
       case 0256:		// XCT/PXCT
 
-	if (userMode() || iw.ac == 0) {
-	  pc = ea;
+	if (state.userMode() || iw.ac == 0) {
+	  state.pc = ea;
 	  iw = memGet();
 	  if (logging.mem) logging.s << "; ";
 	  goto XCT_ENTRYPOINT;
@@ -1024,8 +965,8 @@ public:
       case 0260:		// PUSHJ
 	// Note this sets the flags that are cleared by PUSHJ before
 	// doPush() since doPush() can set flags.tr2.
-	flags.fpd = flags.afi = flags.tr1 = flags.tr2 = 0;
-	doPush(pc.isSection0() ? flagsWord(nextPC.rhu) : W36(nextPC.vma), iw.ac);
+	state.flags.fpd = state.flags.afi = state.flags.tr1 = state.flags.tr2 = 0;
+	doPush(state.pc.isSection0() ? state.flagsWord(nextPC.rhu) : W36(nextPC.vma), iw.ac);
 	nextPC = ea;
 	break;
 
@@ -1042,26 +983,26 @@ public:
 	break;
 
       case 0264:		// JSR
-	memPut(pc.isSection0() ? flagsWord(nextPC.rhu) : W36(nextPC.vma));
+	memPut(state.pc.isSection0() ? state.flagsWord(nextPC.rhu) : W36(nextPC.vma));
 	nextPC.u = ea.u + 1;	// XXX Wrap?
-	flags.fpd = flags.afi = flags.tr2 = flags.tr1 = 0;
+	state.flags.fpd = state.flags.afi = state.flags.tr2 = state.flags.tr1 = 0;
 	break;
 
       case 0265:		// JSP
 	nextPC.u = ea.u + 1;	// XXX Wrap?
-	acPut(pc.isSection0() ? flagsWord(nextPC.rhu) : W36(nextPC.vma));
-	flags.fpd = flags.afi = flags.tr2 = flags.tr1 = 0;
+	acPut(state.pc.isSection0() ? state.flagsWord(nextPC.rhu) : W36(nextPC.vma));
+	state.flags.fpd = state.flags.afi = state.flags.tr2 = state.flags.tr1 = 0;
 	break;
 
       case 0266:		// JSA
 	memPut(acGet());
-	pc = ea.u + 1;
-	acPut(W36(ea.lhu, pc.rhu));
+	nextPC = ea.u + 1;
+	acPut(W36(ea.lhu, nextPC.rhu));
 	break;
 
       case 0267:		// JRA
-	acPut(memory.memGetN(acGet()));
-	pc = ea;
+	acPut(state.memGetN(acGet()));
+	nextPC = ea;
 	break;
 
       case 0270:		// ADD
@@ -2180,7 +2121,7 @@ public:
 	break;
       }
 
-      pc = nextPC;
+      state.pc = nextPC;
       if (logging.pc || logging.mem) logging.s << endl;
     } while (running);
   }
@@ -2331,13 +2272,13 @@ public:
 
 	  if (a > highestAddr) highestAddr = a;
 	  if (a < lowestAddr) lowestAddr = a;
-	  memory.memP[a].u = 0;
+	  state.memP[a].u = 0;
 	}
 
 	break;
 
       case 'T':
-	if (wc == 0) {pc.lhu = 0; pc.rhu = addr;}
+	if (wc == 0) {state.pc.lhu = 0; state.pc.rhu = addr;}
 
 	for (unsigned offset = 0; offset < wc/3; ++offset) {
 	  uint64_t w0 = getWord(inS, "w0");
@@ -2355,7 +2296,7 @@ public:
 	    logging.s << "mem[" << a36.fmtVMA() << "]=" << w36.fmt36() << " " << w36.disasm() << endl;
 	  }
 
-	  memory.memP[a].u = w;
+	  state.memP[a].u = w;
 	}
 
 	inS.ignore(numeric_limits<streamsize>::max(), '\n');

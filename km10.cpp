@@ -10,6 +10,7 @@ using namespace std;
 #include "logging.hpp"
 #include "device.hpp"
 #include "dte20.hpp"
+#include "debugger.hpp"
 
 
 Logging logging{};
@@ -27,19 +28,18 @@ int run(const CmdlimeConfig& cmd) {
   logging.mem = true;
   logging.maxInsns = 100*1000;
 
-  Memory memory(4 * 1024 * 1024);
+  KMState state(4 * 1024 * 1024);
 
-  DTE20 dte{040, "DTE", memory};
+  DTE20 dte{040, "DTE", state};
   Device::devices[040] = &dte;
 
-  KM10 km10(memory);
+  KM10 km10(state);
 
   km10.loadA10(cmd.load.c_str());
-  logging.s << "[Loaded " << cmd.load
-	    << "  start=" << km10.pc.fmtVMA()
-	    << "]" << endl;
+  cerr << "[Loaded " << cmd.load << "  start=" << state.pc.fmtVMA() << "]" << endl;
 
   if (cmd.debug) {
+    Debugger dbg(state);
   } else {
     km10.running = true;
     km10.emulate();
@@ -50,8 +50,8 @@ int run(const CmdlimeConfig& cmd) {
 
 
 int main(int argc, char *argv[]) {
-  assert(sizeof(Memory::ExecutiveProcessTable) == 512 * 8);
-  assert(sizeof(Memory::UserProcessTable) == 512 * 8);
+  assert(sizeof(KMState::ExecutiveProcessTable) == 512 * 8);
+  assert(sizeof(KMState::UserProcessTable) == 512 * 8);
 
   auto cmdlineReader = cmdlime::CommandLineReader("km10");
   cmdlineReader.setVersionInfo("km10 0.1");

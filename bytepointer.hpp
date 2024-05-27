@@ -6,7 +6,7 @@
 
 #include "w36.hpp"
 #include "logging.hpp"
-#include "memory.hpp"
+#include "kmstate.hpp"
 
 using namespace std;
 
@@ -20,32 +20,32 @@ using namespace std;
 // type of bytepointer, using methods provided by each type and a
 // factory that creates instances based on the source data it finds.
 struct BytePointer {
-  static BytePointer *makeFrom(W36 ea, Memory &memory);
+  static BytePointer *makeFrom(W36 ea, KMState &state);
 
   typedef tuple<unsigned, unsigned, unsigned> PSA;
 
-  virtual PSA getPSA(Memory &memory) = 0;
+  virtual PSA getPSA(KMState &state) = 0;
 
   virtual bool isTwoWords() {
     return false;
   }
 
-  unsigned getByte(Memory &memory) {
-    auto [p, s, a] = getPSA(memory);
-    return (memory.memGetN(a) >> p) & W36::rMask(s);
+  unsigned getByte(KMState &state) {
+    auto [p, s, a] = getPSA(state);
+    return (state.memGetN(a) >> p) & W36::rMask(s);
   }
 
-  void putByte(W36 v, Memory &memory) {
-    auto [p, s, a] = getPSA(memory);
-    W36 w(memory.memGetN(a));
-    memory.memPutN((w.u & ~W36::bMask(p, s)) | ((v & W36::rMask(p)) << p), a);
+  void putByte(W36 v, KMState &state) {
+    auto [p, s, a] = getPSA(state);
+    W36 w(state.memGetN(a));
+    state.memPutN((w.u & ~W36::bMask(p, s)) | ((v & W36::rMask(p)) << p), a);
   }
 
 
-  virtual void inc(Memory &memory) {
+  virtual void inc(KMState &state) {
   }
 
-  virtual bool adjust(unsigned ac, Memory &memory) {
+  virtual bool adjust(unsigned ac, KMState &state) {
     return false;
   }
 };
@@ -74,14 +74,14 @@ struct BytePointerL1: BytePointer {
 
 
   // Accessors
-  virtual PSA getPSA(Memory &memory) {
+  virtual PSA getPSA(KMState &state) {
     unsigned rp = p;
     unsigned rs = s;
-    return PSA(rp, rs, memory.getEA(i, x, y));
+    return PSA(rp, rs, state.getEA(i, x, y));
   }
 
 
-  virtual void inc(Memory &memory) {
+  virtual void inc(KMState &state) {
 
     if (s > p) {		// Point to left-aligned byte in next word
       p = 36 - s;
@@ -145,10 +145,10 @@ struct BytePointerL1: BytePointer {
   // 
   // OWGs split off their separate way.
 
-  virtual bool adjust(unsigned ac, Memory &memory) {
+  virtual bool adjust(unsigned ac, KMState &state) {
 
     if (s == 0) {
-      memory.acPutN(u, ac);
+      state.acPutN(u, ac);
       return false;
     } else if (s > 36 - p) {
       return true;
@@ -159,7 +159,7 @@ struct BytePointerL1: BytePointer {
     // byte itself) and the capacity to the right of the byte. If these
     // add up to zero, then the byte can't fit in a word, and we return
     // to the user with no divide set.
-    int delta = memory.acGetN(ac);
+    int delta = state.acGetN(ac);
     int bpwL = 0;
     int bpwR = 0;
 
@@ -195,7 +195,7 @@ struct BytePointerL1: BytePointer {
     // is negative, however, we must back up the quotient by one and
     // offset the remainder by the capacity if it is non zero.
 
-    memory.acPutN(u, ac);
+    state.acPutN(u, ac);
     return false;
   }
 };
@@ -228,15 +228,15 @@ struct BytePointerG1: BytePointer {
 
 
   // Accessors
-  virtual PSA getPSA(Memory &memory) {
+  virtual PSA getPSA(KMState &state) {
     auto [p, s] = toPS[(u >> 30) - 37];
-    return PSA(p, s, memory.getEA(0, 0, a));
+    return PSA(p, s, state.getEA(0, 0, a));
   }
 
-  virtual void inc(Memory &memory) {
+  virtual void inc(KMState &state) {
   }
 
-  virtual bool adjust(unsigned ac, Memory &memory) {
+  virtual bool adjust(unsigned ac, KMState &state) {
     return false;
   }
 };
@@ -269,20 +269,20 @@ struct BytePointerG2: BytePointer {
   // Accessors
   operator uint64_t() {return u;}
 
-  virtual PSA getPSA(Memory &memory) {
+  virtual PSA getPSA(KMState &state) {
     unsigned rp = p;
     unsigned rs = s;
-    return PSA{rp, rs, memory.getEA(i, x, y)};
+    return PSA{rp, rs, state.getEA(i, x, y)};
   }
 
   virtual bool isTwoWords() {
     return true;
   }
 
-  virtual void inc(Memory &memory) {
+  virtual void inc(KMState &state) {
   }
 
-  virtual bool adjust(unsigned ac, Memory &memory) {
+  virtual bool adjust(unsigned ac, KMState &state) {
     return false;
   }
 };
@@ -291,13 +291,13 @@ struct BytePointerG2: BytePointer {
   // The magic BytePointer factory that creates the right
   // BytePointerXXX instance based on type of BytePointer data it
   // finds at `ea`..
-BytePointer *BytePointer::makeFrom(W36 ea, Memory &memory) {
+BytePointer *BytePointer::makeFrom(W36 ea, KMState &state) {
   W36 w1(ea);
 
   if (w1.u >> 30 > 36) {		// Must be a one word 30-bit global BP
     return new BytePointerG1(w1);
   } else if (w1.u & W36::bit(12)) {	// Must be a two word global BP
-    return new BytePointerG2(W72(w1, memory.memGetN(ea+1)));
+    return new BytePointerG2(W72(w1, state.memGetN(ea+1)));
   } else {				// Must be a one word local BP
     return new BytePointerL1(w1);
   }

@@ -17,16 +17,16 @@ using namespace std;
 #include "w36.hpp"
 #include "device.hpp"
 #include "logging.hpp"
-#include "memory.hpp"
+#include "kmstate.hpp"
 
 
 struct DTE20: Device {
 
-  DTE20(unsigned anAddr, string aName, Memory &aMemory)
+  DTE20(unsigned anAddr, string aName, KMState &aState)
     : Device(anAddr, aName),
       protocolMode(SECONDARY)
   {
-    memoryP = &aMemory;
+    stateP = &aState;
       
     ttyFD = open("/dev/tty", O_RDWR);
     if (ttyFD < 0) throw runtime_error("can't open /dev/tty");
@@ -108,7 +108,7 @@ struct DTE20: Device {
     unsigned u;
   };
 
-  inline static Memory *memoryP;
+  inline static KMState *stateP;
 
   thread consoleIOThread;
   bool consoleIOThreadDone;
@@ -151,16 +151,16 @@ struct DTE20: Device {
     if (req.to11Doorbell) {
       char buf;
 
-      MonitorCommand mc{memoryP->eptP->DTEto11Arg.rhu};
+      MonitorCommand mc{stateP->eptP->DTEto11Arg.rhu};
 
-      logging.s << " to11DoorBell arg=" << oct << memoryP->eptP->DTEto11Arg.rhu;
+      logging.s << " to11DoorBell arg=" << oct << stateP->eptP->DTEto11Arg.rhu;
 
       switch (mc.fn) {
       case 0:			// XXX This should not be required?!
       case ctyOutput:
 	buf = mc.data;
 	write(1, &buf, 1);
-	memoryP->eptP->DTEMonitorOpComplete = W36(W36::allOnes);
+	stateP->eptP->DTEMonitorOpComplete = W36(W36::allOnes);
 	break;
 
       case enterSecondaryProtocol:
@@ -209,10 +209,10 @@ struct DTE20: Device {
 	for (int k=0; k < st; ++k) {
 
 	  // Lamely sleep until KL grabs the previous char
-	  while (memoryP->eptP->DTEKLNotReadyForChar) usleep(100);
+	  while (stateP->eptP->DTEKLNotReadyForChar) usleep(100);
 
-	  memoryP->eptP->DTEto10Arg = buf[k];
-	  memoryP->eptP->DTEKLNotReadyForChar = W36::allOnes;
+	  stateP->eptP->DTEto10Arg = buf[k];
+	  stateP->eptP->DTEKLNotReadyForChar = W36::allOnes;
 
 	  // XXX ring the 10's doorbell here
 	}

@@ -35,7 +35,7 @@ FetchContent_Declare(replxx
 FetchContent_MakeAvailable(replxx)
 
 add_executable(km10 km10.cpp)
-target_compile_options(km10 PUBLIC --std=c++17 -DTEST_KM10=1 ${CPPOptionsForALL})
+target_compile_options(km10 PUBLIC --std=c++20 -DTEST_KM10=1 ${CPPOptionsForALL})
 target_link_libraries(${PROJECT_NAME} PRIVATE cmdlime::cmdlime)
 
 add_executable(test-kl10 test-kl10.c)
