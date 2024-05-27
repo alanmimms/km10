@@ -1,7 +1,5 @@
 #pragma once
-
-#include <ostream>
-#include <cstdint>
+#include <iostream>
 
 
 struct Logging {

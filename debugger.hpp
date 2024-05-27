@@ -16,4 +16,9 @@ struct Debugger {
   {}
 
   KMState &state;
+
+
+  void debug() {
+    cerr << "[debugger starts]" << endl;
+  }
 };

@@ -4,12 +4,13 @@ using namespace std;
 
 #include <gflags/gflags.h>
 
+#include "kmstate.hpp"
 #include "km10.hpp"
+#include "debugger.hpp"
 
 #include "logging.hpp"
 #include "device.hpp"
 #include "dte20.hpp"
-#include "debugger.hpp"
 
 
 Logging logging{};
@@ -34,15 +35,16 @@ int main(int argc, char *argv[]) {
   DTE20 dte{040, "DTE", state};
   Device::devices[040] = &dte;
 
-  KM10 km10(state);
-
-  km10.loadA10(FLAGS_load.c_str());
+  state.loadA10(FLAGS_load.c_str());
   cerr << "[Loaded " << FLAGS_load << "  start=" << state.pc.fmtVMA() << "]" << endl;
 
   if (FLAGS_debug) {
+    state.running = false;
     Debugger dbg(state);
+    dbg.debug();
   } else {
-    km10.running = true;
+    KM10 km10(state);
+    state.running = true;
     km10.emulate();
   }
 
