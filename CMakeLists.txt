@@ -6,17 +6,12 @@ set(CPPOptionsForALL -Wall -g)
 
 include(FetchContent)
 
-FetchContent_Declare(acutest
-    GIT_REPOSITORY "https://github.com/mity/acutest.git"
-    GIT_TAG "origin/master"
-)
-FetchContent_MakeAvailable(acutest)
-
 FetchContent_Declare(replxx
     GIT_REPOSITORY "https://github.com/AmokHuginnsson/replxx.git"
     GIT_TAG "origin/master"
 )
 FetchContent_MakeAvailable(replxx)
+target_include_directories(replxx PRIVATE ${CMAKE_CURRENT_LIST_DIR}/include)
 
 FetchContent_Declare(gflags
     GIT_REPOSITORY "https://github.com/gflags/gflags.git"
