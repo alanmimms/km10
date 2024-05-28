@@ -8,12 +8,12 @@ using namespace std;
 #include "km10.hpp"
 #include "debugger.hpp"
 
-#include "logging.hpp"
+#include "logger.hpp"
 #include "device.hpp"
 #include "dte20.hpp"
 
 
-Logging logging{};
+Logger logger{};
 
 
 DEFINE_string(load, "../images/klddt/klddt.a10", ".A10 file to load");
@@ -25,10 +25,10 @@ int main(int argc, char *argv[]) {
   assert(sizeof(KMState::UserProcessTable) == 512 * 8);
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
-  logging.ac = true;
-  logging.pc = true;
-  logging.mem = true;
-  logging.maxInsns = 100*1000;
+  logger.ac = true;
+  logger.pc = true;
+  logger.mem = true;
+  logger.maxInsns = 1000;
 
   KMState state(4 * 1024 * 1024);
 
@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
 
   if (FLAGS_debug) {
     state.running = false;
-    Debugger dbg(state);
+    Debugger dbg(km10, state);
     dbg.debug();
   } else {
     state.running = true;

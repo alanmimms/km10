@@ -11,10 +11,12 @@ using namespace std;
 
 struct Debugger {
 
-  Debugger(KMState &aState)
-    : state(aState)
+  Debugger(KM10 &aKM10, KMState &aState)
+    : km10(aKM10),
+      state(aState)
   {}
 
+  KM10 &km10;
   KMState &state;
 
 
@@ -55,6 +57,13 @@ struct Debugger {
 	for (int k=0; k < 020; ++k) {
 	  cout << "ac" << oct << setw(2) << k << ": " << state.AC[k].fmt36() << endl;
 	}
+      });
+
+      cmd("step", "s", [&]() {
+	state.running = false;
+	km10.emulate();
+	cout << "\r\n" << flush;
+	done = true;
       });
 
       cmd("help", nullptr, doHelp);

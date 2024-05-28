@@ -1,6 +1,6 @@
 #pragma once
 
-#include "logging.hpp"
+#include "logger.hpp"
 #include "w36.hpp"
 #include "device.hpp"
 
@@ -122,13 +122,13 @@ struct APRDevice: Device {
   }
 
   void doBLKO() {		// WRFIL
-    Logging::nyi();
+    logger.nyi();
   }
 
   void doCONO(W36 ea) {		// WRAPR
     APRFunctions func(ea.u);
 
-    if (logging.traceMem) cerr << " ; " << ea.fmt18();
+    if (logger.traceMem) cerr << " ; " << ea.fmt18();
 
     if (func.clear) {
       state.active.u &= ~func.select.u;
@@ -162,6 +162,6 @@ struct APRDevice: Device {
   }
 
   void doCONI() {		// RDAPR
-    Logging::nyi();
+    logger.nyi();
   }
 };

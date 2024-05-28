@@ -4,8 +4,6 @@
 #include <sstream>
 #include <iomanip>
 
-#include "logging.hpp"
-
 using namespace std;
 
 

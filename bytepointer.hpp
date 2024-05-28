@@ -5,7 +5,7 @@
 #include <iomanip>
 
 #include "w36.hpp"
-#include "logging.hpp"
+#include "logger.hpp"
 #include "kmstate.hpp"
 
 using namespace std;

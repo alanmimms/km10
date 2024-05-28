@@ -16,7 +16,7 @@ using namespace std;
 
 #include "w36.hpp"
 #include "device.hpp"
-#include "logging.hpp"
+#include "logger.hpp"
 #include "kmstate.hpp"
 
 
@@ -59,6 +59,8 @@ struct DTE20: Device {
 
     consoleIOThread = thread(&consoleIOLoop);
     isConnected = true;
+
+    cout << "[DTE connected]\r\n" << flush;
   }
 
 
@@ -71,6 +73,8 @@ struct DTE20: Device {
       close(fromIOLoopFD);
       close(toIOLoopFD);
       isConnected = false;
+      if (isRaw) setNonRAW();
+      cout << "[DTE disconnected]\r\n" << flush;
     }
   }
 
@@ -157,20 +161,20 @@ struct DTE20: Device {
 
   // I/O instruction handlers
   virtual void clearIO() {
-    logging.s << " ; DTE CLEAR IO";
+    logger.s << " ; DTE CLEAR IO";
   }
 
 
   virtual void doCONO(W36 iw, W36 ea) {
     CONOMask req(ea);
-    logging.s << " ; DTE CONO " << oct << ea;
+    logger.s << " ; DTE CONO " << oct << ea;
 
     if (req.to11Doorbell) {
       char buf;
 
       MonitorCommand mc{stateP->eptP->DTEto11Arg.rhu};
 
-      logging.s << " to11DoorBell arg=" << oct << stateP->eptP->DTEto11Arg.rhu;
+      logger.s << " to11DoorBell arg=" << oct << stateP->eptP->DTEto11Arg.rhu;
 
       switch (mc.fn) {
       case 0:			// XXX This should not be required?!
@@ -193,13 +197,13 @@ struct DTE20: Device {
 	break;
       }
     } else {
-      Logging::nyi();
+      logger.nyi();
     }
   }
 
 
   virtual void doCONI(W36 iw, W36 ea) {
-    logging.s << " ; DTE CONI";
+    logger.s << " ; DTE CONI";
   }
 
 
@@ -238,7 +242,7 @@ struct DTE20: Device {
       // Handle messages from our parent thread (usually we're just
       // told to fuck off and die).
       if ((polls[1].revents & POLLIN) != 0) {
-	cerr << "[closing down DTE20]" << endl;
+	cerr << "\r\n[closing down DTE20]\r\n" << flush;
 	return;			// XXX for now just fuck off on any pipe data
       }
     }
@@ -249,7 +253,13 @@ struct DTE20: Device {
   // process wishes to temporarily relinquish the tty.
   static void resetTTY() {
     /* flush and reset */
-    if (isRaw) tcsetattr(ttyFD, TCSAFLUSH, &origTermios);
+    if (isRaw) setNonRAW();
+  }
+
+
+  static void setNonRAW() {
+    tcsetattr(ttyFD, TCSAFLUSH, &origTermios);
+    isRaw = false;
   }
 
 

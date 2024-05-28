@@ -5,7 +5,7 @@
 using namespace std;
 
 #include "w36.hpp"
-#include "logging.hpp"
+#include "logger.hpp"
 
 
 struct Device {
@@ -34,7 +34,7 @@ struct Device {
     auto devP = devices[iw.ioDev];
 
     if (!devP) {
-      Logging::nsd();
+      logger.nsd();
       return;
     }
 
@@ -72,7 +72,7 @@ struct Device {
       break;
 
     default:
-      Logging::nyi();
+      logger.nyi();
     }
   }
 
@@ -83,30 +83,30 @@ struct Device {
 
 
   virtual void doDATAI(W36 iw, W36 ea) {
-    Logging::nyi();
+    logger.nyi();
   }
   
   virtual void doBLKI(W36 iw, W36 ea) {
-    Logging::nyi();
+    logger.nyi();
   }
 
   virtual void doBLKO(W36 iw, W36 ea) {
-    Logging::nyi();
+    logger.nyi();
   }
 
   virtual void doDATAO(W36 iw, W36 ea) {
-    Logging::nyi();
+    logger.nyi();
   }
 
   virtual void doCONO(W36 iw, W36 ea) {
-    Logging::nyi();
+    logger.nyi();
   }
 
   virtual void doCONI(W36 iw, W36 ea) {
-    Logging::nyi();
+    logger.nyi();
   }
 
   virtual void doCONSZ(W36 iw, W36 ea) {
-    Logging::nyi();
+    logger.nyi();
   }
 };

@@ -8,7 +8,7 @@
 using namespace std;
 
 #include "w36.hpp"
-#include "logging.hpp"
+#include "logger.hpp"
 
 
 struct KMState {
@@ -207,26 +207,26 @@ struct KMState {
 
   W36 acGetN(unsigned n) {
     W36 value = AC[n];
-    if (logging.mem) logging.s << " ; ac" << oct << n << ": " << value.fmt36();
+    if (logger.mem) logger.s << " ; ac" << oct << n << ": " << value.fmt36();
     return value;
   }
 
 
   W36 acGetEA(unsigned ac) {
     W36 value = AC[ac];
-    if (logging.mem) logging.s << " ; ac" << oct << ac << ": " << value.fmt36();
+    if (logger.mem) logger.s << " ; ac" << oct << ac << ": " << value.fmt36();
     return value;
   }
 
 
   void acPutN(W36 value, unsigned acN) {
     AC[acN] = value;
-    if (logging.mem) logging.s << " ; ac" << oct << acN << "<-" << value.fmt36();
+    if (logger.mem) logger.s << " ; ac" << oct << acN << "<-" << value.fmt36();
   }
 
   W36 memGetN(W36 a) {
     W36 value = a.u < 020 ? acGetEA(a.u) : memP[a.u];
-    if (logging.mem) logging.s << " ; " << a.fmtVMA() << ": " << value.fmt36();
+    if (logger.mem) logger.s << " ; " << a.fmtVMA() << ": " << value.fmt36();
     return value;
   }
 
@@ -237,7 +237,7 @@ struct KMState {
     else 
       memP[a.u] = value;
 
-    if (logging.mem) logging.s << " ; " << a.fmtVMA() << "<-" << value.fmt36();
+    if (logger.mem) logger.s << " ; " << a.fmtVMA() << "<-" << value.fmt36();
   }
 
 
@@ -359,12 +359,12 @@ struct KMState {
 
     for (;;) {
       char ch = inS.get();
-      if (logging.load) logging.s << "getWord[" << whyP << "] ch=" << oct << ch << endl;
+      if (logger.load) logger.s << "getWord[" << whyP << "] ch=" << oct << ch << endl;
       if (ch == EOF || ch == ',' || ch == '\n') break;
       v = (v << 6) | (ch & 077);
     }
 
-    if (logging.load) logging.s << "getWord[" << whyP << "] returns 0" << oct << v << endl;
+    if (logger.load) logger.s << "getWord[" << whyP << "] returns 0" << oct << v << endl;
     return v;
   }
 
@@ -381,7 +381,7 @@ struct KMState {
 
       if (recType == EOF) break;
 
-      if (logging.load) logging.s << "recType=" << recType << endl;
+      if (logger.load) logger.s << "recType=" << recType << endl;
 
       if (recType == ';') {
 	// Just ignore comment lines
@@ -399,8 +399,8 @@ struct KMState {
       addr |= wc & 0xC000;
       wc &= ~0xC000;
 
-      if (logging.load) logging.s << "addr=" << setw(6) << setfill('0') << oct << addr << endl;
-      if (logging.load) logging.s << "wc=" << wc << endl;
+      if (logger.load) logger.s << "addr=" << setw(6) << setfill('0') << oct << addr << endl;
+      if (logger.load) logger.s << "wc=" << wc << endl;
 
       unsigned zeroCount;
 
@@ -410,7 +410,7 @@ struct KMState {
 
 	if (zeroCount == 0) zeroCount = 64*1024;
 
-	if (logging.load) logging.s << "zeroCount=0" << oct << zeroCount << endl;
+	if (logger.load) logger.s << "zeroCount=0" << oct << zeroCount << endl;
 
 	inS.ignore(numeric_limits<streamsize>::max(), '\n');
 
@@ -439,8 +439,8 @@ struct KMState {
 	  if (a > highestAddr) highestAddr = a;
 	  if (a < lowestAddr) lowestAddr = a;
 
-	  if (logging.load) {
-	    logging.s << "mem[" << a36.fmtVMA() << "]=" << w36.fmt36() << " " << w36.disasm() << endl;
+	  if (logger.load) {
+	    logger.s << "mem[" << a36.fmtVMA() << "]=" << w36.fmt36() << " " << w36.disasm() << endl;
 	  }
 
 	  memP[a].u = w;
@@ -450,7 +450,7 @@ struct KMState {
 	break;
       
       default:
-	logging.s << "ERROR: Unknown record type '" << recType << "' in file '" << fileNameP << "'" << endl;
+	logger.s << "ERROR: Unknown record type '" << recType << "' in file '" << fileNameP << "'" << endl;
 	break;      
       }
     }

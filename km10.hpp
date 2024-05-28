@@ -13,7 +13,7 @@
 using namespace std;
 
 
-#include "logging.hpp"
+#include "logger.hpp"
 #include "kmstate.hpp"
 #include "w36.hpp"
 #include "bytepointer.hpp"
@@ -282,13 +282,13 @@ public:
 
     function<W36()> acGetRH = [&]() -> W36 {
       W36 value{0, acGet().rhu};
-      if (logging.mem) logging.s << " ; acRH" << oct << iw.ac << ": " << value.fmt36();
+      if (logger.mem) logger.s << " ; acRH" << oct << iw.ac << ": " << value.fmt36();
       return value;
     };
 
     function<W36()> acGetLH = [&]() -> W36 {
       W36 value{0, acGet().lhu};
-      if (logging.mem) logging.s << " ; acLH" << oct << iw.ac << ": " << value.fmt36();
+      if (logger.mem) logger.s << " ; acLH" << oct << iw.ac << ": " << value.fmt36();
       return value;
     };
 
@@ -359,7 +359,7 @@ public:
     auto doJUMP = [&](function<bool(W36)> &condF) -> void {
 
       if (condF(acGet())) {
-	if (logging.mem) logging.s << " [jump]";
+	if (logger.mem) logger.s << " [jump]";
 	nextPC.rhu = ea;
       }
     };
@@ -368,7 +368,7 @@ public:
       W36 eaw = memGet();
 
       if (condF(eaw)) {
-	if (logging.mem) logging.s << " [skip]";
+	if (logger.mem) logger.s << " [skip]";
 	++nextPC.rhu;
       }
       
@@ -398,7 +398,7 @@ public:
       W36 eaw = doGetF() & ea;
 
       if (condF(eaw)) {
-	if (logging.mem) logging.s << " [skip]";
+	if (logger.mem) logger.s << " [skip]";
 	++nextPC.rhu;
       }
       
@@ -591,7 +591,7 @@ public:
     {
 
       if (condF(doGetSrc1F(), doGetSrc2F())) {
-	if (logging.mem) logging.s << " [skip]";
+	if (logger.mem) logger.s << " [skip]";
 	++nextPC.rhu;
       }
     };
@@ -650,14 +650,15 @@ public:
       // When we XCT we have already set PC to point to the
       // instruction to be XCTed and nextPC is pointing after the XCT.
 
-      if (nInsns++ > logging.maxInsns) {
-	cerr << "[" << dec << logging.maxInsns << " instructions executed at pc="
+      if (nInsns++ > logger.maxInsns) {
+	cerr << "[" << dec << logger.maxInsns << " instructions executed at pc="
 	     << state.pc.fmtVMA() << "]" << endl;
 	state.running = false;
+	break;
       }
 
-      if (logging.pc) {
-	logging.s << setfill('0')
+      if (logger.pc) {
+	logger.s << setfill('0')
 		  << " " << setw(3) << iw.op
 		  << " " << setw(2) << iw.ac
 		  << " " << setw(1) << iw.i
@@ -872,16 +873,16 @@ public:
 
       case 0251: {		// BLT
 	W36 ac(acGet());
-	bool mem = logging.mem;
+	bool mem = logger.mem;
 
-	logging.mem = false;
+	logger.mem = false;
 	static const string prefix{"\n                                                 ; "};
 
 	do {
 	  W36 srcA(ea.lhu, ac.lhu);
 	  W36 dstA(ea.lhu, ac.rhu);
 
-	  logging.s << prefix << "BLT src=" << srcA.vma << "  dst=" << dstA.vma;
+	  logger.s << prefix << "BLT src=" << srcA.vma << "  dst=" << dstA.vma;
 
 	  // Note this isn't bug-for-bug compatible with KL10. See
 	  // footnote [2] in 1982_ProcRefMan.pdf p.58. We do
@@ -893,8 +894,8 @@ public:
 	  acPut(ac);
 	} while (ac.rhu <= ea.rhu);
 
-	logging.s << prefix << "BLT at end ac=" << ac.fmt36();
-	logging.mem = mem;
+	logger.s << prefix << "BLT at end ac=" << ac.fmt36();
+	logger.mem = mem;
 	break;
       }
 
@@ -904,7 +905,7 @@ public:
 	acPut(tmp);
 
 	if (tmp.s >= 0) {
-	  if (logging.mem) logging.s << " [jump]";
+	  if (logger.mem) logger.s << " [jump]";
 	  nextPC = ea;
 	}
 
@@ -916,7 +917,7 @@ public:
 	acPut(tmp);
 
 	if (tmp.s < 0) {
-	  if (logging.mem) logging.s << " [jump]";
+	  if (logger.mem) logger.s << " [jump]";
 	  nextPC = ea;
 	}
 
@@ -935,7 +936,7 @@ public:
 	  break;
 
 	default:
-	  Logging::nyi();
+	  logger.nyi();
 	}
 
 	break;
@@ -952,10 +953,10 @@ public:
 	if (state.userMode() || iw.ac == 0) {
 	  state.pc = ea;
 	  iw = memGet();
-	  if (logging.mem) logging.s << "; ";
+	  if (logger.mem) logger.s << "; ";
 	  goto XCT_ENTRYPOINT;
 	} else {
-	  Logging::nyi();
+	  logger.nyi();
 	  break;
 	}
 
@@ -1996,132 +1997,135 @@ public:
 
       default:
 
-	if (iw.ioSeven != 7) {	// Only handle I/O instructions this way
-	  Logging::nyi();
-	  continue;
-	}
+	if (iw.ioSeven == 7) {	// Only handle I/O instructions this way
+	  logger.s << " ; ioDev=" << oct << iw.ioDev << " ioOp=" << oct << iw.ioOp;
 
-	logging.s << " ; ioDev=" << oct << iw.ioDev << " ioOp=" << oct << iw.ioOp;
+	  switch (iw.ioDev) {
+	  case 000:		// APR
 
-	switch (iw.ioDev) {
-	case 000:		// APR
+	    switch (iw.ioOp) {
+	    case W36::BLKI:	// APRID
+	      memPut(apr.apridValue.u);
+	      break;
 
-	  switch (iw.ioOp) {
-	  case W36::BLKI:	// APRID
-	    memPut(apr.apridValue.u);
-	    break;
+	    case W36::BLKO:	// WRFIL
+	      logger.nyi();
+	      break;
 
-	  case W36::BLKO:	// WRFIL
-	    Logging::nyi();
-	    break;
+	    case W36::CONO: {	// WRAPR
+	      APRDevice::Functions func(ea.u);
 
-	  case W36::CONO: {	// WRAPR
-	    APRDevice::Functions func(ea.u);
+	      if (logger.mem) logger.s << " ; " << ea.fmt18();
 
-	    if (logging.mem) logging.s << " ; " << ea.fmt18();
+	      if (func.clear) {
+		apr.state.active.u &= ~func.select.u;
+	      } else if (func.set) {
+		apr.state.active.u |= func.select.u;
 
-	    if (func.clear) {
-	      apr.state.active.u &= ~func.select.u;
-	    } else if (func.set) {
-	      apr.state.active.u |= func.select.u;
-
-	      // This block argues the APR state needs to be
-	      // metaprogrammed with C++17 parameter pack superpowers
-	      // instead of this old fashioned mnaual method. This might
-	      // be an interesting thing to do in the future. For now,
-	      // it's done the 1940s hard way.
-	      if (func.intLevel != 0) {
-		if (func.select.sweepDone != 0)      apr.levels.sweepDone = func.intLevel;
-		if (func.select.powerFailure != 0)   apr.levels.powerFailure = func.intLevel;
-		if (func.select.addrParity != 0)     apr.levels.addrParity = func.intLevel;
-		if (func.select.cacheDirParity != 0) apr.levels.cacheDirParity = func.intLevel;
-		if (func.select.mbParity != 0)       apr.levels.mbParity = func.intLevel;
-		if (func.select.ioPageFail != 0)     apr.levels.ioPageFail = func.intLevel;
-		if (func.select.noMemory != 0)       apr.levels.noMemory = func.intLevel;
-		if (func.select.sbusError != 0)      apr.levels.sbusError = func.intLevel;
+		// This block argues the APR state needs to be
+		// metaprogrammed with C++17 parameter pack superpowers
+		// instead of this old fashioned mnaual method. This might
+		// be an interesting thing to do in the future. For now,
+		// it's done the 1940s hard way.
+		if (func.intLevel != 0) {
+		  if (func.select.sweepDone != 0)      apr.levels.sweepDone = func.intLevel;
+		  if (func.select.powerFailure != 0)   apr.levels.powerFailure = func.intLevel;
+		  if (func.select.addrParity != 0)     apr.levels.addrParity = func.intLevel;
+		  if (func.select.cacheDirParity != 0) apr.levels.cacheDirParity = func.intLevel;
+		  if (func.select.mbParity != 0)       apr.levels.mbParity = func.intLevel;
+		  if (func.select.ioPageFail != 0)     apr.levels.ioPageFail = func.intLevel;
+		  if (func.select.noMemory != 0)       apr.levels.noMemory = func.intLevel;
+		  if (func.select.sbusError != 0)      apr.levels.sbusError = func.intLevel;
+		}
+	      } else if (func.enable) {
+		apr.state.enabled.u |= func.select.u;
+	      } else if (func.disable) {
+		apr.state.enabled.u &= ~func.select.u;
 	      }
-	    } else if (func.enable) {
-	      apr.state.enabled.u |= func.select.u;
-	    } else if (func.disable) {
-	      apr.state.enabled.u &= ~func.select.u;
-	    }
 
-	    if (func.clearIO) {
-	      for (auto [ioDev, devP]: Device::devices) devP->clearIO();
-	    }
-	    break;
-	  }
-
-	  case W36::CONI:	// RDAPR
-	    Logging::nyi();
-	    break;
-
-	  default:
-	    Logging::nyi();
-	    break;
-	  }
-
-	  break;
-
-	case 001:		// PI
-
-	  switch (iw.ioOp) {
-	  case W36::CONO: {
-	    PIDevice::Functions pif(ea);
-
-	    if (logging.mem) logging.s << " ; " << oct << ea.fmt18();
-
-	    if (pif.clearPI) {
-	      logging.s << " ; CLEAR I/O SYSTEM";
-	      Device::clearAll();
-	    } else {
-	      pi.state.writeEvenParityDir = pif.writeEvenParityDir;
-	      pi.state.writeEvenParityData = pif.writeEvenParityData;
-	      pi.state.writeEvenParityAddr = pif.writeEvenParityAddr;
-
-	      if (pif.turnPIOn) {
-		pi.state.piEnabled = 1;
-	      } else if (pif.turnPIOff) {
-		pi.state.piEnabled = 0;
-	      } else if (pif.dropRequests != 0) {
-		pi.state.levelsRequested &= ~pif.levels;
-	      } else if (pif.levelsInitiate) {
-		pi.state.levelsRequested |= pif.levels;
-	      } else if (pif.levelsOff) {
-		pi.state.levelsEnabled &= ~pif.levels;
-	      } else if (pif.levelsOn) {
-		pi.state.levelsEnabled |= pif.levels;
+	      if (func.clearIO) {
+		for (auto [ioDev, devP]: Device::devices) devP->clearIO();
 	      }
+	      break;
 	    }
+
+	    case W36::CONI:	// RDAPR
+	      logger.nyi();
+	      break;
+
+	    default:
+	      logger.nyi();
+	      break;
+	    }
+
+	    break;
+
+	  case 001:		// PI
+
+	    switch (iw.ioOp) {
+	    case W36::CONO: {
+	      PIDevice::Functions pif(ea);
+
+	      if (logger.mem) logger.s << " ; " << oct << ea.fmt18();
+
+	      if (pif.clearPI) {
+		logger.s << " ; CLEAR I/O SYSTEM";
+		Device::clearAll();
+	      } else {
+		pi.state.writeEvenParityDir = pif.writeEvenParityDir;
+		pi.state.writeEvenParityData = pif.writeEvenParityData;
+		pi.state.writeEvenParityAddr = pif.writeEvenParityAddr;
+
+		if (pif.turnPIOn) {
+		  pi.state.piEnabled = 1;
+		} else if (pif.turnPIOff) {
+		  pi.state.piEnabled = 0;
+		} else if (pif.dropRequests != 0) {
+		  pi.state.levelsRequested &= ~pif.levels;
+		} else if (pif.levelsInitiate) {
+		  pi.state.levelsRequested |= pif.levels;
+		} else if (pif.levelsOff) {
+		  pi.state.levelsEnabled &= ~pif.levels;
+		} else if (pif.levelsOn) {
+		  pi.state.levelsEnabled |= pif.levels;
+		}
+	      }
+	      break;
+	    }
+
+	    case W36::CONI:
+	      memPut(pi.state.u);
+	      break;
+
+	    default:
+	      logger.nyi();
+	      break;
+	    }
+
+	    break;
+
+	  case 024:		// PAG
+	    break;
+
+	  default:		// All other devices
+	    Device::handleIO(iw, ea);
 	    break;
 	  }
 
-	  case W36::CONI:
-	    memPut(pi.state.u);
-	    break;
-
-	  default:
-	    Logging::nyi();
-	    break;
-	  }
-
-	  break;
-
-	case 024:		// PAG
-	  break;
-
-	default:		// All other devices
-	  Device::handleIO(iw, ea);
+	} else {		// Non-I/O UUOs go here
+	  logger.nyi();
+	  goto BailForNow;
 	  break;
 	}
-
+	
 	break;
       }
 
       state.pc = nextPC;
-      if (logging.pc || logging.mem) logging.s << endl;
+      if (logger.pc || logger.mem) logger.s << endl;
     } while (state.running);
 
+  BailForNow:
     // Restore console to normal
     dteP->disconnect();
   }
