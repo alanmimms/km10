@@ -7,9 +7,6 @@ using namespace std;
 
 #include "w36.hpp"
 #include "km10.hpp"
-#include "replxx.hxx"
-
-using Replxx = replxx::Replxx;
 
 
 struct Debugger {
@@ -22,36 +19,49 @@ struct Debugger {
 
 
   void debug() {
-    Replxx rx;
+    string line;
+    bool done{false};
+    bool cmdMatch;
 
-    rx.install_window_change_handler();
+    auto cmd = [&](const char *s1, const char *s2, auto handler) {
 
-    string historyPath{"./.km10-history"};
-    ifstream historyFile(historyPath.c_str());
+      if (line.rfind(s1, 0) == 0 || (s2 != nullptr && line.rfind(s2, 0) == 0)) {
+	handler();
+	cmdMatch = true;
+      }
+    };
 
-    rx.history_load(historyFile);
-    rx.set_max_history_size(1000);
-    rx.set_max_hint_rows(3);
-    rx.set_prompt("km10>");
+    auto doHelp = [&]() {
+      cout << R"(Command line options:
+  --help	This help.
+  --debug	Start the debugger instead of running the loaded program (if any).
+  --load=<file>	Load the specified .A10 file or if 'none' is specified, load nothing.
+)";
+    };
 
     cout << "[KM-10 debugger]" << endl;
 
-    for (;;) {
-      char const *cin{nullptr};
+    const string prompt{"km10> "};
 
-      do {
-      } while (cin == nullptr && errno == EAGAIN);
+    while (!done) {
+      cmdMatch = false;
+      cout << prompt << flush;
+      getline(cin, line);
 
-      if (cin == nullptr) break;
+      cmd("quit", "q", [&]() {done = true;});
 
-      string sin{cin};
+      cmd("acs", nullptr, [&]() {
 
-      if (sin.empty()) continue;
-      
-      if (sin.rfind(".quit", 0) == 0 || sin.rfind(".exit", 0) == 0) {
-	rx.history_add(sin);
-	break;
-      }
+	for (int k=0; k < 020; ++k) {
+	  cout << "ac" << oct << setw(2) << k << ": " << state.AC[k].fmt36() << endl;
+	}
+      });
+
+      cmd("help", nullptr, doHelp);
+
+      if (!cmdMatch) doHelp();
     }
+
+    cout << "[exiting]" << endl;
   }
 };

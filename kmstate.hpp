@@ -12,7 +12,11 @@ using namespace std;
 
 
 struct KMState {
-  KMState(unsigned nWords) {
+  KMState(unsigned nWords)
+    : pc(0),
+      flags(0),
+      AC(ACbanks[0])
+  {
     physicalP = (W36 *) mmap(nullptr,
 			     nWords * sizeof(uint64_t),
 			     PROT_READ | PROT_WRITE,
@@ -44,6 +48,8 @@ struct KMState {
   bool running;
 
   W36 pc;
+
+  W36 ACbanks[8][16];
 
   union ATTRPACKED ProgramFlags {
 

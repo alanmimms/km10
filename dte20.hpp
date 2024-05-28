@@ -24,7 +24,8 @@ struct DTE20: Device {
 
   DTE20(unsigned anAddr, string aName, KMState &aState)
     : Device(anAddr, aName),
-      protocolMode(SECONDARY)
+      protocolMode(SECONDARY),
+      isConnected(false)
   {
     stateP = &aState;
       
@@ -39,23 +40,38 @@ struct DTE20: Device {
 
     /* register the tty reset with the exit handler */
     if (atexit(resetTTY) != 0) throw runtime_error("atexit: can't register tty reset");
+  }
 
-    //    setRAW();
+  ~DTE20() {
+    disconnect();
+  }
+
+
+  void connect() {
+    setRAW();
 
     int pipeFDs[2];
-    st = pipe(pipeFDs);
+    int st = pipe(pipeFDs);
     if (st < 0) perror("Error creation console I/O pipe");
 
     fromIOLoopFD = pipeFDs[0];
     toIOLoopFD = pipeFDs[1];
 
     consoleIOThread = thread(&consoleIOLoop);
+    isConnected = true;
   }
 
-  ~DTE20() {
-    consoleIOThreadDone = true;
-    write(toIOLoopFD, "bye", 3);
-    consoleIOThread.join();
+
+  void disconnect() {
+
+    if (isConnected) {
+      consoleIOThreadDone = true;
+      write(toIOLoopFD, "bye", 3);
+      consoleIOThread.join();
+      close(fromIOLoopFD);
+      close(toIOLoopFD);
+      isConnected = false;
+    }
   }
 
 
@@ -112,6 +128,7 @@ struct DTE20: Device {
 
   thread consoleIOThread;
   bool consoleIOThreadDone;
+  bool isConnected;
   inline static int toIOLoopFD;
   inline static int fromIOLoopFD;
 
@@ -221,6 +238,7 @@ struct DTE20: Device {
       // Handle messages from our parent thread (usually we're just
       // told to fuck off and die).
       if ((polls[1].revents & POLLIN) != 0) {
+	cerr << "[closing down DTE20]" << endl;
 	return;			// XXX for now just fuck off on any pipe data
       }
     }

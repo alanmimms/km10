@@ -23,7 +23,6 @@ using namespace std;
 
 class KM10 {
 public:
-  W36 ACbanks[8][16];
   KMState state;
 
 
@@ -256,15 +255,14 @@ public:
   APRDevice *aprP;
   PIDevice *piP;
   PAGDevice *pagP;
+  DTE20 *dteP;
 
 
   // Constructors
-  KM10(KMState &aState)
-    : state(aState)
-  {
-    state.AC = ACbanks[0];
-    state.flags.u = 0;
-  }
+  KM10(KMState &aState, DTE20 *aDTE)
+    : state(aState),
+      dteP(aDTE)
+  {}
 
 
   
@@ -632,6 +630,9 @@ public:
       if (condF(v)) actionF();
     };
 
+
+    // Connect our DTE20 (put console into raw mode)
+    dteP->connect();
 
     // The instruction loop
     do {
@@ -2120,5 +2121,8 @@ public:
       state.pc = nextPC;
       if (logging.pc || logging.mem) logging.s << endl;
     } while (state.running);
+
+    // Restore console to normal
+    dteP->disconnect();
   }
 };

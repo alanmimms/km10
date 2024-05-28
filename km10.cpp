@@ -35,15 +35,18 @@ int main(int argc, char *argv[]) {
   DTE20 dte{040, "DTE", state};
   Device::devices[040] = &dte;
 
-  state.loadA10(FLAGS_load.c_str());
-  cerr << "[Loaded " << FLAGS_load << "  start=" << state.pc.fmtVMA() << "]" << endl;
+  if (FLAGS_load != "none") {
+    state.loadA10(FLAGS_load.c_str());
+    cerr << "[Loaded " << FLAGS_load << "  start=" << state.pc.fmtVMA() << "]" << endl;
+  }
+
+  KM10 km10(state, &dte);
 
   if (FLAGS_debug) {
     state.running = false;
     Debugger dbg(state);
     dbg.debug();
   } else {
-    KM10 km10(state);
     state.running = true;
     km10.emulate();
   }
