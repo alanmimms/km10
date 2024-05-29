@@ -49,6 +49,7 @@ struct DTE20: Device {
 
   void connect() {
     setRAW();
+    logger.endl = "\r\n";
 
     int pipeFDs[2];
     int st = pipe(pipeFDs);
@@ -60,7 +61,7 @@ struct DTE20: Device {
     consoleIOThread = thread(&consoleIOLoop);
     isConnected = true;
 
-    cout << "[DTE connected]\r\n" << flush;
+//    cout << "[DTE connected]" << logger.endl << flush;
   }
 
 
@@ -74,7 +75,8 @@ struct DTE20: Device {
       close(toIOLoopFD);
       isConnected = false;
       if (isRaw) setNonRAW();
-      cout << "[DTE disconnected]\r\n" << flush;
+      logger.endl = "\n";
+//      cout << "[DTE disconnected]" << logger.endl << flush;
     }
   }
 
@@ -185,15 +187,18 @@ struct DTE20: Device {
 	break;
 
       case enterSecondaryProtocol:
-	cerr << "DTE20 enter secondary protocol command with data " << mc.data << " (ignored)." << endl;
+	cerr << "DTE20 enter secondary protocol command with data " << mc.data << " (ignored)."
+	     << logger.endl;
 	break;
 
       case enterPrimaryProtocol:
-	cerr << "DTE20 enter primary protocol command with data " << mc.data << " (ignored)." << endl;
+	cerr << "DTE20 enter primary protocol command with data " << mc.data << " (ignored)."
+	     << logger.endl;
 	break;
 
       default:
-	cerr << "Unimplemented DTECMD: " << oct << mc.fn << " with data " << mc.data << " (ignored)." << endl;
+	cerr << "Unimplemented DTECMD: " << oct << mc.fn << " with data " << mc.data << " (ignored)."
+	     << logger.endl;
 	break;
       }
     } else {
@@ -242,7 +247,7 @@ struct DTE20: Device {
       // Handle messages from our parent thread (usually we're just
       // told to fuck off and die).
       if ((polls[1].revents & POLLIN) != 0) {
-	cerr << "\r\n[closing down DTE20]\r\n" << flush;
+//	cerr << logger.endl << "[closing down DTE20]" << logger.endl << flush;
 	return;			// XXX for now just fuck off on any pipe data
       }
     }

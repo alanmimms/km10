@@ -359,12 +359,12 @@ struct KMState {
 
     for (;;) {
       char ch = inS.get();
-      if (logger.load) logger.s << "getWord[" << whyP << "] ch=" << oct << ch << endl;
+      if (logger.load) logger.s << "getWord[" << whyP << "] ch=" << oct << ch << logger.endl;
       if (ch == EOF || ch == ',' || ch == '\n') break;
       v = (v << 6) | (ch & 077);
     }
 
-    if (logger.load) logger.s << "getWord[" << whyP << "] returns 0" << oct << v << endl;
+    if (logger.load) logger.s << "getWord[" << whyP << "] returns 0" << oct << v << logger.endl;
     return v;
   }
 
@@ -381,7 +381,7 @@ struct KMState {
 
       if (recType == EOF) break;
 
-      if (logger.load) logger.s << "recType=" << recType << endl;
+      if (logger.load) logger.s << "recType=" << recType << logger.endl;
 
       if (recType == ';') {
 	// Just ignore comment lines
@@ -399,8 +399,8 @@ struct KMState {
       addr |= wc & 0xC000;
       wc &= ~0xC000;
 
-      if (logger.load) logger.s << "addr=" << setw(6) << setfill('0') << oct << addr << endl;
-      if (logger.load) logger.s << "wc=" << wc << endl;
+      if (logger.load) logger.s << "addr=" << setw(6) << setfill('0') << oct << addr << logger.endl;
+      if (logger.load) logger.s << "wc=" << wc << logger.endl;
 
       unsigned zeroCount;
 
@@ -410,7 +410,7 @@ struct KMState {
 
 	if (zeroCount == 0) zeroCount = 64*1024;
 
-	if (logger.load) logger.s << "zeroCount=0" << oct << zeroCount << endl;
+	if (logger.load) logger.s << "zeroCount=0" << oct << zeroCount << logger.endl;
 
 	inS.ignore(numeric_limits<streamsize>::max(), '\n');
 
@@ -440,7 +440,8 @@ struct KMState {
 	  if (a < lowestAddr) lowestAddr = a;
 
 	  if (logger.load) {
-	    logger.s << "mem[" << a36.fmtVMA() << "]=" << w36.fmt36() << " " << w36.disasm() << endl;
+	    logger.s << "mem[" << a36.fmtVMA() << "]=" << w36.fmt36() << " " << w36.disasm()
+		     << logger.endl;
 	  }
 
 	  memP[a].u = w;
@@ -450,7 +451,8 @@ struct KMState {
 	break;
       
       default:
-	logger.s << "ERROR: Unknown record type '" << recType << "' in file '" << fileNameP << "'" << endl;
+	logger.s << "ERROR: Unknown record type '" << recType << "' in file '" << fileNameP << "'"
+		 << logger.endl;
 	break;      
       }
     }

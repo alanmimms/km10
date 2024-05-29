@@ -23,7 +23,7 @@ using namespace std;
 
 class KM10 {
 public:
-  KMState state;
+  KMState &state;
 
 
   struct APRDevice: Device {
@@ -650,9 +650,9 @@ public:
       // When we XCT we have already set PC to point to the
       // instruction to be XCTed and nextPC is pointing after the XCT.
 
-      if (nInsns++ > logger.maxInsns) {
+      if (nInsns++ >= logger.maxInsns) {
 	cerr << "[" << dec << logger.maxInsns << " instructions executed at pc="
-	     << state.pc.fmtVMA() << "]" << endl;
+	     << state.pc.fmtVMA() << "]" << logger.endl;
 	state.running = false;
 	break;
       }
@@ -876,7 +876,7 @@ public:
 	bool mem = logger.mem;
 
 	logger.mem = false;
-	static const string prefix{"\n                                                 ; "};
+	const string prefix{logger.endl + "                                                 ; "};
 
 	do {
 	  W36 srcA(ea.lhu, ac.lhu);
@@ -931,7 +931,7 @@ public:
 	  break;
 
 	case 004:		// HALT
-	  cerr << "[HALT at " << state.pc.fmtVMA() << "]" << endl;
+	  cerr << "[HALT at " << state.pc.fmtVMA() << "]" << logger.endl;
 	  state.running = false;
 	  break;
 
@@ -2122,7 +2122,7 @@ public:
       }
 
       state.pc = nextPC;
-      if (logger.pc || logger.mem) logger.s << endl;
+      if (logger.pc || logger.mem) logger.s << logger.endl;
     } while (state.running);
 
   BailForNow:

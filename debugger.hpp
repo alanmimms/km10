@@ -2,8 +2,10 @@
 
 #include <string>
 #include <iostream>
+#include <string_view>
 
 using namespace std;
+
 
 #include "w36.hpp"
 #include "km10.hpp"
@@ -22,12 +24,13 @@ struct Debugger {
 
   void debug() {
     string line;
+    vector<string> words;
     bool done{false};
     bool cmdMatch;
 
     auto cmd = [&](const char *s1, const char *s2, auto handler) {
 
-      if (line.rfind(s1, 0) == 0 || (s2 != nullptr && line.rfind(s2, 0) == 0)) {
+      if (words[0].rfind(s1, 0) == 0 || (s2 != nullptr && words[0].rfind(s2, 0) == 0)) {
 	handler();
 	cmdMatch = true;
       }
@@ -41,29 +44,49 @@ struct Debugger {
 )";
     };
 
-    cout << "[KM-10 debugger]" << endl;
+    cout << "[KM-10 debugger]" << logger.endl;
 
     const string prompt{"km10> "};
+    string prevLine{" "};
 
     while (!done) {
       cmdMatch = false;
       cout << prompt << flush;
       getline(cin, line);
 
+      if (line.length() == 0) {
+	line = prevLine;
+      } else {
+	prevLine = line;
+      }
+
+      words.clear();
+
+      for (stringstream ss(line); !ss.eof(); ) {
+	string s;
+	ss >> s;
+	if (s.length() > 0) words.push_back(s);
+      }
+
+      cout << "Words: ";
+      for (auto &&w: words) cout << w << " ";
+      cout << logger.endl;
+
       cmd("quit", "q", [&]() {done = true;});
 
       cmd("acs", nullptr, [&]() {
 
 	for (int k=0; k < 020; ++k) {
-	  cout << "ac" << oct << setw(2) << k << ": " << state.AC[k].fmt36() << endl;
+	  cout << "ac" << oct << setw(2) << k << ": " << state.AC[k].fmt36() << logger.endl;
 	}
       });
 
       cmd("step", "s", [&]() {
-	state.running = false;
+	int n = words.size() > 1 ? stoi(words[1]) : 1;
+	cout << "Step " << n << " instructions" << logger.endl;
+	logger.maxInsns = n;
+	state.running = true;
 	km10.emulate();
-	cout << "\r\n" << flush;
-	done = true;
       });
 
       cmd("help", nullptr, doHelp);
@@ -71,6 +94,6 @@ struct Debugger {
       if (!cmdMatch) doHelp();
     }
 
-    cout << "[exiting]" << endl;
+    cout << "[exiting]" << logger.endl;
   }
 };

@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
   logger.ac = true;
   logger.pc = true;
   logger.mem = true;
-  logger.maxInsns = 1000;
+  logger.maxInsns = 5;
 
   KMState state(4 * 1024 * 1024);
 
@@ -37,13 +37,12 @@ int main(int argc, char *argv[]) {
 
   if (FLAGS_load != "none") {
     state.loadA10(FLAGS_load.c_str());
-    cerr << "[Loaded " << FLAGS_load << "  start=" << state.pc.fmtVMA() << "]" << endl;
+    cerr << "[Loaded " << FLAGS_load << "  start=" << state.pc.fmtVMA() << "]" << logger.endl;
   }
 
   KM10 km10(state, &dte);
 
   if (FLAGS_debug) {
-    state.running = false;
     Debugger dbg(km10, state);
     dbg.debug();
   } else {

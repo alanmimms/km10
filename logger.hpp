@@ -12,10 +12,12 @@ struct Logger {
 
 
   Logger(ostream &aStream = cout)
-    : s(aStream)
+    : s(aStream),
+      endl("\n")
   {}
 
   ostream &s;
+  string endl;
 
   // Logger
   void nyi() {
