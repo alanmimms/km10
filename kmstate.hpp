@@ -61,7 +61,7 @@ struct KMState {
       unsigned tr2: 1;
       unsigned afi: 1;
       unsigned pub: 1;
-      unsigned usrIO: 1;
+      unsigned uio: 1;
       unsigned usr: 1;
       unsigned fpd: 1;
       unsigned fov: 1;
@@ -88,6 +88,25 @@ struct KMState {
     };
 
     unsigned u: 18;
+
+    string toString() {
+      ostringstream ss;
+      ss << oct << setw(6) << setfill('0') << u;
+      if (ndv) ss << (usr ? " NDV" : " PCP");
+      if (fuf) ss << " FUF";
+      if (tr1) ss << " TR1";
+      if (tr2) ss << " TR2";
+      if (afi) ss << " AFI";
+      if (pub) ss << " PUB";
+      if (uio) ss << (usr ? " UIO" : " PCU");
+      if (usr) ss << " USR";
+      if (fpd) ss << " FPD";
+      if (fov) ss << " FOV";
+      if (cy1) ss << " CY1";
+      if (cy0) ss << " CY0";
+      if (ov ) ss << " OV";
+      return ss.str();
+    }
   } flags;
 
 

@@ -37,11 +37,22 @@ struct Debugger {
     };
 
     auto doHelp = [&]() {
-      cout << R"(Command line options:
-  --help	This help.
-  --debug	Start the debugger instead of running the loaded program (if any).
-  --load=<file>	Load the specified .A10 file or if 'none' is specified, load nothing.
-)";
+      cout << R"(
+  ac #          Dump a single AC (octal).
+  acs           Dump all 16 ACs.
+  c,continue    Continue execution at current PC.
+  ?,help        Display this help.
+  l,log [pc|ac|mem|load] Display logging flags or toggle a logging flag.
+  m,memory A N  Dump N (octal) words of memory starting at A (octal).
+  pc [N]        Dump PC and flags, or if N is specified set PC to N (octal).
+  s,step N      Step N (octal) instructions at current PC.
+  q,quit        Quit the KM10 simulator.
+)"sv.substr(1);	// ""
+    };
+
+    auto dumpAC = [&](int k) {
+      cout << "ac" << oct << setfill('0') << setw(2) << k << ": "
+	   << state.AC[k].fmt36() << logger.endl;
     };
 
     cout << "[KM-10 debugger]" << logger.endl;
@@ -68,17 +79,13 @@ struct Debugger {
 	if (s.length() > 0) words.push_back(s);
       }
 
-      cout << "Words: ";
-      for (auto &&w: words) cout << w << " ";
-      cout << logger.endl;
-
       COMMAND("quit", "q", [&]() {done = true;});
 
       COMMAND("ac", nullptr, [&]() {
 
 	try {
 	  int k = stoi(words[1], 0, 8);
-	  cout << "ac" << oct << setw(2) << k << ": " << state.AC[k].fmt36() << logger.endl;
+	  dumpAC(k);
 	} catch (exception &e) {
 	}
       });
@@ -86,11 +93,11 @@ struct Debugger {
       COMMAND("acs", nullptr, [&]() {
 
 	for (int k=0; k < 020; ++k) {
-	  cout << "ac" << oct << setw(2) << k << ": " << state.AC[k].fmt36() << logger.endl;
+	  dumpAC(k);
 	}
       });
 
-      COMMAND("m", nullptr, [&]() {
+      COMMAND("memory", "m", [&]() {
 
 	try {
 	  W36 a(stoll(words[1], 0, 8));
@@ -109,14 +116,58 @@ struct Debugger {
       });
 
       COMMAND("step", "s", [&]() {
-	int n = words.size() > 1 ? stoi(words[1]) : 1;
-	cout << "Step " << n << " instructions" << logger.endl;
-	logger.maxInsns = n;
+
+	try {
+	  logger.maxInsns = words.size() > 1 ? stoi(words[1], 0, 8) : 1;
+	} catch (exception &e) {
+	  logger.maxInsns = 1;
+	}
+
 	state.running = true;
 	km10.emulate();
+	cout << logger.endl;
       });
 
-      COMMAND("help", nullptr, doHelp);
+      COMMAND("log", "l", [&]() {
+
+	if (words.size() == 1) {
+	  cout << "Logging: ";
+	  if (logger.pc) cout << " pc";
+	  if (logger.ac) cout << " ac";
+	  if (logger.mem) cout << " mem";
+	  if (logger.load) cout << " load";
+	  cout << logger.endl;
+	} else {
+
+	  if (words[1] == "pc") logger.pc = !logger.pc;
+	  if (words[1] == "ac") logger.ac = !logger.ac;
+	  if (words[1] == "mem") logger.mem = !logger.mem;
+	  if (words[1] == "load") logger.load = !logger.load;
+	}
+      });
+
+      COMMAND("pc", nullptr, [&]() {
+
+	if (words.size() == 1) {
+	  cout << "Flags:  " << state.flags.toString() << logger.endl
+	       << "   PC: " << state.pc.fmtVMA() << logger.endl;
+	} else {
+
+	  try {
+	    state.pc.u = stoll(words[1], 0, 8);
+	  } catch (exception &e) {
+	  }
+	}
+      });
+
+      COMMAND("continue", "c", [&]() {
+	logger.maxInsns = 0;
+	state.running = true;
+	km10.emulate();
+	cout << logger.endl;
+      });
+
+      COMMAND("help", "?", doHelp);
 
       if (!cmdMatch) doHelp();
     }

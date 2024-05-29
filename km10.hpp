@@ -650,9 +650,8 @@ public:
       // When we XCT we have already set PC to point to the
       // instruction to be XCTed and nextPC is pointing after the XCT.
 
-      if (nInsns++ >= logger.maxInsns) {
-	cerr << "[" << dec << logger.maxInsns << " instructions executed at pc="
-	     << state.pc.fmtVMA() << "]" << logger.endl;
+      // Set maxInsns to zero for infinite.
+      if (logger.maxInsns != 0 && nInsns++ >= logger.maxInsns) {
 	state.running = false;
 	break;
       }
@@ -929,6 +928,8 @@ public:
 
 	default:
 	  logger.nyi();
+	  state.running = false;
+	  break;
 	}
 
 	break;
@@ -949,6 +950,7 @@ public:
 	  goto XCT_ENTRYPOINT;
 	} else {
 	  logger.nyi();
+	  state.running = false;
 	  break;
 	}
 
@@ -2002,6 +2004,7 @@ public:
 
 	    case W36::BLKO:	// WRFIL
 	      logger.nyi();
+	      state.running = false;
 	      break;
 
 	    case W36::CONO: {	// WRAPR
@@ -2043,10 +2046,12 @@ public:
 
 	    case W36::CONI:	// RDAPR
 	      logger.nyi();
+	      state.running = false;
 	      break;
 
 	    default:
 	      logger.nyi();
+	      state.running = false;
 	      break;
 	    }
 
@@ -2091,6 +2096,7 @@ public:
 
 	    default:
 	      logger.nyi();
+	      state.running = false;
 	      break;
 	    }
 
@@ -2106,7 +2112,7 @@ public:
 
 	} else {		// Non-I/O UUOs go here
 	  logger.nyi();
-	  goto BailForNow;
+	  state.running = false;
 	  break;
 	}
 	
@@ -2117,7 +2123,6 @@ public:
       if (logger.pc || logger.mem) logger.s << logger.endl;
     } while (state.running);
 
-  BailForNow:
     // Restore console to normal
     dteP->disconnect();
   }
