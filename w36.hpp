@@ -135,6 +135,19 @@ struct W36 {
   }
 
 
+  string dump() {
+    ostringstream s;
+    s << setfill('0')
+      << " " << setw(3) << op
+      << " " << setw(2) << ac
+      << " " << setw(1) << i
+      << " " << setw(2) << x
+      << " " << setw(6) << y
+      << "  " << disasm();
+    return s.str();
+  }
+
+
   // Disassembly of instruction words
   string disasm() {
     ostringstream s;

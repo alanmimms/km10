@@ -30,7 +30,7 @@ struct Debugger {
 
     auto cmd = [&](const char *s1, const char *s2, auto handler) {
 
-      if (words[0].rfind(s1, 0) == 0 || (s2 != nullptr && words[0].rfind(s2, 0) == 0)) {
+      if (words[0] == s1 || (s2 != nullptr && words[0] == s2)) {
 	handler();
 	cmdMatch = true;
       }
@@ -74,10 +74,37 @@ struct Debugger {
 
       cmd("quit", "q", [&]() {done = true;});
 
+      cmd("ac", nullptr, [&]() {
+
+	try {
+	  int k = stoi(words[1], 0, 8);
+	  cout << "ac" << oct << setw(2) << k << ": " << state.AC[k].fmt36() << logger.endl;
+	} catch (exception &e) {
+	}
+      });
+
       cmd("acs", nullptr, [&]() {
 
 	for (int k=0; k < 020; ++k) {
 	  cout << "ac" << oct << setw(2) << k << ": " << state.AC[k].fmt36() << logger.endl;
+	}
+      });
+
+      cmd("m", nullptr, [&]() {
+
+	try {
+	  W36 a(stoll(words[1], 0, 8));
+
+	  for (unsigned k=0, n=words.size() > 2 ? stoi(words[2], 0, 8) : 1;
+	       k < n;
+	       ++k)
+	    {
+	      W36 w(state.memGetN(a));
+	      cout << w.dump() << logger.endl;
+	      a = a + 1;
+	    }
+
+	} catch (exception &e) {
 	}
       });
 

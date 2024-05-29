@@ -657,15 +657,7 @@ public:
 	break;
       }
 
-      if (logger.pc) {
-	logger.s << setfill('0')
-		  << " " << setw(3) << iw.op
-		  << " " << setw(2) << iw.ac
-		  << " " << setw(1) << iw.i
-		  << " " << setw(2) << iw.x
-		  << " " << setw(6) << iw.y
-		  << "  " << iw.disasm();
-      }
+      if (logger.pc) logger.s << iw.dump();
 
       ea.u = state.getEA(iw.i, iw.x, iw.y);
 
