@@ -135,7 +135,31 @@ struct W36 {
   }
 
 
-  string dump() {
+  string sixbit() {
+    string s;
+
+    for (int k=30; k >= 0; k -= 6) {
+      s.push_back(((u >> k) & 077) + 32);
+    }
+
+    return s;
+  }
+
+
+  string ascii() {
+    string s;
+
+    for (int k=29; k >= 0; k -= 7) {
+      int ch = (u >> k) & 0177;
+      if (ch < ' ' || ch == 0177) ch = '?';
+      s.push_back(ch);
+    }
+
+    return s;
+  }
+
+
+  string dump(bool showCharForm=false) {
     ostringstream s;
     s << setfill('0')
       << " " << setw(3) << op
@@ -144,6 +168,12 @@ struct W36 {
       << " " << setw(2) << x
       << " " << setw(6) << y
       << "  " << disasm();
+
+    if (showCharForm) {
+      s << "  " << "/" << sixbit() << "/"
+	<< "  " << "'" << ascii() << "'";
+    }
+
     return s.str();
   }
 
