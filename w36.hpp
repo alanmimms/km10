@@ -79,8 +79,8 @@ struct W36 {
   // Constants
   static inline const auto halfOnes = 0777777u;
   static inline const auto allOnes = 07777777'777777ull;
-  static inline const uint64_t mostNegative = 1ull << 35;
-  static inline const int64_t signedMostNegative = 1ull << 35;
+  static inline const uint64_t bit0 = 1ull << 35;
+  static inline const int64_t signedBit0 = 1ull << 35;
 
   // Constructors
   W36(uint64_t w = 0) : u(w) {}
@@ -99,6 +99,7 @@ struct W36 {
 
   // Accessors
   operator uint64_t() {return u;}
+  int64_t extend() {return s < 0 ? (int64_t) s | ~0ull << 36 : s;}
 
   void putLH(unsigned aLH) {lhu = aLH;}
   void putRH(unsigned aRH) {rhu = aRH;}

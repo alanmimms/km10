@@ -329,14 +329,14 @@ public:
 
     function<W36(W36)> negate = [&](W36 src) -> W36 {
       W36 v(-src.s);
-      if (src.u == W36::mostNegative) state.flags.tr1 = state.flags.ov = state.flags.cy1 = 1;
+      if (src.u == W36::bit0) state.flags.tr1 = state.flags.ov = state.flags.cy1 = 1;
       if (src.u == 0) state.flags.cy0 = state.flags.cy1 = 1;
       return v;
     };
 
     function<W36(W36)> magnitude = [&](W36 src) -> W36 {
       W36 v(src.s < 0 ? -src.s : src.s);
-      if (src.u == W36::mostNegative) state.flags.tr1 = state.flags.ov = state.flags.cy1 = 1;
+      if (src.u == W36::bit0) state.flags.tr1 = state.flags.ov = state.flags.cy1 = 1;
       return v;
     };
 
@@ -476,22 +476,22 @@ public:
 
     function<W36(W36,W36)> addWord = [&](W36 s1, W36 s2) -> auto const {
       uint64_t sum = (uint64_t) s1.u + (uint64_t) s2.u;
-      if (sum >= W36::mostNegative) state.flags.tr1 = state.flags.ov = state.flags.cy1 = 1;
-      if ((int64_t) sum < -(int64_t) W36::mostNegative) state.flags.ov = state.flags.cy0 = 1;
+      if (sum >= W36::bit0) state.flags.tr1 = state.flags.ov = state.flags.cy1 = 1;
+      if ((int64_t) sum < -(int64_t) W36::bit0) state.flags.ov = state.flags.cy0 = 1;
       return sum;
     };
     
     function<W36(W36,W36)> subWord = [&](W36 s1, W36 s2) -> auto const {
       int64_t diff = (int64_t) s1.u - (int64_t) s2.u;
-      if (diff >= (int64_t) W36::mostNegative) state.flags.tr1 = state.flags.ov = state.flags.cy1 = 1;
-      if (diff < -(int64_t) W36::mostNegative) state.flags.ov = state.flags.cy0 = 1;
+      if (diff >= (int64_t) W36::bit0) state.flags.tr1 = state.flags.ov = state.flags.cy1 = 1;
+      if (diff < -(int64_t) W36::bit0) state.flags.ov = state.flags.cy0 = 1;
       return diff;
     };
     
     function<tuple<W36,W36>(W36,W36)> mulWord = [&](W36 s1, W36 s2) -> auto const {
       W72 prod = (int128_t) s1.s * (int128_t) s2.s;
 
-      if (s1.s == W36::signedMostNegative && s2.s == W36::signedMostNegative) {
+      if (s1.s == W36::signedBit0 && s2.s == W36::signedBit0) {
 	state.flags.tr1 = state.flags.ov = state.flags.cy1 = 1;
       }
 
@@ -501,18 +501,18 @@ public:
     function<W36(W36,W36)> imulWord = [&](W36 s1, W36 s2) -> auto const {
       int128_t prod = (int128_t) s1.s * (int128_t) s2.s;
 
-      if (s1.s == W36::signedMostNegative && s2.s == W36::signedMostNegative) {
+      if (s1.s == W36::signedBit0 && s2.s == W36::signedBit0) {
 	state.flags.tr1 = state.flags.ov = state.flags.cy1 = 1;
       }
 
-      return W36((prod < 0 ? W36::mostNegative : 0) | ((W36::allOnes >> 1) & prod));
+      return W36((prod < 0 ? W36::bit0 : 0) | ((W36::allOnes >> 1) & prod));
     };
     
     function<tuple<W36,W36>(W36,W36)> divWord = [&](W36 s1, W36 s2) -> auto const {
       int128_t d = (int128_t) s1.s / (int128_t) s2.s;
       int128_t r = (int128_t) s1.s % (int128_t) s2.s;
 
-      if (s1.s == W36::signedMostNegative && s2.s == W36::signedMostNegative) {
+      if (s1.s == W36::signedBit0 && s2.s == W36::signedBit0) {
 	state.flags.tr1 = state.flags.ov = state.flags.cy1 = 1;
       }
 
@@ -523,7 +523,7 @@ public:
       int128_t d = (int128_t) s1.s * (int128_t) s2.s;
       int128_t r = (int128_t) s1.s % (int128_t) s2.s;
 
-      if (s1.s == W36::signedMostNegative && s2.s == W36::signedMostNegative) {
+      if (s1.s == W36::signedBit0 && s2.s == W36::signedBit0) {
 	state.flags.tr1 = state.flags.ov = state.flags.cy1 = 1;
       }
 
@@ -617,7 +617,7 @@ public:
 	}
       } else {			// Decrement
 
-	if (v.u == W36::mostNegative) {
+	if (v.u == W36::bit0) {
 	  state.flags.tr1 = state.flags.ov = state.flags.cy0 = 1;
 	} else if (v.u != 0) {
 	  state.flags.cy0 = state.flags.cy1 = 1;
@@ -651,7 +651,7 @@ public:
       // instruction to be XCTed and nextPC is pointing after the XCT.
 
       // Set maxInsns to zero for infinite.
-      if (logger.maxInsns != 0 && nInsns++ >= logger.maxInsns) {
+      if (state.maxInsns != 0 && nInsns++ >= state.maxInsns) {
 	state.running = false;
 	break;
       }
@@ -814,13 +814,59 @@ public:
 	doBinOp2XX(memGet, acGet, divWord, bothPut2);
 	break;
 
+      case 0240: {		// ASH
+	int n = ea.rhs % 36;
+	W36 a(acGet());
+	auto aSigned{a.extend()};
+
+	W36 lostBits;
+
+	if (n > 0) {
+	  lostBits = a.u & ((1ull << n) - 1);
+	  a.s = aSigned >> n;
+	} else if (n < 0) {
+	  n = -n;
+	  lostBits = a.u & (W36::allOnes >> n);
+	  a.s = aSigned << n;
+	}
+
+	// Set flags. XXX not sure if these should be set for negative
+	// shift count. 1982_ProcRefMan.pdf p.97 is not clear.
+	if ((a.s > 0 && lostBits != 0) || (a.s < 0 && lostBits == 0))
+	  state.flags.tr1 = state.flags.ov = 1;
+
+	// Restore sign bit from before shift.
+	a.u = (aSigned & W36::bit0) | (a.u & ~W36::bit0);
+	acPut(a);
+	break;
+      }
+
+      case 0241: {		// ROT
+	int n = ea.rhs % 36;
+	W36 a(acGet());
+	W36 prev(a);
+
+	if (n > 0) {
+	  a.u <<= n;
+	  a.u |= prev >> (36 - n);
+	} else if (n < 0) {
+	  n = -n;
+	  a.u >>= n;
+	  a.u |= (prev << (36 - n)) & W36::allOnes;
+	}
+
+	acPut(a);
+	break;
+      }
+
       case 0242: {		// LSH
+	int n = ea.rhs % 36;
 	W36 a(acGet());
 
-	if (ea.rhs > 0)
-	  a.u <<= ea.rhs;
-	else if (ea.rhs < 0)
-	  a.u >>= -ea.rhs;
+	if (n > 0)
+	  a.u <<= n;
+	else if (n < 0)
+	  a.u >>= -n;
 
 	acPut(a);
 	break;
@@ -873,7 +919,7 @@ public:
 	  W36 srcA(ea.lhu, ac.lhu);
 	  W36 dstA(ea.lhu, ac.rhu);
 
-	  logger.s << prefix << "BLT src=" << srcA.vma << "  dst=" << dstA.vma;
+	  if (logger.mem) logger.s << prefix << "BLT src=" << srcA.vma << "  dst=" << dstA.vma;
 
 	  // Note this isn't bug-for-bug compatible with KL10. See
 	  // footnote [2] in 1982_ProcRefMan.pdf p.58. We do
@@ -885,7 +931,7 @@ public:
 	  acPut(ac);
 	} while (ac.rhu <= ea.rhu);
 
-	logger.s << prefix << "BLT at end ac=" << ac.fmt36();
+	if (logger.mem) logger.s << prefix << "BLT at end ac=" << ac.fmt36();
 	logger.mem = mem;
 	break;
       }
@@ -1992,7 +2038,7 @@ public:
       default:
 
 	if (iw.ioSeven == 7) {	// Only handle I/O instructions this way
-	  logger.s << " ; ioDev=" << oct << iw.ioDev << " ioOp=" << oct << iw.ioOp;
+	  if (logger.io) logger.s << " ; ioDev=" << oct << iw.ioDev << " ioOp=" << oct << iw.ioOp;
 
 	  switch (iw.ioDev) {
 	  case 000:		// APR
@@ -2066,7 +2112,7 @@ public:
 	      if (logger.mem) logger.s << " ; " << oct << ea.fmt18();
 
 	      if (pif.clearPI) {
-		logger.s << " ; CLEAR I/O SYSTEM";
+		if (logger.io) logger.s << " ; CLEAR I/O SYSTEM";
 		Device::clearAll();
 	      } else {
 		pi.state.writeEvenParityDir = pif.writeEvenParityDir;
@@ -2120,7 +2166,7 @@ public:
       }
 
       state.pc = nextPC;
-      if (logger.pc || logger.mem) logger.s << logger.endl;
+      if (logger.pc || logger.mem || logger.ac || logger.io || logger.dte) logger.s << logger.endl;
     } while (state.running);
 
     // Restore console to normal

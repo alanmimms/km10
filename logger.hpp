@@ -1,14 +1,16 @@
 #pragma once
 #include <iostream>
+#include <set>
 
 
 struct Logger {
   bool running;
-  bool pc;
   bool ac;
+  bool io;
+  bool pc;
+  bool dte;
   bool mem;
   bool load;
-  uint64_t maxInsns;
 
 
   Logger(ostream &aStream = cout)
@@ -18,6 +20,8 @@ struct Logger {
 
   ostream &s;
   string endl;
+
+  inline static const std::set<string> flags{"ac","io","pc","dte","mem","load"};
 
   // Logger
   void nyi() {

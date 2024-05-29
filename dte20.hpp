@@ -60,8 +60,6 @@ struct DTE20: Device {
 
     consoleIOThread = thread(&consoleIOLoop);
     isConnected = true;
-
-//    cout << "[DTE connected]" << logger.endl << flush;
   }
 
 
@@ -76,7 +74,6 @@ struct DTE20: Device {
       isConnected = false;
       if (isRaw) setNonRAW();
       logger.endl = "\n";
-//      cout << "[DTE disconnected]" << logger.endl << flush;
     }
   }
 
@@ -163,20 +160,20 @@ struct DTE20: Device {
 
   // I/O instruction handlers
   virtual void clearIO() {
-    logger.s << " ; DTE CLEAR IO";
+    if (logger.dte) logger.s << " ; DTE CLEAR IO";
   }
 
 
   virtual void doCONO(W36 iw, W36 ea) {
     CONOMask req(ea);
-    logger.s << " ; DTE CONO " << oct << ea;
+    if (logger.dte) logger.s << " ; DTE CONO " << oct << ea;
 
     if (req.to11Doorbell) {
       char buf;
 
       MonitorCommand mc{stateP->eptP->DTEto11Arg.rhu};
 
-      logger.s << " to11DoorBell arg=" << oct << stateP->eptP->DTEto11Arg.rhu;
+      if (logger.dte) logger.s << " to11DoorBell arg=" << oct << stateP->eptP->DTEto11Arg.rhu;
 
       switch (mc.fn) {
       case 0:			// XXX This should not be required?!
@@ -208,7 +205,7 @@ struct DTE20: Device {
 
 
   virtual void doCONI(W36 iw, W36 ea) {
-    logger.s << " ; DTE CONI";
+    if (logger.dte) logger.s << " ; DTE CONI";
   }
 
 
@@ -247,7 +244,6 @@ struct DTE20: Device {
       // Handle messages from our parent thread (usually we're just
       // told to fuck off and die).
       if ((polls[1].revents & POLLIN) != 0) {
-//	cerr << logger.endl << "[closing down DTE20]" << logger.endl << flush;
 	return;			// XXX for now just fuck off on any pipe data
       }
     }

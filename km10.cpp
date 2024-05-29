@@ -28,7 +28,6 @@ int main(int argc, char *argv[]) {
   logger.ac = true;
   logger.pc = true;
   logger.mem = true;
-  logger.maxInsns = 5;
 
   KMState state(4 * 1024 * 1024);
 
@@ -40,6 +39,7 @@ int main(int argc, char *argv[]) {
     cerr << "[Loaded " << FLAGS_load << "  start=" << state.pc.fmtVMA() << "]" << logger.endl;
   }
 
+  state.maxInsns = 0;
   KM10 km10(state, &dte);
 
   if (FLAGS_debug) {

@@ -15,7 +15,8 @@ struct KMState {
   KMState(unsigned nWords)
     : pc(0),
       flags(0),
-      AC(ACbanks[0])
+      AC(ACbanks[0]),
+      maxInsns(0)
   {
     physicalP = (W36 *) mmap(nullptr,
 			     nWords * sizeof(uint64_t),
@@ -223,6 +224,7 @@ struct KMState {
 
 
   W36 *AC;
+  uint64_t maxInsns;
 
   W36 acGetN(unsigned n) {
     W36 value = AC[n];

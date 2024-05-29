@@ -42,7 +42,7 @@ struct Debugger {
   acs           Dump all 16 ACs.
   c,continue    Continue execution at current PC.
   ?,help        Display this help.
-  l,log [pc|ac|mem|load] Display logging flags or toggle a logging flag.
+  l,log [ac|io|pc|dte|mem|load|off] Display logging flags or toggle a logging flag or turn all off.
   m,memory A N  Dump N (octal) words of memory starting at A (octal).
   pc [N]        Dump PC and flags, or if N is specified set PC to N (octal).
   s,step N      Step N (octal) instructions at current PC.
@@ -118,9 +118,9 @@ struct Debugger {
       COMMAND("step", "s", [&]() {
 
 	try {
-	  logger.maxInsns = words.size() > 1 ? stoi(words[1], 0, 8) : 1;
+	  state.maxInsns = words.size() > 1 ? stoi(words[1], 0, 8) : 1;
 	} catch (exception &e) {
-	  logger.maxInsns = 1;
+	  state.maxInsns = 1;
 	}
 
 	state.running = true;
@@ -132,17 +132,25 @@ struct Debugger {
 
 	if (words.size() == 1) {
 	  cout << "Logging: ";
-	  if (logger.pc) cout << " pc";
 	  if (logger.ac) cout << " ac";
+	  if (logger.io) cout << " io";
+	  if (logger.pc) cout << " pc";
+	  if (logger.dte) cout << " dte";
 	  if (logger.mem) cout << " mem";
 	  if (logger.load) cout << " load";
 	  cout << logger.endl;
 	} else {
 
-	  if (words[1] == "pc") logger.pc = !logger.pc;
-	  if (words[1] == "ac") logger.ac = !logger.ac;
-	  if (words[1] == "mem") logger.mem = !logger.mem;
-	  if (words[1] == "load") logger.load = !logger.load;
+	  if (words[1] == "off") {
+	    logger.ac = logger.io = logger.pc = logger.dte = logger.mem = logger.load = false;
+	  } else {
+	    if (words[1] == "ac") logger.ac = !logger.ac;
+	    if (words[1] == "io") logger.ac = !logger.io;
+	    if (words[1] == "pc") logger.pc = !logger.pc;
+	    if (words[1] == "dte") logger.mem = !logger.dte;
+	    if (words[1] == "mem") logger.mem = !logger.mem;
+	    if (words[1] == "load") logger.load = !logger.load;
+	  }
 	}
       });
 
@@ -161,7 +169,7 @@ struct Debugger {
       });
 
       COMMAND("continue", "c", [&]() {
-	logger.maxInsns = 0;
+	state.maxInsns = 0;
 	state.running = true;
 	km10.emulate();
 	cout << logger.endl;
