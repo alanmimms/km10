@@ -221,7 +221,7 @@ struct KMState {
 
   void acPutN(W36 value, unsigned acN) {
     AC[acN] = value;
-    if (logger.mem) logger.s << " ; ac" << oct << acN << "<-" << value.fmt36();
+    if (logger.mem) logger.s << " ; ac" << oct << acN << "=" << value.fmt36();
   }
 
   W36 memGetN(W36 a) {
@@ -237,7 +237,7 @@ struct KMState {
     else 
       memP[a.u] = value;
 
-    if (logger.mem) logger.s << " ; " << a.fmtVMA() << "<-" << value.fmt36();
+    if (logger.mem) logger.s << " ; " << a.fmtVMA() << "=" << value.fmt36();
   }
 
 
