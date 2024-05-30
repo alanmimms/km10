@@ -25,10 +25,6 @@ int main(int argc, char *argv[]) {
   assert(sizeof(KMState::UserProcessTable) == 512 * 8);
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
-  logger.ac = true;
-  logger.pc = true;
-  logger.mem = true;
-
   KMState state(4 * 1024 * 1024);
 
   DTE20 dte{040, "DTE", state};

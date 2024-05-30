@@ -54,6 +54,10 @@ struct KMState {
   // The "RUN flop"
   volatile atomic<bool> running;
 
+  // When debugging, we display different logging stuff (e.g., for
+  // "step" command prompt).
+  bool debugging;
+
   W36 pc;
   W36 ACbanks[8][16];
 

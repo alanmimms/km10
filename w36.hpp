@@ -162,7 +162,9 @@ struct W36 {
 
   string dump(bool showCharForm=false) {
     ostringstream s;
-    s << setfill('0')
+
+    s << fmt36()
+      << "  " << setfill('0')
       << " " << setw(3) << op
       << " " << setw(2) << ac
       << " " << setw(1) << i
@@ -659,8 +661,7 @@ struct W36 {
       case 0123: s << "EXTEND"; break;
 
       default:
-	s << "??? " << setfill('0') << setw(3) << oct << op;
-	break;
+	return s.str();
       }
     }
 

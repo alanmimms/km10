@@ -266,12 +266,18 @@ public:
 
   
   ////////////////////////////////////////////////////////////////////////////////
-  // The instruction emulator. Call this to start or continue running.
+  // The instruction emulator. Call this to start, step, or continue
+  // running.
   void emulate() {
     W36 iw{};
     W36 ea{};
     W36 nextPC = state.pc;
     W36 tmp;
+    uint64_t nInsnsThisTime = 0;
+
+    auto logFlow = [&](const char *msg) {
+      if (logger.pc) logger.s << " [" << msg << "]";
+    };
 
     function<W36()> acGet = [&]() -> W36 {
       return state.acGetN(iw.ac);
@@ -356,7 +362,7 @@ public:
     auto doJUMP = [&](function<bool(W36)> &condF) -> void {
 
       if (condF(acGet())) {
-	if (logger.mem) logger.s << " [jump]";
+	logFlow("jump");
 	nextPC.rhu = ea;
       }
     };
@@ -365,7 +371,7 @@ public:
       W36 eaw = memGet();
 
       if (condF(eaw)) {
-	if (logger.mem) logger.s << " [skip]";
+	logFlow("skip");
 	++nextPC.rhu;
       }
       
@@ -395,7 +401,7 @@ public:
       W36 eaw = doGetF() & ea;
 
       if (condF(eaw)) {
-	if (logger.mem) logger.s << " [skip]";
+	logFlow("skip");
 	++nextPC.rhu;
       }
       
@@ -588,7 +594,7 @@ public:
     {
 
       if (condF(doGetSrc1F(), doGetSrc2F())) {
-	if (logger.mem) logger.s << " [skip]";
+	logFlow("skip");
 	++nextPC.rhu;
       }
     };
@@ -628,18 +634,18 @@ public:
     };
 
 
+    ////////////////////////////////////////////////////////////////
     // Connect our DTE20 (put console into raw mode)
     dteP->connect();
 
+    if ((state.flags.tr1 || state.flags.tr2) && pag.pagerEnabled()) {
+      iw = state.flags.tr1 ? state.eptP->trap1Insn : state.eptP->stackOverflowInsn;
+    } else {
+      iw = state.memGetN(state.pc.vma);
+    }
+
     // The instruction loop
     do {
-
-      if ((state.flags.tr1 || state.flags.tr2) && pag.pagerEnabled()) {
-	iw = state.flags.tr1 ? state.eptP->trap1Insn : state.eptP->stackOverflowInsn;
-      } else {
-	iw = state.memGetN(state.pc.vma);
-      }
-
       nextPC.lhu = state.pc.lhu;
       nextPC.rhu = state.pc.rhu + 1;
 
@@ -652,12 +658,13 @@ public:
 	  state.executeBPs.contains(state.pc.vma))
       {
 	state.running = false;
-	break;
+	if (nInsnsThisTime != 0) break;
       }
 
       ++state.nInsns;
+      ++nInsnsThisTime;
 
-      if (logger.pc) logger.s << iw.dump();
+      if (!state.debugging && logger.pc) logger.s << iw.dump();
 
       ea.u = state.getEA(iw.i, iw.x, iw.y);
 
@@ -943,7 +950,7 @@ public:
 	acPut(tmp);
 
 	if (tmp.s >= 0) {
-	  if (logger.mem) logger.s << " [jump]";
+	  logFlow("jump");
 	  nextPC = ea;
 	}
 
@@ -955,7 +962,7 @@ public:
 	acPut(tmp);
 
 	if (tmp.s < 0) {
-	  if (logger.mem) logger.s << " [jump]";
+	  logFlow("jump");
 	  nextPC = ea;
 	}
 
@@ -2182,6 +2189,12 @@ public:
       }
 
       state.pc = nextPC;
+
+      if ((state.flags.tr1 || state.flags.tr2) && pag.pagerEnabled()) {
+	iw = state.flags.tr1 ? state.eptP->trap1Insn : state.eptP->stackOverflowInsn;
+      } else {
+	iw = state.memGetN(state.pc.vma);
+      }
 
       if (logger.pc || logger.mem || logger.ac || logger.io || logger.dte)
 	logger.s << logger.endl << flush;
