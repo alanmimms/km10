@@ -13,17 +13,37 @@ struct Logger {
   bool load;
 
 
-  Logger(ostream &aStream = cout)
-    : s(aStream),
-      endl("\n")
-  {}
+  Logger()
+    : endl("\n")
+  {
+    logToTTY();
+  }
 
-  ostream &s;
+  ofstream s;
   string endl;
+  string destination;
+
 
   inline static const std::set<string> flags{"ac","io","pc","dte","mem","load"};
 
+
   // Logger
+  void logToFile(string name) {
+    if (s.is_open()) s.close();
+    s.open(name);
+    destination = name;
+    endl = "\n";
+  }
+
+
+  void logToTTY() {
+    if (s.is_open()) s.close();
+    s.open("/dev/tty");
+    destination = "tty";
+    endl = "\r\n";
+  }
+
+
   void nyi() {
     s << " [not yet implemented]";
   }

@@ -8,7 +8,6 @@
 #include <ostream>
 #include <limits>
 #include <functional>
-#include <set>
 
 using namespace std;
 
@@ -273,8 +272,6 @@ public:
     W36 ea{};
     W36 nextPC = state.pc;
     W36 tmp;
-
-    uint64_t nInsns = 0;
 
     function<W36()> acGet = [&]() -> W36 {
       return state.acGetN(iw.ac);
@@ -651,10 +648,14 @@ public:
       // instruction to be XCTed and nextPC is pointing after the XCT.
 
       // Set maxInsns to zero for infinite.
-      if (state.maxInsns != 0 && nInsns++ >= state.maxInsns) {
+      if ((state.maxInsns != 0 && state.nInsns >= state.maxInsns) ||
+	  state.executeBPs.contains(state.pc.vma))
+      {
 	state.running = false;
 	break;
       }
+
+      ++state.nInsns;
 
       if (logger.pc) logger.s << iw.dump();
 
@@ -822,17 +823,17 @@ public:
 	W36 lostBits;
 
 	if (n > 0) {
-	  lostBits = a.u & ((1ull << n) - 1);
+	  lostBits.u = a.u & ((1ull << n) - 1);
 	  a.s = aSigned >> n;
 	} else if (n < 0) {
 	  n = -n;
-	  lostBits = a.u & (W36::allOnes >> n);
+	  lostBits.u = a.u & (W36::allOnes >> n);
 	  a.s = aSigned << n;
 	}
 
 	// Set flags. XXX not sure if these should be set for negative
 	// shift count. 1982_ProcRefMan.pdf p.97 is not clear.
-	if ((a.s > 0 && lostBits != 0) || (a.s < 0 && lostBits == 0))
+	if ((a.s > 0 && lostBits.u != 0) || (a.s < 0 && lostBits.u == 0))
 	  state.flags.tr1 = state.flags.ov = 1;
 
 	// Restore sign bit from before shift.
@@ -875,7 +876,7 @@ public:
       case 0243: 		// JFFO
 	tmp = acGet();
 
-	if (tmp != 0) {
+	if (tmp.s != 0) {
 	  unsigned count = 0;
 
 	  while (tmp.s >= 0) {
@@ -966,6 +967,21 @@ public:
 	case 000:		// JRST
 	  nextPC.u = ea.u;
 	  break;
+
+	case 002: {		// JRSTF
+	  KMState::ProgramFlags newFlags{ea.pcFlags};
+
+	  // Disallow clearing of USR flag from user mode.
+	  newFlags.usr = state.flags.usr;
+
+	  // Disallow clearing of PUB unless JRSTF is running in
+	  // executive mode and switching to user mode.
+	  if (newFlags.pub || state.flags.usr || !newFlags.usr) newFlags.pub = 1;
+
+	  state.flags = newFlags.u;
+	  nextPC.u = ea.vma;
+	  break;
+	}
 
 	case 004:		// HALT
 	  cerr << "[HALT at " << state.pc.fmtVMA() << "]" << logger.endl;
@@ -2166,7 +2182,10 @@ public:
       }
 
       state.pc = nextPC;
-      if (logger.pc || logger.mem || logger.ac || logger.io || logger.dte) logger.s << logger.endl;
+
+      if (logger.pc || logger.mem || logger.ac || logger.io || logger.dte)
+	logger.s << logger.endl << flush;
+
     } while (state.running);
 
     // Restore console to normal

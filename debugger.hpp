@@ -3,12 +3,23 @@
 #include <string>
 #include <iostream>
 #include <string_view>
+#include <set>
+
+#include <signal.h>
 
 using namespace std;
 
 
 #include "w36.hpp"
 #include "km10.hpp"
+
+
+static KMState *stateForHandlerP;
+
+
+static void sigintHandler(int signum) {
+  stateForHandlerP->running = false;
+}
 
 
 struct Debugger {
@@ -38,14 +49,21 @@ struct Debugger {
 
     auto doHelp = [&]() {
       cout << R"(
+  abp [A]       Set address breakpoint after any access to address A or display list of breakpoints.
+                Use -A to remove an existing address breakpoint or 'clear' to clear all breakpoints.
   ac #          Dump a single AC (octal).
   acs           Dump all 16 ACs.
+  bp [A]        Set breakpoint before execution of address A or display list of breakpoints.
+                Use -A to remove existing breakpoint or 'clear' to clear all breakpoints.
   c,continue    Continue execution at current PC.
   ?,help        Display this help.
-  l,log [ac|io|pc|dte|mem|load|off] Display logging flags or toggle a logging flag or turn all off.
+  l,log [ac|io|pc|dte|mem|load|off] Display logging flags or toggle one flag or turn all off.
+  l,log file [FILENAME] Log to FILENAME or 'km10.log' if not specified (overwriting if it exists).
+  l,log tty     Log to console.
   m,memory A N  Dump N (octal) words of memory starting at A (octal).
   pc [N]        Dump PC and flags, or if N is specified set PC to N (octal).
   s,step N      Step N (octal) instructions at current PC.
+  stats         Display emulator statistics.
   q,quit        Quit the KM10 simulator.
 )"sv.substr(1);	// ""
     };
@@ -55,7 +73,41 @@ struct Debugger {
 	   << state.AC[k].fmt36() << logger.endl;
     };
 
-    cout << "[KM-10 debugger]" << logger.endl;
+    auto handleBPCommand = [&](unordered_set<unsigned> &s) {
+
+      if (words.size() == 1) {
+
+	for (auto bp: s) {
+	  cout << W36(bp).fmtVMA() << logger.endl;
+	}
+
+	cout << flush;
+      } else if (words.size() > 1) {
+
+	if (words[1] == "clear") {
+	  s.clear();
+	} else {
+
+	  try {
+	    long a = stol(words[1], 0, 8);
+
+	    if (a < 0) {
+	      s.erase((unsigned) -a);
+	    } else {
+	      s.insert((unsigned) a);
+	    }
+
+	  } catch (exception &e) {
+	  }
+	}
+      }
+    };
+
+    ////////////////////////////////////////////////////////////////
+    cout << "[KM-10 debugger]" << logger.endl << flush;
+
+    stateForHandlerP = &state;
+    signal(SIGINT, sigintHandler);
 
     const string prompt{"km10> "};
     string prevLine{" "};
@@ -81,6 +133,8 @@ struct Debugger {
 
       COMMAND("quit", "q", [&]() {done = true;});
 
+      COMMAND("abp", nullptr, [&]() {handleBPCommand(state.addressBPs);});
+
       COMMAND("ac", nullptr, [&]() {
 
 	try {
@@ -97,6 +151,8 @@ struct Debugger {
 	}
       });
 
+      COMMAND("bp", nullptr, [&]() {handleBPCommand(state.executeBPs);});
+
       COMMAND("memory", "m", [&]() {
 
 	try {
@@ -107,7 +163,7 @@ struct Debugger {
 	       ++k)
 	    {
 	      W36 w(state.memGetN(a));
-	      cout << w.dump(true) << logger.endl;
+	      cout << w.dump(true) << logger.endl << flush;
 	      a = a + 1;
 	    }
 
@@ -125,13 +181,13 @@ struct Debugger {
 
 	state.running = true;
 	km10.emulate();
-	cout << logger.endl;
+	logger.s << logger.endl << flush;
       });
 
       COMMAND("log", "l", [&]() {
 
 	if (words.size() == 1) {
-	  cout << "Logging: ";
+	  cout << "Logging to " << logger.destination << ": ";
 	  if (logger.ac) cout << " ac";
 	  if (logger.io) cout << " io";
 	  if (logger.pc) cout << " pc";
@@ -139,10 +195,14 @@ struct Debugger {
 	  if (logger.mem) cout << " mem";
 	  if (logger.load) cout << " load";
 	  cout << logger.endl;
-	} else {
+	} else if (words.size() >= 2) {
 
 	  if (words[1] == "off") {
 	    logger.ac = logger.io = logger.pc = logger.dte = logger.mem = logger.load = false;
+	  } else if (words[1] == "file") {
+	    logger.logToFile(words.size() == 3 ? words[2] : "km10.log");
+	  } else if (words[1] == "tty") {
+	    logger.logToTTY();
 	  } else {
 	    if (words[1] == "ac") logger.ac = !logger.ac;
 	    if (words[1] == "io") logger.ac = !logger.io;
@@ -152,6 +212,8 @@ struct Debugger {
 	    if (words[1] == "load") logger.load = !logger.load;
 	  }
 	}
+
+	cout << flush;
       });
 
       COMMAND("pc", nullptr, [&]() {
@@ -166,13 +228,19 @@ struct Debugger {
 	  } catch (exception &e) {
 	  }
 	}
+
+	cout << flush;
       });
 
       COMMAND("continue", "c", [&]() {
 	state.maxInsns = 0;
 	state.running = true;
 	km10.emulate();
-	cout << logger.endl;
+	logger.s << logger.endl << flush;
+      });
+
+      COMMAND("stats", nullptr, [&]() {
+	cout << "Instructions: " << state.nInsns << logger.endl << flush;
       });
 
       COMMAND("help", "?", doHelp);
@@ -180,6 +248,6 @@ struct Debugger {
       if (!cmdMatch) doHelp();
     }
 
-    cout << "[exiting]" << logger.endl;
+    cout << "[exiting]" << logger.endl << flush;
   }
 };

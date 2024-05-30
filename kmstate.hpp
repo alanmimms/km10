@@ -2,8 +2,12 @@
 #include <iostream>
 #include <fstream>
 #include <limits>
+#include <atomic>
+#include <unordered_set>
+
 #include <assert.h>
 #include <sys/mman.h>
+#include <signal.h>
 
 using namespace std;
 
@@ -14,9 +18,11 @@ using namespace std;
 struct KMState {
   KMState(unsigned nWords)
     : pc(0),
-      flags(0),
+      flags(0u),
       AC(ACbanks[0]),
-      maxInsns(0)
+      maxInsns(0),
+      addressBPs{},
+      executeBPs{}
   {
     physicalP = (W36 *) mmap(nullptr,
 			     nWords * sizeof(uint64_t),
@@ -46,10 +52,9 @@ struct KMState {
   W36 *userMemP;
   
   // The "RUN flop"
-  bool running;
+  volatile atomic<bool> running;
 
   W36 pc;
-
   W36 ACbanks[8][16];
 
   union ATTRPACKED ProgramFlags {
@@ -90,6 +95,10 @@ struct KMState {
 
     unsigned u: 18;
 
+    ProgramFlags(unsigned newFlags) {
+      u = newFlags;
+    }
+
     string toString() {
       ostringstream ss;
       ss << oct << setw(6) << setfill('0') << u;
@@ -115,7 +124,7 @@ struct KMState {
     struct ATTRPACKED {
       unsigned processorDependent: 18; // What does KL10 use here?
       unsigned: 1;
-      ProgramFlags flags;
+      unsigned flags: 18;
       unsigned pc: 30;
       unsigned: 6;
     };
@@ -225,6 +234,9 @@ struct KMState {
 
   W36 *AC;
   uint64_t maxInsns;
+  uint64_t nInsns;
+  unordered_set<unsigned> addressBPs;
+  unordered_set<unsigned> executeBPs;
 
   W36 acGetN(unsigned n) {
     W36 value = AC[n];
@@ -248,6 +260,7 @@ struct KMState {
   W36 memGetN(W36 a) {
     W36 value = a.u < 020 ? acGetEA(a.u) : memP[a.u];
     if (logger.mem) logger.s << " ; " << a.fmtVMA() << ": " << value.fmt36();
+    if (addressBPs.contains(a.vma)) running = false;
     return value;
   }
 
@@ -259,6 +272,7 @@ struct KMState {
       memP[a.u] = value;
 
     if (logger.mem) logger.s << " ; " << a.fmtVMA() << "=" << value.fmt36();
+    if (addressBPs.contains(a.vma)) running = false;
   }
 
 
