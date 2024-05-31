@@ -22,6 +22,7 @@ struct Logger {
   ofstream s;
   string endl;
   string destination;
+  bool loggingToFile;
 
 
   inline static const std::set<string> flags{"ac","io","pc","dte","mem","load"};
@@ -33,6 +34,7 @@ struct Logger {
     s.open(name);
     destination = name;
     endl = "\n";
+    loggingToFile = true;
   }
 
 
@@ -41,6 +43,7 @@ struct Logger {
     s.open("/dev/tty");
     destination = "tty";
     endl = "\r\n";
+    loggingToFile = false;
   }
 
 

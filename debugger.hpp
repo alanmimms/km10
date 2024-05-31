@@ -1,3 +1,6 @@
+// TODO:
+// * Add command capability to change ACs, memory, PC, flags.
+// * Add history ring buffer for PC and a way to dump it.
 #pragma once
 
 #include <string>
@@ -48,7 +51,7 @@ struct Debugger {
     };
 
     auto doHelp = [&]() {
-      logger.s << R"(
+      cout << R"(
   abp [A]       Set address breakpoint after any access to address A or display list of breakpoints.
                 Use -A to remove an existing address breakpoint or 'clear' to clear all breakpoints.
   ac,acs [N]    Dump a single AC N (octal) or all of them.
@@ -68,7 +71,7 @@ struct Debugger {
     };
 
     auto dumpAC = [&](int k) {
-      logger.s << oct << setfill(' ') << setw(2) << k << ": " << state.AC[k].dump() << logger.endl;
+      cout << oct << setfill(' ') << setw(2) << k << ": " << state.AC[k].dump() << logger.endl;
     };
 
     auto dumpACs = [&]() {
@@ -81,10 +84,10 @@ struct Debugger {
       if (words.size() == 1) {
 
 	for (auto bp: s) {
-	  logger.s << W36(bp).fmtVMA() << logger.endl;
+	  cout << W36(bp).fmtVMA() << logger.endl;
 	}
 
-	logger.s << flush;
+	cout << flush;
       } else if (words.size() > 1) {
 
 	if (words[1] == "clear") {
@@ -116,7 +119,7 @@ struct Debugger {
 
 
     ////////////////////////////////////////////////////////////////
-    logger.s << "[KM-10 debugger]" << logger.endl << flush;
+    cout << "[KM-10 debugger]" << logger.endl << flush;
 
     stateForHandlerP = &state;
     signal(SIGINT, sigintHandler);
@@ -127,9 +130,9 @@ struct Debugger {
     while (!done) {
       W36 iw(state.memGetN(state.pc));
       // Show next instruction to execute.
-      logger.s << state.pc.fmtVMA() << ": " << iw.dump();
+      cout << state.pc.fmtVMA() << ": " << iw.dump();
 
-      logger.s << prompt << flush;
+      cout << prompt << flush;
       getline(cin, line);
       cmdMatch = false;
 
@@ -177,7 +180,7 @@ struct Debugger {
 	       ++k)
 	    {
 	      W36 w(state.memGetN(a));
-	      logger.s << w.dump(true) << logger.endl << flush;
+	      cout << w.dump(true) << logger.endl << flush;
 	      a = a + 1;
 	    }
 
@@ -204,14 +207,14 @@ struct Debugger {
       COMMAND("log", "l", [&]() {
 
 	if (words.size() == 1) {
-	  logger.s << "Logging to " << logger.destination << ": ";
-	  if (logger.ac) logger.s << " ac";
-	  if (logger.io) logger.s << " io";
-	  if (logger.pc) logger.s << " pc";
-	  if (logger.dte) logger.s << " dte";
-	  if (logger.mem) logger.s << " mem";
-	  if (logger.load) logger.s << " load";
-	  logger.s << logger.endl;
+	  cout << "Logging to " << logger.destination << ": ";
+	  if (logger.ac) cout << " ac";
+	  if (logger.io) cout << " io";
+	  if (logger.pc) cout << " pc";
+	  if (logger.dte) cout << " dte";
+	  if (logger.mem) cout << " mem";
+	  if (logger.load) cout << " load";
+	  cout << logger.endl;
 	} else if (words.size() >= 2) {
 
 	  if (words[1] == "off") {
@@ -230,13 +233,13 @@ struct Debugger {
 	  }
 	}
 
-	logger.s << flush;
+	cout << flush;
       });
 
       COMMAND("pc", nullptr, [&]() {
 
 	if (words.size() == 1) {
-	  logger.s << "Flags:  " << state.flags.toString() << logger.endl
+	  cout << "Flags:  " << state.flags.toString() << logger.endl
 		   << "   PC: " << state.pc.fmtVMA() << logger.endl;
 	} else {
 
@@ -246,7 +249,7 @@ struct Debugger {
 	  }
 	}
 
-	logger.s << flush;
+	cout << flush;
       });
 
       COMMAND("continue", "c", [&]() {
@@ -255,7 +258,7 @@ struct Debugger {
       });
 
       COMMAND("stats", nullptr, [&]() {
-	logger.s << "Instructions: " << state.nInsns << logger.endl << flush;
+	cout << "Instructions: " << state.nInsns << logger.endl << flush;
       });
 
       COMMAND("help", "?", doHelp);
@@ -263,6 +266,6 @@ struct Debugger {
       if (!cmdMatch) doHelp();
     }
 
-    logger.s << "[exiting]" << logger.endl << flush;
+    cout << "[exiting]" << logger.endl << flush;
   }
 };

@@ -164,7 +164,8 @@ struct W36 {
     ostringstream s;
 
     s << fmt36()
-      << "  " << setfill('0')
+      << "  "
+      << setfill('0')
       << " " << setw(3) << op
       << " " << setw(2) << ac
       << " " << setw(1) << i
@@ -689,12 +690,12 @@ struct W36 {
     if (i != 0) eas << "@";
 
     if (x == 0) {
-      eas << oct << left << y;
+      eas << oct << left << setw(6) << y;
     } else {
       eas << oct << y << "(" << oct << x << ")";
     }
 
-    s << setw(13) << left << eas.str();
+    s << setfill(' ') << setw(13) << left << eas.str();
 
     return s.str();
   }

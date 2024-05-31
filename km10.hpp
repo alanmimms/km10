@@ -664,7 +664,7 @@ public:
       ++state.nInsns;
       ++nInsnsThisTime;
 
-      if (!state.debugging && logger.pc) logger.s << iw.dump();
+      if (logger.loggingToFile && logger.pc) logger.s << state.pc.fmtVMA() << ": " << iw.dump();
 
       ea.u = state.getEA(iw.i, iw.x, iw.y);
 
