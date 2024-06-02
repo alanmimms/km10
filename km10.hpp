@@ -649,17 +649,18 @@ public:
       nextPC.lhu = state.pc.lhu;
       nextPC.rhu = state.pc.rhu + 1;
 
-    XCT_ENTRYPOINT:
-      // When we XCT we have already set PC to point to the
-      // instruction to be XCTed and nextPC is pointing after the XCT.
-
-      // Set maxInsns to zero for infinite.
+      // Set maxInsns to zero for infinite. This is NOT in the XCT
+      // pathway so we can XCT an instruction while stepping.
       if ((state.maxInsns != 0 && state.nInsns >= state.maxInsns) ||
 	  state.executeBPs.contains(state.pc.vma))
       {
 	state.running = false;
 	if (nInsnsThisTime != 0) break;
       }
+
+    XCT_ENTRYPOINT:
+      // When we XCT we have already set PC to point to the
+      // instruction to be XCTed and nextPC is pointing after the XCT.
 
       ++state.nInsns;
       ++nInsnsThisTime;

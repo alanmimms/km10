@@ -48,7 +48,7 @@ struct DTE20: Device {
 
 
   void connect() {
-    setRAW();
+    setRaw();
     logger.endl = "\r\n";
 
     int pipeFDs[2];
@@ -72,7 +72,7 @@ struct DTE20: Device {
       close(fromIOLoopFD);
       close(toIOLoopFD);
       isConnected = false;
-      if (isRaw) setNonRAW();
+      if (isRaw) setNormal();
       logger.endl = "\n";
     }
   }
@@ -229,10 +229,22 @@ struct DTE20: Device {
 	int st = read(ttyFD, buf, sizeof(buf));
 	if (st < 0) throw runtime_error("Error in console TTY read()");
 
+	// Check for "out of band" attempt to exit emulator (control-\).
 	for (int k=0; k < st; ++k) {
 
-	  // Lamely sleep until KL grabs the previous char
-	  while (stateP->eptP->DTEKLNotReadyForChar) usleep(100);
+	  if (buf[k] == 0x1C) {
+	    cerr << "[control-\\]" << logger.endl << flush;
+	    raise(SIGINT);
+	  }
+	}
+
+	for (int k=0; k < st; ++k) {
+
+	  // Don't send control-\ to KL.
+	  if (buf[k] == 0x5C - 0x20) continue;
+
+	  // Lamely sleep up to 10ms until KL grabs the previous char
+	  if (stateP->eptP->DTEKLNotReadyForChar) usleep(100);
 
 	  stateP->eptP->DTEto10Arg = buf[k];
 	  stateP->eptP->DTEKLNotReadyForChar = W36::allOnes;
@@ -254,48 +266,23 @@ struct DTE20: Device {
   // process wishes to temporarily relinquish the tty.
   static void resetTTY() {
     /* flush and reset */
-    if (isRaw) setNonRAW();
+    if (isRaw) setNormal();
   }
 
 
-  static void setNonRAW() {
+  static void setNormal() {
     tcsetattr(ttyFD, TCSAFLUSH, &origTermios);
     isRaw = false;
   }
 
 
-// Put terminal in raw mode - see termio(7I) for modes.
-  static void setRAW() {
-    struct termios raw;
+// Put terminal in Raw mode - see termios(3) for modes.
+  static void setRaw() {
+    struct termios raw{origTermios};
+    cfmakeraw(&raw);
 
-    raw = origTermios;  // Copy original and then modify
-
-    // Input Modes. Clear indicated ones giving: no break, no CR to
-    // NL, no parity check, no strip char, no start/stop output (sic)
-    // control.
-    raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
-
-    // Output modes. Clear giving: no post processing such as NL to
-    // CR+NL.
-    raw.c_oflag &= ~(OPOST);
-
-    // Control modes. Set 8 bit chars.
-    raw.c_cflag |= CS8;
-
-    // Local modes. Clear giving: echoing off, canonical off (no erase
-    // with backspace, ^U,...), no extended functions, no signal chars
-    // (^Z,^C).
-    raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
-
-    // Control chars. Reorder to set return condition: min number of
-    // bytes and timer.
-    raw.c_cc[VMIN] = 5; raw.c_cc[VTIME] = 1; // 5 bytes or .8sec after first byte
-    raw.c_cc[VMIN] = 2; raw.c_cc[VTIME] = 0; // after two bytes, no timer
-    raw.c_cc[VMIN] = 0; raw.c_cc[VTIME] = 8; // after a byte or .8 seconds
-    raw.c_cc[VMIN] = 0; raw.c_cc[VTIME] = 0; // immediate - anything
-
-    // Put terminal in raw mode after flushing
-    if (tcsetattr(ttyFD, TCSAFLUSH, &raw) < 0) throw runtime_error("can't set TTY raw mode");
+    // Put terminal in Raw mode after flushing
+    if (tcsetattr(ttyFD, TCSAFLUSH, &raw) < 0) throw runtime_error("can't set TTY Raw mode");
 
     isRaw = true;
   }
