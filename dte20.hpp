@@ -18,6 +18,7 @@ using namespace std;
 #include "device.hpp"
 #include "logger.hpp"
 #include "kmstate.hpp"
+#include "tsqueue.hpp"
 
 
 struct DTE20: Device {
@@ -112,9 +113,11 @@ struct DTE20: Device {
 
   // See klcom.mem p.50
   enum DTECMD {
-    ctyOutput = 010,
+    ctyInput = 007,
+    ctyOutput,
     enterSecondaryProtocol,
     enterPrimaryProtocol,
+    setDateTimeInfo,
   };
 
   union MonitorCommand {
@@ -140,22 +143,7 @@ struct DTE20: Device {
   inline static struct termios origTermios{};
 
 
-  enum EPTOffset {
-    interruptInstr = 0142,
-    examineProtWord = 0144,
-    examineRelocWord = 145,
-    depositProtWord = 146,
-    depositRelocWord = 147,
-  };
-
-  enum SecondaryProtoEPTOffset {
-    opComplete = 0444,
-    to10Arg = 0450,
-    to11Arg = 0451,
-    opInProgress = 0453,
-    outputDone = 0455,
-    klNotReadyForChar = 0456,
-  };
+  inline static TSQueue<char> ctyQ;
 
 
   // I/O instruction handlers
@@ -176,11 +164,27 @@ struct DTE20: Device {
       if (logger.dte) logger.s << " to11DoorBell arg=" << oct << stateP->eptP->DTEto11Arg.rhu;
 
       switch (mc.fn) {
-      case 0:			// XXX This should not be required?!
+      case ctyInput:
+
+	if (ctyQ.isEmpty()) {
+	} else {
+	  stateP->eptP->DTEto10Arg.rhu = buf & 0177;
+	  cerr << "ctyInput " << setw(2) << setfill('0') << hex <<
+	    stateP->eptP->DTEto10Arg.rhu << logger.endl << flush;
+	}
+
+	break;
+
+      default:
       case ctyOutput:
+	// In RSX-20F this is an ELSE case vs function numbers 13, 12, 11 (rsxt20.l20:6017).
 	buf = mc.data;
 	write(1, &buf, 1);
-	stateP->eptP->DTEMonitorOpComplete = W36(W36::allOnes);
+
+	// Acknowledge the command. (rsxt20.l20:5924)
+	stateP->eptP->DTEMonitorOpComplete = W36(-2);
+
+	// XXX needs to set to-10 doorbell...?
 	break;
 
       case enterSecondaryProtocol:
@@ -190,11 +194,6 @@ struct DTE20: Device {
 
       case enterPrimaryProtocol:
 	cerr << "DTE20 enter primary protocol command with data " << mc.data << " (ignored)."
-	     << logger.endl;
-	break;
-
-      default:
-	cerr << "Unimplemented DTECMD: " << oct << mc.fn << " with data " << mc.data << " (ignored)."
 	     << logger.endl;
 	break;
       }
@@ -225,31 +224,16 @@ struct DTE20: Device {
       }
 
       if ((polls[0].revents & POLLIN) != 0) {
-	char buf[64];
-	int st = read(ttyFD, buf, sizeof(buf));
+	char buf;
+	int st = read(ttyFD, &buf, sizeof(buf));
 	if (st < 0) throw runtime_error("Error in console TTY read()");
 
-	// Check for "out of band" attempt to exit emulator (control-\).
-	for (int k=0; k < st; ++k) {
-
-	  if (buf[k] == 0x1C) {
-	    cerr << "[control-\\]" << logger.endl << flush;
-	    raise(SIGINT);
-	  }
-	}
-
-	for (int k=0; k < st; ++k) {
-
-	  // Don't send control-\ to KL.
-	  if (buf[k] == 0x5C - 0x20) continue;
-
-	  // Lamely sleep up to 10ms until KL grabs the previous char
-	  if (stateP->eptP->DTEKLNotReadyForChar) usleep(100);
-
-	  stateP->eptP->DTEto10Arg = buf[k];
-	  stateP->eptP->DTEKLNotReadyForChar = W36::allOnes;
-
-	  // XXX ring the 10's doorbell here
+	if (buf == 0x1C) {
+	  cerr << "[control-\\]" << logger.endl << flush;
+	  raise(SIGINT);
+	} else {
+	  cerr << "[" << setw(2) << setfill('0') << hex << (int) buf << "]" << logger.endl << flush;
+	  ctyQ.enqueue(buf);
 	}
       }
 
