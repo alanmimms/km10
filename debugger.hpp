@@ -62,7 +62,7 @@ struct Debugger {
   l,log [ac|io|pc|dte|mem|load|off] Display logging flags or toggle one flag or turn all off.
   l,log file [FILENAME] Log to FILENAME or 'km10.log' if not specified (overwriting if it exists).
   l,log tty     Log to console.
-  m,memory A N  Dump N (octal) words of memory starting at A (octal).
+  m,memory A N  Dump N (octal) words of memory starting at A (octal). A can be 'pc'.
   pc [N]        Dump PC and flags, or if N is specified set PC to N (octal).
   s,step N      Step N (octal) instructions at current PC.
   stats         Display emulator statistics.
@@ -173,17 +173,25 @@ struct Debugger {
       COMMAND("memory", "m", [&]() {
 
 	try {
-	  W36 a(stoll(words[1], 0, 8));
+	  W36 a;
+	  int n = words.size() > 2 ? stoi(words[2], 0, 8) : 1;
 
-	  for (unsigned k=0, n=words.size() > 2 ? stoi(words[2], 0, 8) : 1;
-	       k < n;
-	       ++k)
-	    {
-	      W36 w(state.memGetN(a));
-	      cout << w.dump(true) << logger.endl << flush;
-	      a = a + 1;
-	    }
+	  if (words.size() > 1) {
+	    string lo1(words[1]);
 
+	    for (auto& c: lo1) c = tolower(c);
+
+	    if (lo1 == "pc")
+	      a = state.pc;
+	    else
+	      a = stoll(words[1], 0, 8);
+	  }
+
+	  for (int k=0; k < n; ++k) {
+	    W36 w(state.memGetN(a));
+	    cout << a.fmtVMA() << ": " << w.dump(true) << logger.endl << flush;
+	    a = a + 1;
+	  }
 	} catch (exception &e) {
 	}
       });
