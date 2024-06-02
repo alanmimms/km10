@@ -1,4 +1,5 @@
 set confirm off
+set print thread-events off
 
 # Display in PDP10 000000,,000000 style
 define oo
