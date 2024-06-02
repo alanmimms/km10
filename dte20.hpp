@@ -128,6 +128,8 @@ struct DTE20: Device {
     };
 
     unsigned u;
+
+    MonitorCommand(unsigned v) : u(v) {}
   };
 
   inline static KMState *stateP;
@@ -167,12 +169,16 @@ struct DTE20: Device {
       case ctyInput:
 
 	if (ctyQ.isEmpty()) {
+//	  cerr << "ctyIn [empty]" << logger.endl << flush;
 	} else {
-	  stateP->eptP->DTEto10Arg.rhu = buf & 0177;
-	  cerr << "ctyInput " << setw(2) << setfill('0') << hex <<
-	    stateP->eptP->DTEto10Arg.rhu << logger.endl << flush;
+	  buf = ctyQ.dequeue() & 0177;
+	  stateP->eptP->DTEto10Arg.rhu = buf;
+	  cerr << "ctyInput " << setw(2) << setfill('0') << hex
+	       << (int) buf << logger.endl << flush;
 	}
 
+	// Acknowledge the command. (rsxt20.l20:5924)
+	stateP->eptP->DTEMonitorOpComplete = W36(-2);
 	break;
 
       default:
