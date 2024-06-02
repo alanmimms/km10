@@ -165,7 +165,7 @@ struct W36 {
 
     s << fmt36()
       << "  "
-      << setfill('0')
+      << oct << setfill('0')
       << " " << setw(3) << op
       << " " << setw(2) << ac
       << " " << setw(1) << i
