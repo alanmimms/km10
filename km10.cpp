@@ -9,8 +9,6 @@ using namespace std;
 #include "debugger.hpp"
 
 #include "logger.hpp"
-#include "device.hpp"
-#include "dte20.hpp"
 
 
 Logger logger{};
@@ -27,16 +25,13 @@ int main(int argc, char *argv[]) {
 
   KMState state(4 * 1024 * 1024);
 
-  DTE20 dte{040, "DTE", state};
-  Device::devices[040] = &dte;
-
   if (FLAGS_load != "none") {
     state.loadA10(FLAGS_load.c_str());
     cerr << "[Loaded " << FLAGS_load << "  start=" << state.pc.fmtVMA() << "]" << logger.endl;
   }
 
   state.maxInsns = 0;
-  KM10 km10(state, &dte);
+  KM10 km10(state);
 
   if (FLAGS_debug) {
     Debugger dbg(km10, state);

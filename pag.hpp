@@ -25,7 +25,9 @@ struct PAGDevice: Device {
 
 
   // Constructors
-  PAGDevice() {
+  PAGDevice():
+    Device(0120, "PAG")
+  {
     state.u = 0;
   }
 
@@ -44,5 +46,9 @@ struct PAGDevice: Device {
 
   void doCONI() {
     km10.memPut(W36(km10.memGet().lhu, state.u));
+  }
+
+  void clearIO() {
+    state.u = 0;
   }
 };

@@ -8,6 +8,7 @@
 #include <ostream>
 #include <limits>
 #include <functional>
+#include <assert.h>
 
 using namespace std;
 
@@ -17,6 +18,9 @@ using namespace std;
 #include "w36.hpp"
 #include "bytepointer.hpp"
 #include "device.hpp"
+#include "apr.hpp"
+#include "pag.hpp"
+#include "pi.hpp"
 #include "dte20.hpp"
 
 
@@ -24,245 +28,20 @@ class KM10 {
 public:
   KMState &state;
 
-
-  struct APRDevice: Device {
-
-    // CONI APR interrupt flags
-    union Flags {
-
-      struct ATTRPACKED {
-	unsigned sweepDone: 1;
-	unsigned powerFailure: 1;
-	unsigned addrParity: 1;
-	unsigned cacheDirParity: 1;
-	unsigned mbParity: 1;
-	unsigned ioPageFail: 1;
-	unsigned noMemory: 1;
-	unsigned sbusError: 1;
-      };
-
-      unsigned u: 8;
-    };
-  
-    // CONI APR status bits
-    union State {
-
-      struct ATTRPACKED {
-	unsigned intLevel: 3;
-	unsigned intRequest: 1;
-
-	Flags active;
-	unsigned: 4;
-
-	unsigned sweepBusy: 1;
-	unsigned: 5;
-
-	Flags enabled;
-
-	unsigned: 6;
-      };
-
-      uint64_t u: 36;
-    } state;
-
-
-    // CONO APR function bits
-    union Functions {
-
-      struct ATTRPACKED {
-	unsigned intLevel: 3;
-	unsigned: 1;
-
-	Flags select;
-
-	unsigned set: 1;
-	unsigned clear: 1;
-	unsigned disable: 1;
-	unsigned enable: 1;
-
-	unsigned clearIO: 1;
-	unsigned: 1;
-      };
-
-      unsigned u: 18;
-
-      Functions(unsigned v) :u(v) {};
-    };
-
-    struct Levels {
-      unsigned sweepDone: 3;
-      unsigned powerFailure: 3;
-      unsigned addrParity: 3;
-      unsigned cacheDirParity: 3;
-      unsigned mbParity: 3;
-      unsigned ioPageFail: 3;
-      unsigned noMemory: 3;
-      unsigned sbusError: 3;
-    } levels;
-
-
-    // APRID value see 1982_ProcRefMan.pdf p.244
-    static inline const union {
-
-      struct ATTRPACKED {
-	unsigned serialNumber: 12;
-
-	unsigned: 1;
-	unsigned masterOscillator: 1;
-	unsigned extendedKL10: 1;
-	unsigned channelSupported: 1;
-	unsigned cacheSupported: 1;
-	unsigned AC50Hz: 1;
-
-	unsigned microcodeVersion: 9;
-	unsigned: 6;
-	unsigned exoticMicrocode: 1;
-	unsigned extendedAddressing: 1;
-	unsigned tops20Paging: 1;
-      };
-
-      uint64_t u: 36;
-    } apridValue{
-      04321,	// Processor serial number (always octal?)
-	1,	// Master oscillator
-	1,	// Extended KL10
-	1,	// Channel support
-	0,	// No cache support
-	0,	// 60Hz,
-	0442,	// Microcode version number
-	0,	// "Exotic" microcode
-	1,	// Microcode handles extended addresses
-	1,	// TOPS-20 paging
-	};
-
-
-    // Constructors
-    APRDevice()
-      : Device(0000, "APR")
-    {
-    }
-
-
-    // I/O instruction handlers
-    void clearIO() {
-      state.u = 0;
-    }
-  } apr;
-
-  
-  struct PIDevice: Device {
-
-    // PI CONO function bits
-    union Functions {
-      Functions(unsigned v) :u(v) {};
-
-      struct ATTRPACKED {
-	unsigned levels: 7;
-
-	unsigned turnPIOn: 1;
-	unsigned turnPIOff: 1;
-
-	unsigned levelsOff: 1;
-	unsigned levelsOn: 1;
-	unsigned levelsInitiate: 1;
-      
-	unsigned clearPI: 1;
-	unsigned dropRequests: 1;
-	unsigned: 1;
-
-	unsigned writeEvenParityDir: 1;
-	unsigned writeEvenParityData: 1;
-	unsigned writeEvenParityAddr: 1;
-      };
-
-      unsigned u: 18;
-    };
-
-    // PI state and CONI bits
-    union State {
-
-      struct ATTRPACKED {
-	unsigned levelsEnabled: 7;
-	unsigned piEnabled: 1;
-	unsigned intInProgress: 7;
-	unsigned writeEvenParityDir: 1;
-	unsigned writeEvenParityData: 1;
-	unsigned writeEvenParityAddr: 1;
-	unsigned levelsRequested: 7;
-	unsigned: 11;
-      };
-
-      uint64_t u: 36;
-
-      State() :u(0) {};
-    } state;
-
-
-    // Constructors
-    PIDevice():
-      Device(0060, "PI")
-    {
-      state.u = 0;
-    }
-
-
-    // I/O instruction handlers
-    void clearIO() {
-      state.u = 0;
-    }
-  } pi;
-
-  struct PAGDevice: Device {
-
-    // CONO PAG state bits
-    union State {
-
-      struct ATTRPACKED {
-	unsigned execBasePage: 13;
-	unsigned enablePager: 1;
-	unsigned tops2Paging: 1;
-	unsigned: 1;
-	unsigned cacheStrategyLoad: 1;
-	unsigned cacheStrategyLook: 1;
-      };
-
-      unsigned u: 18;
-    } state;
-
-
-    // Constructors
-    PAGDevice():
-      Device(0120, "PAG")
-    {
-      state.u = 0;
-    }
-
-
-    // Accessors
-    bool pagerEnabled() {
-      return state.enablePager;
-    }
-
-    // I/O instruction handlers
-    void clearIO() {
-      state.u = 0;
-    }
-  } pag;
-
-
-
-  APRDevice *aprP;
-  PIDevice *piP;
-  PAGDevice *pagP;
-  DTE20 *dteP;
+  APRDevice apr;
+  PIDevice pi;
+  PAGDevice pag;
+  DTE20 dte;
 
 
   // Constructors
   KM10(KMState &aState, DTE20 *aDTE)
     : state(aState),
-      dteP(aDTE)
+      apr(state),
+      pi(state),
+      pag(state),
+      dte(040, state)
   {}
-
 
   
   ////////////////////////////////////////////////////////////////////////////////
@@ -523,7 +302,8 @@ public:
     };
     
     function<tuple<W36,W36>(W36,W36)> idivWord = [&](W36 s1, W36 s2) -> auto const {
-      int128_t d = (int128_t) s1.s * (int128_t) s2.s;
+      assert(s2.s != 0);
+      int128_t d = (int128_t) s1.s / (int128_t) s2.s;
       int128_t r = (int128_t) s1.s % (int128_t) s2.s;
 
       if (s1.s == W36::signedBit0 && s2.s == W36::signedBit0) {
@@ -674,7 +454,7 @@ public:
       switch (iw.op) {
 
       case 0133: {		// IBP/ADJBP
-	BytePointer *bp = BytePointer::makeFrom(memGet(), state);
+	BytePointer *bp = BytePointer::makeFrom(ea, state);
 
 	if (iw.ac == 0) {	// IBP
 	  bp->inc(state);
@@ -685,14 +465,28 @@ public:
 	break;
       }
 
-      case 0135: {		// LDB
-	BytePointer *bp = BytePointer::makeFrom(memGet(), state);
+      case 0134: {		// ILBP
+	BytePointer *bp = BytePointer::makeFrom(ea, state);
+	bp->inc(state);
 	acPut(bp->getByte(state));
 	break;
       }
 
+      case 0135: {		// LDB
+	BytePointer *bp = BytePointer::makeFrom(ea, state);
+	acPut(bp->getByte(state));
+	break;
+      }
+
+      case 0136: {		// IDPB
+	BytePointer *bp = BytePointer::makeFrom(ea, state);
+	bp->inc(state);
+	bp->putByte(acGet(), state);
+	break;
+      }
+
       case 0137: {		// DPB
-	BytePointer *bp = BytePointer::makeFrom(memGet(), state);
+	BytePointer *bp = BytePointer::makeFrom(ea, state);
 	bp->putByte(acGet(), state);
 	break;
       }
@@ -794,35 +588,35 @@ public:
 	break;
 
       case 0230:		// IDIV
-	doBinOp2XX(memGet, acGet, idivWord, acPut2);
+	doBinOp2XX(acGet, memGet, idivWord, acPut2);
 	break;
 
       case 0231:		// IDIVI
-	doBinOp2XX(immediate, acGet, idivWord, acPut2);
+	doBinOp2XX(acGet, immediate, idivWord, acPut2);
 	break;
 
       case 0232:		// IDIVM
-	doBinOp2XX(memGet, acGet, idivWord, memPutHi);
+	doBinOp2XX(acGet, memGet, idivWord, memPutHi);
 	break;
 
       case 0233:		// IDIVB
-	doBinOp2XX(memGet, acGet, idivWord, bothPut2);
+	doBinOp2XX(acGet, memGet, idivWord, bothPut2);
 	break;
 
       case 0234:		// DIV
-	doBinOp2XX(memGet, acGet, divWord, acPut2);
+	doBinOp2XX(acGet, memGet, divWord, acPut2);
 	break;
 
       case 0235:		// DIVI
-	doBinOp2XX(immediate, acGet, divWord, acPut2);
+	doBinOp2XX(acGet, immediate, divWord, acPut2);
 	break;
 
       case 0236:		// DIVM
-	doBinOp2XX(memGet, acGet, divWord, memPutHi);
+	doBinOp2XX(acGet, memGet, divWord, memPutHi);
 	break;
 
       case 0237:		// DIVB
-	doBinOp2XX(memGet, acGet, divWord, bothPut2);
+	doBinOp2XX(acGet, memGet, divWord, bothPut2);
 	break;
 
       case 0240: {		// ASH
@@ -999,7 +793,7 @@ public:
 	  break;
 
 	default:
-	  logger.nyi();
+	  logger.nyi(state);
 	  state.running = false;
 	  break;
 	}
@@ -1021,7 +815,7 @@ public:
 	  if (logger.mem) logger.s << "; ";
 	  goto XCT_ENTRYPOINT;
 	} else {
-	  logger.nyi();
+	  logger.nyi(state);
 	  state.running = false;
 	  break;
 	}
@@ -2065,129 +1859,11 @@ public:
 
 	if (iw.ioSeven == 7) {	// Only handle I/O instructions this way
 	  if (logger.io) logger.s << " ; ioDev=" << oct << iw.ioDev << " ioOp=" << oct << iw.ioOp;
-
-	  switch (iw.ioDev) {
-	  case 000:		// APR
-
-	    switch (iw.ioOp) {
-	    case W36::BLKI:	// APRID
-	      memPut(apr.apridValue.u);
-	      break;
-
-	    case W36::BLKO:	// WRFIL
-	      logger.nyi();
-	      state.running = false;
-	      break;
-
-	    case W36::CONO: {	// WRAPR
-	      APRDevice::Functions func(ea.u);
-
-	      if (logger.mem) logger.s << " ; " << ea.fmt18();
-
-	      if (func.clear) {
-		apr.state.active.u &= ~func.select.u;
-	      } else if (func.set) {
-		apr.state.active.u |= func.select.u;
-
-		// This block argues the APR state needs to be
-		// metaprogrammed with C++17 parameter pack superpowers
-		// instead of this old fashioned mnaual method. This might
-		// be an interesting thing to do in the future. For now,
-		// it's done the 1940s hard way.
-		if (func.intLevel != 0) {
-		  if (func.select.sweepDone != 0)      apr.levels.sweepDone = func.intLevel;
-		  if (func.select.powerFailure != 0)   apr.levels.powerFailure = func.intLevel;
-		  if (func.select.addrParity != 0)     apr.levels.addrParity = func.intLevel;
-		  if (func.select.cacheDirParity != 0) apr.levels.cacheDirParity = func.intLevel;
-		  if (func.select.mbParity != 0)       apr.levels.mbParity = func.intLevel;
-		  if (func.select.ioPageFail != 0)     apr.levels.ioPageFail = func.intLevel;
-		  if (func.select.noMemory != 0)       apr.levels.noMemory = func.intLevel;
-		  if (func.select.sbusError != 0)      apr.levels.sbusError = func.intLevel;
-		}
-	      } else if (func.enable) {
-		apr.state.enabled.u |= func.select.u;
-	      } else if (func.disable) {
-		apr.state.enabled.u &= ~func.select.u;
-	      }
-
-	      if (func.clearIO) {
-		for (auto [ioDev, devP]: Device::devices) devP->clearIO();
-	      }
-	      break;
-	    }
-
-	    case W36::CONI:	// RDAPR
-	      logger.nyi();
-	      state.running = false;
-	      break;
-
-	    default:
-	      logger.nyi();
-	      state.running = false;
-	      break;
-	    }
-
-	    break;
-
-	  case 001:		// PI
-
-	    switch (iw.ioOp) {
-	    case W36::CONO: {
-	      PIDevice::Functions pif(ea);
-
-	      if (logger.mem) logger.s << " ; " << oct << ea.fmt18();
-
-	      if (pif.clearPI) {
-		if (logger.io) logger.s << " ; CLEAR I/O SYSTEM";
-		Device::clearAll();
-	      } else {
-		pi.state.writeEvenParityDir = pif.writeEvenParityDir;
-		pi.state.writeEvenParityData = pif.writeEvenParityData;
-		pi.state.writeEvenParityAddr = pif.writeEvenParityAddr;
-
-		if (pif.turnPIOn) {
-		  pi.state.piEnabled = 1;
-		} else if (pif.turnPIOff) {
-		  pi.state.piEnabled = 0;
-		} else if (pif.dropRequests != 0) {
-		  pi.state.levelsRequested &= ~pif.levels;
-		} else if (pif.levelsInitiate) {
-		  pi.state.levelsRequested |= pif.levels;
-		} else if (pif.levelsOff) {
-		  pi.state.levelsEnabled &= ~pif.levels;
-		} else if (pif.levelsOn) {
-		  pi.state.levelsEnabled |= pif.levels;
-		}
-	      }
-	      break;
-	    }
-
-	    case W36::CONI:
-	      memPut(pi.state.u);
-	      break;
-
-	    default:
-	      logger.nyi();
-	      state.running = false;
-	      break;
-	    }
-
-	    break;
-
-	  case 024:		// PAG
-	    break;
-
-	  default:		// All other devices
-	    Device::handleIO(iw, ea);
-	    break;
-	  }
-
-	} else {		// Non-I/O UUOs go here
-	  logger.nyi();
-	  state.running = false;
-	  break;
+	  Device::handleIO(iw, ea, state);
+	} else {
+	  logger.nyi(state);
 	}
-	
+
 	break;
       }
 

@@ -1,5 +1,6 @@
 set confirm off
 set print thread-events off
+set output-radix 0x08
 
 # Display in PDP10 000000,,000000 style
 define oo

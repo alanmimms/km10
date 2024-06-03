@@ -6,19 +6,24 @@ using namespace std;
 
 #include "w36.hpp"
 #include "logger.hpp"
+#include "kmstate.hpp"
 
 
 struct Device {
   unsigned ioAddress;
   string &name;
+  KMState &kmState;
 
   static inline map<unsigned, Device *> devices{};
 
   // Constructors
-  Device(unsigned anAddr, string aName)
+  Device(unsigned anAddr, string aName, KMState &aState)
     : ioAddress(anAddr),
-      name(aName)
-  { }
+      name(aName),
+      kmState(aState)
+  {
+    devices[ioAddress] = this;
+  }
 
 
   // Clear the I/O system by calling each device's clearIO() entry
@@ -30,11 +35,11 @@ struct Device {
 
   // Handle an I/O instruction by calling the appropriate device
   // driver's I/O instruction handler method.
-  static void handleIO(W36 iw, W36 ea) {
+  static void handleIO(W36 iw, W36 ea, KMState &state) {
     auto devP = devices[iw.ioDev];
 
     if (!devP) {
-      logger.nsd();
+      logger.nsd(kmState);
       return;
     }
 
@@ -72,7 +77,7 @@ struct Device {
       break;
 
     default:
-      logger.nyi();
+      logger.nyi(kmState);
     }
   }
 
@@ -83,30 +88,30 @@ struct Device {
 
 
   virtual void doDATAI(W36 iw, W36 ea) {
-    logger.nyi();
+    logger.nyi(kmState);
   }
   
   virtual void doBLKI(W36 iw, W36 ea) {
-    logger.nyi();
+    logger.nyi(kmState);
   }
 
   virtual void doBLKO(W36 iw, W36 ea) {
-    logger.nyi();
+    logger.nyi(kmState);
   }
 
   virtual void doDATAO(W36 iw, W36 ea) {
-    logger.nyi();
+    logger.nyi(kmState);
   }
 
   virtual void doCONO(W36 iw, W36 ea) {
-    logger.nyi();
+    logger.nyi(kmState);
   }
 
   virtual void doCONI(W36 iw, W36 ea) {
-    logger.nyi();
+    logger.nyi(kmState);
   }
 
   virtual void doCONSZ(W36 iw, W36 ea) {
-    logger.nyi();
+    logger.nyi(kmState);
   }
 };

@@ -43,7 +43,7 @@ struct APRDevice: Device {
     };
 
     uint64_t u: 36;
-  } state;
+  } aprState;
 
 
   // CONO APR function bits
@@ -116,13 +116,19 @@ struct APRDevice: Device {
   };
 
 
+  // Constructors
+  APRDevice(KM10State &aState)
+    : Device(0000, "APR", aState)
+  { }
+
+
   // I/O instruction handlers
   void doBLKI() {		// APRID
-    memPut(aprIDValue.u);
+    kmState.memPut(aprIDValue.u);
   }
 
   void doBLKO() {		// WRFIL
-    logger.nyi();
+    logger.nyi(state);
   }
 
   void doCONO(W36 ea) {		// WRAPR
@@ -162,6 +168,10 @@ struct APRDevice: Device {
   }
 
   void doCONI() {		// RDAPR
-    logger.nyi();
+    logger.nyi(kmState);
+  }
+
+  void clearIO() {
+    state.u = 0;
   }
 };

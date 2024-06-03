@@ -23,8 +23,8 @@ using namespace std;
 
 struct DTE20: Device {
 
-  DTE20(unsigned anAddr, string aName, KMState &aState)
-    : Device(anAddr, aName),
+  DTE20(unsigned anAddr, KMState &aState)
+    : Device(anAddr, "DTE"),
       protocolMode(SECONDARY),
       isConnected(false)
   {

@@ -53,13 +53,11 @@ struct PIDevice: Device {
 
 
   // Constructors
-  PIDevice() {
+  PIDevice():
+    Device(0060, "PI")
+  {
     state.u = 0;
   }
-
-
-  // Accessors
-
 
 
   // I/O instruction handlers
