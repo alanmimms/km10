@@ -71,7 +71,7 @@ struct Debugger {
     };
 
     auto dumpAC = [&](int k) {
-      cout << oct << setfill(' ') << setw(2) << k << ": " << state.AC[k].dump() << logger.endl;
+      cout << oct << setfill(' ') << setw(2) << k << ": " << state.AC[k].dump(true) << logger.endl;
     };
 
     auto dumpACs = [&]() {

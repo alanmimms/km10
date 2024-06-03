@@ -174,8 +174,12 @@ struct W36 {
       << "  " << disasm();
 
     if (showCharForm) {
-      s << "  " << "/" << sixbit() << "/"
-	<< "  " << "'" << ascii() << "'";
+      s << "  " << "/" << sixbit() << "/";
+
+      if (u < 0400 && u > ' ')
+	s << "  " << "'" << (char) u << "'";
+      else
+	s << "  " << "'" << ascii() << "'";
     }
 
     return s.str();

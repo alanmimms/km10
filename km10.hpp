@@ -603,11 +603,11 @@ public:
     function<void()> skipAction = [&] {++nextPC.u;};
     function<void()> jumpAction = [&] {nextPC.u = ea;};
 
-    auto doAOSOXX = [&](function<W36()> &doGetF,
-			const signed delta,
-			function<void(W36)> &doPutF,
-			function<bool(W36)> &condF,
-			function<void()> &actionF) -> void
+    auto doAOSXX = [&](function<W36()> &doGetF,
+		       const signed delta,
+		       function<void(W36)> &doPutF,
+		       function<bool(W36)> &condF,
+		       function<void()> &actionF) -> void
     {
       W36 v = doGetF();
 
@@ -628,6 +628,8 @@ public:
       }
 
       v.s += delta;
+
+      if (iw.ac != 0) acPut(v);
       doPutF(v);
 
       if (condF(v)) actionF();
@@ -1228,131 +1230,131 @@ public:
 	break;
 
       case 0340:		// AOJ
-	doAOSOXX(acGet, 1, acPut, never, jumpAction);
+	doAOSXX(acGet, 1, acPut, never, jumpAction);
 	break;
 
       case 0341:		// AOJL
-	doAOSOXX(acGet, 1, acPut, isLT0, jumpAction);
+	doAOSXX(acGet, 1, acPut, isLT0, jumpAction);
 	break;
 
       case 0342:		// AOJE
-	doAOSOXX(acGet, 1, acPut, isEQ0, jumpAction);
+	doAOSXX(acGet, 1, acPut, isEQ0, jumpAction);
 	break;
 
       case 0343:		// AOJLE
-	doAOSOXX(acGet, 1, acPut, isLE0, jumpAction);
+	doAOSXX(acGet, 1, acPut, isLE0, jumpAction);
 	break;
 
       case 0344:		// AOJA
-	doAOSOXX(acGet, 1, acPut, always, jumpAction);
+	doAOSXX(acGet, 1, acPut, always, jumpAction);
 	break;
 
       case 0345:		// AOJGE
-	doAOSOXX(acGet, 1, acPut, isGE0, jumpAction);
+	doAOSXX(acGet, 1, acPut, isGE0, jumpAction);
 	break;
 
       case 0346:		// AOJN
-	doAOSOXX(acGet, 1, acPut, never, jumpAction);
+	doAOSXX(acGet, 1, acPut, never, jumpAction);
 	break;
 
       case 0347:		// AOJG
-	doAOSOXX(acGet, 1, acPut, isGT0, jumpAction);
+	doAOSXX(acGet, 1, acPut, isGT0, jumpAction);
 	break;
 
       case 0350:		// AOS
-	doAOSOXX(acGet, 1, acPut, never, skipAction);
+	doAOSXX(memGet, 1, memPut, never, skipAction);
 	break;
 
       case 0351:		// AOSL
-	doAOSOXX(acGet, 1, acPut, isLT0, skipAction);
+	doAOSXX(memGet, 1, memPut, isLT0, skipAction);
 	break;
 
       case 0352:		// AOSE
-	doAOSOXX(acGet, 1, acPut, isEQ0, skipAction);
+	doAOSXX(memGet, 1, memPut, isEQ0, skipAction);
 	break;
 
       case 0353:		// AOSLE
-	doAOSOXX(acGet, 1, acPut, isLE0, skipAction);
+	doAOSXX(memGet, 1, memPut, isLE0, skipAction);
 	break;
 
       case 0354:		// AOSA
-	doAOSOXX(acGet, 1, acPut, always, skipAction);
+	doAOSXX(memGet, 1, memPut, always, skipAction);
 	break;
 
       case 0355:		// AOSGE
-	doAOSOXX(acGet, 1, acPut, isGE0, skipAction);
+	doAOSXX(memGet, 1, memPut, isGE0, skipAction);
 	break;
 
       case 0356:		// AOSN
-	doAOSOXX(acGet, 1, acPut, never, skipAction);
+	doAOSXX(memGet, 1, memPut, never, skipAction);
 	break;
 
       case 0357:		// AOSG
-	doAOSOXX(acGet, 1, acPut, isGT0, skipAction);
+	doAOSXX(memGet, 1, memPut, isGT0, skipAction);
 	break;
 
       case 0360:		// SOJ
-	doAOSOXX(acGet, -1, acPut, never, jumpAction);
+	doAOSXX(acGet, -1, acPut, never, jumpAction);
 	break;
 
       case 0361:		// SOJL
-	doAOSOXX(acGet, -1, acPut, isLT0, jumpAction);
+	doAOSXX(acGet, -1, acPut, isLT0, jumpAction);
 	break;
 
       case 0362:		// SOJE
-	doAOSOXX(acGet, -1, acPut, isEQ0, jumpAction);
+	doAOSXX(acGet, -1, acPut, isEQ0, jumpAction);
 	break;
 
       case 0363:		// SOJLE
-	doAOSOXX(acGet, -1, acPut, isLE0, jumpAction);
+	doAOSXX(acGet, -1, acPut, isLE0, jumpAction);
 	break;
 
       case 0364:		// SOJA
-	doAOSOXX(acGet, -1, acPut, always, jumpAction);
+	doAOSXX(acGet, -1, acPut, always, jumpAction);
 	break;
 
       case 0365:		// SOJGE
-	doAOSOXX(acGet, -1, acPut, isGE0, jumpAction);
+	doAOSXX(acGet, -1, acPut, isGE0, jumpAction);
 	break;
 
       case 0366:		// SOJN
-	doAOSOXX(acGet, -1, acPut, never, jumpAction);
+	doAOSXX(acGet, -1, acPut, never, jumpAction);
 	break;
 
       case 0367:		// SOJG
-	doAOSOXX(acGet, -1, acPut, isGT0, jumpAction);
+	doAOSXX(acGet, -1, acPut, isGT0, jumpAction);
 	break;
 
       case 0370:		// SOS
-	doAOSOXX(acGet, -1, acPut, never, skipAction);
+	doAOSXX(memGet, -1, memPut, never, skipAction);
 	break;
 
       case 0371:		// SOSL
-	doAOSOXX(acGet, -1, acPut, isLT0, skipAction);
+	doAOSXX(memGet, -1, memPut, isLT0, skipAction);
 	break;
 
       case 0372:		// SOSE
-	doAOSOXX(acGet, -1, acPut, isEQ0, skipAction);
+	doAOSXX(memGet, -1, memPut, isEQ0, skipAction);
 	break;
 
       case 0373:		// SOSLE
-	doAOSOXX(acGet, -1, acPut, isLE0, skipAction);
+	doAOSXX(memGet, -1, memPut, isLE0, skipAction);
 	break;
 
       case 0374:		// SOSA
-	doAOSOXX(acGet, -1, acPut, always, skipAction);
+	doAOSXX(memGet, -1, memPut, always, skipAction);
 	break;
 
       case 0375:		// SOSGE
-	doAOSOXX(acGet, -1, acPut, isGE0, skipAction);
+	doAOSXX(memGet, -1, memPut, isGE0, skipAction);
 	break;
 
       case 0376:		// SOSN
-	doAOSOXX(acGet, -1, acPut, never, skipAction);
+	doAOSXX(memGet, -1, memPut, never, skipAction);
 	break;
 
       case 0377:		// SOSG
-	doAOSOXX(acGet, -1, acPut, isGT0, skipAction);
+	doAOSXX(memGet, -1, memPut, isGT0, skipAction);
 	break;
 
       case 0400:		// SETZ
