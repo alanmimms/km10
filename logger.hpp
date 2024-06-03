@@ -2,7 +2,9 @@
 #include <iostream>
 #include <set>
 
-#include "kmstate.hpp"
+
+class KMState;
+
 
 
 struct Logger {
@@ -48,17 +50,8 @@ struct Logger {
     loggingToFile = false;
   }
 
-
-  void nyi(KMState &state) {
-    s << " [not yet implemented]";
-    cerr << "Not yet implemented at " << state.pc.fmtVMA() << endl;
-  }
-
-
-  void nsd(KMState &state) {
-    s << " [no such device]";
-    cerr << "No such device " << state.pc.fmtVMA() << endl;
-  }
+  void nyi(KMState &state);
+  void nsd(KMState &state);
 };
 
 

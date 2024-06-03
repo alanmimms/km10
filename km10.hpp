@@ -35,7 +35,7 @@ public:
 
 
   // Constructors
-  KM10(KMState &aState, DTE20 *aDTE)
+  KM10(KMState &aState)
     : state(aState),
       apr(state),
       pi(state),
@@ -418,7 +418,7 @@ public:
 
     ////////////////////////////////////////////////////////////////
     // Connect our DTE20 (put console into raw mode)
-    dteP->connect();
+    dte.connect();
 
     if ((state.flags.tr1 || state.flags.tr2) && pag.pagerEnabled()) {
       iw = state.flags.tr1 ? state.eptP->trap1Insn : state.eptP->stackOverflowInsn;
@@ -1881,6 +1881,6 @@ public:
     } while (state.running);
 
     // Restore console to normal
-    dteP->disconnect();
+    dte.disconnect();
   }
 };

@@ -24,7 +24,7 @@ using namespace std;
 struct DTE20: Device {
 
   DTE20(unsigned anAddr, KMState &aState)
-    : Device(anAddr, "DTE"),
+    : Device(anAddr, "DTE", aState),
       protocolMode(SECONDARY),
       isConnected(false)
   {
@@ -204,7 +204,7 @@ struct DTE20: Device {
 	break;
       }
     } else {
-      logger.nyi();
+      logger.nyi(state);
     }
   }
 

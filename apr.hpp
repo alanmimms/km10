@@ -117,29 +117,29 @@ struct APRDevice: Device {
 
 
   // Constructors
-  APRDevice(KM10State &aState)
+  APRDevice(KMState &aState)
     : Device(0000, "APR", aState)
   { }
 
 
   // I/O instruction handlers
-  void doBLKI() {		// APRID
-    kmState.memPut(aprIDValue.u);
+  void doBLKI(W36 iw, W36 ea) {		// APRID
+    state.memPutN(aprIDValue.u, ea);
   }
 
-  void doBLKO() {		// WRFIL
+  void doBLKO(W36 iw, W36 ea) {		// WRFIL
     logger.nyi(state);
   }
 
-  void doCONO(W36 ea) {		// WRAPR
+  void doCONO(W36 iw, W36 ea) {		// WRAPR
     APRFunctions func(ea.u);
 
-    if (logger.traceMem) cerr << " ; " << ea.fmt18();
+    if (logger.mem) cerr << " ; " << ea.fmt18();
 
     if (func.clear) {
-      state.active.u &= ~func.select.u;
+      aprState.active.u &= ~func.select.u;
     } else if (func.set) {
-      state.active.u |= func.select.u;
+      aprState.active.u |= func.select.u;
 
       // This block argues the APR state needs to be
       // metaprogrammed with C++17 parameter pack superpowers
@@ -157,21 +157,19 @@ struct APRDevice: Device {
 	if (func.select.sbusError != 0)      aprLevels.sbusError = func.intLevel;
       }
     } else if (func.enable) {
-      state.enabled.u |= func.select.u;
+      aprState.enabled.u |= func.select.u;
     } else if (func.disable) {
-      state.enabled.u &= ~func.select.u;
+      aprState.enabled.u &= ~func.select.u;
     }
 
-    if (func.clearIO) {
-      for (auto *devP: Device::devices) devP->clearIO();
-    }
+    if (func.clearIO) Device::clearAll();
   }
 
-  void doCONI() {		// RDAPR
-    logger.nyi(kmState);
+  void doCONI(W36 iw, W36 ea) {		// RDAPR
+    logger.nyi(state);
   }
 
   void clearIO() {
-    state.u = 0;
+    aprState.u = 0;
   }
 };

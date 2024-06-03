@@ -21,34 +21,34 @@ struct PAGDevice: Device {
     unsigned u: 18;
 
     PAGState() :u(0) {};
-  } state;
+  } pagState;
 
 
   // Constructors
-  PAGDevice():
-    Device(0120, "PAG")
+  PAGDevice(KMState &aState):
+    Device(3, "PAG", aState)
   {
-    state.u = 0;
+    pagState.u = 0;
   }
 
 
   // Accessors
   bool pagerEnabled() {
-    return state.enablePager;
+    return pagState.enablePager;
   }
 
 
   // I/O instruction handlers
-  void doCONO(W36 ea) {
-    if (km10.traceMem) cerr << " ; " << eaw.fmt18();
-    state.u = iw.y;
+  void doCONO(W36 iw, W36 ea) {
+    if (logger.mem) logger.s << " ; " << ea.fmt18();
+    pagState.u = iw.y;
   }
 
-  void doCONI() {
-    km10.memPut(W36(km10.memGet().lhu, state.u));
+  void doCONI(W36 iw, W36 ea) {
+    state.memPutN(W36(state.memGetN(ea).lhu, pagState.u), ea);
   }
 
   void clearIO() {
-    state.u = 0;
+    pagState.u = 0;
   }
 };

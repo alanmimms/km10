@@ -43,3 +43,15 @@ int main(int argc, char *argv[]) {
 
   return 0;
 }
+
+
+void Logger::nyi(KMState &state) {
+  s << " [not yet implemented]";
+  cerr << "Not yet implemented at " << state.pc.fmtVMA() << endl;
+}
+
+
+void Logger::nsd(KMState &state) {
+  s << " [no such device]";
+  cerr << "No such device at " << state.pc.fmtVMA() << endl;
+}

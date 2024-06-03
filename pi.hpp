@@ -49,52 +49,52 @@ struct PIDevice: Device {
     uint64_t u: 36;
 
     PIState() :u(0) {};
-  } state;
+  } piState;
 
 
   // Constructors
-  PIDevice():
-    Device(0060, "PI")
+  PIDevice(KMState &aState):
+    Device(001, "PI", aState)
   {
-    state.u = 0;
+    piState.u = 0;
   }
 
 
   // I/O instruction handlers
   void clearIO() {
-    state.u = 0;
+    piState.u = 0;
   }
 
-  void doCONO(W36 ea) {
+  void doCONO(W36 iw, W36 ea) {
     PIFunctions pi(ea);
 
-    if (km10.traceMem) cerr << " ; " << oct << eaw.fmt18();
+    if (logger.mem) logger.s << " ; " << ea.fmt18();
 
     if (pi.clearPI) {
       clearIO();
     } else {
-      state.writeEvenParityDir = pi.writeEvenParityDir;
-      state.writeEvenParityData = pi.writeEvenParityData;
-      state.writeEvenParityAddr = pi.writeEvenParityAddr;
+      piState.writeEvenParityDir = pi.writeEvenParityDir;
+      piState.writeEvenParityData = pi.writeEvenParityData;
+      piState.writeEvenParityAddr = pi.writeEvenParityAddr;
 
       if (pi.turnPIOn) {
-	state.piEnabled = 1;
+	piState.piEnabled = 1;
       } else if (pi.turnPIOff) {
-	state.piEnabled = 0;
+	piState.piEnabled = 0;
       } else if (pi.dropRequests != 0) {
-	state.levelsRequested &= ~pi.levels;
+	piState.levelsRequested &= ~pi.levels;
       } else if (pi.levelsInitiate) {
-	state.levelsRequested |= pi.levels;
+	piState.levelsRequested |= pi.levels;
       } else if (pi.levelsOff) {
-	state.levelsEnabled &= ~pi.levels;
+	piState.levelsEnabled &= ~pi.levels;
       } else if (pi.levelsOn) {
-	state.levelsEnabled |= pi.levels;
+	piState.levelsEnabled |= pi.levels;
       }
     }
 
   }
 
-  void doCONI() {
-    km10.memPut(state.u);
+  void doCONI(W36 iw, W36 ea) {
+    state.memPutN(piState.u, ea);
   }
 };
