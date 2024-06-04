@@ -52,15 +52,15 @@ struct Debugger {
 
     auto doHelp = [&]() {
       cout << R"(
-  abp [A]       Set address breakpoint after any access to address A or display list of breakpoints.
-                Use -A to remove an existing address breakpoint or 'clear' to clear all breakpoints.
+  abp [A]       Set address breakpoint after any access to address A or list breakpoints.
+                Use -A to remove an existing address breakpoint or 'clear' to clear all.
   ac,acs [N]    Dump a single AC N (octal) or all of them.
   b,bp [A]      Set breakpoint before execution of address A or display list of breakpoints.
                 Use -A to remove existing breakpoint or 'clear' to clear all breakpoints.
   c,continue    Continue execution at current PC.
   ?,help        Display this help.
-  l,log [ac|io|pc|dte|mem|load|off] Display logging flags or toggle one flag or turn all off.
-  l,log file [FILENAME] Log to FILENAME or 'km10.log' if not specified (overwriting if it exists).
+  l,log [ac|io|pc|dte|mem|load|off|all] Display logging flags, toggle one, or turn all on or off.
+  l,log file [FILENAME] Log to FILENAME or 'km10.log' if not specified (overwriting).
   l,log tty     Log to console.
   m,memory A N  Dump N (octal) words of memory starting at A (octal). A can be 'pc'.
   pc [N]        Dump PC and flags, or if N is specified set PC to N (octal).
@@ -231,11 +231,13 @@ struct Debugger {
 	    logger.logToFile(words.size() == 3 ? words[2] : "km10.log");
 	  } else if (words[1] == "tty") {
 	    logger.logToTTY();
+	  } else if (words[1] == "all") {
+	    logger.ac = logger.io = logger.pc = logger.dte = logger.mem = logger.load = true;
 	  } else {
 	    if (words[1] == "ac") logger.ac = !logger.ac;
-	    if (words[1] == "io") logger.ac = !logger.io;
+	    if (words[1] == "io") logger.io = !logger.io;
 	    if (words[1] == "pc") logger.pc = !logger.pc;
-	    if (words[1] == "dte") logger.mem = !logger.dte;
+	    if (words[1] == "dte") logger.dte = !logger.dte;
 	    if (words[1] == "mem") logger.mem = !logger.mem;
 	    if (words[1] == "load") logger.load = !logger.load;
 	  }
