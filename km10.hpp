@@ -64,13 +64,13 @@ public:
 
     function<W36()> acGetRH = [&]() -> W36 {
       W36 value{0, acGet().rhu};
-      if (logger.mem) logger.s << " ; acRH" << oct << iw.ac << ": " << value.fmt36();
+      if (logger.mem) logger.s << "; acRH" << oct << iw.ac << ": " << value.fmt36();
       return value;
     };
 
     function<W36()> acGetLH = [&]() -> W36 {
       W36 value{0, acGet().lhu};
-      if (logger.mem) logger.s << " ; acLH" << oct << iw.ac << ": " << value.fmt36();
+      if (logger.mem) logger.s << "; acLH" << oct << iw.ac << ": " << value.fmt36();
       return value;
     };
 
@@ -1858,7 +1858,7 @@ public:
       default:
 
 	if (iw.ioSeven == 7) {	// Only handle I/O instructions this way
-	  if (logger.io) logger.s << " ; ioDev=" << oct << iw.ioDev << " ioOp=" << oct << iw.ioOp;
+	  if (logger.io) logger.s << "; ioDev=" << oct << iw.ioDev << " ioOp=" << oct << iw.ioOp;
 	  Device::handleIO(iw, ea, state);
 	} else {
 	  logger.nyi(state);

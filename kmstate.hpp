@@ -244,26 +244,26 @@ struct KMState {
 
   W36 acGetN(unsigned n) {
     W36 value = AC[n];
-    if (logger.mem) logger.s << " ; ac" << oct << n << ": " << value.fmt36();
+    if (logger.mem) logger.s << "; ac" << oct << n << ":" << value.fmt36();
     return value;
   }
 
 
   W36 acGetEA(unsigned ac) {
     W36 value = AC[ac];
-    if (logger.mem) logger.s << " ; ac" << oct << ac << ": " << value.fmt36();
+    if (logger.mem) logger.s << "; ac" << oct << ac << ":" << value.fmt36();
     return value;
   }
 
 
   void acPutN(W36 value, unsigned acN) {
     AC[acN] = value;
-    if (logger.mem) logger.s << " ; ac" << oct << acN << "=" << value.fmt36();
+    if (logger.mem) logger.s << "; ac" << oct << acN << "=" << value.fmt36();
   }
 
   W36 memGetN(W36 a) {
     W36 value = a.u < 020 ? acGetEA(a.u) : memP[a.u];
-    if (logger.mem) logger.s << " ; " << a.fmtVMA() << ": " << value.fmt36();
+    if (logger.mem) logger.s << "; " << a.fmtVMA() << ":" << value.fmt36();
     if (addressBPs.contains(a.vma)) running = false;
     return value;
   }
@@ -275,30 +275,31 @@ struct KMState {
     else 
       memP[a.u] = value;
 
-    if (logger.mem) logger.s << " ; " << a.fmtVMA() << "=" << value.fmt36();
+    if (logger.mem) logger.s << "; " << a.fmtVMA() << "=" << value.fmt36();
     if (addressBPs.contains(a.vma)) running = false;
   }
 
 
   // Effective address calculation
   unsigned getEA(unsigned i, unsigned x, unsigned y) {
-    W36 ea(0);
-    W36 eaw(0);
-    eaw.i = i;
-    eaw.x = x;
-    eaw.y = y;
 
     // While we keep getting indirection, loop for new EA words.
     // XXX this only works for non-extended addressing.
     for (;;) {
-      ea.y = eaw.y;	// Initial assumption
 
-      if (eaw.x != 0) ea.rhu += acGetN(eaw.x);
+      // XXX there are some significant open questions about how much
+      // the address wraps and how much is included in these addition
+      // and indirection steps.
 
-      if (eaw.i != 0) {	// Indirection
-	eaw = memGetN(ea.y);
-      } else {		// No indexing or indirection
-	return ea.u;
+      if (x != 0) y += acGetN(x);
+
+      if (i != 0) {		// Indirection
+	W36 eaw(memGetN(y));
+	i = eaw.i;
+	x = eaw.x;
+	y = eaw.y;
+      } else {			// No indexing or indirection
+	return y;
       }
     }
   }

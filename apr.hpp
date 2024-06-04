@@ -134,7 +134,7 @@ struct APRDevice: Device {
   void doCONO(W36 iw, W36 ea) {		// WRAPR
     APRFunctions func(ea.u);
 
-    if (logger.mem) cerr << " ; " << ea.fmt18();
+    if (logger.mem) cerr << "; " << ea.fmt18();
 
     if (func.clear) {
       aprState.active.u &= ~func.select.u;

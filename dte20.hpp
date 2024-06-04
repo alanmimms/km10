@@ -150,13 +150,13 @@ struct DTE20: Device {
 
   // I/O instruction handlers
   virtual void clearIO() {
-    if (logger.dte) logger.s << " ; DTE CLEAR IO";
+    if (logger.dte) logger.s << "; DTE CLEAR IO";
   }
 
 
   virtual void doCONO(W36 iw, W36 ea) {
     CONOMask req(ea);
-    if (logger.dte) logger.s << " ; DTE CONO " << oct << ea;
+    if (logger.dte) logger.s << "; DTE CONO " << oct << ea;
 
     if (req.to11Doorbell) {
       char buf;
@@ -169,16 +169,17 @@ struct DTE20: Device {
       case ctyInput:
 
 	if (ctyQ.isEmpty()) {
-//	  cerr << "ctyIn [empty]" << logger.endl << flush;
+	  //	  cerr << "ctyIn [empty]" << logger.endl << flush;
 	} else {
 	  buf = ctyQ.dequeue() & 0177;
+	  cerr << "ctyIn [got "
+	       << hex << setw(2) << setfill('0')
+	       << (int) buf << "]" << logger.endl << flush;
 	  stateP->eptP->DTEto10Arg.rhu = buf;
-	  cerr << "ctyInput " << setw(2) << setfill('0') << hex
-	       << (int) buf << logger.endl << flush;
 	}
 
-	// Acknowledge the command. (rsxt20.l20:5924)
-	stateP->eptP->DTEMonitorOpComplete = W36(-2);
+	// Acknowledge the command. (rsxt20.l20:5980)
+	stateP->eptP->DTEMonitorOpComplete = W36(-2 & 0xFFFF);
 	break;
 
       default:
@@ -188,7 +189,7 @@ struct DTE20: Device {
 	write(1, &buf, 1);
 
 	// Acknowledge the command. (rsxt20.l20:5924)
-	stateP->eptP->DTEMonitorOpComplete = W36(-2);
+	stateP->eptP->DTEMonitorOpComplete = W36(-2 & 0xFFFF);
 
 	// XXX needs to set to-10 doorbell...?
 	break;
@@ -210,7 +211,7 @@ struct DTE20: Device {
 
 
   virtual void doCONI(W36 iw, W36 ea) {
-    if (logger.dte) logger.s << " ; DTE CONI";
+    if (logger.dte) logger.s << "; DTE CONI";
   }
 
 

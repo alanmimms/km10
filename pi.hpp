@@ -68,7 +68,7 @@ struct PIDevice: Device {
   void doCONO(W36 iw, W36 ea) {
     PIFunctions pi(ea);
 
-    if (logger.mem) logger.s << " ; " << ea.fmt18();
+    if (logger.mem) logger.s << "; " << ea.fmt18();
 
     if (pi.clearPI) {
       clearIO();

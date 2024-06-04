@@ -40,7 +40,7 @@ struct PAGDevice: Device {
 
   // I/O instruction handlers
   void doCONO(W36 iw, W36 ea) {
-    if (logger.mem) logger.s << " ; " << ea.fmt18();
+    if (logger.mem) logger.s << "; " << ea.fmt18();
     pagState.u = iw.y;
   }
 
