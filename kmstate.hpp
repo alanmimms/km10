@@ -262,7 +262,7 @@ struct KMState {
   }
 
   W36 memGetN(W36 a) {
-    W36 value = a.u < 020 ? acGetEA(a.u) : memP[a.u];
+    W36 value = a.rhu < 020 ? acGetEA(a.rhu) : memP[a.rhu];
     if (logger.mem) logger.s << "; " << a.fmtVMA() << ":" << value.fmt36();
     if (addressBPs.contains(a.vma)) running = false;
     return value;
@@ -270,10 +270,10 @@ struct KMState {
 
   void memPutN(W36 value, W36 a) {
 
-    if (a.u < 020)
-      acPutN(value, a.u);
+    if (a.rhu < 020)
+      acPutN(value, a.rhu);
     else 
-      memP[a.u] = value;
+      memP[a.rhu] = value;
 
     if (logger.mem) logger.s << "; " << a.fmtVMA() << "=" << value.fmt36();
     if (addressBPs.contains(a.vma)) running = false;
