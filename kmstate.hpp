@@ -289,15 +289,16 @@ struct KMState {
 
       // XXX there are some significant open questions about how much
       // the address wraps and how much is included in these addition
-      // and indirection steps.
+      // and indirection steps. For now, this can work for section 0
+      // or unextended code.
 
-      if (x != 0) y += acGetN(x);
+      if (x != 0) y += acGetN(x).rhs;
 
       if (i != 0) {		// Indirection
 	W36 eaw(memGetN(y));
-	i = eaw.i;
-	x = eaw.x;
 	y = eaw.y;
+	x = eaw.x;
+	i = eaw.i;
       } else {			// No indexing or indirection
 	return y;
       }
