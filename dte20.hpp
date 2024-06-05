@@ -26,7 +26,9 @@ struct DTE20: Device {
   DTE20(unsigned anAddr, KMState &aState)
     : Device(anAddr, "DTE", aState),
       protocolMode(SECONDARY),
-      isConnected(false)
+      isConnected(false),
+      console("/dev/tty"),
+      endl{"\n"}
   {
     stateP = &aState;
       
@@ -50,7 +52,7 @@ struct DTE20: Device {
 
   void connect() {
     setRaw();
-    logger.endl = "\r\n";
+    endl = "\r\n";
 
     int pipeFDs[2];
     int st = pipe(pipeFDs);
@@ -74,7 +76,7 @@ struct DTE20: Device {
       close(toIOLoopFD);
       isConnected = false;
       if (isRaw) setNormal();
-      logger.endl = "\n";
+      endl = "\n";
     }
   }
 
@@ -144,6 +146,8 @@ struct DTE20: Device {
   inline static int ttyFD{-1};
   inline static struct termios origTermios{};
 
+  ofstream console;
+  string endl;
 
   inline static TSQueue<char> ctyQ;
 
@@ -169,12 +173,13 @@ struct DTE20: Device {
       case ctyInput:
 
 	if (ctyQ.isEmpty()) {
-	  //	  cerr << "ctyIn [empty]" << logger.endl << flush;
+	  //	  cerr << "ctyIn [empty]" << endl << flush;
+	  stateP->eptP->DTEto10Arg.rhu = 0;
 	} else {
 	  buf = ctyQ.dequeue() & 0177;
 	  cerr << "ctyIn [got "
 	       << hex << setw(2) << setfill('0')
-	       << (int) buf << "]" << logger.endl << flush;
+	       << (int) buf << "]" << endl << flush;
 	  stateP->eptP->DTEto10Arg.rhu = buf;
 	}
 
@@ -196,12 +201,12 @@ struct DTE20: Device {
 
       case enterSecondaryProtocol:
 	cerr << "DTE20 enter secondary protocol command with data " << mc.data << " (ignored)."
-	     << logger.endl;
+	     << endl;
 	break;
 
       case enterPrimaryProtocol:
 	cerr << "DTE20 enter primary protocol command with data " << mc.data << " (ignored)."
-	     << logger.endl;
+	     << endl;
 	break;
       }
     } else {
@@ -236,10 +241,10 @@ struct DTE20: Device {
 	if (st < 0) throw runtime_error("Error in console TTY read()");
 
 	if (buf == 0x1C) {
-	  cerr << "[control-\\]" << logger.endl << flush;
+	  cerr << "[control-\\]\r\n" << flush;
 	  raise(SIGINT);
 	} else {
-	  cerr << "[" << setw(2) << setfill('0') << hex << (int) buf << "]" << logger.endl << flush;
+	  cerr << "[" << setw(2) << setfill('0') << hex << (int) buf << "]\r\n" << flush;
 	  ctyQ.enqueue(buf);
 	}
       }
