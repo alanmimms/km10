@@ -1,8 +1,6 @@
-#include <iostream>
 #include <assert.h>
 using namespace std;
 
-#include <gflags/gflags.h>
 #include <gtest/gtest.h>
 
 #include "kmstate.hpp"
@@ -14,10 +12,43 @@ using namespace std;
 Logger logger{};
 
 
+TEST(BasicStructures, ExecutiveProcessTable) {
+  ASSERT_EQ(sizeof(KMState::ExecutiveProcessTable), 512 * 8);
+}
+
+TEST(BasicStructures, UserProcessTable) {
+  ASSERT_EQ(sizeof(KMState::UserProcessTable), 512 * 8);
+}
+
+TEST(ADDInstruction, ADDFlavor) {
+  W36 a(0123456u, 654321u);
+  W36 b(0654321u, 123456u);
+  KMState state(256 * 1024);
+
+  // ADD
+  state.AC[5] = a;
+  EXPECT_EQ(state.AC[5], a);
+
+  state.memP[0100] = b;
+  EXPECT_EQ(state.memP[0100], b);
+
+  state.memP[01000] = W36(0270, 5, 0, 0, 0100);
+  EXPECT_EQ(state.memP[01000], W36((0270u << 9) | (5 << 5), 0100));
+
+  state.pc.u = 01000;
+  state.flags.u = 0;
+  state.maxInsns = 1;
+  KM10 km10(state);
+  km10.emulate();
+
+  EXPECT_EQ(state.AC[5], W36(a.u + b.u));
+  EXPECT_EQ(state.memP[0100], b);
+}
+
+
+
 int main(int argc, char *argv[]) {
-  assert(sizeof(KMState::ExecutiveProcessTable) == 512 * 8);
-  assert(sizeof(KMState::UserProcessTable) == 512 * 8);
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  testing::InitGoogleTest(&argc, argv);
 
   KMState state(4 * 1024 * 1024);
 
@@ -25,9 +56,9 @@ int main(int argc, char *argv[]) {
   KM10 km10(state);
 
   state.running = true;
-  km10.emulate();
+  //  km10.emulate();
 
-  return 0;
+  return RUN_ALL_TESTS();
 }
 
 

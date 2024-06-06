@@ -86,6 +86,15 @@ struct W36 {
   W36(uint64_t w = 0) : u(w) {}
   W36(unsigned lh, unsigned rh) : rhu(rh), lhu(lh) {}
 
+  // "Assembler"
+  W36(int aOp, int aAC, int aI, int aX, int aY) {
+    op = aOp;
+    ac = aAC;
+    i = aI;
+    x = aX;
+    y = aY;
+  }
+
 
   // Return mask for PDP10 bit number `n`.
   constexpr static uint64_t bit(unsigned n) {return 1ull << (35 - n);}
@@ -100,6 +109,17 @@ struct W36 {
   // Accessors
   operator uint64_t() {return u;}
   int64_t extend() {return s < 0 ? (int64_t) s | ~0ull << 36 : s;}
+
+  bool operator==(const W36 &other) const {
+    return u == other.u;
+  }
+
+
+  // For googletest stringification
+  friend void PrintTo(const W36& w, std::ostream* os) {
+    *os << w.fmt36();
+  }
+
 
   void putLH(unsigned aLH) {lhu = aLH;}
   void putRH(unsigned aRH) {rhu = aRH;}
