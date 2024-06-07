@@ -259,14 +259,14 @@ public:
     function<W36(W36,W36)> addWord = [&](W36 s1, W36 s2) -> auto const {
       uint64_t sum = (uint64_t) s1.u + (uint64_t) s2.u;
       if (sum >= W36::bit0) state.flags.tr1 = state.flags.ov = state.flags.cy1 = 1;
-      if ((int64_t) sum < -(int64_t) W36::bit0) state.flags.ov = state.flags.cy0 = 1;
+      if ((int64_t) sum < -(int64_t) W36::bit0) state.flags.tr1 = state.flags.ov = state.flags.cy0 = 1;
       return sum;
     };
     
     function<W36(W36,W36)> subWord = [&](W36 s1, W36 s2) -> auto const {
       int64_t diff = (int64_t) s1.u - (int64_t) s2.u;
       if (diff >= (int64_t) W36::bit0) state.flags.tr1 = state.flags.ov = state.flags.cy1 = 1;
-      if (diff < -(int64_t) W36::bit0) state.flags.ov = state.flags.cy0 = 1;
+      if (diff < -(int64_t) W36::bit0) state.flags.tr1 = state.flags.ov = state.flags.cy0 = 1;
       return diff;
     };
     
