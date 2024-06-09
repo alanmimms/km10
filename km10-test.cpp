@@ -12,6 +12,23 @@ using namespace std;
 Logger logger{};
 
 
+class KM10Test: public testing::Test {
+protected:
+
+  KM10Test()
+    : state(256 * 1024)
+  { }
+
+  KMState state;
+
+  
+};
+
+
+class InstructionTest: public KM10Test { };
+
+
+
 TEST(BasicStructures, ExecutiveProcessTable) {
   ASSERT_EQ(sizeof(KMState::ExecutiveProcessTable), 512 * 8);
 }
@@ -20,40 +37,103 @@ TEST(BasicStructures, UserProcessTable) {
   ASSERT_EQ(sizeof(KMState::UserProcessTable), 512 * 8);
 }
 
-TEST(ADDInstruction, ADDFlavor) {
-  W36 a(0123456u, 654321u);
-  W36 b(0654321u, 123456u);
-  KMState state(256 * 1024);
 
-  // ADD
-  state.AC[5] = a;
-  EXPECT_EQ(state.AC[5], a);
+TEST_F(InstructionTest, ADD) {
+  const unsigned pc = 01000;
+  const unsigned opLoc = 02000;
+  const unsigned acLoc = 5;
 
-  state.memP[0100] = b;
-  EXPECT_EQ(state.memP[0100], b);
+  auto runTest = [&](W36 insn, W36 a, W36 b) {
+    state.AC[acLoc] = a;
+    state.memP[opLoc] = b;
+    state.memP[pc] = insn;
 
-  state.memP[01000] = W36(0270, 5, 0, 0, 0100);
-  EXPECT_EQ(state.memP[01000], W36((0270u << 9) | (5 << 5), 0100));
+    state.pc.u = pc;
+    state.maxInsns = 1;
+    KM10 km10(state);
+    km10.emulate();
+  };
 
-  state.pc.u = 01000;
-  state.flags.u = 0;
-  state.maxInsns = 1;
-  KM10 km10(state);
-  km10.emulate();
+  auto checkUnmodifiedFlags = [&] {
+    EXPECT_EQ(state.flags.ndv | state.flags.fuf, 0);
+    EXPECT_EQ(state.flags.afi | state.flags.pub, 0);
+    EXPECT_EQ(state.flags.uio | state.flags.usr, 0);
+    EXPECT_EQ(state.flags.fpd | state.flags.fov, 0);
+  };
 
-  EXPECT_EQ(state.AC[5], W36(a.u + b.u));
-  EXPECT_EQ(state.memP[0100], b);
+  auto checkFlagsC0 = [&](string &cx) {
+    checkUnmodifiedFlags();
+    EXPECT_EQ(state.flags.tr1, 1) << cx;
+    EXPECT_EQ(state.flags.tr2, 0) << cx;
+    EXPECT_EQ(state.flags.cy1, 0) << cx;
+    EXPECT_EQ(state.flags.cy0, 1) << cx;
+    EXPECT_EQ(state.flags.ov, 1)  << cx;
+  };
 
-  EXPECT_EQ(state.flags.ndv | state.flags.fuf, 0);
-  EXPECT_EQ(state.flags.afi | state.flags.pub, 0);
-  EXPECT_EQ(state.flags.uio | state.flags.usr, 0);
-  EXPECT_EQ(state.flags.fpd | state.flags.fov, 0);
+  auto checkFlagsC1 = [&] {
+    checkUnmodifiedFlags();
+    EXPECT_EQ(state.flags.tr1, 1);
+    EXPECT_EQ(state.flags.tr2, 0);
+    EXPECT_EQ(state.flags.cy1, 1);
+    EXPECT_EQ(state.flags.cy0, 0);
+    EXPECT_EQ(state.flags.ov, 1);
+  };
 
-  EXPECT_EQ(state.flags.tr1, 1);
-  EXPECT_EQ(state.flags.tr2, 0);
-  EXPECT_EQ(state.flags.cy1, 1);
-  EXPECT_EQ(state.flags.cy0, 0);
-  EXPECT_EQ(state.flags.ov, 1);
+  auto checkFlagsNC = [&] {
+    checkUnmodifiedFlags();
+    EXPECT_EQ(state.flags.tr1, 0);
+    EXPECT_EQ(state.flags.tr2, 0);
+    EXPECT_EQ(state.flags.cy1, 0);
+    EXPECT_EQ(state.flags.cy0, 0);
+    EXPECT_EQ(state.flags.ov, 0);
+  };
+
+  const W36 aBig(0123456u, 0654321u);
+  const W36 aNeg(0765432u, 0555555u);
+  const W36 bNeg(0654321u, 0123456u);
+  const W36 bPos(0000000u, 0123456u);
+  W36 sum;
+
+  // ADD with CY1
+  sum = W36(aBig.u + bNeg.u);
+  runTest(W36(0270, acLoc, 0, 0, opLoc), aBig, bNeg);
+  EXPECT_EQ(state.AC[acLoc].u, sum);
+  EXPECT_EQ(state.memP[opLoc], bNeg);
+  checkFlagsC1();
+
+  // ADD with CY0
+  sum = W36(aNeg.u + bNeg.u);
+  runTest(W36(0270, acLoc, 0, 0, opLoc), aNeg, bNeg);
+  EXPECT_EQ(state.AC[acLoc], sum);
+  EXPECT_EQ(state.memP[opLoc], bNeg);
+  checkFlagsC0();
+
+  // ADD with no carry
+  sum = W36(aBig.u + bPos.u);
+  runTest(W36(0270, acLoc, 0, 0, opLoc), aBig, bPos);
+  EXPECT_EQ(state.AC[acLoc], sum);
+  EXPECT_EQ(state.memP[opLoc], bPos);
+  checkFlagsC0();
+
+  // ADDI
+  sum = W36(aBig.u + bPos.rhu);
+  runTest(W36(0271, acLoc, 0, 0, bPos.rhu), aBig, bPos.rhu);
+  EXPECT_EQ(state.AC[acLoc], sum);
+  EXPECT_EQ(state.memP[opLoc], bPos.rhu);
+  checkFlagsNC();
+
+  // ADDM
+  sum = W36(aBig.u + bPos.u);
+  runTest(W36(0272, acLoc, 0, 0, opLoc), aBig, bPos);
+  EXPECT_EQ(state.AC[acLoc], aBig);
+  EXPECT_EQ(state.memP[opLoc], sum);
+  checkFlagsNC();
+
+  // ADDB
+  runTest(W36(0273, acLoc, 0, 0, opLoc), aBig, bPos);
+  EXPECT_EQ(state.AC[acLoc], sum);
+  EXPECT_EQ(state.memP[opLoc], sum);
+  checkFlagsNC();
 }
 
 

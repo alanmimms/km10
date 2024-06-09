@@ -20,12 +20,14 @@ struct KMState {
     : pc(0),
       flags(0u),
       AC(ACbanks[0]),
+      memorySize(nWords),
       maxInsns(0),
       addressBPs{},
       executeBPs{}
   {
+    // Note this anonymous mmap() implicitly zeroes the virtual memory.
     physicalP = (W36 *) mmap(nullptr,
-			     nWords * sizeof(uint64_t),
+			     memorySize * sizeof(uint64_t),
 			     PROT_READ | PROT_WRITE,
 			     MAP_SHARED | MAP_ANONYMOUS,
 			     0, 0);
@@ -37,6 +39,10 @@ struct KMState {
 
     // Initially, we have no user mode mapping.
     uptP = nullptr;
+  }
+
+  ~KMState() {
+    if (physicalP) munmap(physicalP, memorySize * sizeof(uint64_t));
   }
   
   // Pointer to physical memory.
@@ -81,19 +87,9 @@ struct KMState {
     };
 
     struct ATTRPACKED {
-      unsigned: 5;
-      unsigned: 1;
-      unsigned: 1;
-      unsigned: 1;
-      unsigned: 1;
-      unsigned: 1;
-      unsigned: 1;
+      unsigned: 11;
       unsigned pcu: 1;
-      unsigned: 1;
-      unsigned: 1;
-      unsigned: 1;
-      unsigned: 1;
-      unsigned: 1;
+      unsigned: 5;
       unsigned pcp: 1;
     };
 
@@ -237,6 +233,7 @@ struct KMState {
 
 
   W36 *AC;
+  unsigned memorySize;
   uint64_t maxInsns;
   uint64_t nInsns;
   unordered_set<unsigned> addressBPs;
