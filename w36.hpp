@@ -29,8 +29,10 @@ struct W36 {
 
   union {
     int64_t s: 36;
+    int64_t s64: 64;
 
     uint64_t u: 36;
+    uint64_t u64: 64;
 
     struct ATTRPACKED {
       signed rhs: 18;
@@ -76,11 +78,15 @@ struct W36 {
   };
 
 
+  // Types
+  using T2 = tuple<W36,W36>;
+
   // Constants
   static inline const auto halfOnes = 0777777u;
-  static inline const auto allOnes = 07777777'777777ull;
+  static inline const uint64_t allOnes = 07777777'777777ull;
   static inline const uint64_t bit0 = 1ull << 35;
-  static inline const int64_t signedBit0 = 1ull << 35;
+  static inline const int64_t signedBit0 = 1ll << 35;
+  static inline const int64_t bitM1 = 1ll << 36;
 
   // Constructors
   W36(uint64_t w = 0) : u(w) {}
@@ -107,12 +113,9 @@ struct W36 {
 
 
   // Accessors
-  operator uint64_t() {return u;}
-  int64_t extend() {return s < 0 ? (int64_t) s | ~0ull << 36 : s;}
-
-  bool operator==(const W36 &other) const {
-    return u == other.u;
-  }
+  operator uint64_t() const {return u;}
+  int64_t extend() const {return s < 0 ? (int64_t) s | ~0ll << 36 : s;}
+  bool operator==(const W36 &other) const {return u == other.u;}
 
 
   // For googletest stringification
