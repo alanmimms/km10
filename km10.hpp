@@ -277,7 +277,7 @@ public:
 	state.flags.tr1 = state.flags.ov = state.flags.cy1 = 1;
       }
 
-      return sum & W36::allOnes;
+      return sum;
     };
     
     WFuncWW subWord = [&](W36 s1, W36 s2) -> auto const {
@@ -289,7 +289,7 @@ public:
 	state.flags.tr1 = state.flags.ov = state.flags.cy1 = 1;
       }
 
-      return diff & W36::allOnes;
+      return diff;
     };
     
     DFuncWW mulWord = [&](W36 s1, W36 s2) -> auto const {
@@ -902,19 +902,19 @@ public:
 	break;
 
       case 0274:		// SUB
-	doBinOpXX(memGet, acGet, subWord, acPut);
+	doBinOpXX(acGet, memGet, subWord, acPut);
 	break;
 
       case 0275:		// SUBI
-	doBinOpXX(immediate, acGet, subWord, acPut);
+	doBinOpXX(acGet, immediate, subWord, acPut);
 	break;
 
       case 0276:		// SUBM
-	doBinOpXX(memGet, acGet, subWord, memPut);
+	doBinOpXX(acGet, memGet, subWord, memPut);
 	break;
 
       case 0277:		// SUBB
-	doBinOpXX(memGet, acGet, subWord, bothPut);
+	doBinOpXX(acGet, memGet, subWord, bothPut);
 	break;
 
       case 0300:		// CAI

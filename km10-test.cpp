@@ -47,12 +47,12 @@ static void checkUnmodifiedFlags(KMState &state, string cx) {
   EXPECT_EQ(state.flags.afi | state.flags.pub, 0) << cx;
   EXPECT_EQ(state.flags.uio | state.flags.usr, 0) << cx;
   EXPECT_EQ(state.flags.fpd | state.flags.fov, 0) << cx;
+  EXPECT_EQ(state.flags.tr2, 0) << cx;
 }
 
 
 static void checkFlagsC0(KMState &state, string cx) {
   EXPECT_EQ(state.flags.tr1, 1) << cx;
-  EXPECT_EQ(state.flags.tr2, 0) << cx;
   EXPECT_EQ(state.flags.cy1, 0) << cx;
   EXPECT_EQ(state.flags.cy0, 1) << cx;
   EXPECT_EQ(state.flags.ov, 1)  << cx;
@@ -60,7 +60,6 @@ static void checkFlagsC0(KMState &state, string cx) {
 
 static void checkFlagsC1(KMState &state, string cx) {
   EXPECT_EQ(state.flags.tr1, 1) << cx;
-  EXPECT_EQ(state.flags.tr2, 0) << cx;
   EXPECT_EQ(state.flags.cy1, 1) << cx;
   EXPECT_EQ(state.flags.cy0, 0) << cx;
   EXPECT_EQ(state.flags.ov, 1) << cx;
@@ -68,7 +67,6 @@ static void checkFlagsC1(KMState &state, string cx) {
 
 static void checkFlagsNC(KMState &state, string cx) {
   EXPECT_EQ(state.flags.tr1, 0) << cx;
-  EXPECT_EQ(state.flags.tr2, 0) << cx;
   EXPECT_EQ(state.flags.cy1, 0) << cx;
   EXPECT_EQ(state.flags.cy0, 0) << cx;
   EXPECT_EQ(state.flags.ov, 0) << cx;
@@ -188,7 +186,7 @@ TEST_F(InstructionTest, SUB) {
 
   const W36 aBig(0377777u, 0654321u);
   const W36 aNeg(0765432u, 0555555u);
-  const W36 bNeg(0400000u, 0123456u);
+  const W36 bNeg(0400000u, 0111111u);
   const W36 bPos(0000000u, 0123456u);
 
   cx = "SUB CY1";
@@ -196,16 +194,16 @@ TEST_F(InstructionTest, SUB) {
 	  T3{aBig, bNeg, aBig.extend() - bNeg.extend()},
 	  [&](KMState &state, T3 values, string cx) {
 	    EXPECT_EQ(state.AC[acLoc], get<2>(values)) << cx;
-	    EXPECT_EQ(state.memP[opnLoc], get<0>(values)) << cx;
+	    EXPECT_EQ(state.memP[opnLoc], get<1>(values)) << cx;
 	    checkFlagsC1(state, cx);
 	  });
 
   cx = "SUB CY0";
   subTest(W36(0274, acLoc, 0, 0, opnLoc), 
-	  T3{bNeg, bNeg, bNeg.extend() - bNeg.extend()},
+	  T3{bNeg, bPos, bNeg.extend() - bPos.extend()},
 	  [&](KMState &state, T3 values, string cx) {
 	    EXPECT_EQ(state.AC[acLoc], get<2>(values)) << cx;
-	    EXPECT_EQ(state.memP[opnLoc], get<0>(values)) << cx;
+	    EXPECT_EQ(state.memP[opnLoc], get<1>(values)) << cx;
 	    checkFlagsC0(state, cx);
 	  });
 
