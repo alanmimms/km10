@@ -80,6 +80,7 @@ struct W36 {
 
   // Types
   using T2 = tuple<W36,W36>;
+  using T3 = tuple<W36,W36,W36>;
 
   // Constants
   static inline const auto halfOnes = 0777777u;

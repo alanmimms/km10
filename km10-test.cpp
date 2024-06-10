@@ -13,6 +13,7 @@ Logger logger{};
 
 
 using T2 = W36::T2;
+using T3 = W36::T3;
 
 
 class KM10Test: public testing::Test {
@@ -80,15 +81,14 @@ TEST_F(InstructionTest, ADD) {
   const unsigned acLoc = 5;
   string cx;
 
-  auto runTest = [&](W36 insn,
-		     T2 inVec,
-		     function<void(KMState&,W36,T2,string)> checker)
+  auto addTest = [&](W36 insn,
+		     T3 values,	// {a,b,result}
+		     function<void(KMState&,T3,string)> checker)
   {
     KMState state(512 * 1024);
 
-    W36 sum(get<0>(inVec).extend() + get<1>(inVec).extend());
-    state.AC[acLoc] = get<0>(inVec);
-    state.memP[opnLoc] = get<1>(inVec);
+    state.AC[acLoc] = get<0>(values);
+    state.memP[opnLoc] = get<1>(values);
     state.memP[pc] = insn;
 
     state.pc.u = pc;
@@ -97,7 +97,7 @@ TEST_F(InstructionTest, ADD) {
     KM10{state}.emulate();
 
     checkUnmodifiedFlags(state, cx);
-    checker(state, sum, inVec, cx);
+    checker(state, values, cx);
   };
 
   const W36 aBig(0377777u, 0654321u);
@@ -106,59 +106,145 @@ TEST_F(InstructionTest, ADD) {
   const W36 bPos(0000000u, 0123456u);
 
   cx = "ADD CY1";
-  runTest(W36(0270, acLoc, 0, 0, opnLoc),
-	  T2{aBig, aBig},
-	  [&](KMState &state, W36 sum, T2 inVec, string cx) {
-	    EXPECT_EQ(state.AC[acLoc], sum);
-	    EXPECT_EQ(state.memP[opnLoc], get<0>(inVec));
+  addTest(W36(0270, acLoc, 0, 0, opnLoc),
+	  T3{aBig, aBig, aBig.extend() + aBig.extend()},
+	  [&](KMState &state, T3 values, string cx) {
+	    EXPECT_EQ(state.AC[acLoc], get<2>(values)) << cx;
+	    EXPECT_EQ(state.memP[opnLoc], get<0>(values)) << cx;
 	    checkFlagsC1(state, cx);
 	  });
 
   cx = "ADD CY0";
-  runTest(W36(0270, acLoc, 0, 0, opnLoc), 
-	  T2{bNeg, bNeg},
-	  [&](KMState &state, W36 sum, T2 inVec, string cx) {
-	    EXPECT_EQ(state.AC[acLoc], sum);
-	    EXPECT_EQ(state.memP[opnLoc], get<0>(inVec));
+  addTest(W36(0270, acLoc, 0, 0, opnLoc), 
+	  T3{bNeg, bNeg, bNeg.extend() + bNeg.extend()},
+	  [&](KMState &state, T3 values, string cx) {
+	    EXPECT_EQ(state.AC[acLoc], get<2>(values)) << cx;
+	    EXPECT_EQ(state.memP[opnLoc], get<0>(values)) << cx;
 	    checkFlagsC0(state, cx);
 	  });
 
   cx = "ADD NC";
-  runTest(W36(0270, acLoc, 0, 0, opnLoc),
-	  T2{aBig, bPos},
-	  [&](KMState &state, W36 sum, T2 inVec, string cx) {
-	    EXPECT_EQ(state.AC[acLoc], sum);
-	    EXPECT_EQ(state.memP[opnLoc], get<1>(inVec));
+  addTest(W36(0270, acLoc, 0, 0, opnLoc),
+	  T3{aBig, bPos, aBig.extend() + bPos.extend()},
+	  [&](KMState &state, T3 values, string cx) {
+	    EXPECT_EQ(state.AC[acLoc], get<2>(values)) << cx;
+	    EXPECT_EQ(state.memP[opnLoc], get<1>(values)) << cx;
 	    checkFlagsNC(state, cx);
 	  });
 
   cx = "ADDI";
-  runTest(W36(0271, acLoc, 0, 0, bPos.rhu),
-	  T2{aBig, bPos.rhu},
-	  [&](KMState &state, W36 sum, T2 inVec, string cx) {
-	    EXPECT_EQ(state.AC[acLoc], sum);
-	    EXPECT_EQ(state.memP[opnLoc], W36(0, get<1>(inVec).rhu));
+  addTest(W36(0271, acLoc, 0, 0, bPos.rhu),
+	  T3{aBig, bPos.rhu, aBig.extend() + W36(bPos.rhu).extend()},
+	  [&](KMState &state, T3 values, string cx) {
+	    EXPECT_EQ(state.AC[acLoc], get<2>(values)) << cx;
+	    EXPECT_EQ(state.memP[opnLoc], W36(0, get<1>(values).rhu)) << cx;
 	    checkFlagsNC(state, cx);
 	  });
 
   cx = "ADDM";
-  runTest(W36(0272, acLoc, 0, 0, opnLoc), 
-	  T2{aBig, bPos},
-	  [&](KMState &state, W36 sum, T2 inVec, string cx) {
-	    EXPECT_EQ(state.AC[acLoc], get<0>(inVec));
-	    EXPECT_EQ(state.memP[opnLoc], sum);
+  addTest(W36(0272, acLoc, 0, 0, opnLoc), 
+	  T3{aBig, bPos, aBig.extend() + bPos.extend()},
+	  [&](KMState &state, T3 values, string cx) {
+	    EXPECT_EQ(state.AC[acLoc], get<0>(values)) << cx;
+	    EXPECT_EQ(state.memP[opnLoc], get<2>(values)) << cx;
 	    checkFlagsNC(state, cx);
 	  });
 
   cx = "ADDB";
-  runTest(W36(0273, acLoc, 0, 0, opnLoc), T2{aBig, bPos},
-	  [&](KMState &state, W36 sum, T2 inVec, string cx) {
-	    EXPECT_EQ(state.AC[acLoc], sum);
-	    EXPECT_EQ(state.memP[opnLoc], sum);
+  addTest(W36(0273, acLoc, 0, 0, opnLoc),
+	  T3{aBig, bPos, aBig.extend() + bPos.extend()},
+	  [&](KMState &state, T3 values, string cx) {
+	    EXPECT_EQ(state.AC[acLoc], get<2>(values)) << cx;
+	    EXPECT_EQ(state.memP[opnLoc], get<2>(values)) << cx;
 	    checkFlagsNC(state, cx);
 	  });
 }
 
+
+TEST_F(InstructionTest, SUB) {
+  const unsigned pc = 01000;
+  const unsigned opnLoc = 02000;
+  const unsigned acLoc = 5;
+  string cx;
+
+  auto subTest = [&](W36 insn,
+		     T3 values,	// {a,b,result}
+		     function<void(KMState&,T3,string)> checker)
+  {
+    KMState state(512 * 1024);
+
+    state.AC[acLoc] = get<0>(values);
+    state.memP[opnLoc] = get<1>(values);
+    state.memP[pc] = insn;
+
+    state.pc.u = pc;
+    state.maxInsns = 1;
+    state.running = true;
+    KM10{state}.emulate();
+
+    checkUnmodifiedFlags(state, cx);
+    checker(state, values, cx);
+  };
+
+  const W36 aBig(0377777u, 0654321u);
+  const W36 aNeg(0765432u, 0555555u);
+  const W36 bNeg(0400000u, 0123456u);
+  const W36 bPos(0000000u, 0123456u);
+
+  cx = "SUB CY1";
+  subTest(W36(0274, acLoc, 0, 0, opnLoc),
+	  T3{aBig, bNeg, aBig.extend() - bNeg.extend()},
+	  [&](KMState &state, T3 values, string cx) {
+	    EXPECT_EQ(state.AC[acLoc], get<2>(values)) << cx;
+	    EXPECT_EQ(state.memP[opnLoc], get<0>(values)) << cx;
+	    checkFlagsC1(state, cx);
+	  });
+
+  cx = "SUB CY0";
+  subTest(W36(0274, acLoc, 0, 0, opnLoc), 
+	  T3{bNeg, bNeg, bNeg.extend() - bNeg.extend()},
+	  [&](KMState &state, T3 values, string cx) {
+	    EXPECT_EQ(state.AC[acLoc], get<2>(values)) << cx;
+	    EXPECT_EQ(state.memP[opnLoc], get<0>(values)) << cx;
+	    checkFlagsC0(state, cx);
+	  });
+
+  cx = "SUB NC";
+  subTest(W36(0274, acLoc, 0, 0, opnLoc),
+	  T3{aBig, bPos, aBig.extend() - bPos.extend()},
+	  [&](KMState &state, T3 values, string cx) {
+	    EXPECT_EQ(state.AC[acLoc], get<2>(values)) << cx;
+	    EXPECT_EQ(state.memP[opnLoc], get<1>(values)) << cx;
+	    checkFlagsNC(state, cx);
+	  });
+
+  cx = "SUBI";
+  subTest(W36(0275, acLoc, 0, 0, bPos.rhu),
+	  T3{aBig, bPos.rhu, aBig.extend() - W36(bPos.rhu).extend()},
+	  [&](KMState &state, T3 values, string cx) {
+	    EXPECT_EQ(state.AC[acLoc], get<2>(values)) << cx;
+	    EXPECT_EQ(state.memP[opnLoc], W36(0, get<1>(values).rhu)) << cx;
+	    checkFlagsNC(state, cx);
+	  });
+
+  cx = "SUBM";
+  subTest(W36(0276, acLoc, 0, 0, opnLoc), 
+	  T3{aBig, bPos, aBig.extend() - bPos.extend()},
+	  [&](KMState &state, T3 values, string cx) {
+	    EXPECT_EQ(state.AC[acLoc], get<0>(values)) << cx;
+	    EXPECT_EQ(state.memP[opnLoc], get<2>(values)) << cx;
+	    checkFlagsNC(state, cx);
+	  });
+
+  cx = "SUBB";
+  subTest(W36(0277, acLoc, 0, 0, opnLoc),
+	  T3{aBig, bPos, aBig.extend() - bPos.extend()},
+	  [&](KMState &state, T3 values, string cx) {
+	    EXPECT_EQ(state.AC[acLoc], get<2>(values)) << cx;
+	    EXPECT_EQ(state.memP[opnLoc], get<2>(values)) << cx;
+	    checkFlagsNC(state, cx);
+	  });
+}
 
 
 int main(int argc, char *argv[]) {

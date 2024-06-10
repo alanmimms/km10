@@ -281,10 +281,15 @@ public:
     };
     
     WFuncWW subWord = [&](W36 s1, W36 s2) -> auto const {
-      int64_t diff = s1.s - s2.s;
-      if (diff >= W36::signedBit0) state.flags.tr1 = state.flags.ov = state.flags.cy1 = 1;
-      if (diff < -W36::signedBit0) state.flags.tr1 = state.flags.ov = state.flags.cy0 = 1;
-      return diff;
+      auto diff = s1.extend() - s2.extend();
+
+      if (diff < -W36::signedBit0) {
+	state.flags.tr1 = state.flags.ov = state.flags.cy0 = 1;
+      } else if ((uint64_t) diff >= W36::bit0) {
+	state.flags.tr1 = state.flags.ov = state.flags.cy1 = 1;
+      }
+
+      return diff & W36::allOnes;
     };
     
     DFuncWW mulWord = [&](W36 s1, W36 s2) -> auto const {
