@@ -743,7 +743,7 @@ struct W72 {
     };
   };
 
-  W72(int128_t v) :s(v) {}
+  W72(int128_t v = 0) :s(v) {}
   W72(W36 aHi, W36 aLo) :lo(aLo), hi(aHi) {}
 
   operator uint128_t() {return u;}
