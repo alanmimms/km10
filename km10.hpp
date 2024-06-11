@@ -49,6 +49,7 @@ public:
   using FuncW = function<void(W36)>;
   using WFuncW = function<W36(W36)>;
   using FuncWW = function<void(W36,W36)>;
+  using FuncD = function<void(W72)>;
   using WFuncWW = function<W36(W36,W36)>;
   using DFuncWW = function<W72(W36,W36)>;
   using BoolPredW = function<bool(W36)>;
@@ -90,8 +91,15 @@ public:
       state.acPutN(value, iw.ac);
     };
 
-    FuncWW acPut2 = [&](W36 hi, W36 lo) -> void {
-      state.acPutN(hi, iw.ac);
+    FuncD acPut2 = [&](W72 v) -> void {
+      auto [hi, lo] = v.halves();
+
+      cerr << "acPut2: " << v.fmt72()
+	   << "    AC" << oct << iw.ac+0 << "=" << hi.fmt36()
+	   << "    AC" << oct << iw.ac+1 << "=" << lo.fmt36()
+	   << logger.endl;
+
+      state.acPutN(hi, iw.ac+0);
       state.acPutN(lo, iw.ac+1);
     };
 
@@ -113,8 +121,9 @@ public:
       memPut(value);
     };
 
-    FuncWW bothPut2 = [&](W36 hi, W36 lo) -> void {
-      state.acPutN(hi, iw.ac);
+    FuncD bothPut2 = [&](W72 v) -> void {
+      auto [hi, lo] = v.halves();
+      state.acPutN(hi, iw.ac+0);
       state.acPutN(lo, iw.ac+1);
       memPut(hi);
     };
@@ -134,11 +143,11 @@ public:
       return v;
     };
 
-    WFunc memGetSwapped = [&]() -> W36 {return swap(memGet());};
+    WFunc memGetSwapped = [&]() {return swap(memGet());};
 
-    FuncWW memPutHi = [&](W36 hi, W36 lo) -> void {memPut(hi);};
+    FuncD memPutHi = [&](W72 v) {memPut(v.hi);};
 
-    WFunc immediate = [&]() -> W36 {return W36(state.pc.isSection0() ? 0 : ea.lhu, ea.rhu);};
+    WFunc immediate = [&]() {return W36(state.pc.isSection0() ? 0 : ea.lhu, ea.rhu);};
 
     // Condition testing predicates
     BoolPredW isLT0  = [&](W36 v) -> bool const {return v.s <  0;};
@@ -293,30 +302,37 @@ public:
     };
     
     DFuncWW mulWord = [&](W36 s1, W36 s2) -> auto const {
-      W72 prod = (int128_t) s1.s * (int128_t) s2.s;
+      W72 prod{(int128_t) s1.extend() * s2.extend()};
 
-      if (s1.s == W36::signedBit0 && s2.s == W36::signedBit0) {
-	state.flags.tr1 = state.flags.ov = state.flags.cy1 = 1;
+      if (s1.u == W36::bit0 && s2.u == W36::bit0) {
+	state.flags.tr1 = state.flags.ov = 1;
+	return W72{1ull << 34, 0};
       }
 
-      return W72{W36(prod.hi), W36(prod.lo)};
+      return prod;
     };
     
     WFuncWW imulWord = [&](W36 s1, W36 s2) -> auto const {
-      int128_t prod = (int128_t) s1.s * (int128_t) s2.s;
+      W72 prod{(int128_t) s1.extend() * s2.extend()};
 
-      if (s1.s == W36::signedBit0 && s2.s == W36::signedBit0) {
-	state.flags.tr1 = state.flags.ov = state.flags.cy1 = 1;
+      if (s1.u == W36::bit0 && s2.u == W36::bit0) {
+	state.flags.tr1 = state.flags.ov = 1;
       }
 
-      return W36((prod < 0 ? W36::bit0 : 0) | ((W36::allOnes >> 1) & prod));
+      return W36((prod.s < 0 ? W36::bit0 : 0) | ((W36::allOnes >> 1) & prod.u));
     };
     
     DFuncWW divWord = [&](W36 s1, W36 s2) -> auto const {
-      int128_t d = (int128_t) s1.s / (int128_t) s2.s;
-      int128_t r = (int128_t) s1.s % (int128_t) s2.s;
 
-      if (s1.s == W36::signedBit0 && s2.s == W36::signedBit0) {
+      if (s2.u == 0) {
+	state.flags.ndv = 1;
+	return W72{0};
+      }
+
+      int128_t d = (int128_t) s1.extend() / (int128_t) s2.extend();
+      int128_t r = (int128_t) s1.extend() % (int128_t) s2.extend();
+
+      if (s1.u == W36::bit0 && s2.u == W36::bit0) {
 	state.flags.tr1 = state.flags.ov = state.flags.cy1 = 1;
       }
 
@@ -324,11 +340,16 @@ public:
     };
     
     DFuncWW idivWord = [&](W36 s1, W36 s2) -> auto const {
-      assert(s2.s != 0);
-      int128_t d = (int128_t) s1.s / (int128_t) s2.s;
-      int128_t r = (int128_t) s1.s % (int128_t) s2.s;
 
-      if (s1.s == W36::signedBit0 && s2.s == W36::signedBit0) {
+      if (s2.u == 0) {
+	state.flags.ndv = 1;
+	return W72{0};
+      }
+
+      int128_t d = (int128_t) s1.extend() / (int128_t) s2.extend();
+      int128_t r = (int128_t) s1.extend() % (int128_t) s2.extend();
+
+      if (s1.u == W36::bit0 && s2.u == W36::bit0) {
 	state.flags.tr1 = state.flags.ov = state.flags.cy1 = 1;
       }
 
@@ -373,20 +394,19 @@ public:
     auto doBinOp2XX = [&](WFunc &doGetSrc1F,
 			  WFunc &doGetSrc2F,
 			  DFuncWW &doModifyF,
-			  FuncWW &doPutDstF) -> void
+			  FuncD &doPutDstF) -> void
     {
-      W72 result{doModifyF(doGetSrc1F(), doGetSrc2F())};
-      doPutDstF(result.hi, result.lo);
+      doPutDstF(doModifyF(doGetSrc1F(), doGetSrc2F()));
     };
 
 
     // Binary comparison predicates
-    BoolPredWW isLT    = [&](W36 v1, W36 v2) -> bool const {return v1.s <  v2.s;};
-    BoolPredWW isLE    = [&](W36 v1, W36 v2) -> bool const {return v1.s <= v2.s;};
-    BoolPredWW isGT    = [&](W36 v1, W36 v2) -> bool const {return v1.s >  v2.s;};
-    BoolPredWW isGE    = [&](W36 v1, W36 v2) -> bool const {return v1.s >= v2.s;};
-    BoolPredWW isNE    = [&](W36 v1, W36 v2) -> bool const {return v1.s != v2.s;};
-    BoolPredWW isEQ    = [&](W36 v1, W36 v2) -> bool const {return v1.s == v2.s;};
+    BoolPredWW isLT    = [&](W36 v1, W36 v2) -> bool const {return v1.extend() <  v2.extend();};
+    BoolPredWW isLE    = [&](W36 v1, W36 v2) -> bool const {return v1.extend() <= v2.extend();};
+    BoolPredWW isGT    = [&](W36 v1, W36 v2) -> bool const {return v1.extend() >  v2.extend();};
+    BoolPredWW isGE    = [&](W36 v1, W36 v2) -> bool const {return v1.extend() >= v2.extend();};
+    BoolPredWW isNE    = [&](W36 v1, W36 v2) -> bool const {return v1.extend() != v2.extend();};
+    BoolPredWW isEQ    = [&](W36 v1, W36 v2) -> bool const {return v1.extend() == v2.extend();};
     BoolPredWW always2 = [&](W36 v1, W36 v2) -> bool const {return true;};
     BoolPredWW never2  = [&](W36 v1, W36 v2) -> bool const {return false;};
 
@@ -417,7 +437,7 @@ public:
 
 	if (v.u == W36::allOnes >> 1) {
 	  state.flags.tr1 = state.flags.ov  = state.flags.cy1 = 1;
-	} else if (v.s == -1) {
+	} else if (v.extend() == -1) {
 	  state.flags.cy0 = state.flags.cy1 = 1;
 	}
       } else {			// Decrement
@@ -578,35 +598,35 @@ public:
 	break;
 
       case 0220:		// IMUL
-	doBinOpXX(memGet, acGet, imulWord, acPut);
+	doBinOpXX(acGet, memGet, imulWord, acPut);
 	break;
 
       case 0221:		// IMULI
-	doBinOpXX(immediate, acGet, imulWord, acPut);
+	doBinOpXX(acGet, immediate, imulWord, acPut);
 	break;
 
       case 0222:		// IMULM
-	doBinOpXX(memGet, acGet, imulWord, memPut);
+	doBinOpXX(acGet, memGet, imulWord, memPut);
 	break;
 
       case 0223:		// IMULB
-	doBinOpXX(memGet, acGet, imulWord, bothPut);
+	doBinOpXX(acGet, memGet, imulWord, bothPut);
 	break;
 
       case 0224:		// MUL
-	doBinOp2XX(memGet, acGet, mulWord, acPut2);
+	doBinOp2XX(acGet, memGet, mulWord, acPut2);
 	break;
 
       case 0225:		// MULI
-	doBinOp2XX(immediate, acGet, mulWord, acPut2);
+	doBinOp2XX(acGet, immediate, mulWord, acPut2);
 	break;
 
       case 0226:		// MULM
-	doBinOp2XX(memGet, acGet, mulWord, memPutHi);
+	doBinOp2XX(acGet, memGet, mulWord, memPutHi);
 	break;
 
       case 0227:		// MULB
-	doBinOp2XX(memGet, acGet, mulWord, bothPut2);
+	doBinOp2XX(acGet, memGet, mulWord, bothPut2);
 	break;
 
       case 0230:		// IDIV
@@ -659,7 +679,7 @@ public:
 
 	// Set flags. XXX not sure if these should be set for negative
 	// shift count. 1982_ProcRefMan.pdf p.97 is not clear.
-	if ((a.s > 0 && lostBits.u != 0) || (a.s < 0 && lostBits.u == 0))
+	if ((a.extend() > 0 && lostBits.u != 0) || (a.extend() < 0 && lostBits.u == 0))
 	  state.flags.tr1 = state.flags.ov = 1;
 
 	// Restore sign bit from before shift.
@@ -702,10 +722,10 @@ public:
       case 0243: 		// JFFO
 	tmp = acGet();
 
-	if (tmp.s != 0) {
+	if (tmp.extend() != 0) {
 	  unsigned count = 0;
 
-	  while (tmp.s >= 0) {
+	  while (tmp.extend() >= 0) {
 	    ++count;
 	    tmp.u <<= 1;
 	  }
@@ -724,8 +744,9 @@ public:
 	else if (ea.rhs < 0)
 	  a.u >>= -(ea.rhs & 0377);
 
-	state.acPutN(a.hi, iw.ac+0);
-	state.acPutN(a.lo, iw.ac+1);
+	auto [hi, lo] = a.halves();
+	state.acPutN(hi, iw.ac+0);
+	state.acPutN(lo, iw.ac+1);
 	break;
       }
 
@@ -768,7 +789,7 @@ public:
 	tmp = W36(tmp.lhu + 1, tmp.rhu + 1);
 	acPut(tmp);
 
-	if (tmp.s >= 0) {
+	if (tmp.extend() >= 0) {
 	  logFlow("jump");
 	  nextPC = ea;
 	}
@@ -780,7 +801,7 @@ public:
 	tmp = W36(tmp.lhu + 1, tmp.rhu + 1);
 	acPut(tmp);
 
-	if (tmp.s < 0) {
+	if (tmp.extend() < 0) {
 	  logFlow("jump");
 	  nextPC = ea;
 	}
@@ -886,19 +907,19 @@ public:
 	break;
 
       case 0270:		// ADD
-	doBinOpXX(memGet, acGet, addWord, acPut);
+	doBinOpXX(acGet, memGet, addWord, acPut);
 	break;
 
       case 0271:		// ADDI
-	doBinOpXX(immediate, acGet, addWord, acPut);
+	doBinOpXX(acGet, immediate, addWord, acPut);
 	break;
 
       case 0272:		// ADDM
-	doBinOpXX(memGet, acGet, addWord, memPut);
+	doBinOpXX(acGet, memGet, addWord, memPut);
 	break;
 
       case 0273:		// ADDB
-	doBinOpXX(memGet, acGet, addWord, bothPut);
+	doBinOpXX(acGet, memGet, addWord, bothPut);
 	break;
 
       case 0274:		// SUB

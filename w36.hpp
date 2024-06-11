@@ -743,9 +743,17 @@ struct W72 {
     };
   };
 
-  W72(int128_t v = 0) :s(v) {}
-  W72(W36 aHi, W36 aLo) :lo(aLo), hi(aHi) {}
+  W72(int128_t v = 0) : s(v) {}
+  W72(W36 aHi, W36 aLo) : lo(aLo), hi(aHi) {}
 
   operator uint128_t() {return u;}
   operator int128_t() {return s;}
+
+  tuple<W36,W36> halves() const {return tuple<W36,W36>(hi, lo);}
+
+  string fmt72() const {
+    ostringstream s;
+    s << W36(hi).fmt36() << ",,," << W36(lo).fmt36();
+    return s.str();
+  }
 };

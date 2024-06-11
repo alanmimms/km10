@@ -16,7 +16,7 @@ using namespace std;
 
 
 struct KMState {
-  KMState(unsigned nWords)
+  KMState(unsigned nWords = 512 * 1024)
     : pc(0),
       flags(0u),
       AC(ACbanks[0]),
