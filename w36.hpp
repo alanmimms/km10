@@ -732,6 +732,9 @@ struct W36 {
 
 struct W72 {
 
+  inline static const auto bit0 = W36::bit0;
+  inline static const auto allOnes = W36::allOnes;
+
   union {
     int128_t s: 72;
 
@@ -749,7 +752,11 @@ struct W72 {
   operator uint128_t() {return u;}
   operator int128_t() {return s;}
 
-  tuple<W36,W36> halves() const {return tuple<W36,W36>(hi, lo);}
+  auto halves() const {
+    W36 hi35(hi);
+    W36 lo35(((hi & bit0) << 35) | (lo & (allOnes >> 1)));
+    return tuple<W36,W36>(hi35, lo35);
+  }
 
   string fmt72() const {
     ostringstream s;

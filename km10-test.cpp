@@ -43,7 +43,6 @@ public:
   W36 expectMem;
 
   KMState state;
-  string cx;
   const unsigned pc;
   const unsigned opnLoc;
   const unsigned acLoc;
@@ -60,50 +59,50 @@ public:
 
 
   void checkUnmodifiedFlags() {
-    EXPECT_EQ(state.flags.ndv | state.flags.fuf, 0) << cx;
-    EXPECT_EQ(state.flags.afi | state.flags.pub, 0) << cx;
-    EXPECT_EQ(state.flags.uio | state.flags.usr, 0) << cx;
-    EXPECT_EQ(state.flags.fpd | state.flags.fov, 0) << cx;
-    EXPECT_EQ(state.flags.tr2, 0) << cx;
+    EXPECT_EQ(state.flags.ndv | state.flags.fuf, 0);
+    EXPECT_EQ(state.flags.afi | state.flags.pub, 0);
+    EXPECT_EQ(state.flags.uio | state.flags.usr, 0);
+    EXPECT_EQ(state.flags.fpd | state.flags.fov, 0);
+    EXPECT_EQ(state.flags.tr2, 0);
   }
 
   void checkFlagsC0() {
-    EXPECT_EQ(state.flags.tr1, 1) << cx;
-    EXPECT_EQ(state.flags.cy1, 0) << cx;
-    EXPECT_EQ(state.flags.cy0, 1) << cx;
-    EXPECT_EQ(state.flags.ov, 1)  << cx;
+    EXPECT_EQ(state.flags.tr1, 1);
+    EXPECT_EQ(state.flags.cy1, 0);
+    EXPECT_EQ(state.flags.cy0, 1);
+    EXPECT_EQ(state.flags.ov, 1) ;
   }
 
   void checkFlagsC1() {
-    EXPECT_EQ(state.flags.tr1, 1) << cx;
-    EXPECT_EQ(state.flags.cy1, 1) << cx;
-    EXPECT_EQ(state.flags.cy0, 0) << cx;
-    EXPECT_EQ(state.flags.ov, 1) << cx;
+    EXPECT_EQ(state.flags.tr1, 1);
+    EXPECT_EQ(state.flags.cy1, 1);
+    EXPECT_EQ(state.flags.cy0, 0);
+    EXPECT_EQ(state.flags.ov, 1);
   }
 
   void checkFlagsT1() {
-    EXPECT_EQ(state.flags.tr1, 1) << cx;
-    EXPECT_EQ(state.flags.cy1, 0) << cx;
-    EXPECT_EQ(state.flags.cy0, 0) << cx;
-    EXPECT_EQ(state.flags.ov, 1) << cx;
+    EXPECT_EQ(state.flags.tr1, 1);
+    EXPECT_EQ(state.flags.cy1, 0);
+    EXPECT_EQ(state.flags.cy0, 0);
+    EXPECT_EQ(state.flags.ov, 1);
   }
 
   void checkFlagsNC() {
-    EXPECT_EQ(state.flags.tr1, 0) << cx;
-    EXPECT_EQ(state.flags.cy1, 0) << cx;
-    EXPECT_EQ(state.flags.cy0, 0) << cx;
-    EXPECT_EQ(state.flags.ov, 0) << cx;
+    EXPECT_EQ(state.flags.tr1, 0);
+    EXPECT_EQ(state.flags.cy1, 0);
+    EXPECT_EQ(state.flags.cy0, 0);
+    EXPECT_EQ(state.flags.ov, 0);
   }
 
 
   void check() {
-    EXPECT_EQ(state.AC[acLoc], expectAC) << cx;
-    EXPECT_EQ(state.memP[opnLoc], expectMem) << cx;
+    EXPECT_EQ(state.AC[acLoc], expectAC);
+    EXPECT_EQ(state.memP[opnLoc], expectMem);
   }
 
 
   void checkI() {
-    EXPECT_EQ(state.AC[acLoc], expectAC) << cx;
+    EXPECT_EQ(state.AC[acLoc], expectAC);
   }
 
 
@@ -139,7 +138,6 @@ class InstructionADD: public KM10Test {
 
 
 TEST_F(InstructionADD, CY1) {
-  cx = "ADD CY1";
   a = aBig;
   b = expectMem = aBig;
   result = expectAC = a.extend() + b.extend();
@@ -150,7 +148,6 @@ TEST_F(InstructionADD, CY1) {
 
 
 TEST_F(InstructionADD, CY0) {
-  cx = "ADD CY0";
   a = bNeg;
   b = expectMem = bNeg;
   result = expectAC = a.extend() + b.extend();
@@ -160,7 +157,6 @@ TEST_F(InstructionADD, CY0) {
 };
 
 TEST_F(InstructionADD, NC) {
-  cx = "ADD NC";
   a = aBig;
   b = expectMem = bPos;
   result = expectAC = a.extend() + b.extend();
@@ -170,7 +166,6 @@ TEST_F(InstructionADD, NC) {
 };
 
 TEST_F(InstructionADD, I_NC) {
-  cx = "ADDI";
   a = aBig;
   b = bPos.rhu;
   result = expectAC = a.extend() + b.extend();
@@ -180,7 +175,6 @@ TEST_F(InstructionADD, I_NC) {
 };
 
 TEST_F(InstructionADD, M_NC) {
-  cx = "ADDM";
   a = expectAC = aBig;
   b = bPos;
   result = expectMem = a.extend() + b.extend();
@@ -190,7 +184,6 @@ TEST_F(InstructionADD, M_NC) {
 };
 
 TEST_F(InstructionADD, B_NC) {
-  cx = "ADDB";
   a = aBig;
   b = bPos;
   result = expectMem = expectAC = a.extend() + b.extend();
@@ -205,7 +198,6 @@ class InstructionSUB: public KM10Test {
 
 
 TEST_F(InstructionSUB, CY1) {
-  cx = "SUB CY1";
   a = aBig;
   b = expectMem = bNg1;
   result = expectAC = a.extend() - b.extend();
@@ -215,7 +207,6 @@ TEST_F(InstructionSUB, CY1) {
 };
 
 TEST_F(InstructionSUB, CY0) {
-  cx = "SUB CY0";
   a = bNg1;
   b = expectMem = bPos;
   result = expectAC = a.extend() - b.extend();
@@ -225,7 +216,6 @@ TEST_F(InstructionSUB, CY0) {
 };
 
 TEST_F(InstructionSUB, NC) {
-  cx = "SUB NC";
   a = aBig;
   b = expectMem = bPos;
   result = expectAC = a.extend() - b.extend();
@@ -235,7 +225,6 @@ TEST_F(InstructionSUB, NC) {
 };
 
 TEST_F(InstructionSUB, I_NC) {
-  cx = "SUBI";
   a = aBig;
   b = bPos.rhu;
   result = expectAC = a.extend() - b.extend();
@@ -245,7 +234,6 @@ TEST_F(InstructionSUB, I_NC) {
 };
 
 TEST_F(InstructionSUB, M_NC) {
-  cx = "SUBM";
   a = expectAC = aBig;
   b = bPos;
   result = expectMem = a.extend() - b.extend();
@@ -255,7 +243,6 @@ TEST_F(InstructionSUB, M_NC) {
 };
 
 TEST_F(InstructionSUB, B_NC) {
-  cx = "SUBB";
   a = aBig;
   b = bPos;
   result = expectAC = expectMem = a.extend() - b.extend();
@@ -280,21 +267,20 @@ public:
 
 
   void check72() {
-    EXPECT_EQ(state.AC[acLoc+0], expectAC) << cx;
-    EXPECT_EQ(state.AC[acLoc+1], expectAC2) << cx;
-    EXPECT_EQ(state.memP[opnLoc], expectMem) << cx;
+    EXPECT_EQ(state.AC[acLoc+0], expectAC);
+    EXPECT_EQ(state.AC[acLoc+1], expectAC2);
+    EXPECT_EQ(state.memP[opnLoc], expectMem);
   }
 
 
   void checkI72() {
-    EXPECT_EQ(state.AC[acLoc+0], expectAC) << cx;
-    EXPECT_EQ(state.AC[acLoc+1], expectAC2) << cx;
+    EXPECT_EQ(state.AC[acLoc+0], expectAC);
+    EXPECT_EQ(state.AC[acLoc+1], expectAC2);
   }
 };
 
 
 TEST_F(InstructionMUL, NCpp) {
-  cx = "MUL NCpp";
   a = aBig;
   b = expectMem = bPos;
   result72 = (int128_t) a.extend() * b.extend();
@@ -306,7 +292,6 @@ TEST_F(InstructionMUL, NCpp) {
 };
 
 TEST_F(InstructionMUL, NCnn) {
-  cx = "MUL NCnn";
   a = -aBig;
   b = expectMem = -bPos;
   result72 = (int128_t) a.extend() * b.extend();
@@ -319,7 +304,6 @@ TEST_F(InstructionMUL, NCnn) {
 
 
 TEST_F(InstructionMUL, NCnp) {
-  cx = "MUL NCnp";
   a = -aBig;
   b = expectMem = bPos;
   result72 = (int128_t) a.extend() * b.extend();
@@ -332,7 +316,6 @@ TEST_F(InstructionMUL, NCnp) {
 
 
 TEST_F(InstructionMUL, NCpn) {
-  cx = "MUL NCpn";
   a = aBig;
   b = expectMem = -bPos;
   result72 = (int128_t) a.extend() * b.extend();
@@ -345,7 +328,6 @@ TEST_F(InstructionMUL, NCpn) {
 
 
 TEST_F(InstructionMUL, TR1) {
-  cx = "MUL TR1";
   a = -1ll << 35;
   b = expectMem = a;
   result72 = W72{1ull << 34, 0};
@@ -357,7 +339,6 @@ TEST_F(InstructionMUL, TR1) {
 };
 
 TEST_F(InstructionMUL, I_NC) {
-  cx = "MULI NC";
   a = aBig;
   b = expectMem = W36(0, bPos.rhu);
   result72 = (int128_t) a.extend() * b.extend();
@@ -369,14 +350,12 @@ TEST_F(InstructionMUL, I_NC) {
 };
 
 #if 0
-  cx = "MULM";
   a = expectAC = aBig;
   b = bPos;
   result = expectMem = a.extend() * b.extend();
   insns = VW36{W36(0226, acLoc, 0, 0, opnLoc)};
   test(&InstructionMUL::checkFlagsNC);
 
-  cx = "MULB";
   a = aBig;
   b = bPos;
   result = expectMem = expectAC = a.extend() * b.extend();
