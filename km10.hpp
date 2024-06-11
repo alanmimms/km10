@@ -50,7 +50,7 @@ public:
   using WFuncW = function<W36(W36)>;
   using FuncWW = function<void(W36,W36)>;
   using WFuncWW = function<W36(W36,W36)>;
-  using DFuncWW = function<tuple<W36,W36>(W36,W36)>;
+  using DFuncWW = function<W72(W36,W36)>;
   using BoolPredW = function<bool(W36)>;
   using BoolPredWW = function<bool(W36,W36)>;
   using VoidFunc = function<void()>;
@@ -299,7 +299,7 @@ public:
 	state.flags.tr1 = state.flags.ov = state.flags.cy1 = 1;
       }
 
-      return tuple<W36,W36>(W36(prod.hi), W36(prod.lo));
+      return W72{W36(prod.hi), W36(prod.lo)};
     };
     
     WFuncWW imulWord = [&](W36 s1, W36 s2) -> auto const {
@@ -320,7 +320,7 @@ public:
 	state.flags.tr1 = state.flags.ov = state.flags.cy1 = 1;
       }
 
-      return tuple<W36,W36>(d, r);
+      return W72{uint64_t(d), uint64_t(r)};
     };
     
     DFuncWW idivWord = [&](W36 s1, W36 s2) -> auto const {
@@ -332,7 +332,7 @@ public:
 	state.flags.tr1 = state.flags.ov = state.flags.cy1 = 1;
       }
 
-      return tuple<W36,W36>(d, r);
+      return W72{uint64_t(d), uint64_t(r)};
     };
     
     auto doHXXXX = [&](WFunc &doGetSrcF,
@@ -375,8 +375,8 @@ public:
 			  DFuncWW &doModifyF,
 			  FuncWW &doPutDstF) -> void
     {
-      auto [hi, lo] = doModifyF(doGetSrc1F(), doGetSrc2F());
-      doPutDstF(hi, lo);
+      W72 result{doModifyF(doGetSrc1F(), doGetSrc2F())};
+      doPutDstF(result.hi, result.lo);
     };
 
 
