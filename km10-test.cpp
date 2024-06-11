@@ -169,7 +169,7 @@ TEST_F(InstructionADD, NC) {
        &InstructionADD::checkFlagsNC);
 };
 
-TEST_F(InstructionADD, I) {
+TEST_F(InstructionADD, I_NC) {
   cx = "ADDI";
   a = aBig;
   b = bPos.rhu;
@@ -179,7 +179,7 @@ TEST_F(InstructionADD, I) {
        &InstructionADD::checkFlagsNC);
 };
 
-TEST_F(InstructionADD, M) {
+TEST_F(InstructionADD, M_NC) {
   cx = "ADDM";
   a = expectAC = aBig;
   b = bPos;
@@ -189,7 +189,7 @@ TEST_F(InstructionADD, M) {
        &InstructionADD::checkFlagsNC);
 };
 
-TEST_F(InstructionADD, B) {
+TEST_F(InstructionADD, B_NC) {
   cx = "ADDB";
   a = aBig;
   b = bPos;
@@ -234,7 +234,7 @@ TEST_F(InstructionSUB, NC) {
        &InstructionADD::checkFlagsNC);
 };
 
-TEST_F(InstructionSUB, I) {
+TEST_F(InstructionSUB, I_NC) {
   cx = "SUBI";
   a = aBig;
   b = bPos.rhu;
@@ -244,7 +244,7 @@ TEST_F(InstructionSUB, I) {
        &InstructionADD::checkFlagsNC);
 };
 
-TEST_F(InstructionSUB, M) {
+TEST_F(InstructionSUB, M_NC) {
   cx = "SUBM";
   a = expectAC = aBig;
   b = bPos;
@@ -254,7 +254,7 @@ TEST_F(InstructionSUB, M) {
        &InstructionADD::checkFlagsNC);
 };
 
-TEST_F(InstructionSUB, B) {
+TEST_F(InstructionSUB, B_NC) {
   cx = "SUBB";
   a = aBig;
   b = bPos;
@@ -356,7 +356,7 @@ TEST_F(InstructionMUL, TR1) {
        &InstructionMUL::checkFlagsT1);
 };
 
-TEST_F(InstructionMUL, NC) {
+TEST_F(InstructionMUL, I_NC) {
   cx = "MULI NC";
   a = aBig;
   b = expectMem = W36(0, bPos.rhu);
