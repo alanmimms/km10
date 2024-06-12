@@ -124,6 +124,7 @@ public:
 };
 
 
+////////////////////////////////////////////////////////////////
 TEST(BasicStructures, ExecutiveProcessTable) {
   ASSERT_EQ(sizeof(KMState::ExecutiveProcessTable), 512 * 8);
 }
@@ -133,6 +134,7 @@ TEST(BasicStructures, UserProcessTable) {
 }
 
 
+////////////////////////////////////////////////////////////////
 class InstructionADD: public KM10Test {
 };
 
@@ -193,6 +195,7 @@ TEST_F(InstructionADD, B_NC) {
 };
 
 
+////////////////////////////////////////////////////////////////
 class InstructionSUB: public KM10Test {
 };
 
@@ -252,12 +255,10 @@ TEST_F(InstructionSUB, B_NC) {
 };
 
 
+////////////////////////////////////////////////////////////////
 class InstructionMUL: public KM10Test {
 public:
-  W72 result72;
-  W36 expectAC2;
-
-  using CallbackFn72 = void (InstructionMUL::*)();
+  using CallbackFn72 = void (InstructionMUL::*)(W72 result72);
 
   using tResultF = function<W72(W36,W36)>;
 
@@ -268,30 +269,30 @@ public:
   void test(VW36 insns, CallbackFn72 checker, CallbackFn flagChecker,
 	    tResultF getResultF = defaultResultF)
   {
-    result72 = getResultF(a, b);
+    W72 result72{getResultF(a, b)};
     KM10Test::test(insns, &KM10Test::noCheck, flagChecker);
-    invoke(checker, this);
+    invoke(checker, this, result72);
   }
 
-  void checkI72() {
+  void checkI72(W72 result72) {
     auto [hi, lo] = result72.signedHalves();
     EXPECT_EQ(state.AC[acLoc+0], hi);
     EXPECT_EQ(state.AC[acLoc+1], lo);
   }
 
-  void check72M() {
+  void check72M(W72 result72) {
     auto [hi, lo] = result72.signedHalves();
     EXPECT_EQ(state.memP[opnLoc], hi);
   }
 
-  void check72B() {
+  void check72B(W72 result72) {
     auto [hi, lo] = result72.signedHalves();
     EXPECT_EQ(state.AC[acLoc+0], hi);
     EXPECT_EQ(state.memP[opnLoc], hi);
   }
 
-  void check72() {
-    checkI72();
+  void check72(W72 result72) {
+    checkI72(result72);
     EXPECT_EQ(state.memP[opnLoc], expectMem);
   }
 };
@@ -365,7 +366,50 @@ TEST_F(InstructionMUL, B_NC) {
        &InstructionMUL::checkFlagsNC);
 }
 
+////////////////////////////////////////////////////////////////
+class InstructionDIV: public KM10Test {
+public:
+  using CallbackFn72 = void (InstructionDIV::*)(W72 result72);
 
+  using tResultF = function<W72(W36,W36)>;
+
+  static inline tResultF defaultResultF = [](W36 aA, W36 aB) -> W72 const {
+    return W72(((int128_t) aA.extend() * (int128_t) aB.extend()));
+  };
+
+  void test(VW36 insns, CallbackFn72 checker, CallbackFn flagChecker,
+	    tResultF getResultF = defaultResultF)
+  {
+    W72 result72{getResultF(a, b)};
+    KM10Test::test(insns, &KM10Test::noCheck, flagChecker);
+    invoke(checker, this, result72);
+  }
+
+  void checkI72(W72 result72) {
+    auto [hi, lo] = result72.signedHalves();
+    EXPECT_EQ(state.AC[acLoc+0], hi);
+    EXPECT_EQ(state.AC[acLoc+1], lo);
+  }
+
+  void check72M(W72 result72) {
+    auto [hi, lo] = result72.signedHalves();
+    EXPECT_EQ(state.memP[opnLoc], hi);
+  }
+
+  void check72B(W72 result72) {
+    auto [hi, lo] = result72.signedHalves();
+    EXPECT_EQ(state.AC[acLoc+0], hi);
+    EXPECT_EQ(state.memP[opnLoc], hi);
+  }
+
+  void check72(W72 result72) {
+    checkI72(result72);
+    EXPECT_EQ(state.memP[opnLoc], expectMem);
+  }
+};
+
+
+////////////////////////////////////////////////////////////////
 int main(int argc, char *argv[]) {
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
