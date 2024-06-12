@@ -92,7 +92,7 @@ public:
     };
 
     FuncD acPut2 = [&](W72 v) -> void {
-      auto [hi, lo] = v.halves();
+      auto [hi, lo] = v.signedHalves();
 
       cerr << "acPut2: " << v.fmt72()
 	   << "    AC" << oct << iw.ac+0 << "=" << hi.fmt36()
@@ -122,7 +122,7 @@ public:
     };
 
     FuncD bothPut2 = [&](W72 v) -> void {
-      auto [hi, lo] = v.halves();
+      auto [hi, lo] = v.signedHalves();
       state.acPutN(hi, iw.ac+0);
       state.acPutN(lo, iw.ac+1);
       memPut(hi);
@@ -188,7 +188,7 @@ public:
     WFuncW compMaskL = [&](W36 s) -> auto const {return s.u ^ ((uint64_t) ea.rhu << 18);};
 
     WFuncW zeroWord = [&](W36 s) -> auto const {return 0;};
-    WFuncW onesWord = [&](W36 s) -> auto const {return W36::allOnes;};
+    WFuncW onesWord = [&](W36 s) -> auto const {return W36::all1s;};
     WFuncW compWord = [&](W36 s) -> auto const {return ~s.u;};
 
     FuncW noStore = [](W36 toSrc) -> void {};
@@ -319,7 +319,7 @@ public:
 	state.flags.tr1 = state.flags.ov = 1;
       }
 
-      return W36((prod.s < 0 ? W36::bit0 : 0) | ((W36::allOnes >> 1) & prod.u));
+      return W36((prod.s < 0 ? W36::bit0 : 0) | ((W36::all1s >> 1) & prod.u));
     };
     
     DFuncWW divWord = [&](W36 s1, W36 s2) -> auto const {
@@ -435,7 +435,7 @@ public:
 
       if (delta > 0) {		// Increment
 
-	if (v.u == W36::allOnes >> 1) {
+	if (v.u == W36::all1s >> 1) {
 	  state.flags.tr1 = state.flags.ov  = state.flags.cy1 = 1;
 	} else if (v.extend() == -1) {
 	  state.flags.cy0 = state.flags.cy1 = 1;
@@ -673,7 +673,7 @@ public:
 	  a.s = aSigned >> n;
 	} else if (n < 0) {
 	  n = -n;
-	  lostBits.u = a.u & (W36::allOnes >> n);
+	  lostBits.u = a.u & (W36::all1s >> n);
 	  a.s = aSigned << n;
 	}
 
@@ -699,7 +699,7 @@ public:
 	} else if (n < 0) {
 	  n = -n;
 	  a.u >>= n;
-	  a.u |= (prev << (36 - n)) & W36::allOnes;
+	  a.u |= (prev << (36 - n)) & W36::all1s;
 	}
 
 	acPut(a);
@@ -744,7 +744,7 @@ public:
 	else if (ea.rhs < 0)
 	  a.u >>= -(ea.rhs & 0377);
 
-	auto [hi, lo] = a.halves();
+	auto [hi, lo] = a.signedHalves();
 	state.acPutN(hi, iw.ac+0);
 	state.acPutN(lo, iw.ac+1);
 	break;

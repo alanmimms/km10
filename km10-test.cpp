@@ -259,16 +259,25 @@ public:
 
   using CallbackFn72 = void (InstructionMUL::*)();
 
+  using tResultF = function<W72(W36,W36)>;
 
-  void test(VW36 insns, CallbackFn72 checker, CallbackFn flagChecker) {
+  static inline tResultF defaultResultF = [](W36 aA, W36 aB) -> W72 const {
+    return W72(((int128_t) aA.extend() * (int128_t) aB.extend()));
+  };
+
+  void test(VW36 insns, CallbackFn72 checker, CallbackFn flagChecker,
+	    tResultF getResultF = defaultResultF)
+  {
+    result72 = getResultF(a, b);
     KM10Test::test(insns, &KM10Test::noCheck, flagChecker);
     invoke(checker, this);
   }
 
 
   void check72() {
-    EXPECT_EQ(state.AC[acLoc+0], expectAC);
-    EXPECT_EQ(state.AC[acLoc+1], expectAC2);
+    auto [hi, lo] = result72.signedHalves();
+    EXPECT_EQ(state.AC[acLoc+0], hi);
+    EXPECT_EQ(state.AC[acLoc+1], lo);
     EXPECT_EQ(state.memP[opnLoc], expectMem);
   }
 
@@ -283,9 +292,6 @@ public:
 TEST_F(InstructionMUL, NCpp) {
   a = aBig;
   b = expectMem = bPos;
-  result72 = (int128_t) a.extend() * b.extend();
-  expectAC = result72.hi;
-  expectAC2 = result72.lo;
   test(VW36{W36(0224, acLoc, 0, 0, opnLoc)},
        &InstructionMUL::check72,
        &KM10Test::checkFlagsNC);
@@ -294,9 +300,6 @@ TEST_F(InstructionMUL, NCpp) {
 TEST_F(InstructionMUL, NCnn) {
   a = -aBig;
   b = expectMem = -bPos;
-  result72 = (int128_t) a.extend() * b.extend();
-  expectAC = result72.hi;
-  expectAC2 = result72.lo;
   test(VW36{W36(0224, acLoc, 0, 0, opnLoc)},
        &InstructionMUL::check72,
        &InstructionMUL::checkFlagsNC);
@@ -306,9 +309,6 @@ TEST_F(InstructionMUL, NCnn) {
 TEST_F(InstructionMUL, NCnp) {
   a = -aBig;
   b = expectMem = bPos;
-  result72 = (int128_t) a.extend() * b.extend();
-  expectAC = result72.hi;
-  expectAC2 = result72.lo;
   test(VW36{W36(0224, acLoc, 0, 0, opnLoc)},
        &InstructionMUL::check72,
        &InstructionMUL::checkFlagsNC);
@@ -318,9 +318,6 @@ TEST_F(InstructionMUL, NCnp) {
 TEST_F(InstructionMUL, NCpn) {
   a = aBig;
   b = expectMem = -bPos;
-  result72 = (int128_t) a.extend() * b.extend();
-  expectAC = result72.hi;
-  expectAC2 = result72.lo;
   test(VW36{W36(0224, acLoc, 0, 0, opnLoc)},
        &InstructionMUL::check72,
        &InstructionMUL::checkFlagsNC);
@@ -330,21 +327,16 @@ TEST_F(InstructionMUL, NCpn) {
 TEST_F(InstructionMUL, TR1) {
   a = -1ll << 35;
   b = expectMem = a;
-  result72 = W72{1ull << 34, 0};
-  expectAC = result72.u >> 36;
-  expectAC2 = 0;
   test(VW36{W36(0224, acLoc, 0, 0, opnLoc)},
        &InstructionMUL::check72,
-       &InstructionMUL::checkFlagsT1);
+       &InstructionMUL::checkFlagsT1,
+       [](W36 aA, W36 aB) -> W72 const {return W72{1ull << 34, 0};});
 };
 
 TEST_F(InstructionMUL, I_NC) {
   a = aBig;
   b = expectMem = W36(0, bPos.rhu);
-  result72 = (int128_t) a.extend() * b.extend();
-  expectAC = result72.hi;
-  expectAC2 = result72.lo;
-  test(VW36{W36(0225, acLoc, 0, 0, opnLoc)},
+  test(VW36{W36(0225, acLoc, 0, 0, b.rhu)},
        &InstructionMUL::checkI72,
        &InstructionMUL::checkFlagsNC);
 };
