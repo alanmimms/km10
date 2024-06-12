@@ -153,13 +153,13 @@ public:
     WFunc immediate = [&]() {return W36(state.pc.isSection0() ? 0 : ea.lhu, ea.rhu);};
 
     // Condition testing predicates
-    BoolPredW isLT0  = [&](W36 v) -> bool const {return v.s <  0;};
+    BoolPredW isLT0  = [&](W36 v) -> bool const {return v.s  < 0;};
     BoolPredW isLE0  = [&](W36 v) -> bool const {return v.s <= 0;};
-    BoolPredW isGT0  = [&](W36 v) -> bool const {return v.s >  0;};
+    BoolPredW isGT0  = [&](W36 v) -> bool const {return v.s  > 0;};
     BoolPredW isGE0  = [&](W36 v) -> bool const {return v.s >= 0;};
     BoolPredW isNE0  = [&](W36 v) -> bool const {return v.s != 0;};
     BoolPredW isEQ0  = [&](W36 v) -> bool const {return v.s == 0;};
-    BoolPredW always = [&](W36 v) -> bool const {return true;};
+    BoolPredW always = [&](W36 v) -> bool const {return  true;};
     BoolPredW never  = [&](W36 v) -> bool const {return false;};
 
     auto doJUMP = [&](BoolPredW &condF) -> void {
