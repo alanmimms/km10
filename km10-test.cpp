@@ -273,18 +273,26 @@ public:
     invoke(checker, this);
   }
 
-
-  void check72() {
+  void checkI72() {
     auto [hi, lo] = result72.signedHalves();
     EXPECT_EQ(state.AC[acLoc+0], hi);
     EXPECT_EQ(state.AC[acLoc+1], lo);
-    EXPECT_EQ(state.memP[opnLoc], expectMem);
   }
 
+  void check72M() {
+    auto [hi, lo] = result72.signedHalves();
+    EXPECT_EQ(state.memP[opnLoc], hi);
+  }
 
-  void checkI72() {
-    EXPECT_EQ(state.AC[acLoc+0], expectAC);
-    EXPECT_EQ(state.AC[acLoc+1], expectAC2);
+  void check72B() {
+    auto [hi, lo] = result72.signedHalves();
+    EXPECT_EQ(state.AC[acLoc+0], hi);
+    EXPECT_EQ(state.memP[opnLoc], hi);
+  }
+
+  void check72() {
+    checkI72();
+    EXPECT_EQ(state.memP[opnLoc], expectMem);
   }
 };
 
@@ -341,19 +349,21 @@ TEST_F(InstructionMUL, I_NC) {
        &InstructionMUL::checkFlagsNC);
 };
 
-#if 0
+TEST_F(InstructionMUL, M_NC) {
   a = expectAC = aBig;
   b = bPos;
-  result = expectMem = a.extend() * b.extend();
-  insns = VW36{W36(0226, acLoc, 0, 0, opnLoc)};
-  test(&InstructionMUL::checkFlagsNC);
+  test(VW36{W36(0226, acLoc, 0, 0, opnLoc)},
+       &InstructionMUL::check72M,
+       &InstructionMUL::checkFlagsNC);
+}
 
+TEST_F(InstructionMUL, B_NC) {
   a = aBig;
   b = bPos;
-  result = expectMem = expectAC = a.extend() * b.extend();
-  insns = VW36{W36(0227, acLoc, 0, 0, opnLoc)};
-  test(&InstructionMUL::checkFlagsNC);
-#endif
+  test(VW36{W36(0227, acLoc, 0, 0, opnLoc)},
+       &InstructionMUL::check72B,
+       &InstructionMUL::checkFlagsNC);
+}
 
 
 int main(int argc, char *argv[]) {

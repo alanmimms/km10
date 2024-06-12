@@ -145,7 +145,10 @@ public:
 
     WFunc memGetSwapped = [&]() {return swap(memGet());};
 
-    FuncD memPutHi = [&](W72 v) {memPut(v.hi);};
+    FuncD memPutHi = [&](W72 v) {
+      auto [hi, lo] = v.signedHalves();
+      memPut(hi);
+    };
 
     WFunc immediate = [&]() {return W36(state.pc.isSection0() ? 0 : ea.lhu, ea.rhu);};
 
