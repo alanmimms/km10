@@ -84,7 +84,7 @@ struct W36 {
 
   // Constants
   static inline const auto halfOnes = 0777777u;
-  static inline const uint64_t allOnes = 0777777'777777ull;
+  static inline const uint64_t all1s = 0777777'777777ull;
   static inline const uint64_t bit0 = 1ull << 35;
   static inline const int64_t signedBit0 = 1ll << 35;
   static inline const int64_t bitM1 = 1ll << 36;
@@ -730,10 +730,11 @@ struct W36 {
 };
 
 
+// This is a 72-bit word whose internal representation is to keep all
+// 72 bits. Using "halves()" it can be converted to the 1+35+1+35 bit
+// representation used by PDP10 to represent signed values where the
+// "1" bits here are both copies of the sign bit from bit #0.
 struct W72 {
-
-  inline static const auto bit0 = W36::bit0;
-  inline static const auto allOnes = W36::allOnes;
 
   union {
     int128_t s: 72;
@@ -752,10 +753,25 @@ struct W72 {
   operator uint128_t() {return u;}
   operator int128_t() {return s;}
 
-  auto halves() const {
-    W36 hi35(hi);
-    W36 lo35(((hi & bit0) << 35) | (lo & (allOnes >> 1)));
-    return tuple<W36,W36>(hi35, lo35);
+  static inline const uint128_t bit0 = ((uint128_t) 1) << 71;
+  static inline const uint128_t bit36 = ((uint128_t) 1) << 35;
+  static inline const uint128_t all1s = (bit0 << 1) - 1;
+  static inline const int128_t signedBit0 = (int128_t) all1s;
+  static inline const int128_t bitM1 = bit0 << 1;
+
+
+  // Return mask for PDP10 bit number `n`.
+  constexpr static uint128_t bit(unsigned n) {return ((uint128_t) 1) << (71 - n);}
+
+  // Return rightmost `s` bit mask.
+  constexpr static uint128_t rMask(unsigned s) {return (((uint128_t) 1) << (s + 1)) - 1;}
+
+
+  auto signedHalves() const {
+    uint64_t signBit = hi & W36::bit0;
+    W36 hi35(signBit | (uint64_t) (hi & rMask(35)) << 1 | lo >> 35);
+    W36 lo35(signBit | (lo & rMask(35)));
+    return tuple<W36,W36>{hi35, lo35};
   }
 
   string fmt72() const {
