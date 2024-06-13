@@ -18,6 +18,7 @@ DEFINE_string(load, "../images/klddt/klddt.a10", ".A10 file to load");
 DEFINE_bool(debug, false, "run the build-in debugger instead of starting execution");
 
 
+//////////////////////////////////////////////////////////////
 int main(int argc, char *argv[]) {
   assert(sizeof(KMState::ExecutiveProcessTable) == 512 * 8);
   assert(sizeof(KMState::UserProcessTable) == 512 * 8);
@@ -45,6 +46,7 @@ int main(int argc, char *argv[]) {
 }
 
 
+////////////////////////////////////////////////////////////////
 void Logger::nyi(KMState &state) {
   s << " [not yet implemented]";
   cerr << "Not yet implemented at " << state.pc.fmtVMA() << endl;
