@@ -44,7 +44,7 @@ public:
   {}
 
   
-  // I find these a lot less ugly in the code below.
+  // I find these a lot less ugly in the emulator..
   using WFunc = function<W36()>;
   using DFunc = function<W72()>;
   using FuncW = function<void(W36)>;
@@ -59,6 +59,17 @@ public:
   using VoidFunc = function<void()>;
 
 
+  template <class S1, class S2, class M, class D>
+  void doBinOp(S1 &doGetSrc1F, S2 &doGetSrc2F, M &doModifyF, D &doPutDstF) {
+    doPutDstF(doModifyF(doGetSrc1F(), doGetSrc2F()));
+  }
+
+
+  void logFlow(const char *msg) {
+    if (logger.pc) logger.s << " [" << msg << "]";
+  }
+
+
   ////////////////////////////////////////////////////////////////////////////////
   // The instruction emulator. Call this to start, step, or continue
   // running.
@@ -68,10 +79,6 @@ public:
     W36 nextPC = state.pc;
     W36 tmp;
     uint64_t nInsnsThisTime = 0;
-
-    auto logFlow = [&](const char *msg) {
-      if (logger.pc) logger.s << " [" << msg << "]";
-    };
 
     WFunc acGet = [&]() {
       return state.acGetN(iw.ac);
@@ -248,6 +255,8 @@ public:
     };
 
 
+    // For a given low halfword, this computes an upper halfword by
+    // extending the low halfword's sign.
     auto extnOf = [&](const unsigned v) -> unsigned const {
       return (v & 04000000) ? W36::halfOnes : 0;
     };
@@ -370,33 +379,6 @@ public:
     };
 
 
-    auto doBinOpXX = [&](WFunc &doGetSrc1F,
-			 WFunc &doGetSrc2F,
-			 WFuncWW &doModifyF,
-			 FuncW &doPutDstF) -> void
-    {
-      doPutDstF(doModifyF(doGetSrc1F(), doGetSrc2F()));
-    };
-
-
-    auto doBinOp2XX = [&](WFunc &doGetSrc1F,
-			  WFunc &doGetSrc2F,
-			  DFuncWW &doModifyF,
-			  FuncD &doPutDstF) -> void
-    {
-      doPutDstF(doModifyF(doGetSrc1F(), doGetSrc2F()));
-    };
-
-
-    auto doBinOpD2XX = [&](DFunc &doGetSrc1F,
-			   WFunc &doGetSrc2F,
-			   DFuncDW &doModifyF,
-			   FuncD &doPutDstF) -> void
-    {
-      doPutDstF(doModifyF(doGetSrc1F(), doGetSrc2F()));
-    };
-
-
     // Binary comparison predicates
     BoolPredWW isLT    = [&](W36 v1, W36 v2) -> bool const {return v1.extend() <  v2.extend();};
     BoolPredWW isLE    = [&](W36 v1, W36 v2) -> bool const {return v1.extend() <= v2.extend();};
@@ -474,10 +456,10 @@ public:
       // pathway so we can XCT an instruction while stepping.
       if ((state.maxInsns != 0 && state.nInsns >= state.maxInsns) ||
 	  state.executeBPs.contains(state.pc.vma))
-      {
-	state.running = false;
-	if (nInsnsThisTime != 0) break;
-      }
+	{
+	  state.running = false;
+	  if (nInsnsThisTime != 0) break;
+	}
 
     XCT_ENTRYPOINT:
       // When we XCT we have already set PC to point to the
@@ -595,67 +577,67 @@ public:
 	break;
 
       case 0220:		// IMUL
-	doBinOpXX(acGet, memGet, imulWord, acPut);
+	doBinOp(acGet, memGet, imulWord, acPut);
 	break;
 
       case 0221:		// IMULI
-	doBinOpXX(acGet, immediate, imulWord, acPut);
+	doBinOp(acGet, immediate, imulWord, acPut);
 	break;
 
       case 0222:		// IMULM
-	doBinOpXX(acGet, memGet, imulWord, memPut);
+	doBinOp(acGet, memGet, imulWord, memPut);
 	break;
 
       case 0223:		// IMULB
-	doBinOpXX(acGet, memGet, imulWord, bothPut);
+	doBinOp(acGet, memGet, imulWord, bothPut);
 	break;
 
       case 0224:		// MUL
-	doBinOp2XX(acGet, memGet, mulWord, acPut2);
+	doBinOp(acGet, memGet, mulWord, acPut2);
 	break;
 
       case 0225:		// MULI
-	doBinOp2XX(acGet, immediate, mulWord, acPut2);
+	doBinOp(acGet, immediate, mulWord, acPut2);
 	break;
 
       case 0226:		// MULM
-	doBinOp2XX(acGet, memGet, mulWord, memPutHi);
+	doBinOp(acGet, memGet, mulWord, memPutHi);
 	break;
 
       case 0227:		// MULB
-	doBinOp2XX(acGet, memGet, mulWord, bothPut2);
+	doBinOp(acGet, memGet, mulWord, bothPut2);
 	break;
 
       case 0230:		// IDIV
-	doBinOpD2XX(acGet2, memGet, divWord, acPut2);
+	doBinOp(acGet2, memGet, divWord, acPut2);
 	break;
 
       case 0231:		// IDIVI
-	doBinOpD2XX(acGet2, immediate, divWord, acPut2);
+	doBinOp(acGet2, immediate, divWord, acPut2);
 	break;
 
       case 0232:		// IDIVM
-	doBinOpD2XX(acGet2, memGet, divWord, memPutHi);
+	doBinOp(acGet2, memGet, divWord, memPutHi);
 	break;
 
       case 0233:		// IDIVB
-	doBinOpD2XX(acGet2, memGet, divWord, bothPut2);
+	doBinOp(acGet2, memGet, divWord, bothPut2);
 	break;
 
       case 0234:		// DIV
-	doBinOpD2XX(acGet2, memGet, divWord, acPut2);
+	doBinOp(acGet2, memGet, divWord, acPut2);
 	break;
 
       case 0235:		// DIVI
-	doBinOpD2XX(acGet2, immediate, divWord, acPut2);
+	doBinOp(acGet2, immediate, divWord, acPut2);
 	break;
 
       case 0236:		// DIVM
-	doBinOpD2XX(acGet2, memGet, divWord, memPutHi);
+	doBinOp(acGet2, memGet, divWord, memPutHi);
 	break;
 
       case 0237:		// DIVB
-	doBinOpD2XX(acGet2, memGet, divWord, bothPut2);
+	doBinOp(acGet2, memGet, divWord, bothPut2);
 	break;
 
       case 0240: {		// ASH
@@ -904,35 +886,35 @@ public:
 	break;
 
       case 0270:		// ADD
-	doBinOpXX(acGet, memGet, addWord, acPut);
+	doBinOp(acGet, memGet, addWord, acPut);
 	break;
 
       case 0271:		// ADDI
-	doBinOpXX(acGet, immediate, addWord, acPut);
+	doBinOp(acGet, immediate, addWord, acPut);
 	break;
 
       case 0272:		// ADDM
-	doBinOpXX(acGet, memGet, addWord, memPut);
+	doBinOp(acGet, memGet, addWord, memPut);
 	break;
 
       case 0273:		// ADDB
-	doBinOpXX(acGet, memGet, addWord, bothPut);
+	doBinOp(acGet, memGet, addWord, bothPut);
 	break;
 
       case 0274:		// SUB
-	doBinOpXX(acGet, memGet, subWord, acPut);
+	doBinOp(acGet, memGet, subWord, acPut);
 	break;
 
       case 0275:		// SUBI
-	doBinOpXX(acGet, immediate, subWord, acPut);
+	doBinOp(acGet, immediate, subWord, acPut);
 	break;
 
       case 0276:		// SUBM
-	doBinOpXX(acGet, memGet, subWord, memPut);
+	doBinOp(acGet, memGet, subWord, memPut);
 	break;
 
       case 0277:		// SUBB
-	doBinOpXX(acGet, memGet, subWord, bothPut);
+	doBinOp(acGet, memGet, subWord, bothPut);
 	break;
 
       case 0300:		// CAI
@@ -1208,35 +1190,35 @@ public:
 	break;
 
       case 0404:		// AND
-	doBinOpXX(memGet, acGet, andWord, acPut);
+	doBinOp(memGet, acGet, andWord, acPut);
 	break;
 
       case 0405:		// ANDI
-	doBinOpXX(immediate, acGet, andWord, acPut);
+	doBinOp(immediate, acGet, andWord, acPut);
 	break;
 
       case 0406:		// ANDM
-	doBinOpXX(memGet, acGet, andWord, memPut);
+	doBinOp(memGet, acGet, andWord, memPut);
 	break;
 
       case 0407:		// ANDB
-	doBinOpXX(memGet, acGet, andWord, bothPut);
+	doBinOp(memGet, acGet, andWord, bothPut);
 	break;
 
       case 0410:		// ANDCA
-	doBinOpXX(memGet, acGet, andCWord, acPut);
+	doBinOp(memGet, acGet, andCWord, acPut);
 	break;
 
       case 0411:		// ANDCAI
-	doBinOpXX(immediate, acGet, andCWord, acPut);
+	doBinOp(immediate, acGet, andCWord, acPut);
 	break;
 
       case 0412:		// ANDCAM
-	doBinOpXX(memGet, acGet, andCWord, memPut);
+	doBinOp(memGet, acGet, andCWord, memPut);
 	break;
 
       case 0413:		// ANDCAB
-	doBinOpXX(memGet, acGet, andCWord, bothPut);
+	doBinOp(memGet, acGet, andCWord, bothPut);
 	break;
 
       case 0414:		// SETM
@@ -1256,19 +1238,19 @@ public:
 	break;
 
       case 0420:		// ANDCM
-	doBinOpXX(acGet, memGet, andCWord, acPut);
+	doBinOp(acGet, memGet, andCWord, acPut);
 	break;
 
       case 0421:		// ANDCMI
-	doBinOpXX(acGet, immediate, andCWord, acPut);
+	doBinOp(acGet, immediate, andCWord, acPut);
 	break;
 
       case 0422:		// ANDCMM
-	doBinOpXX(acGet, memGet, andCWord, memPut);
+	doBinOp(acGet, memGet, andCWord, memPut);
 	break;
 
       case 0423:		// ANDCMB
-	doBinOpXX(acGet, memGet, andCWord, bothPut);
+	doBinOp(acGet, memGet, andCWord, bothPut);
 	break;
 
       case 0424:		// SETA
@@ -1288,67 +1270,67 @@ public:
 	break;
 
       case 0430:		// XOR
-	doBinOpXX(memGet, acGet, xorWord, acPut);
+	doBinOp(memGet, acGet, xorWord, acPut);
 	break;
 
       case 0431:		// XORI
-	doBinOpXX(immediate, acGet, xorWord, acPut);
+	doBinOp(immediate, acGet, xorWord, acPut);
 	break;
 
       case 0432:		// XORM
-	doBinOpXX(memGet, acGet, xorWord, memPut);
+	doBinOp(memGet, acGet, xorWord, memPut);
 	break;
 
       case 0433:		// XORB
-	doBinOpXX(memGet, acGet, xorWord, bothPut);
+	doBinOp(memGet, acGet, xorWord, bothPut);
 	break;
 
       case 0434:		// IOR
-	doBinOpXX(memGet, acGet, iorWord, acPut);
+	doBinOp(memGet, acGet, iorWord, acPut);
 	break;
 
       case 0435:		// IORI
-	doBinOpXX(immediate, acGet, iorWord, acPut);
+	doBinOp(immediate, acGet, iorWord, acPut);
 	break;
 
       case 0436:		// IORM
-	doBinOpXX(memGet, acGet, iorWord, memPut);
+	doBinOp(memGet, acGet, iorWord, memPut);
 	break;
 
       case 0437:		// IORB
-	doBinOpXX(memGet, acGet, iorWord, bothPut);
+	doBinOp(memGet, acGet, iorWord, bothPut);
 	break;
 
       case 0440:		// ANDCBM
-	doBinOpXX(acGet, memGet, andCBWord, acPut);
+	doBinOp(acGet, memGet, andCBWord, acPut);
 	break;
 
       case 0441:		// ANDCBMI
-	doBinOpXX(acGet, immediate, andCBWord, acPut);
+	doBinOp(acGet, immediate, andCBWord, acPut);
 	break;
 
       case 0442:		// ANDCBMM
-	doBinOpXX(acGet, memGet, andCBWord, memPut);
+	doBinOp(acGet, memGet, andCBWord, memPut);
 	break;
 
       case 0443:		// ANDCBMB
-	doBinOpXX(acGet, memGet, andCBWord, bothPut);
+	doBinOp(acGet, memGet, andCBWord, bothPut);
 	break;
 
       case 0444:		// EQV
-	doBinOpXX(memGet, acGet, eqvWord, acPut);
+	doBinOp(memGet, acGet, eqvWord, acPut);
 	break;
 
       case 0445:		// EQVI
-	doBinOpXX(immediate, acGet, eqvWord, acPut);
+	doBinOp(immediate, acGet, eqvWord, acPut);
 	break;
 
       case 0446:		// EQVM
-	doBinOpXX(memGet, acGet, eqvWord, memPut);
+	doBinOp(memGet, acGet, eqvWord, memPut);
 	break;
 
       case 0447:		// EQVB
-	doBinOpXX(memGet, acGet, eqvWord, bothPut);
+	doBinOp(memGet, acGet, eqvWord, bothPut);
 	break;
 
       case 0450:		// SETCA
@@ -1368,19 +1350,19 @@ public:
 	break;
 
       case 0454:		// ORCA
-	doBinOpXX(memGet, acGet, iorCWord, acPut);
+	doBinOp(memGet, acGet, iorCWord, acPut);
 	break;
 
       case 0455:		// ORCAI
-	doBinOpXX(immediate, acGet, iorCWord, acPut);
+	doBinOp(immediate, acGet, iorCWord, acPut);
 	break;
 
       case 0456:		// ORCAM
-	doBinOpXX(memGet, acGet, iorCWord, memPut);
+	doBinOp(memGet, acGet, iorCWord, memPut);
 	break;
 
       case 0457:		// ORCAB
-	doBinOpXX(memGet, acGet, iorCWord, bothPut);
+	doBinOp(memGet, acGet, iorCWord, bothPut);
 	break;
 
       case 0460:		// SETCM
@@ -1400,35 +1382,35 @@ public:
 	break;
 
       case 0464:		// ORCM
-	doBinOpXX(acGet, memGet, iorCWord, acPut);
+	doBinOp(acGet, memGet, iorCWord, acPut);
 	break;
 
       case 0465:		// ORCMI
-	doBinOpXX(acGet, immediate, iorCWord, acPut);
+	doBinOp(acGet, immediate, iorCWord, acPut);
 	break;
 
       case 0466:		// ORCMM
-	doBinOpXX(acGet, memGet, iorCWord, memPut);
+	doBinOp(acGet, memGet, iorCWord, memPut);
 	break;
 
       case 0467:		// ORCMB
-	doBinOpXX(acGet, memGet, iorCWord, bothPut);
+	doBinOp(acGet, memGet, iorCWord, bothPut);
 	break;
 
       case 0470:		// ORCB
-	doBinOpXX(acGet, memGet, iorCBWord, acPut);
+	doBinOp(acGet, memGet, iorCBWord, acPut);
 	break;
 
       case 0471:		// ORCBI
-	doBinOpXX(acGet, immediate, iorCBWord, acPut);
+	doBinOp(acGet, immediate, iorCBWord, acPut);
 	break;
 
       case 0472:		// ORCBM
-	doBinOpXX(acGet, memGet, iorCBWord, memPut);
+	doBinOp(acGet, memGet, iorCBWord, memPut);
 	break;
 
       case 0473:		// ORCBB
-	doBinOpXX(acGet, memGet, iorCBWord, bothPut);
+	doBinOp(acGet, memGet, iorCBWord, bothPut);
 	break;
 
       case 0474:		// SETO
