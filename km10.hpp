@@ -46,12 +46,14 @@ public:
   
   // I find these a lot less ugly in the code below.
   using WFunc = function<W36()>;
+  using DFunc = function<W72()>;
   using FuncW = function<void(W36)>;
   using WFuncW = function<W36(W36)>;
   using FuncWW = function<void(W36,W36)>;
   using FuncD = function<void(W72)>;
   using WFuncWW = function<W36(W36,W36)>;
   using DFuncWW = function<W72(W36,W36)>;
+  using DFuncDW = function<W72(W72,W36)>;
   using BoolPredW = function<bool(W36)>;
   using BoolPredWW = function<bool(W36,W36)>;
   using VoidFunc = function<void()>;
@@ -71,7 +73,7 @@ public:
       if (logger.pc) logger.s << " [" << msg << "]";
     };
 
-    WFunc acGet = [&]() -> W36 {
+    WFunc acGet = [&]() {
       return state.acGetN(iw.ac);
     };
 
@@ -91,14 +93,13 @@ public:
       state.acPutN(value, iw.ac);
     };
 
+    DFunc acGet2 = [&]() {
+      return W72(state.acGetN(iw.ac+0),
+		 state.acGetN(iw.ac+1));
+    };
+
     FuncD acPut2 = [&](W72 v) -> void {
       auto [hi, lo] = v.signedHalves();
-
-      cerr << "acPut2: " << v.fmt72()
-	   << "    AC" << oct << iw.ac+0 << "=" << hi.fmt36()
-	   << "    AC" << oct << iw.ac+1 << "=" << lo.fmt36()
-	   << logger.endl;
-
       state.acPutN(hi, iw.ac+0);
       state.acPutN(lo, iw.ac+1);
     };
@@ -325,38 +326,22 @@ public:
       return W36((prod.s < 0 ? W36::bit0 : 0) | ((W36::all1s >> 1) & prod.u));
     };
     
-    DFuncWW divWord = [&](W36 s1, W36 s2) -> auto const {
+    DFuncDW divWord = [&](W72 s1, W36 s2) -> auto const {
+      static const uint64_t mask35 = W36::rMask(35);
 
-      if (s2.u == 0) {
+      // Accumulate the 70 bit magnitude to divide.
+      uint128_t dividend = ((uint128_t) s1.u & mask35) << 35 | (s2.u & mask35);
+      auto isNeg = s1.s < 0;
+
+      if ((dividend >> 35) >= (s2.u & mask35)) {
 	state.flags.ndv = 1;
 	return W72{0};
       }
 
-      int128_t d = (int128_t) s1.extend() / (int128_t) s2.extend();
-      int128_t r = (int128_t) s1.extend() % (int128_t) s2.extend();
-
-      if (s1.u == W36::bit0 && s2.u == W36::bit0) {
-	state.flags.tr1 = state.flags.ov = state.flags.cy1 = 1;
-      }
-
-      return W72{uint64_t(d), uint64_t(r)};
-    };
-    
-    DFuncWW idivWord = [&](W36 s1, W36 s2) -> auto const {
-
-      if (s2.u == 0) {
-	state.flags.ndv = 1;
-	return W72{0};
-      }
-
-      int128_t d = (int128_t) s1.extend() / (int128_t) s2.extend();
-      int128_t r = (int128_t) s1.extend() % (int128_t) s2.extend();
-
-      if (s1.u == W36::bit0 && s2.u == W36::bit0) {
-	state.flags.tr1 = state.flags.ov = state.flags.cy1 = 1;
-      }
-
-      return W72{uint64_t(d), uint64_t(r)};
+      auto divisor = s2.u & mask35;
+      uint64_t d = dividend / divisor;
+      uint64_t r = dividend % divisor;
+      return W72{isNeg ? -d : d, isNeg ? -r : r};
     };
     
     auto doHXXXX = [&](WFunc &doGetSrcF,
@@ -398,6 +383,15 @@ public:
 			  WFunc &doGetSrc2F,
 			  DFuncWW &doModifyF,
 			  FuncD &doPutDstF) -> void
+    {
+      doPutDstF(doModifyF(doGetSrc1F(), doGetSrc2F()));
+    };
+
+
+    auto doBinOpD2XX = [&](DFunc &doGetSrc1F,
+			   WFunc &doGetSrc2F,
+			   DFuncDW &doModifyF,
+			   FuncD &doPutDstF) -> void
     {
       doPutDstF(doModifyF(doGetSrc1F(), doGetSrc2F()));
     };
@@ -633,35 +627,35 @@ public:
 	break;
 
       case 0230:		// IDIV
-	doBinOp2XX(acGet, memGet, idivWord, acPut2);
+	doBinOpD2XX(acGet2, memGet, divWord, acPut2);
 	break;
 
       case 0231:		// IDIVI
-	doBinOp2XX(acGet, immediate, idivWord, acPut2);
+	doBinOpD2XX(acGet2, immediate, divWord, acPut2);
 	break;
 
       case 0232:		// IDIVM
-	doBinOp2XX(acGet, memGet, idivWord, memPutHi);
+	doBinOpD2XX(acGet2, memGet, divWord, memPutHi);
 	break;
 
       case 0233:		// IDIVB
-	doBinOp2XX(acGet, memGet, idivWord, bothPut2);
+	doBinOpD2XX(acGet2, memGet, divWord, bothPut2);
 	break;
 
       case 0234:		// DIV
-	doBinOp2XX(acGet, memGet, divWord, acPut2);
+	doBinOpD2XX(acGet2, memGet, divWord, acPut2);
 	break;
 
       case 0235:		// DIVI
-	doBinOp2XX(acGet, immediate, divWord, acPut2);
+	doBinOpD2XX(acGet2, immediate, divWord, acPut2);
 	break;
 
       case 0236:		// DIVM
-	doBinOp2XX(acGet, memGet, divWord, memPutHi);
+	doBinOpD2XX(acGet2, memGet, divWord, memPutHi);
 	break;
 
       case 0237:		// DIVB
-	doBinOp2XX(acGet, memGet, divWord, bothPut2);
+	doBinOpD2XX(acGet2, memGet, divWord, bothPut2);
 	break;
 
       case 0240: {		// ASH

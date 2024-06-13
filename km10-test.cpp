@@ -369,12 +369,29 @@ TEST_F(InstructionMUL, B_NC) {
 ////////////////////////////////////////////////////////////////
 class InstructionDIV: public KM10Test {
 public:
+  InstructionDIV()
+    : KM10Test(),
+      hugePos(W36{037777u,0777777u}, W36{0,3}),
+      smPos(W36{0,5})
+  {}
+
+  const W72 hugePos;
+  const W72 smPos;
+
   using CallbackFn72 = void (InstructionDIV::*)(W72 result72);
 
   using tResultF = function<W72(W36,W36)>;
 
   static inline tResultF defaultResultF = [](W36 aA, W36 aB) -> W72 const {
-    return W72(((int128_t) aA.extend() * (int128_t) aB.extend()));
+    const uint64_t mask35 = W36::rMask(35);
+    uint128_t div = ((uint128_t) aA.u & mask35) << 35 | (aB.u & mask35);
+    auto dor = aB.u & mask35;
+    auto signBit = aA.s < 0 ? 1ull << 35 : 0ull;
+
+    uint64_t quo = div / dor;
+    uint64_t rem = div % dor;
+
+    return W72{quo | signBit, rem | signBit};
   };
 
   void test(VW36 insns, CallbackFn72 checker, CallbackFn flagChecker,
@@ -385,10 +402,31 @@ public:
     invoke(checker, this, result72);
   }
 
+
+  void checkUnmodifiedFlags() {
+    EXPECT_EQ(state.flags.tr2 | state.flags.fuf, 0);
+    EXPECT_EQ(state.flags.afi | state.flags.pub, 0);
+    EXPECT_EQ(state.flags.uio | state.flags.usr, 0);
+    EXPECT_EQ(state.flags.fpd | state.flags.fov, 0);
+    EXPECT_EQ(state.flags.cy0 | state.flags.cy1, 0);
+  }
+
+  void checkFlagsNC() {
+    EXPECT_EQ(state.flags.tr1, 0);
+    EXPECT_EQ(state.flags.ndv, 0);
+    EXPECT_EQ(state.flags.ov, 0);
+  }
+
+  void checkFlagsT1() {
+    EXPECT_EQ(state.flags.tr1, 1);
+    EXPECT_EQ(state.flags.ndv, 1);
+    EXPECT_EQ(state.flags.ov, 1);
+  }
+
+
   void checkI72(W72 result72) {
-    auto [hi, lo] = result72.signedHalves();
-    EXPECT_EQ(state.AC[acLoc+0], hi);
-    EXPECT_EQ(state.AC[acLoc+1], lo);
+    EXPECT_EQ(state.AC[acLoc+0], W36(result72.hi));
+    EXPECT_EQ(state.AC[acLoc+1], W36(result72.lo));
   }
 
   void check72M(W72 result72) {
@@ -408,6 +446,75 @@ public:
   }
 };
 
+
+TEST_F(InstructionDIV, NCpp) {
+  a = W36{0123456, 0654321};
+  b = expectMem = W36{0,5};
+  test(VW36{W36(0234, acLoc, 0, 0, opnLoc)},
+       &InstructionDIV::check72,
+       &KM10Test::checkFlagsNC);
+};
+
+#if 0
+TEST_F(InstructionDIV, NCnn) {
+  a = -aBig;
+  b = expectMem = -bPos;
+  test(VW36{W36(0234, acLoc, 0, 0, opnLoc)},
+       &InstructionDIV::check72,
+       &InstructionDIV::checkFlagsNC);
+};
+
+
+TEST_F(InstructionDIV, NCnp) {
+  a = -aBig;
+  b = expectMem = bPos;
+  test(VW36{W36(0234, acLoc, 0, 0, opnLoc)},
+       &InstructionDIV::check72,
+       &InstructionDIV::checkFlagsNC);
+};
+
+
+TEST_F(InstructionDIV, NCpn) {
+  a = aBig;
+  b = expectMem = -bPos;
+  test(VW36{W36(0234, acLoc, 0, 0, opnLoc)},
+       &InstructionDIV::check72,
+       &InstructionDIV::checkFlagsNC);
+}
+
+
+TEST_F(InstructionDIV, TR1) {
+  a = hugePos;
+  b = expectMem = W36{0, 5};
+  test(VW36{W36(0224, acLoc, 0, 0, opnLoc)},
+       &InstructionDIV::check72,
+       &InstructionDIV::checkFlagsT1);
+};
+
+TEST_F(InstructionDIV, I_NC) {
+  a = aBig;
+  b = expectMem = W36(0, bPos.rhu);
+  test(VW36{W36(0235, acLoc, 0, 0, b.rhu)},
+       &InstructionDIV::checkI72,
+       &InstructionDIV::checkFlagsNC);
+};
+
+TEST_F(InstructionDIV, M_NC) {
+  a = expectAC = aBig;
+  b = bPos;
+  test(VW36{W36(0236, acLoc, 0, 0, opnLoc)},
+       &InstructionDIV::check72M,
+       &InstructionDIV::checkFlagsNC);
+}
+
+TEST_F(InstructionDIV, B_NC) {
+  a = aBig;
+  b = bPos;
+  test(VW36{W36(0237, acLoc, 0, 0, opnLoc)},
+       &InstructionDIV::check72B,
+       &InstructionDIV::checkFlagsNC);
+}
+#endif
 
 ////////////////////////////////////////////////////////////////
 int main(int argc, char *argv[]) {
