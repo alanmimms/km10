@@ -34,7 +34,6 @@ public:
 
   using CallbackFn = void (KM10Test::*)();
 
-
   W36 a;
   W36 b;
   W36 result;
@@ -54,11 +53,10 @@ public:
   const W36 bPos;
 
 
-  void noCheck() {
-  }
+  void noCheck() { }
 
 
-  void checkUnmodifiedFlags() {
+  virtual void checkUnmodifiedFlags() {
     EXPECT_EQ(state.flags.ndv | state.flags.fuf, 0);
     EXPECT_EQ(state.flags.afi | state.flags.pub, 0);
     EXPECT_EQ(state.flags.uio | state.flags.usr, 0);
@@ -66,28 +64,28 @@ public:
     EXPECT_EQ(state.flags.tr2, 0);
   }
 
-  void checkFlagsC0() {
+  virtual void checkFlagsC0() {
     EXPECT_EQ(state.flags.tr1, 1);
     EXPECT_EQ(state.flags.cy1, 0);
     EXPECT_EQ(state.flags.cy0, 1);
     EXPECT_EQ(state.flags.ov, 1) ;
   }
 
-  void checkFlagsC1() {
+  virtual void checkFlagsC1() {
     EXPECT_EQ(state.flags.tr1, 1);
     EXPECT_EQ(state.flags.cy1, 1);
     EXPECT_EQ(state.flags.cy0, 0);
     EXPECT_EQ(state.flags.ov, 1);
   }
 
-  void checkFlagsT1() {
+  virtual void checkFlagsT1() {
     EXPECT_EQ(state.flags.tr1, 1);
     EXPECT_EQ(state.flags.cy1, 0);
     EXPECT_EQ(state.flags.cy0, 0);
     EXPECT_EQ(state.flags.ov, 1);
   }
 
-  void checkFlagsNC() {
+  virtual void checkFlagsNC() {
     EXPECT_EQ(state.flags.tr1, 0);
     EXPECT_EQ(state.flags.cy1, 0);
     EXPECT_EQ(state.flags.cy0, 0);
@@ -95,24 +93,28 @@ public:
   }
 
 
-  void check() {
+  virtual void check() {
     EXPECT_EQ(state.AC[acLoc], expectAC);
     EXPECT_EQ(state.memP[opnLoc], expectMem);
   }
 
 
-  void checkI() {
+  virtual void checkI() {
     EXPECT_EQ(state.AC[acLoc], expectAC);
   }
 
 
-  void test(VW36 insns, CallbackFn checker, CallbackFn flagChecker) {
+  virtual void setup() {
+    state.AC[acLoc+0] = a;
+    state.memP[opnLoc] = b;
+  }
+
+  virtual void test(VW36 insns, CallbackFn checker, CallbackFn flagChecker) {
     state.pc.u = pc;
     state.maxInsns = 1;
     state.running = true;
 
-    state.AC[acLoc] = a;
-    state.memP[opnLoc] = b;
+    setup();
     unsigned dest = pc;
     for (auto insn: insns) state.memP[dest++] = insn;
 
@@ -260,14 +262,14 @@ class InstructionMUL: public KM10Test {
 public:
   using CallbackFn72 = void (InstructionMUL::*)(W72 result72);
 
-  using tResultF = function<W72(W36,W36)>;
+  using ResultF = function<W72(W36,W36)>;
 
-  static inline tResultF defaultResultF = [](W36 aA, W36 aB) -> W72 const {
+  static inline ResultF defaultResultF = [](W36 aA, W36 aB) -> W72 const {
     return W72(((int128_t) aA.extend() * (int128_t) aB.extend()));
   };
 
   void test(VW36 insns, CallbackFn72 checker, CallbackFn flagChecker,
-	    tResultF getResultF = defaultResultF)
+	    ResultF getResultF = defaultResultF)
   {
     W72 result72{getResultF(a, b)};
     KM10Test::test(insns, &KM10Test::noCheck, flagChecker);
@@ -334,8 +336,7 @@ TEST_F(InstructionMUL, NCpn) {
 
 
 TEST_F(InstructionMUL, TR1) {
-  a = -1ll << 35;
-  b = expectMem = a;
+  a = b = expectMem = -1ll << 35;
   test(VW36{W36(0224, acLoc, 0, 0, opnLoc)},
        &InstructionMUL::check72,
        &InstructionMUL::checkFlagsT1,
@@ -375,35 +376,44 @@ public:
       smPos(W36{0,5})
   {}
 
+  W72 a;
   const W72 hugePos;
   const W72 smPos;
 
   using CallbackFn72 = void (InstructionDIV::*)(W72 result72);
 
-  using tResultF = function<W72(W36,W36)>;
+  using ResultF = function<W72(W72,W36)>;
 
-  static inline tResultF defaultResultF = [](W36 aA, W36 aB) -> W72 const {
+  static inline ResultF defaultResultF = [](W72 s1, W36 s2) {
     const uint64_t mask35 = W36::rMask(35);
-    uint128_t div = ((uint128_t) aA.u & mask35) << 35 | (aB.u & mask35);
-    auto dor = aB.u & mask35;
-    auto signBit = aA.s < 0 ? 1ull << 35 : 0ull;
-
-    uint64_t quo = div / dor;
-    uint64_t rem = div % dor;
-
-    return W72{quo | signBit, rem | signBit};
+    uint128_t den70 = ((uint128_t) s1.hi35 << 35) | s1.lo35;
+    auto dor = s2.u & mask35;
+    auto signBit = s1.s < 0 ? 1ull << 35 : 0ull;
+    uint64_t quo = den70 / dor;
+    uint64_t rem = den70 % dor;
+    return W72{(quo & mask35) | signBit, (rem & mask35) | signBit};
   };
 
-  void test(VW36 insns, CallbackFn72 checker, CallbackFn flagChecker,
-	    tResultF getResultF = defaultResultF)
+  virtual void setup() override {
+    state.AC[acLoc+0] = a.hi;
+    state.AC[acLoc+0] = a.lo;
+    state.memP[opnLoc] = b;
+  }
+
+  virtual void test(VW36 insns,
+		    CallbackFn72 checker,
+		    CallbackFn flagChecker,
+		    ResultF getResultF = defaultResultF)
   {
     W72 result72{getResultF(a, b)};
     KM10Test::test(insns, &KM10Test::noCheck, flagChecker);
+    state.AC[acLoc+0] = result72.hi;
+    state.AC[acLoc+1] = result72.lo;
     invoke(checker, this, result72);
   }
 
 
-  void checkUnmodifiedFlags() {
+  virtual void checkUnmodifiedFlags() override {
     EXPECT_EQ(state.flags.tr2 | state.flags.fuf, 0);
     EXPECT_EQ(state.flags.afi | state.flags.pub, 0);
     EXPECT_EQ(state.flags.uio | state.flags.usr, 0);
@@ -411,45 +421,65 @@ public:
     EXPECT_EQ(state.flags.cy0 | state.flags.cy1, 0);
   }
 
-  void checkFlagsNC() {
+  virtual void checkFlagsNC() override {
     EXPECT_EQ(state.flags.tr1, 0);
     EXPECT_EQ(state.flags.ndv, 0);
     EXPECT_EQ(state.flags.ov, 0);
   }
 
-  void checkFlagsT1() {
+  virtual void checkFlagsT1() override {
     EXPECT_EQ(state.flags.tr1, 1);
     EXPECT_EQ(state.flags.ndv, 1);
     EXPECT_EQ(state.flags.ov, 1);
   }
 
 
-  void checkI72(W72 result72) {
+  virtual void checkI72(W72 result72) {
     EXPECT_EQ(state.AC[acLoc+0], W36(result72.hi));
     EXPECT_EQ(state.AC[acLoc+1], W36(result72.lo));
   }
 
-  void check72M(W72 result72) {
+  virtual void check72M(W72 result72) {
     auto [hi, lo] = result72.signedHalves();
     EXPECT_EQ(state.memP[opnLoc], hi);
   }
 
-  void check72B(W72 result72) {
+  virtual void check72B(W72 result72) {
     auto [hi, lo] = result72.signedHalves();
     EXPECT_EQ(state.AC[acLoc+0], hi);
     EXPECT_EQ(state.memP[opnLoc], hi);
   }
 
-  void check72(W72 result72) {
+  virtual void check72(W72 result72) {
     checkI72(result72);
+    EXPECT_EQ(state.memP[opnLoc], expectMem);
+  }
+
+  virtual void check72unchanged(W72 result72) {
     EXPECT_EQ(state.memP[opnLoc], expectMem);
   }
 };
 
 
+TEST_F(InstructionDIV, NDV) {
+  a = W72{W36{0222222, 0222222}, W36{0222222, 0222222}};
+  b = expectMem = W36{0, 2};
+  test(VW36{W36(0234, acLoc, 0, 0, opnLoc)},
+       &InstructionDIV::check72unchanged,
+       &KM10Test::checkFlagsT1);
+};
+
+TEST_F(InstructionDIV, NCppSimple) {
+  a = W72{W36{0222222, 0222222}, W36{0222222, 0222222}};
+  b = expectMem = W36{0303030, 0303030};
+  test(VW36{W36(0234, acLoc, 0, 0, opnLoc)},
+       &InstructionDIV::check72,
+       &KM10Test::checkFlagsNC);
+};
+
 TEST_F(InstructionDIV, NCpp) {
-  a = W36{0123456, 0654321};
-  b = expectMem = W36{0,5};
+  a = W72{W36{0123456, 0654321}, W36{0, 7}};
+  b = expectMem = W36{0, 0303030};
   test(VW36{W36(0234, acLoc, 0, 0, opnLoc)},
        &InstructionDIV::check72,
        &KM10Test::checkFlagsNC);
@@ -457,7 +487,7 @@ TEST_F(InstructionDIV, NCpp) {
 
 #if 0
 TEST_F(InstructionDIV, NCnn) {
-  a = -aBig;
+  a = -s2ig;
   b = expectMem = -bPos;
   test(VW36{W36(0234, acLoc, 0, 0, opnLoc)},
        &InstructionDIV::check72,

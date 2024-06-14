@@ -101,8 +101,7 @@ public:
     };
 
     DFunc acGet2 = [&]() {
-      return W72(state.acGetN(iw.ac+0),
-		 state.acGetN(iw.ac+1));
+      return W72(state.acGetN(iw.ac+0), state.acGetN(iw.ac+1));
     };
 
     FuncD acPut2 = [&](W72 v) -> void {
@@ -335,22 +334,21 @@ public:
       return W36((prod.s < 0 ? W36::bit0 : 0) | ((W36::all1s >> 1) & prod.u));
     };
     
+
     DFuncDW divWord = [&](W72 s1, W36 s2) -> auto const {
-      static const uint64_t mask35 = W36::rMask(35);
+      const uint64_t mask35 = W36::rMask(35);
+      uint128_t den70 = ((uint128_t) s1.hi35 << 35) | s1.lo35;
+      auto dor = s2.u & mask35;
+      auto signBit = s1.s < 0 ? 1ull << 35 : 0ull;
 
-      // Accumulate the 70 bit magnitude to divide.
-      uint128_t dividend = ((uint128_t) s1.u & mask35) << 35 | (s2.u & mask35);
-      auto isNeg = s1.s < 0;
-
-      if ((dividend >> 35) >= (s2.u & mask35)) {
-	state.flags.ndv = 1;
-	return W72{0};
+      if (s1.hi35 >= (s2.u & mask35)) {
+	state.flags.ndv = state.flags.tr1 = state.flags.ov = 1;
+	return s1;
       }
 
-      auto divisor = s2.u & mask35;
-      uint64_t d = dividend / divisor;
-      uint64_t r = dividend % divisor;
-      return W72{isNeg ? -d : d, isNeg ? -r : r};
+      uint64_t quo = den70 / dor;
+      uint64_t rem = den70 % dor;
+      return W72{(quo & mask35) | signBit, (rem & mask35) | signBit};
     };
     
     auto doHXXXX = [&](WFunc &doGetSrcF,
