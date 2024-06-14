@@ -745,6 +745,13 @@ struct W72 {
       uint64_t lo: 36;
       uint64_t hi: 36;
     };
+
+    struct ATTRPACKED {
+      uint64_t lo35: 35;
+      unsigned loSign: 1;
+      uint64_t hi35: 35;
+      unsigned hiSign: 1;
+    };
   };
 
   W72(int128_t v = 0) : s(v) {}
