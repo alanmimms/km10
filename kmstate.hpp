@@ -102,7 +102,7 @@ struct KMState {
     string toString() {
       ostringstream ss;
       ss << oct << setw(6) << setfill('0') << u;
-      if (ndv) ss << (usr ? " NDV" : " PCP");
+      if (ndv) ss << " NDV";
       if (fuf) ss << " FUF";
       if (tr1) ss << " TR1";
       if (tr2) ss << " TR2";
