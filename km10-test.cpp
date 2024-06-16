@@ -522,6 +522,161 @@ TEST_F(InstructionDIV, B_NC) {
        &KM10Test::checkFlagsNC);
 }
 
+
+////////////////////////////////////////////////////////////////
+class InstructionIDIV: public KM10Test {
+public:
+  InstructionIDIV()
+    : KM10Test()
+  {}
+
+  using CallbackFn72 = void (InstructionIDIV::*)(W72 result72);
+
+  using ResultF = function<W72(W36,W36)>;
+
+  static inline ResultF defaultResultF = [](W36 s1, W36 s2) {
+    uint64_t den35 = s1.mag;
+    auto dor = s2.mag;
+    auto signBit = s1.s < 0 ? 1ull << 35 : 0ull;
+    uint64_t quo = den35 / dor;
+    uint64_t rem = den35 % dor;
+    const uint64_t mask35 = W36::rMask(35);
+    W72 ret{(quo & mask35) | signBit, (rem & mask35) | signBit};
+    return ret;
+  };
+
+  virtual void test(VW36 insns,
+		    CallbackFn72 checker,
+		    CallbackFn flagChecker,
+		    ResultF getResultF = defaultResultF)
+  {
+    W72 result72{getResultF(a, b)};
+    KM10Test::test(insns, &KM10Test::noCheck, flagChecker);
+    invoke(checker, this, result72);
+  }
+
+
+  virtual void checkUnmodifiedFlags() override {
+    EXPECT_EQ(state.flags.tr2 | state.flags.fuf, 0);
+    EXPECT_EQ(state.flags.afi | state.flags.pub, 0);
+    EXPECT_EQ(state.flags.uio | state.flags.usr, 0);
+    EXPECT_EQ(state.flags.fpd | state.flags.fov, 0);
+    EXPECT_EQ(state.flags.cy0 | state.flags.cy1, 0);
+  }
+
+  virtual void checkFlagsNC() override {
+    EXPECT_EQ(state.flags.tr1, 0);
+    EXPECT_EQ(state.flags.ndv, 0);
+    EXPECT_EQ(state.flags.ov, 0);
+  }
+
+  virtual void checkFlagsT1() override {
+    EXPECT_EQ(state.flags.tr1, 1);
+    EXPECT_EQ(state.flags.ndv, 1);
+    EXPECT_EQ(state.flags.ov, 1);
+  }
+
+
+  virtual void checkI72(W72 result72) {
+    EXPECT_EQ(state.AC[acLoc+0], W36(result72.hi));
+    EXPECT_EQ(state.AC[acLoc+1], W36(result72.lo));
+  }
+
+  virtual void check72M(W72 result72) {
+    EXPECT_EQ(state.memP[opnLoc], W36(result72.hi));
+  }
+
+  virtual void check72B(W72 result72) {
+    EXPECT_EQ(state.AC[acLoc+0], W36(result72.hi));
+    EXPECT_EQ(state.memP[opnLoc], W36(result72.hi));
+  }
+
+  virtual void check72(W72 result72) {
+    checkI72(result72);
+    EXPECT_EQ(state.memP[opnLoc], expectMem);
+  }
+
+  virtual void check72unchanged(W72 result72) {
+    EXPECT_EQ(state.memP[opnLoc], expectMem);
+  }
+};
+
+
+TEST_F(InstructionIDIV, NDV0) {
+  a = W36{1ull << (35 - 18), 0};
+  b = expectMem = W36{0, 0};
+  test(VW36{W36(0230, acLoc, 0, 0, opnLoc)},
+       &InstructionIDIV::check72unchanged,
+       &KM10Test::checkFlagsT1);
+};
+
+TEST_F(InstructionIDIV, NDVbig) {
+  a = W36{0222222, 0222222};
+  b = expectMem = W36{0777777, 0777777};
+  test(VW36{W36(0230, acLoc, 0, 0, opnLoc)},
+       &InstructionIDIV::check72unchanged,
+       &KM10Test::checkFlagsT1);
+};
+
+TEST_F(InstructionIDIV, NCpp) {
+  a = W36{0, 0654321};
+  b = expectMem = W36{0, 3};
+  test(VW36{W36(0230, acLoc, 0, 0, opnLoc)},
+       &InstructionIDIV::check72,
+       &KM10Test::checkFlagsNC);
+};
+
+TEST_F(InstructionIDIV, NCnn) {
+  a = W36{0400000, 0654321};
+  b = expectMem = W36{0477777, 3};
+  test(VW36{W36(0230, acLoc, 0, 0, opnLoc)},
+       &InstructionIDIV::check72,
+       &KM10Test::checkFlagsNC);
+};
+
+
+TEST_F(InstructionIDIV, NCnp) {
+  a = W36{0400000, 0654321};
+  b = expectMem = W36{0, 3};
+  test(VW36{W36(0230, acLoc, 0, 0, opnLoc)},
+       &InstructionIDIV::check72,
+       &KM10Test::checkFlagsNC);
+};
+
+
+TEST_F(InstructionIDIV, NCpn) {
+  a = W36{0, 0654321};
+  b = expectMem = W36{0477777, 0303030};
+  test(VW36{W36(0230, acLoc, 0, 0, opnLoc)},
+       &InstructionIDIV::check72,
+       &KM10Test::checkFlagsNC);
+}
+
+
+TEST_F(InstructionIDIV, I_NC) {
+  a = W36{0, 0111111};
+  b = expectMem = W36{0, 3};
+  test(VW36{W36(0231, acLoc, 0, 0, 3)},
+       &InstructionIDIV::checkI72,
+       &KM10Test::checkFlagsNC);
+};
+
+TEST_F(InstructionIDIV, M_NC) {
+  a = W36{0, 0654321};
+  b = W36{0303030, 0};
+  test(VW36{W36(0232, acLoc, 0, 0, opnLoc)},
+       &InstructionIDIV::check72M,
+       &KM10Test::checkFlagsNC);
+}
+
+TEST_F(InstructionIDIV, B_NC) {
+  a = W36{0, 0654321};
+b = W36{0, 3};
+  test(VW36{W36(0233, acLoc, 0, 0, opnLoc)},
+       &InstructionIDIV::check72B,
+       &KM10Test::checkFlagsNC);
+}
+
 ////////////////////////////////////////////////////////////////
 int main(int argc, char *argv[]) {
   testing::InitGoogleTest(&argc, argv);
