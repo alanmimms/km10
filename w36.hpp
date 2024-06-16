@@ -752,6 +752,11 @@ struct W72 {
     };
 
     struct ATTRPACKED {
+      int64_t sLo: 36;
+      int64_t sHi: 36;
+    };
+
+    struct ATTRPACKED {
       uint64_t lo35: 35;
       unsigned loSign: 1;
       uint64_t hi35: 35;
@@ -766,6 +771,7 @@ struct W72 {
   operator int128_t() {return s;}
 
   static inline const uint128_t bit0 = ((uint128_t) 1) << 71;
+  static inline const int128_t sBit1 = ((int128_t) 1) << 70;
   static inline const uint128_t bit36 = ((uint128_t) 1) << 35;
   static inline const uint128_t all1s = (bit0 << 1) - 1;
   static inline const int128_t signedBit0 = (int128_t) all1s;
@@ -777,6 +783,14 @@ struct W72 {
 
   // Return rightmost `s` bit mask.
   constexpr static uint128_t rMask(unsigned s) {return (((uint128_t) 1) << (s + 1)) - 1;}
+
+  // Grab the 70-bit signed number from the double word represention,
+  // cutting out the low word's sign bit.
+  int128_t toS70() const {return ((int128_t) sHi << 35) | lo35;}
+
+  // Grab the 70-bit unsigned magnitude from the double word
+  // represention, cutting out the low word's sign bit.
+  int128_t toU70() const {return ((uint128_t) hi35 << 35) | lo35;}
 
 
   // String formatting
