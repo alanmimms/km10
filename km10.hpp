@@ -494,15 +494,6 @@ public:
 	int128_t sum128 = s1 + s2;
 	W72 sum72{sum128};
 
-	ostringstream ss;
-	ss << (int64_t) (sum128 / 1000000000ll);
-	ss << (uint64_t) ((sum128 < 0 ? -sum128 : sum128) % 1000000000ll);
-
-	cerr << "DADD("
-	     << a1.dec72() << ","
-	     << a2.dec72() << ") = "
-	     << ss.str() << logger.endl;
-
 	if (sum128 >= W72::sBit1) {
 	  state.flags.cy1 = state.flags.tr1 = state.flags.ov = 1;
 	} else if (sum128 < -W72::sBit1) {
