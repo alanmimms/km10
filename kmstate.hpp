@@ -11,7 +11,7 @@
 
 using namespace std;
 
-#include "w36.hpp"
+#include "word.hpp"
 #include "logger.hpp"
 
 

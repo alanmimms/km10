@@ -4,7 +4,7 @@
 #include <sstream>
 #include <iomanip>
 
-#include "w36.hpp"
+#include "word.hpp"
 #include "logger.hpp"
 #include "kmstate.hpp"
 

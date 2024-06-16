@@ -14,7 +14,7 @@
 
 using namespace std;
 
-#include "w36.hpp"
+#include "word.hpp"
 #include "device.hpp"
 #include "logger.hpp"
 #include "kmstate.hpp"

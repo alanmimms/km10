@@ -14,8 +14,8 @@ using namespace std;
 
 
 #include "logger.hpp"
+#include "word.hpp"
 #include "kmstate.hpp"
-#include "w36.hpp"
 #include "bytepointer.hpp"
 #include "device.hpp"
 #include "apr.hpp"
@@ -61,7 +61,8 @@ public:
 
   template <class S1, class S2, class M, class D>
   void doBinOp(S1 &doGetSrc1F, S2 &doGetSrc2F, M &doModifyF, D &doPutDstF) {
-    doPutDstF(doModifyF(doGetSrc1F(), doGetSrc2F()));
+    auto result = doModifyF(doGetSrc1F(), doGetSrc2F());
+    if (!state.flags.ndv) doPutDstF(result);
   }
 
 
@@ -332,21 +333,31 @@ public:
       return W36((prod.s < 0 ? W36::bit0 : 0) | ((W36::all1s >> 1) & prod.u));
     };
     
+    DFuncWW idivWord = [&](W36 s1, W36 s2) -> auto const {
+
+      if ((s1.u == W36::bit0 && s2.s == -1ll) || s2.u == 0ull) {
+	state.flags.ndv = state.flags.tr1 = state.flags.ov = 1;
+	return W72{s1, s2};
+      } else {
+	return W72{s1 / s2, s1 % s2};
+      }
+    };
+    
     DFuncDW divWord = [&](W72 s1, W36 s2) -> auto const {
       uint128_t den70 = ((uint128_t) s1.hi35 << 35) | s1.lo35;
       auto dor = s2.mag;
       auto signBit = s1.s < 0 ? 1ull << 35 : 0ull;
 
-      if (s1.hi35 >= s2.mag) {
+      if (s1.hi35 >= s2.mag || s2.u == 0) {
 	state.flags.ndv = state.flags.tr1 = state.flags.ov = 1;
 	return s1;
+      } else {
+	uint64_t quo = den70 / dor;
+	uint64_t rem = den70 % dor;
+	const uint64_t mask35 = W36::rMask(35);
+	W72 ret{(quo & mask35) | signBit, (rem & mask35) | signBit};
+	return ret;
       }
-
-      uint64_t quo = den70 / dor;
-      uint64_t rem = den70 % dor;
-      const uint64_t mask35 = W36::rMask(35);
-      W72 ret{(quo & mask35) | signBit, (rem & mask35) | signBit};
-      return ret;
     };
     
     auto doHXXXX = [&](WFunc &doGetSrcF,
@@ -633,19 +644,19 @@ public:
 	break;
 
       case 0230:		// IDIV
-	doBinOp(acGet2, memGet, divWord, acPut2);
+	doBinOp(acGet, memGet, idivWord, acPut2);
 	break;
 
       case 0231:		// IDIVI
-	doBinOp(acGet2, immediate, divWord, acPut2);
+	doBinOp(acGet, immediate, idivWord, acPut2);
 	break;
 
       case 0232:		// IDIVM
-	doBinOp(acGet2, memGet, divWord, memPutHi);
+	doBinOp(acGet, memGet, idivWord, memPutHi);
 	break;
 
       case 0233:		// IDIVB
-	doBinOp(acGet2, memGet, divWord, bothPut2);
+	doBinOp(acGet, memGet, idivWord, bothPut2);
 	break;
 
       case 0234:		// DIV

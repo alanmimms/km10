@@ -1,7 +1,7 @@
 #pragma once
 
 #include "logger.hpp"
-#include "w36.hpp"
+#include "word.hpp"
 #include "device.hpp"
 
 

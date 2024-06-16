@@ -4,6 +4,7 @@ using namespace std;
 
 #include <gflags/gflags.h>
 
+#include "word.hpp"
 #include "kmstate.hpp"
 #include "km10.hpp"
 #include "debugger.hpp"

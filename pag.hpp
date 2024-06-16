@@ -1,6 +1,6 @@
 #pragma once
 
-#include "w36.hpp"
+#include "word.hpp"
 #include "device.hpp"
 
 

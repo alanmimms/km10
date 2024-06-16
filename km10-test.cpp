@@ -5,6 +5,7 @@ using namespace std;
 
 #include <gtest/gtest.h>
 
+#include "word.hpp"
 #include "kmstate.hpp"
 #include "km10.hpp"
 
@@ -535,14 +536,12 @@ public:
   using ResultF = function<W72(W36,W36)>;
 
   static inline ResultF defaultResultF = [](W36 s1, W36 s2) {
-    uint64_t den35 = s1.mag;
-    auto dor = s2.mag;
-    auto signBit = s1.s < 0 ? 1ull << 35 : 0ull;
-    uint64_t quo = den35 / dor;
-    uint64_t rem = den35 % dor;
-    const uint64_t mask35 = W36::rMask(35);
-    W72 ret{(quo & mask35) | signBit, (rem & mask35) | signBit};
-    return ret;
+
+    if ((s1.u == W36::bit0 && s2.s == -1ll) || s2.u == 0ull) {
+      return W72{s1, s2};
+    } else {
+      return W72{s1 / s2, s1 % s2};
+    }
   };
 
   virtual void test(VW36 insns,
@@ -611,7 +610,7 @@ TEST_F(InstructionIDIV, NDV0) {
 };
 
 TEST_F(InstructionIDIV, NDVbig) {
-  a = W36{0222222, 0222222};
+  a = W36{0400000, 0};
   b = expectMem = W36{0777777, 0777777};
   test(VW36{W36(0230, acLoc, 0, 0, opnLoc)},
        &InstructionIDIV::check72unchanged,
@@ -619,16 +618,16 @@ TEST_F(InstructionIDIV, NDVbig) {
 };
 
 TEST_F(InstructionIDIV, NCpp) {
-  a = W36{0, 0654321};
-  b = expectMem = W36{0, 3};
+  a = W36{0654321};
+  b = expectMem = W36{3};
   test(VW36{W36(0230, acLoc, 0, 0, opnLoc)},
        &InstructionIDIV::check72,
        &KM10Test::checkFlagsNC);
 };
 
 TEST_F(InstructionIDIV, NCnn) {
-  a = W36{0400000, 0654321};
-  b = expectMem = W36{0477777, 3};
+  a = W36{(uint64_t) -0123456};
+  b = expectMem = W36{(uint64_t) -3};
   test(VW36{W36(0230, acLoc, 0, 0, opnLoc)},
        &InstructionIDIV::check72,
        &KM10Test::checkFlagsNC);
@@ -636,8 +635,8 @@ TEST_F(InstructionIDIV, NCnn) {
 
 
 TEST_F(InstructionIDIV, NCnp) {
-  a = W36{0400000, 0654321};
-  b = expectMem = W36{0, 3};
+  a = W36{(uint64_t) -0123456};
+  b = expectMem = W36{3};
   test(VW36{W36(0230, acLoc, 0, 0, opnLoc)},
        &InstructionIDIV::check72,
        &KM10Test::checkFlagsNC);
@@ -645,8 +644,8 @@ TEST_F(InstructionIDIV, NCnp) {
 
 
 TEST_F(InstructionIDIV, NCpn) {
-  a = W36{0, 0654321};
-  b = expectMem = W36{0477777, 0303030};
+  a = W36{0654321};
+  b = expectMem = W36{(uint64_t) -3};
   test(VW36{W36(0230, acLoc, 0, 0, opnLoc)},
        &InstructionIDIV::check72,
        &KM10Test::checkFlagsNC);

@@ -13,7 +13,7 @@
 using namespace std;
 
 
-#include "w36.hpp"
+#include "word.hpp"
 #include "km10.hpp"
 
 
