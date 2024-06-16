@@ -277,20 +277,17 @@ public:
   }
 
   void checkI72(W72 result72) {
-    auto [hi, lo] = result72.signedHalves();
-    EXPECT_EQ(state.AC[acLoc+0], hi);
-    EXPECT_EQ(state.AC[acLoc+1], lo);
+    EXPECT_EQ(state.AC[acLoc+0], W36(result72.hi));
+    EXPECT_EQ(state.AC[acLoc+1], W36(result72.lo));
   }
 
   void check72M(W72 result72) {
-    auto [hi, lo] = result72.signedHalves();
-    EXPECT_EQ(state.memP[opnLoc], hi);
+    EXPECT_EQ(state.memP[opnLoc], W36(result72.hi));
   }
 
   void check72B(W72 result72) {
-    auto [hi, lo] = result72.signedHalves();
-    EXPECT_EQ(state.AC[acLoc+0], hi);
-    EXPECT_EQ(state.memP[opnLoc], hi);
+    EXPECT_EQ(state.AC[acLoc+0], W36(result72.hi));
+    EXPECT_EQ(state.memP[opnLoc], W36(result72.hi));
   }
 
   void check72(W72 result72) {
@@ -385,18 +382,19 @@ public:
   using ResultF = function<W72(W72,W36)>;
 
   static inline ResultF defaultResultF = [](W72 s1, W36 s2) {
-    const uint64_t mask35 = W36::rMask(35);
     uint128_t den70 = ((uint128_t) s1.hi35 << 35) | s1.lo35;
-    auto dor = s2.u & mask35;
+    auto dor = s2.mag;
     auto signBit = s1.s < 0 ? 1ull << 35 : 0ull;
     uint64_t quo = den70 / dor;
     uint64_t rem = den70 % dor;
-    return W72{(quo & mask35) | signBit, (rem & mask35) | signBit};
+    const uint64_t mask35 = W36::rMask(35);
+    W72 ret{(quo & mask35) | signBit, (rem & mask35) | signBit};
+    return ret;
   };
 
   virtual void setup() override {
     state.AC[acLoc+0] = a.hi;
-    state.AC[acLoc+0] = a.lo;
+    state.AC[acLoc+1] = a.lo;
     state.memP[opnLoc] = b;
   }
 
@@ -407,8 +405,6 @@ public:
   {
     W72 result72{getResultF(a, b)};
     KM10Test::test(insns, &KM10Test::noCheck, flagChecker);
-    state.AC[acLoc+0] = result72.hi;
-    state.AC[acLoc+1] = result72.lo;
     invoke(checker, this, result72);
   }
 
@@ -440,14 +436,12 @@ public:
   }
 
   virtual void check72M(W72 result72) {
-    auto [hi, lo] = result72.signedHalves();
-    EXPECT_EQ(state.memP[opnLoc], hi);
+    EXPECT_EQ(state.memP[opnLoc], W36(result72.hi));
   }
 
   virtual void check72B(W72 result72) {
-    auto [hi, lo] = result72.signedHalves();
-    EXPECT_EQ(state.AC[acLoc+0], hi);
-    EXPECT_EQ(state.memP[opnLoc], hi);
+    EXPECT_EQ(state.AC[acLoc+0], W36(result72.hi));
+    EXPECT_EQ(state.memP[opnLoc], W36(result72.hi));
   }
 
   virtual void check72(W72 result72) {
@@ -469,82 +463,64 @@ TEST_F(InstructionDIV, NDV) {
        &KM10Test::checkFlagsT1);
 };
 
-TEST_F(InstructionDIV, NCppSimple) {
-  a = W72{W36{0222222, 0222222}, W36{0222222, 0222222}};
-  b = expectMem = W36{0303030, 0303030};
-  test(VW36{W36(0234, acLoc, 0, 0, opnLoc)},
-       &InstructionDIV::check72,
-       &KM10Test::checkFlagsNC);
-};
-
 TEST_F(InstructionDIV, NCpp) {
-  a = W72{W36{0123456, 0654321}, W36{0, 7}};
-  b = expectMem = W36{0, 0303030};
+  a = W72{W36{0, 0654321}, W36{0, 7}};
+  b = expectMem = W36{0303030, 0};
   test(VW36{W36(0234, acLoc, 0, 0, opnLoc)},
        &InstructionDIV::check72,
        &KM10Test::checkFlagsNC);
 };
 
-#if 0
 TEST_F(InstructionDIV, NCnn) {
-  a = -s2ig;
-  b = expectMem = -bPos;
+  a = W72{W36{0400000, 0654321}, W36{0, 7}};
+  b = expectMem = W36{0477777, 0303030};
   test(VW36{W36(0234, acLoc, 0, 0, opnLoc)},
        &InstructionDIV::check72,
-       &InstructionDIV::checkFlagsNC);
+       &KM10Test::checkFlagsNC);
 };
 
 
 TEST_F(InstructionDIV, NCnp) {
-  a = -aBig;
-  b = expectMem = bPos;
+  a = W72{W36{0400000, 0654321}, W36{0, 7}};
+  b = expectMem = W36{0303030, 0};
   test(VW36{W36(0234, acLoc, 0, 0, opnLoc)},
        &InstructionDIV::check72,
-       &InstructionDIV::checkFlagsNC);
+       &KM10Test::checkFlagsNC);
 };
 
 
 TEST_F(InstructionDIV, NCpn) {
-  a = aBig;
-  b = expectMem = -bPos;
+  a = W72{W36{0, 0654321}, W36{0, 7}};
+  b = expectMem = W36{0477777, 0303030};
   test(VW36{W36(0234, acLoc, 0, 0, opnLoc)},
        &InstructionDIV::check72,
-       &InstructionDIV::checkFlagsNC);
+       &KM10Test::checkFlagsNC);
 }
 
 
-TEST_F(InstructionDIV, TR1) {
-  a = hugePos;
-  b = expectMem = W36{0, 5};
-  test(VW36{W36(0224, acLoc, 0, 0, opnLoc)},
-       &InstructionDIV::check72,
-       &InstructionDIV::checkFlagsT1);
-};
-
 TEST_F(InstructionDIV, I_NC) {
-  a = aBig;
-  b = expectMem = W36(0, bPos.rhu);
-  test(VW36{W36(0235, acLoc, 0, 0, b.rhu)},
+  a = W72{W36{0, 0111111}, W36{0, 7}};
+  b = expectMem = W36{0, 0777777};
+  test(VW36{W36(0235, acLoc, 0, 0, 0777777)},
        &InstructionDIV::checkI72,
-       &InstructionDIV::checkFlagsNC);
+       &KM10Test::checkFlagsNC);
 };
 
 TEST_F(InstructionDIV, M_NC) {
-  a = expectAC = aBig;
-  b = bPos;
+  a = W72{W36{0, 0654321}, W36{0, 7}};
+  b = W36{0303030, 0};
   test(VW36{W36(0236, acLoc, 0, 0, opnLoc)},
        &InstructionDIV::check72M,
-       &InstructionDIV::checkFlagsNC);
+       &KM10Test::checkFlagsNC);
 }
 
 TEST_F(InstructionDIV, B_NC) {
-  a = aBig;
-  b = bPos;
+  a = W72{W36{0, 0654321}, W36{0, 7}};
+  b = W36{0303030, 0};
   test(VW36{W36(0237, acLoc, 0, 0, opnLoc)},
        &InstructionDIV::check72B,
-       &InstructionDIV::checkFlagsNC);
+       &KM10Test::checkFlagsNC);
 }
-#endif
 
 ////////////////////////////////////////////////////////////////
 int main(int argc, char *argv[]) {

@@ -44,7 +44,7 @@ public:
   {}
 
   
-  // I find these a lot less ugly in the emulator..
+  // I find these a lot less ugly in the emulator...
   using WFunc = function<W36()>;
   using DFunc = function<W72()>;
   using FuncW = function<void(W36)>;
@@ -101,13 +101,13 @@ public:
     };
 
     DFunc acGet2 = [&]() {
-      return W72(state.acGetN(iw.ac+0), state.acGetN(iw.ac+1));
+      W72 ret{state.acGetN(iw.ac+0), state.acGetN(iw.ac+1)};
+      return ret;
     };
 
     FuncD acPut2 = [&](W72 v) -> void {
-      auto [hi, lo] = v.signedHalves();
-      state.acPutN(hi, iw.ac+0);
-      state.acPutN(lo, iw.ac+1);
+      state.acPutN(v.hi, iw.ac+0);
+      state.acPutN(v.lo, iw.ac+1);
     };
 
     WFunc memGet = [&]() -> W36 {
@@ -129,10 +129,9 @@ public:
     };
 
     FuncD bothPut2 = [&](W72 v) -> void {
-      auto [hi, lo] = v.signedHalves();
-      state.acPutN(hi, iw.ac+0);
-      state.acPutN(lo, iw.ac+1);
-      memPut(hi);
+      state.acPutN(v.hi, iw.ac+0);
+      state.acPutN(v.lo, iw.ac+1);
+      memPut(v.hi);
     };
 
     WFuncW swap = [&](W36 src) -> W36 {return W36(src.rhu, src.lhu);};
@@ -153,8 +152,7 @@ public:
     WFunc memGetSwapped = [&]() {return swap(memGet());};
 
     FuncD memPutHi = [&](W72 v) {
-      auto [hi, lo] = v.signedHalves();
-      memPut(hi);
+      memPut(v.hi);
     };
 
     WFunc immediate = [&]() {return W36(state.pc.isSection0() ? 0 : ea.lhu, ea.rhu);};
@@ -336,19 +334,20 @@ public:
     
 
     DFuncDW divWord = [&](W72 s1, W36 s2) -> auto const {
-      const uint64_t mask35 = W36::rMask(35);
       uint128_t den70 = ((uint128_t) s1.hi35 << 35) | s1.lo35;
-      auto dor = s2.u & mask35;
+      auto dor = s2.mag;
       auto signBit = s1.s < 0 ? 1ull << 35 : 0ull;
 
-      if (s1.hi35 >= (s2.u & mask35)) {
+      if (s1.hi35 >= s2.mag) {
 	state.flags.ndv = state.flags.tr1 = state.flags.ov = 1;
 	return s1;
       }
 
       uint64_t quo = den70 / dor;
       uint64_t rem = den70 % dor;
-      return W72{(quo & mask35) | signBit, (rem & mask35) | signBit};
+      const uint64_t mask35 = W36::rMask(35);
+      W72 ret{(quo & mask35) | signBit, (rem & mask35) | signBit};
+      return ret;
     };
     
     auto doHXXXX = [&](WFunc &doGetSrcF,
@@ -721,9 +720,8 @@ public:
 	else if (ea.rhs < 0)
 	  a.u >>= -(ea.rhs & 0377);
 
-	auto [hi, lo] = a.signedHalves();
-	state.acPutN(hi, iw.ac+0);
-	state.acPutN(lo, iw.ac+1);
+	state.acPutN(a.hi, iw.ac+0);
+	state.acPutN(a.lo, iw.ac+1);
 	break;
       }
 
