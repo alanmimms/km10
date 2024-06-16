@@ -44,6 +44,11 @@ struct W36 {
       unsigned lhu: 18;
     };
 
+    struct ATTRPACKED {
+      uint64_t mag: 35;
+      unsigned: 1;
+    };
+
     // This is done this way instead of doing union/struct for the
     // various views of the upper halfword because I could NOT get g++
     // to correctly bit-align the op field.
@@ -774,13 +779,7 @@ struct W72 {
   constexpr static uint128_t rMask(unsigned s) {return (((uint128_t) 1) << (s + 1)) - 1;}
 
 
-  auto signedHalves() const {
-    uint64_t signBit = hi & W36::bit0;
-    W36 hi35(signBit | (uint64_t) (hi & rMask(35)) << 1 | lo >> 35);
-    W36 lo35(signBit | (lo & rMask(35)));
-    return tuple<W36,W36>{hi35, lo35};
-  }
-
+  // String formatting
   string fmt72() const {
     ostringstream s;
     s << W36(hi).fmt36() << ",,," << W36(lo).fmt36();
