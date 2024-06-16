@@ -795,8 +795,16 @@ struct W72 {
 
   // String formatting
   string fmt72() const {
-    ostringstream s;
-    s << W36(hi).fmt36() << ",,," << W36(lo).fmt36();
-    return s.str();
+    ostringstream ss;
+    ss << W36(hi).fmt36() << ",,," << W36(lo).fmt36();
+    return ss.str();
+  }
+
+  string dec72() const {
+    int128_t s70 = toS70();
+    ostringstream ss;
+    ss << (int64_t) (s70 / 1000000000ll);
+    ss << (uint64_t) ((s70 < 0 ? -s70 : s70) % 1000000000ll);
+    return ss.str();
   }
 };

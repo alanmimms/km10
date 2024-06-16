@@ -483,19 +483,29 @@ public:
 
       case 0114: {		 // DADD
 	auto a1 = W72{state.memGetN(ea.u+0), state.memGetN(ea.u+1)};
-	auto a2 = W72{state.acGetN(iw.ac+0),    state.acGetN(iw.ac+1)};
+	auto a2 = W72{state.acGetN(iw.ac+0), state.acGetN(iw.ac+1)};
 
-	auto s1 = a1.toS70();
-	auto s2 = a2.toS70();
-	auto u1 = a1.toU70();
-	auto u2 = a2.toU70();
+	int128_t s1 = a1.toS70();
+	int128_t s2 = a2.toS70();
+	uint128_t u1 = a1.toU70();
+	uint128_t u2 = a2.toU70();
 	auto isNeg1 = s1 < 0;
 	auto isNeg2 = s2 < 0;
-	auto sum = W72(s1 + s2);
+	int128_t sum128 = s1 + s2;
+	W72 sum72{sum128};
 
-	if (sum.s >= W72::sBit1) {
+	ostringstream ss;
+	ss << (int64_t) (sum128 / 1000000000ll);
+	ss << (uint64_t) ((sum128 < 0 ? -sum128 : sum128) % 1000000000ll);
+
+	cerr << "DADD("
+	     << a1.dec72() << ","
+	     << a2.dec72() << ") = "
+	     << ss.str() << logger.endl;
+
+	if (sum128 >= W72::sBit1) {
 	  state.flags.cy1 = state.flags.tr1 = state.flags.ov = 1;
-	} else if (sum.s < -W72::sBit1) {
+	} else if (sum128 < -W72::sBit1) {
 	  state.flags.cy0 = state.flags.tr1 = state.flags.ov = 1;
 	} else if ((s1 < 0 && s2 < 0) ||
 		   (isNeg1 != isNeg2 &&
@@ -504,8 +514,8 @@ public:
 	    state.flags.cy0 = state.flags.cy1 = state.flags.tr1 = state.flags.ov = 1;
 	  }
 
-	state.acPutN(iw.ac+0, sum.hi);
-	state.acPutN(iw.ac+1, sum.lo);
+	state.acPutN(sum72.hi, iw.ac+0);
+	state.acPutN(sum72.lo, iw.ac+1);
 	break;
       }
 
