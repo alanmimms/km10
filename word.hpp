@@ -792,6 +792,15 @@ struct W72 {
   // represention, cutting out the low word's sign bit.
   int128_t toU70() const {return ((uint128_t) hi35 << 35) | lo35;}
 
+  // Convert our 71-bit internal representation to two words with
+  // duplicated sign bits.
+  static inline auto toDW(int128_t v72) {
+    int64_t hi64 = v72 >> 37;
+    uint64_t lo64 = v72 & W36::rMask(35);
+    uint64_t signBit = hi64 & W36::bit0;
+    return tuple<W36,W36>(signBit | hi64, signBit | lo64);
+  }
+
 
   // String formatting
   string fmt72() const {
