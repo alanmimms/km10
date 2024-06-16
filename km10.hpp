@@ -332,7 +332,6 @@ public:
       return W36((prod.s < 0 ? W36::bit0 : 0) | ((W36::all1s >> 1) & prod.u));
     };
     
-
     DFuncDW divWord = [&](W72 s1, W36 s2) -> auto const {
       uint128_t den70 = ((uint128_t) s1.hi35 << 35) | s1.lo35;
       auto dor = s2.mag;
@@ -470,6 +469,34 @@ public:
       ea.u = state.getEA(iw.i, iw.x, iw.y);
 
       switch (iw.op) {
+
+      case 0114: {		 // DADD
+	auto a1 = W72{state.memGetN(ea.u+0), state.memGetN(ea.u+1)};
+	auto a2 = W72{state.acGetN(iw.ac+0),    state.acGetN(iw.ac+1)};
+
+	auto s1 = a1.toS70();
+	auto s2 = a2.toS70();
+	auto u1 = a1.toU70();
+	auto u2 = a2.toU70();
+	auto isNeg1 = s1 < 0;
+	auto isNeg2 = s2 < 0;
+	auto sum = W72(s1 + s2);
+
+	if (sum.s >= W72::sBit1) {
+	  state.flags.cy1 = state.flags.tr1 = state.flags.ov = 1;
+	} else if (sum.s < -W72::sBit1) {
+	  state.flags.cy0 = state.flags.tr1 = state.flags.ov = 1;
+	} else if ((s1 < 0 && s2 < 0) ||
+		   (isNeg1 != isNeg2 &&
+		    (u1 == u2 || ((!isNeg1 && u1 > u2) || (!isNeg2 && u2 > u1)))))
+	  {
+	    state.flags.cy0 = state.flags.cy1 = state.flags.tr1 = state.flags.ov = 1;
+	  }
+
+	state.acPutN(iw.ac+0, sum.hi);
+	state.acPutN(iw.ac+1, sum.lo);
+	break;
+      }
 
       case 0133: {		// IBP/ADJBP
 	BytePointer *bp = BytePointer::makeFrom(ea, state);
