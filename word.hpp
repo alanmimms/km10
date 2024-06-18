@@ -816,4 +816,12 @@ struct W72 {
     ss << (uint64_t) ((s70 < 0 ? -s70 : s70) % 1000000000ll);
     return ss.str();
   }
+
+  // Format a 128-bit number as decimal
+  static inline string fmt128(int128_t v128) {
+    ostringstream ss;
+    ss << (int64_t) (v128 / 1000000000ll);
+    ss << (uint64_t) ((v128 < 0 ? -v128 : v128) % 1000000000ll);
+    return ss.str();
+  }
 };

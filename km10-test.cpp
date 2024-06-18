@@ -105,7 +105,7 @@ public:
   }
 
 
-  virtual void setup() {
+  virtual void setupMachine() {
     state.AC[acLoc+0] = a;
     state.memP[opnLoc] = b;
   }
@@ -115,7 +115,7 @@ public:
     state.maxInsns = 1;
     state.running = true;
 
-    setup();
+    setupMachine();
     unsigned dest = pc;
     for (auto insn: insns) state.memP[dest++] = insn;
 
@@ -393,7 +393,7 @@ public:
     return ret;
   };
 
-  virtual void setup() override {
+  virtual void setupMachine() override {
     state.AC[acLoc+0] = a.hi;
     state.AC[acLoc+1] = a.lo;
     state.memP[opnLoc] = b;
@@ -698,7 +698,7 @@ public:
     return W72{hi36, lo36};
   };
 
-  virtual void setup() override {
+  virtual void setupMachine() override {
     state.AC[acLoc+0] = a.hi;
     state.AC[acLoc+1] = a.lo;
     state.memP[opnLoc+0] = b.hi;
@@ -822,11 +822,11 @@ public:
     return W72{hi36, lo36};
   };
 
-  virtual void setup() override {
-    state.AC[acLoc+0] = a.hi;
-    state.AC[acLoc+1] = a.lo;
-    state.memP[opnLoc+0] = b.hi;
-    state.memP[opnLoc+1] = b.lo;
+  virtual void setupMachine() override {
+    state.memP[opnLoc+0] = a.hi;
+    state.memP[opnLoc+1] = a.lo;
+    state.AC[acLoc+0] = b.hi;
+    state.AC[acLoc+1] = b.lo;
   }
 
   virtual void test(VW36 insns,
@@ -874,8 +874,8 @@ public:
 
 
 TEST_F(InstructionDSUB, CY1) {
-  a = W72{((uint128_t) 1 << 71) - 1};
-  b = W72{((uint128_t) 1 << 71) - 1};
+  a = W72{(uint128_t) 1 << 70};
+  b = W72{((uint128_t) 1 << 71) + 0123456};
   test(VW36{W36(0115, acLoc, 0, 0, opnLoc)},
        &InstructionDSUB::check72,
        &KM10Test::checkFlagsC1);

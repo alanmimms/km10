@@ -520,7 +520,7 @@ public:
 	uint128_t u2 = a2.toU70();
 	auto isNeg1 = s1 < 0;
 	auto isNeg2 = s2 < 0;
-	int128_t diff128 = s1 + s2;
+	int128_t diff128 = s1 - s2;
 
 	if (diff128 >= W72::sBit1) {
 	  state.flags.cy1 = state.flags.tr1 = state.flags.ov = 1;
