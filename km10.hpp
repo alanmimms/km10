@@ -554,7 +554,7 @@ public:
 	  state.flags.tr1 = state.flags.ov = 1;
 	}
 
-	W140 prod{u, v, (a.s < 0) ^ (b.s < 0)};
+	W140 prod{W140::product(u, v, (a.s < 0) ^ (b.s < 0))};
 	auto [r3, r2, r1, r0] = prod.toQW();
 
 	using namespace fmt;

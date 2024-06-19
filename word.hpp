@@ -819,9 +819,19 @@ struct W72 {
 
   // Format a 128-bit number as decimal
   static inline string fmt128(int128_t v128) {
+
     ostringstream ss;
-    ss << (int64_t) (v128 / 1000000000ll)
-       << (uint64_t) ((v128 < 0 ? -v128 : v128) % 1000000000ll);
+
+    if (v128 < 0) {
+      ss << "-";
+      v128 = -v128;
+    }
+
+    do {
+      ss << (unsigned) (v128 % 10);
+      v128 /= 10;
+    } while (v128 != 0);
+
     return ss.str();
   }
 };
@@ -831,57 +841,40 @@ struct W72 {
 // of the sign bit interspersed with four 35-bit magnitude words.
 struct W140 {
 
-  union {
-
-    struct ATTRPACKED {
-      uint64_t lo36: 36;
-      uint64_t mid36lo: 36;
-      uint64_t mid36hi: 36;
-      uint64_t hi36: 36;
-    };
-
-    struct ATTRPACKED {
-      uint128_t lo70: 70;
-      uint128_t hi70: 70;
-    };
-
-    struct ATTRPACKED {
-      uint64_t lo35: 35;
-      unsigned loSign: 1;
-      uint64_t mid35lo: 35;
-      unsigned midLoSign: 1;
-      uint64_t mid35hi: 35;
-      unsigned midHiSign: 1;
-      uint64_t hi35: 35;
-      unsigned hiSign: 1;
-    };
+  struct ATTRPACKED {
+    uint128_t lo70: 70;
+    uint128_t hi70: 70;
   };
 
   // For convenience, this is the sign of our full value as a 36-bit
   // word's bit #0.
   uint64_t signBit;
 
-  W140() : lo70(0), hi70(0), signBit(0) {}
+  // Build one up from parts.
+  W140(uint128_t aHi=0, uint128_t aLo=0, int aNeg=0)
+    : lo70(aLo),
+      hi70(aHi),
+      signBit(aNeg ? W72::bit0 : 0)
+  {}
 
-  // Make a 140-bit product from two 70-bit unsigned magnitudes and a
-  // sign (0=>positive, 1=>negative). See _Hacker's Delight_ Second
-  // Edition, Chapter 8.
-  W140(uint128_t a, uint128_t b, int aSign) {
-    const int m = 3;
-    const int n = 3;
+
+  // Factory to make a 140-bit product from two 70-bit unsigned
+  // magnitudes and a sign (0=>positive, 1=>negative). See _Hacker's
+  // Delight_ Second Edition, Chapter 8.
+  static inline W140 product(uint128_t a, uint128_t b, int aNeg) {
+    const unsigned m = 3;
+    const unsigned n = 3;
     uint32_t u[m] = {(uint32_t) a, (uint32_t) (a >> 32), (uint32_t) (a >> 64)};
     uint32_t v[n] = {(uint32_t) b, (uint32_t) (b >> 32), (uint32_t) (b >> 64)};
     uint32_t w[m+n];
 
-    signBit = aSign != 0 ? W36::bit0 : 0;
-
     for (unsigned q=0; q < sizeof(w) / sizeof(w[0]); ++q) w[q] = 0;
 
     for (unsigned j=0; j < n; ++j) {
-      unsigned k = 0;
+      uint32_t k = 0;
 
       for (unsigned i=0; i < m; ++i) {
-	unsigned t = u[i] * v[j] + w[i+j] + k;
+	uint32_t t = u[i] * v[j] + w[i+j] + k;
 	w[i+j] = t;
 	k = t >> 16;
       }
@@ -891,8 +884,10 @@ struct W140 {
 
     // Since we know we only have 70-bit multiplicands, the result
     // is at most 140 bits and will therefore be found in w[0..4].
-    lo70 = ((uint128_t) w[0]) | ((uint128_t) w[1] << 32) | ((uint128_t) w[2] << 64);
-    hi70 = ((uint128_t) w[2] >> 8) | ((uint128_t) w[3] << 24) | ((uint128_t) w[4] << 56);
+    return W140{
+      ((uint128_t) w[2] >> 8) | ((uint128_t) w[3] << 24) | ((uint128_t) w[4] << 56),
+      ((uint128_t) w[0]) | ((uint128_t) w[1] << 32) | ((uint128_t) w[2] << 64),
+      aNeg};
   }
 
 
