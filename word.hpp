@@ -795,7 +795,7 @@ struct W72 {
   // Convert our 71-bit internal representation to two words with
   // duplicated sign bits.
   static inline auto toDW(int128_t v72) {
-    int64_t hi64 = v72 >> 37;
+    int64_t hi64 = v72 >> 36;
     uint64_t lo64 = v72 & W36::rMask(35);
     uint64_t signBit = hi64 & W36::bit0;
     return tuple<W36,W36>(signBit | hi64, signBit | lo64);
@@ -820,8 +820,91 @@ struct W72 {
   // Format a 128-bit number as decimal
   static inline string fmt128(int128_t v128) {
     ostringstream ss;
-    ss << (int64_t) (v128 / 1000000000ll);
-    ss << (uint64_t) ((v128 < 0 ? -v128 : v128) % 1000000000ll);
+    ss << (int64_t) (v128 / 1000000000ll)
+       << (uint64_t) ((v128 < 0 ? -v128 : v128) % 1000000000ll);
     return ss.str();
+  }
+};
+
+
+// This is a 140-bit word whose internal representation is four copies
+// of the sign bit interspersed with four 35-bit magnitude words.
+struct W140 {
+
+  union {
+
+    struct ATTRPACKED {
+      uint64_t lo36: 36;
+      uint64_t mid36lo: 36;
+      uint64_t mid36hi: 36;
+      uint64_t hi36: 36;
+    };
+
+    struct ATTRPACKED {
+      uint128_t lo70: 70;
+      uint128_t hi70: 70;
+    };
+
+    struct ATTRPACKED {
+      uint64_t lo35: 35;
+      unsigned loSign: 1;
+      uint64_t mid35lo: 35;
+      unsigned midLoSign: 1;
+      uint64_t mid35hi: 35;
+      unsigned midHiSign: 1;
+      uint64_t hi35: 35;
+      unsigned hiSign: 1;
+    };
+  };
+
+  // For convenience, this is the sign of our full value as a 36-bit
+  // word's bit #0.
+  uint64_t signBit;
+
+  W140() : lo70(0), hi70(0), signBit(0) {}
+
+  // Make a 140-bit product from two 70-bit unsigned magnitudes and a
+  // sign (0=>positive, 1=>negative). See _Hacker's Delight_ Second
+  // Edition, Chapter 8.
+  W140(uint128_t a, uint128_t b, int aSign) {
+    const int m = 3;
+    const int n = 3;
+    uint32_t u[m] = {(uint32_t) a, (uint32_t) (a >> 32), (uint32_t) (a >> 64)};
+    uint32_t v[n] = {(uint32_t) b, (uint32_t) (b >> 32), (uint32_t) (b >> 64)};
+    uint32_t w[m+n];
+
+    signBit = aSign != 0 ? W36::bit0 : 0;
+
+    for (unsigned q=0; q < sizeof(w) / sizeof(w[0]); ++q) w[q] = 0;
+
+    for (unsigned j=0; j < n; ++j) {
+      unsigned k = 0;
+
+      for (unsigned i=0; i < m; ++i) {
+	unsigned t = u[i] * v[j] + w[i+j] + k;
+	w[i+j] = t;
+	k = t >> 16;
+      }
+
+      w[j+m] = k;
+    }
+
+    // Since we know we only have 70-bit multiplicands, the result
+    // is at most 140 bits and will therefore be found in w[0..4].
+    lo70 = ((uint128_t) w[0]) | ((uint128_t) w[1] << 32) | ((uint128_t) w[2] << 64);
+    hi70 = ((uint128_t) w[2] >> 8) | ((uint128_t) w[3] << 24) | ((uint128_t) w[4] << 56);
+  }
+
+
+  // Accessors/converters
+  tuple<W36,W36,W36,W36> toQW() {
+    const uint64_t mask35 = W36::rMask(35);
+
+    return tuple<W36,W36,W36,W36>{
+      (hi70 >> 35) | signBit,
+      (hi70 & mask35) | signBit,
+      (lo70 >> 35) | signBit,
+      (lo70 & mask35) | signBit
+    };
   }
 };

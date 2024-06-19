@@ -726,7 +726,8 @@ public:
   virtual void checkFlagsNC() override {
     EXPECT_EQ(state.flags.tr1, 0);
     EXPECT_EQ(state.flags.ov, 0);
-    EXPECT_EQ(state.flags.cy0 | state.flags.cy1, 0);
+    EXPECT_EQ(state.flags.cy0, 0);
+    EXPECT_EQ(state.flags.cy1, 0);
   }
 
   virtual void checkFlagsC0() override {
@@ -850,7 +851,8 @@ public:
   virtual void checkFlagsNC() override {
     EXPECT_EQ(state.flags.tr1, 0);
     EXPECT_EQ(state.flags.ov, 0);
-    EXPECT_EQ(state.flags.cy0 | state.flags.cy1, 0);
+    EXPECT_EQ(state.flags.cy0, 0);
+    EXPECT_EQ(state.flags.cy1, 0);
   }
 
   virtual void checkFlagsC0() override {
@@ -921,6 +923,118 @@ TEST_F(InstructionDSUB, NCpn) {
   test(VW36{W36(0115, acLoc, 0, 0, opnLoc)},
        &InstructionDSUB::check72,
        &KM10Test::checkFlagsNC);
+}
+
+
+////////////////////////////////////////////////////////////////
+class InstructionDMUL: public KM10Test {
+public:
+  InstructionDMUL()
+    : KM10Test()
+  {}
+
+  W72 a;
+  W72 b;
+
+  using CallbackFn140 = void (InstructionDMUL::*)(W140 result140);
+  using CallbackFn = void (InstructionDMUL::*)();
+
+  using ResultF = function<W140(W72,W72)>;
+
+  static inline ResultF defaultResultF = [](W72 a, W72 b) {
+    uint128_t a70 = a.toU70();
+    uint128_t b70 = b.toU70();
+    return W140{a70, b70, (a.s < 0) ^ (b.s < 0)};
+  };
+
+  virtual void setupMachine() override {
+    state.AC[acLoc+0] = a.hi;
+    state.AC[acLoc+1] = a.lo;
+    state.memP[opnLoc+0] = b.hi;
+    state.memP[opnLoc+1] = b.lo;
+  }
+
+  virtual void test(VW36 insns,
+		    CallbackFn140 checker,
+		    CallbackFn flagChecker,
+		    ResultF getResultF = defaultResultF)
+  {
+    W140 result140{getResultF(a, b)};
+    KM10Test::test(insns, &KM10Test::noCheck, (KM10Test::CallbackFn) flagChecker);
+    invoke(checker, this, result140);
+  }
+
+
+  virtual void checkUnmodifiedFlags() override {
+    EXPECT_EQ(state.flags.tr2 | state.flags.fuf, 0);
+    EXPECT_EQ(state.flags.afi | state.flags.pub, 0);
+    EXPECT_EQ(state.flags.uio | state.flags.usr, 0);
+    EXPECT_EQ(state.flags.fpd | state.flags.fov, 0);
+    EXPECT_EQ(state.flags.cy0, 0);
+    EXPECT_EQ(state.flags.cy1, 0);
+  }
+
+  virtual void checkFlagsNC() override {
+    EXPECT_EQ(state.flags.tr1, 0);
+    EXPECT_EQ(state.flags.ov, 0);
+  }
+
+  virtual void checkFlagsT1() override {
+    EXPECT_EQ(state.flags.tr1, 1);
+    EXPECT_EQ(state.flags.ov, 1);
+  }
+
+
+  virtual void check140(W140 result140) {
+    auto const [a3, a2, a1, a0] = result140.toQW();
+    EXPECT_EQ(state.AC[acLoc+0], a3);
+    EXPECT_EQ(state.AC[acLoc+1], a2);
+    EXPECT_EQ(state.AC[acLoc+2], a1);
+    EXPECT_EQ(state.AC[acLoc+3], a0);
+  }
+};
+
+
+TEST_F(InstructionDMUL, T1) {
+  a = W72{1ull << 35, 1ull << 35};
+  b = W72{1ull << 35, 1ull << 35};
+  test(VW36{W36(0116, acLoc, 0, 0, opnLoc)},
+       &InstructionDMUL::check140,
+       &InstructionDMUL::checkFlagsT1);
+};
+
+TEST_F(InstructionDMUL, NCpp) {
+  a = W72{1, 0123456654321ull};
+  b = W72{7, 0654321654321ull};
+  test(VW36{W36(0116, acLoc, 0, 0, opnLoc)},
+       &InstructionDMUL::check140,
+       &InstructionDMUL::checkFlagsNC);
+};
+
+TEST_F(InstructionDMUL, NCnn) {
+  a = W72{0700000, 0123456654321ull};
+  b = W72{0700000, 0123456123456ull};
+  test(VW36{W36(0116, acLoc, 0, 0, opnLoc)},
+       &InstructionDMUL::check140,
+       &InstructionDMUL::checkFlagsNC);
+};
+
+
+TEST_F(InstructionDMUL, NCnp) {
+  a = W72{0700000, 0123456654321ull};
+  b = W72{0123456123456ull, 0654321654321ull};
+  test(VW36{W36(0116, acLoc, 0, 0, opnLoc)},
+       &InstructionDMUL::check140,
+       &InstructionDMUL::checkFlagsNC);
+};
+
+
+TEST_F(InstructionDMUL, NCpn) {
+  a = W72{0123456654321ull, 0654321654321ull};
+  b = W72{0700000, 0123456123456ull};
+  test(VW36{W36(0116, acLoc, 0, 0, opnLoc)},
+       &InstructionDMUL::check140,
+       &InstructionDMUL::checkFlagsNC);
 }
 
 
