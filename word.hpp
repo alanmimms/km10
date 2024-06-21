@@ -791,7 +791,7 @@ struct W72 {
 
   // Grab the 70-bit unsigned magnitude from the double word
   // represention, cutting out the low word's sign bit.
-  int128_t toU70() const {return ((uint128_t) hi35 << 35) | lo35;}
+  uint128_t toU70() const {return ((uint128_t) hi35 << 35) | lo35;}
 
   // Convert our 71-bit internal representation to two words with
   // duplicated sign bits.
@@ -802,19 +802,15 @@ struct W72 {
     return tuple<W36,W36>(signBit | hi64, signBit | lo64);
   }
 
+  bool isMaxNeg() {
+    return lo == 0400000'000000ull && hi == 0400000'000000ull;
+  }
+
 
   // String formatting
   string fmt72() const {
     ostringstream ss;
     ss << W36(hi).fmt36() << ",,," << W36(lo).fmt36();
-    return ss.str();
-  }
-
-  string dec72() const {
-    int128_t s70 = toS70();
-    ostringstream ss;
-    ss << (int64_t) (s70 / 1000000000ll);
-    ss << (uint64_t) ((s70 < 0 ? -s70 : s70) % 1000000000ll);
     return ss.str();
   }
 

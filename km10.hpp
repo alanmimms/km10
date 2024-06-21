@@ -12,6 +12,7 @@
 #include <assert.h>
 
 using namespace std;
+using namespace fmt;
 
 
 #include "logger.hpp"
@@ -545,29 +546,25 @@ public:
 	const uint128_t u = a.toU70();
 	const uint128_t v = b.toU70();
 
-	const int128_t us = a.toS70();
-	const int128_t vs = b.toS70();
-
-	const int128_t neg2to70 = ((int128_t) -1) << 70;
-
-	if (us == neg2to70 && vs == neg2to70) {
+	if (a.isMaxNeg() && b.isMaxNeg()) {
+	  const W36 big1{0400000,0};
 	  state.flags.tr1 = state.flags.ov = 1;
+	  state.acPutN(big1, iw.ac+0);
+	  state.acPutN(big1, iw.ac+1);
+	  state.acPutN(big1, iw.ac+2);
+	  state.acPutN(big1, iw.ac+3);
+	  return;
 	}
 
 	W140 prod{W140::product(u, v, (a.s < 0) ^ (b.s < 0))};
-	auto [r3, r2, r1, r0] = prod.toQW();
+	auto [r0, r1, r2, r3] = prod.toQW();
 
-	using namespace fmt;
-
-	cerr << format("DMUL us={}  vs={}  u={}  v={}", 
-		       W72::fmt128(us), W72::fmt128(vs), W72::fmt128(u), W72::fmt128(v))
+	cerr << format("DMUL u={}  v={}", W72::fmt128(u), W72::fmt128(v))
 	     << logger.endl
-	     << format("  neg2to70={}", W72::fmt128(neg2to70))
+	     << format("  prod={}  {}  {}  {}",
+		       r0.fmt36(), r1.fmt36(), r2.fmt36(), r3.fmt36())
 	     << logger.endl
-	     << format("  prod 4-tuple={}  {}  {}  {}",
-		       r3.fmt36(), r2.fmt36(), r1.fmt36(), r0.fmt36())
-	     << logger.endl
-	     << format("  prod 2x70=({} << 70) | {}",
+	     << format("  prod=({} << 70) | {}",
 		       W72::fmt128(prod.hi70), W72::fmt128(prod.lo70))
 	     << logger.endl;
 
