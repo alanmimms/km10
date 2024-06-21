@@ -240,22 +240,25 @@ struct KMState {
   unordered_set<unsigned> executeBPs;
 
   W36 acGetN(unsigned n) {
+    assert(n < 16);
     W36 value = AC[n];
     if (logger.mem) logger.s << "; ac" << oct << n << ":" << value.fmt36();
     return value;
   }
 
 
-  W36 acGetEA(unsigned ac) {
-    W36 value = AC[ac];
-    if (logger.mem) logger.s << "; ac" << oct << ac << ":" << value.fmt36();
+  W36 acGetEA(unsigned n) {
+    assert(n < 16);
+    W36 value = AC[n];
+    if (logger.mem) logger.s << "; ac" << oct << n << ":" << value.fmt36();
     return value;
   }
 
 
-  void acPutN(W36 value, unsigned acN) {
-    AC[acN] = value;
-    if (logger.mem) logger.s << "; ac" << oct << acN << "=" << value.fmt36();
+  void acPutN(W36 value, unsigned n) {
+    assert(n < 16);
+    AC[n] = value;
+    if (logger.mem) logger.s << "; ac" << oct << n << "=" << value.fmt36();
   }
 
   W36 memGetN(W36 a) {
