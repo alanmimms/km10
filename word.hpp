@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <sstream>
 #include <iomanip>
+#include <array>
 
 using namespace std;
 
@@ -819,20 +820,24 @@ struct W72 {
 
   // Format a 128-bit number as decimal
   static inline string fmt128(int128_t v128) {
+    if (v128 == 0) return "0";
 
-    ostringstream ss;
+    string s{};
+    s.reserve(40);
 
-    if (v128 < 0) {
-      ss << "-";
-      v128 = -v128;
-    }
+    if (v128 < 0) v128 = -v128;
 
     do {
-      ss << (unsigned) (v128 % 10);
+      s += '0' + (v128 % 10);
       v128 /= 10;
     } while (v128 != 0);
 
-    return ss.str();
+    if (v128 < 0) {
+      s += "-";
+      v128 = -v128;
+    }
+
+    return string(s.rbegin(), s.rend());
   }
 };
 
@@ -841,9 +846,18 @@ struct W72 {
 // of the sign bit interspersed with four 35-bit magnitude words.
 struct W140 {
 
-  struct ATTRPACKED {
-    uint128_t lo70: 70;
-    uint128_t hi70: 70;
+  union {
+    struct ATTRPACKED {
+      uint128_t lo70: 70;
+      uint128_t hi70: 70;
+    };
+
+    struct ATTRPACKED {
+      uint128_t lo35lo: 35;
+      uint128_t lo35hi: 35;
+      uint128_t hi35lo: 35;
+      uint128_t hi35hi: 35;
+    };
   };
 
   // For convenience, this is the sign of our full value as a 36-bit
@@ -855,51 +869,57 @@ struct W140 {
     : lo70(aLo),
       hi70(aHi),
       signBit(aNeg ? W72::bit0 : 0)
-  {}
+  {
+    cerr << "W140: lo70=" << W72::fmt128(lo70)
+	 << " hi70=" << W72::fmt128(hi70)
+	 << " signBit=" << W36(signBit).fmt36() << "\r\n";
+  }
 
 
-  // Factory to make a 140-bit product from two 70-bit unsigned
-  // magnitudes and a sign (0=>positive, 1=>negative). See _Hacker's
-  // Delight_ Second Edition, Chapter 8.
+  // Make a 140-bit product from two 70-bit unsigned magnitudes and a
+  // sign (0=>positive, 1=>negative). See _Hacker's Delight_ Second
+  // Edition, Chapter 8.
   static inline W140 product(uint128_t a, uint128_t b, int aNeg) {
-    const unsigned m = 3;
-    const unsigned n = 3;
-    uint32_t u[m] = {(uint32_t) a, (uint32_t) (a >> 32), (uint32_t) (a >> 64)};
-    uint32_t v[n] = {(uint32_t) b, (uint32_t) (b >> 32), (uint32_t) (b >> 64)};
-    uint32_t w[m+n];
+    array<uint32_t,3>u{(uint32_t) a, (uint32_t) (a >> 32), (uint32_t) (a >> 64)};
+    array<uint32_t,3>v{(uint32_t) b, (uint32_t) (b >> 32), (uint32_t) (b >> 64)};
+    array<uint32_t,6>w{};
 
-    for (unsigned q=0; q < sizeof(w) / sizeof(w[0]); ++q) w[q] = 0;
+    for (unsigned j=0; j < v.size(); ++j) {
+      // The carry into the current column from the previous one.
+      uint32_t carry = 0;
 
-    for (unsigned j=0; j < n; ++j) {
-      uint32_t k = 0;
-
-      for (unsigned i=0; i < m; ++i) {
-	uint32_t t = u[i] * v[j] + w[i+j] + k;
-	w[i+j] = t;
-	k = t >> 16;
+      // Process columns, accumulating partial product and providing
+      // carry out to the next one.
+      for (unsigned i=0; i < u.size(); ++i) {
+	// The explicitly wider accumulator into which the partial
+	// product is accumulated. This will be truncated into our
+	// current w[i+j]. The high order bits saved as the carry into
+	// the next column to the left.
+	uint64_t accum = (uint64_t) u[i] * (uint64_t) v[j] + w[i+j] + carry;
+	w[i+j] = (uint32_t) accum;
+	carry = (uint32_t) (accum >> 32);
       }
 
-      w[j+m] = k;
+      w[j+u.size()] = carry;
     }
 
     // Since we know we only have 70-bit multiplicands, the result
     // is at most 140 bits and will therefore be found in w[0..4].
     return W140{
-      ((uint128_t) w[2] >> 8) | ((uint128_t) w[3] << 24) | ((uint128_t) w[4] << 56),
-      ((uint128_t) w[0]) | ((uint128_t) w[1] << 32) | ((uint128_t) w[2] << 64),
+      (uint128_t) w[2] >> 6 | (uint128_t) w[3] << 24 | (((uint128_t) w[4] << 56) & 077),
+      (uint128_t) w[0] << 0 | (uint128_t) w[1] << 32 | (((uint128_t) w[2] << 64) & 077),
       aNeg};
   }
 
 
   // Accessors/converters
-  tuple<W36,W36,W36,W36> toQW() {
-    const uint64_t mask35 = W36::rMask(35);
+  tuple<W36,W36,W36,W36> toQW() const {
 
     return tuple<W36,W36,W36,W36>{
-      (hi70 >> 35) | signBit,
-      (hi70 & mask35) | signBit,
-      (lo70 >> 35) | signBit,
-      (lo70 & mask35) | signBit
+      hi35hi | signBit,
+      hi35lo | signBit,
+      lo35hi | signBit,
+      lo35lo | signBit
     };
   }
 };
