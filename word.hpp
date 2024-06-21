@@ -865,11 +865,7 @@ struct W140 {
     : lo70(aLo),
       hi70(aHi),
       signBit(aNeg ? W72::bit0 : 0)
-  {
-    cerr << "W140: lo70=" << W72::fmt128(lo70)
-	 << " hi70=" << W72::fmt128(hi70)
-	 << " signBit=" << W36(signBit).fmt36() << "\r\n";
-  }
+  { }
 
 
   // Make a 140-bit product from two 70-bit unsigned magnitudes and a

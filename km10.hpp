@@ -558,16 +558,6 @@ public:
 
 	W140 prod{W140::product(u, v, (a.s < 0) ^ (b.s < 0))};
 	auto [r0, r1, r2, r3] = prod.toQW();
-
-	cerr << format("DMUL u={}  v={}", W72::fmt128(u), W72::fmt128(v))
-	     << logger.endl
-	     << format("  prod={}  {}  {}  {}",
-		       r0.fmt36(), r1.fmt36(), r2.fmt36(), r3.fmt36())
-	     << logger.endl
-	     << format("  prod=({} << 70) | {}",
-		       W72::fmt128(prod.hi70), W72::fmt128(prod.lo70))
-	     << logger.endl;
-
 	state.acPutN(r0, iw.ac+0);
 	state.acPutN(r1, iw.ac+1);
 	state.acPutN(r2, iw.ac+2);

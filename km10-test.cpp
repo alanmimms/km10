@@ -985,9 +985,6 @@ public:
 
   virtual void check140(W140 result140) {
     auto const [a0, a1, a2, a3] = result140.toQW();
-    cerr << format("check140 tuple={}  {}  {}  {}",
-		   a0.fmt36(), a1.fmt36(), a2.fmt36(), a3.fmt36())
-	 << "\r\n";
     EXPECT_EQ(state.AC[acLoc+0], a0);
     EXPECT_EQ(state.AC[acLoc+1], a1);
     EXPECT_EQ(state.AC[acLoc+2], a2);
