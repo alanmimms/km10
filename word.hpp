@@ -47,7 +47,7 @@ struct W36 {
 
     struct ATTRPACKED {
       uint64_t mag: 35;
-      unsigned: 1;
+      unsigned signBit: 1;
     };
 
     // This is done this way instead of doing union/struct for the
@@ -83,10 +83,6 @@ struct W36 {
     };
   };
 
-
-  // Types
-  using T2 = tuple<W36,W36>;
-  using T3 = tuple<W36,W36,W36>;
 
   // Constants
   static inline const auto halfOnes = 0777777u;
@@ -141,6 +137,11 @@ struct W36 {
   int64_t getRHextend() const {return (int64_t) rhs;}
 
   bool isSection0() const {return (vma >> 18) == 0u;}
+
+
+  // Typedefs
+  using tDW = tuple<W36,W36>;
+  using tQW = tuple<W36,W36,W36,W36>;
 
 
   // Formatters
@@ -768,6 +769,15 @@ struct W72 {
   W72(int128_t v = 0) : s(v) {}
   W72(W36 aHi, W36 aLo) : lo(aLo.u), hi(aHi.u) {}
 
+  // Take a 70-bit unsigned magnitude and a sign and make a doubleword.
+  W72(uint128_t mag, int isNeg) {
+    isNeg = !!isNeg;
+    lo35 = mag;
+    loSign = isNeg;
+    hi35 = mag >> 35;
+    hiSign = isNeg;
+  }
+
   operator uint128_t() {return u;}
   operator int128_t() {return s;}
 
@@ -799,7 +809,7 @@ struct W72 {
     int64_t hi64 = v72 >> 36;
     uint64_t lo64 = v72 & W36::rMask(35);
     uint64_t signBit = hi64 & W36::bit0;
-    return tuple<W36,W36>(signBit | hi64, signBit | lo64);
+    return W36::tDW(signBit | hi64, signBit | lo64);
   }
 
   bool isMaxNeg() {
@@ -814,8 +824,8 @@ struct W72 {
     return ss.str();
   }
 
-  // Format a 128-bit number as decimal
-  static inline string fmt128(int128_t v128) {
+  // Format a 128-bit number as whatever base <= 10.
+  static inline string fmt128(int128_t v128, int base=10) {
     if (v128 == 0) return "0";
 
     string s{};
@@ -824,8 +834,8 @@ struct W72 {
     if (v128 < 0) v128 = -v128;
 
     do {
-      s += '0' + (v128 % 10);
-      v128 /= 10;
+      s += '0' + (v128 % base);
+      v128 /= base;
     } while (v128 != 0);
 
     if (v128 < 0) {
@@ -860,12 +870,22 @@ struct W140 {
   // word's bit #0.
   uint64_t signBit;
 
-  // Build one up from parts.
+  // Build one up from bit integer parts.
   W140(uint128_t aHi=0, uint128_t aLo=0, int aNeg=0)
     : lo70(aLo),
       hi70(aHi),
       signBit(aNeg ? W72::bit0 : 0)
   { }
+
+
+  // Build one up from four W36s.
+  W140(W36 a0, W36 a1, W36 a2, W36 a3) {
+    hi35hi = a0.mag;
+    hi35lo = a1.mag;
+    lo35hi = a2.mag;
+    lo35lo = a3.mag;
+    signBit = a0.signBit;
+  }
 
 
   // Make a 140-bit product from two 70-bit unsigned magnitudes and a
@@ -904,10 +924,15 @@ struct W140 {
   }
 
 
-  // Accessors/converters
-  tuple<W36,W36,W36,W36> toQW() const {
+  // Compare this 140-bit magnitude against the specified 70-bit
+  // magnitude return true if this >= a70.
+  bool isGE70(uint128_t a70) {return hi70 != 0 || lo70 >= a70;}
 
-    return tuple<W36,W36,W36,W36>{
+
+  // Accessors/converters
+  W36::tQW toQW() const {
+
+    return tQW{
       hi35hi | signBit,
       hi35lo | signBit,
       lo35hi | signBit,

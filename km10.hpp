@@ -565,6 +565,36 @@ public:
 	break;
       }
 
+      case 0117: {		 // DDIV
+	auto const W140 den{
+	  state.acGetN(iw.ac+0),
+	  state.acGetN(iw.ac+1),
+	  state.acGetN(iw.ac+2),
+	  state.acGetN(iw.ac+3)};
+	auto const W72 div72{state.memGetN(ea.u+0), state.memGetN(ea.u+1)};
+	auto const div = div72.toU70();
+
+	if (den.isGE(div)) {
+	  state.flags.tr1 = state.flags.ov = state.flags.ndv = 1;
+	  return;
+	}
+
+	int denNeg = !!den.signBit;
+	int divNeg = !!div.signBit;
+
+	uint128_t quo;
+	uint128_t rem;
+
+	const W72 quo72{quo};
+	const W72 rem72{rem};
+
+	state.acPutN(quo72.hi, iw.ac+0);
+	state.acPutN(quo72.lo, iw.ac+1);
+	state.acPutN(rem72.hi, iw.ac+2);
+	state.acPutN(rem72.lo, iw.ac+3);
+	break;
+      }
+
       case 0133: {		// IBP/ADJBP
 	BytePointer *bp = BytePointer::makeFrom(ea, state);
 
