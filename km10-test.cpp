@@ -369,27 +369,22 @@ TEST_F(InstructionMUL, B_NC) {
 class InstructionDIV: public KM10Test {
 public:
   InstructionDIV()
-    : KM10Test(),
-      hugePos(W36{037777u,0777777u}, W36{0,3}),
-      smPos(W36{0,5})
+    : KM10Test()
   {}
 
   W72 a;
-  const W72 hugePos;
-  const W72 smPos;
 
   using CallbackFn72 = void (InstructionDIV::*)(W72 result72);
 
   using ResultF = function<W72(W72,W36)>;
 
-  static inline ResultF defaultResultF = [](W72 s1, W36 s2) {
-    uint128_t den70 = ((uint128_t) s1.hi35 << 35) | s1.lo35;
-    auto dor = s2.mag;
-    auto signBit = s1.s < 0 ? 1ull << 35 : 0ull;
-    uint64_t quo = den70 / dor;
-    uint64_t rem = den70 % dor;
-    const uint64_t mask35 = W36::rMask(35);
-    W72 ret{(quo & mask35) | signBit, (rem & mask35) | signBit};
+  static inline ResultF defaultResultF = [](const W72 s1, const W36 s2) {
+    const uint128_t den70 = ((uint128_t) s1.hi35 << 35) | s1.lo35;
+    const auto dor = s2.mag;
+    const int isNeg = s1.s < 0;
+    const uint64_t quo = den70 / dor;
+    const uint64_t rem = den70 % dor;
+    W72 ret{W36::fromMag(quo & W36::magMask, isNeg), W36::fromMag(rem & W36::magMask, isNeg)};
     return ret;
   };
 
@@ -540,7 +535,7 @@ public:
     if ((s1.u == W36::bit0 && s2.s == -1ll) || s2.u == 0ull) {
       return W72{s1, s2};
     } else {
-      return W72{s1 / s2, s1 % s2};
+      return W72{W36{s1 / s2}, W36{s1 % s2}};
     }
   };
 
@@ -767,16 +762,16 @@ TEST_F(InstructionDADD, CY0) {
 };
 
 TEST_F(InstructionDADD, NCpp) {
-  a = W72{1, 0123456654321ull};
-  b = W72{7, 0654321654321ull};
+  a = W72{W36{1}, W36{0123456u, 0654321u}};
+  b = W72{W36{7}, W36{0654321u, 0654321u}};
   test(VW36{W36(0114, acLoc, 0, 0, opnLoc)},
        &InstructionDADD::check72,
        &KM10Test::checkFlagsNC);
 };
 
 TEST_F(InstructionDADD, NCnn) {
-  a = W72{0700000, 0123456654321ull};
-  b = W72{0700000, 0123456123456ull};
+  a = W72{W36{0700000u}, W36{0123456u, 0654321u}};
+  b = W72{W36{0700000u}, W36{012345u, 06123456u}};
   test(VW36{W36(0114, acLoc, 0, 0, opnLoc)},
        &InstructionDADD::check72,
        &KM10Test::checkFlagsNC);
@@ -784,8 +779,8 @@ TEST_F(InstructionDADD, NCnn) {
 
 
 TEST_F(InstructionDADD, NCnp) {
-  a = W72{0700000, 0123456654321ull};
-  b = W72{0123456123456ull, 0654321654321ull};
+  a = W72{W36{0700000u}, W36{0123456u, 0654321u}};
+  b = W72{W36{0123456u, 0123456u}, W36{0654321u, 0654321u}};
   test(VW36{W36(0114, acLoc, 0, 0, opnLoc)},
        &InstructionDADD::check72,
        &KM10Test::checkFlagsNC);
@@ -793,8 +788,8 @@ TEST_F(InstructionDADD, NCnp) {
 
 
 TEST_F(InstructionDADD, NCpn) {
-  a = W72{0123456654321ull, 0654321654321ull};
-  b = W72{0700000, 0123456123456ull};
+  a = W72{W36{0123456u, 0654321u}, W36{0654321u, 0654321u}};
+  b = W72{W36{0700000u}, W36{012345u, 06123456u}};
   test(VW36{W36(0114, acLoc, 0, 0, opnLoc)},
        &InstructionDADD::check72,
        &KM10Test::checkFlagsNC);
@@ -892,16 +887,16 @@ TEST_F(InstructionDSUB, CY0) {
 };
 
 TEST_F(InstructionDSUB, NCpp) {
-  a = W72{1, 0123456654321ull};
-  b = W72{7, 0654321654321ull};
+  a = W72{W36{1}, W36{0123456u, 0654321u}};
+  b = W72{W36{7}, W36{0654321u, 0654321u}};
   test(VW36{W36(0115, acLoc, 0, 0, opnLoc)},
        &InstructionDSUB::check72,
        &KM10Test::checkFlagsNC);
 };
 
 TEST_F(InstructionDSUB, NCnn) {
-  a = W72{0700000, 0123456654321ull};
-  b = W72{0700000, 0123456123456ull};
+  a = W72{W36{0700000u}, W36{0123456u, 0654321u}};
+  b = W72{W36{0700000u}, W36{0123456u, 0123456u}};
   test(VW36{W36(0115, acLoc, 0, 0, opnLoc)},
        &InstructionDSUB::check72,
        &KM10Test::checkFlagsNC);
@@ -909,8 +904,8 @@ TEST_F(InstructionDSUB, NCnn) {
 
 
 TEST_F(InstructionDSUB, NCnp) {
-  a = W72{0700000, 0123456654321ull};
-  b = W72{0123456123456ull, 0654321654321ull};
+  a = W72{W36{0700000u}, W36{0123456u, 0654321u}};
+  b = W72{W36{0123456u, 0123456u}, W36{0654321u, 0654321u}};
   test(VW36{W36(0115, acLoc, 0, 0, opnLoc)},
        &InstructionDSUB::check72,
        &KM10Test::checkFlagsNC);
@@ -918,8 +913,8 @@ TEST_F(InstructionDSUB, NCnp) {
 
 
 TEST_F(InstructionDSUB, NCpn) {
-  a = W72{0123456654321ull, 0654321654321ull};
-  b = W72{0700000, 0123456123456ull};
+  a = W72{W36{0123456u, 0654321u}, W36{0654321u, 0654321u}};
+  b = W72{W36{0700000u}, W36{0123456u, 0123456u}};
   test(VW36{W36(0115, acLoc, 0, 0, opnLoc)},
        &InstructionDSUB::check72,
        &KM10Test::checkFlagsNC);
@@ -1003,8 +998,9 @@ public:
 
 
 TEST_F(InstructionDMUL, T1) {
-  a = W72{1ull << 35, 1ull << 35};
-  b = W72{1ull << 35, 1ull << 35};
+  const W36 bit0{1ull << 35};
+  a = W72{bit0, bit0};
+  b = W72{bit0, bit0};
   test(VW36{W36(0116, acLoc, 0, 0, opnLoc)},
        &InstructionDMUL::check140T1,
        &InstructionDMUL::checkFlagsT1);
@@ -1021,8 +1017,8 @@ TEST_F(InstructionDMUL, NCpp) {
 };
 
 TEST_F(InstructionDMUL, NCnn) {
-  a = W72{0700000, 0123456654321ull};
-  b = W72{0700000, 0123456123456ull};
+  a = W72{W36{0700000}, W36{0123456u, 0654321u}};
+  b = W72{W36{0700000}, W36{0123456u, 0123456u}};
   test(VW36{W36(0116, acLoc, 0, 0, opnLoc)},
        &InstructionDMUL::check140,
        &InstructionDMUL::checkFlagsNC);
@@ -1030,8 +1026,8 @@ TEST_F(InstructionDMUL, NCnn) {
 
 
 TEST_F(InstructionDMUL, NCnp) {
-  a = W72{0700000, 0123456654321ull};
-  b = W72{0123456123456ull, 0654321654321ull};
+  a = W72{W36{0700000}, W36{0123456u, 0654321u}};
+  b = W72{W36{0123456u, 0123456u}, W36{0654321u, 0654321u}};
   test(VW36{W36(0116, acLoc, 0, 0, opnLoc)},
        &InstructionDMUL::check140,
        &InstructionDMUL::checkFlagsNC);
@@ -1039,8 +1035,8 @@ TEST_F(InstructionDMUL, NCnp) {
 
 
 TEST_F(InstructionDMUL, NCpn) {
-  a = W72{0123456654321ull, 0654321654321ull};
-  b = W72{0700000, 0123456123456ull};
+  a = W72{W36{0123456u, 0654321u}, W36{0654321u, 0654321u}};
+  b = W72{W36{0700000u}, W36{0123456u, 0123456u}};
   test(VW36{W36(0116, acLoc, 0, 0, opnLoc)},
        &InstructionDMUL::check140,
        &InstructionDMUL::checkFlagsNC);

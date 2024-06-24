@@ -291,9 +291,9 @@ public:
     WFuncWW eqvCBWord = [&](W36 s1, W36 s2) -> auto const {return ~(~s1.u ^ ~s2.u);};
 
     WFuncWW addWord = [&](W36 s1, W36 s2) -> auto const {
-      auto sum = s1.extend() + s2.extend();
+      int64_t sum = s1.extend() + s2.extend();
 
-      if (sum < -W36::signedBit0) {
+      if (sum < -(int64_t) W36::bit0) {
 	state.flags.tr1 = state.flags.ov = state.flags.cy0 = 1;
       } else if ((uint64_t) sum >= W36::bit0) {
 	state.flags.tr1 = state.flags.ov = state.flags.cy1 = 1;
@@ -303,9 +303,9 @@ public:
     };
     
     WFuncWW subWord = [&](W36 s1, W36 s2) -> auto const {
-      auto diff = s1.extend() - s2.extend();
+      int64_t diff = s1.extend() - s2.extend();
 
-      if (diff < -W36::signedBit0) {
+      if (diff < -(int64_t) W36::bit0) {
 	state.flags.tr1 = state.flags.ov = state.flags.cy0 = 1;
       } else if ((uint64_t) diff >= W36::bit0) {
 	state.flags.tr1 = state.flags.ov = state.flags.cy1 = 1;
@@ -315,18 +315,20 @@ public:
     };
     
     DFuncWW mulWord = [&](W36 s1, W36 s2) -> auto const {
-      W72 prod{(int128_t) s1.extend() * s2.extend()};
+      int128_t prod128 = (int128_t) s1.extend() * s2.extend();
+      W72 prod{(uint128_t) (prod128 < 0 ? -prod128 : prod128), prod128 < 0};
 
       if (s1.u == W36::bit0 && s2.u == W36::bit0) {
 	state.flags.tr1 = state.flags.ov = 1;
-	return W72{1ull << 34, 0};
+	return W72{W36{1ull << 34}, W36{0}};
       }
 
       return prod;
     };
     
     WFuncWW imulWord = [&](W36 s1, W36 s2) -> auto const {
-      W72 prod{(int128_t) s1.extend() * s2.extend()};
+      int128_t prod128 = (int128_t) s1.extend() * s2.extend();
+      W72 prod{(uint128_t) (prod128 < 0 ? -prod128 : prod128), prod128 < 0};
 
       if (s1.u == W36::bit0 && s2.u == W36::bit0) {
 	state.flags.tr1 = state.flags.ov = 1;
@@ -341,7 +343,7 @@ public:
 	state.flags.ndv = state.flags.tr1 = state.flags.ov = 1;
 	return W72{s1, s2};
       } else {
-	return W72{s1 / s2, s1 % s2};
+	return W72{W36{s1 / s2}, W36{s1 % s2}};
       }
     };
     
@@ -356,8 +358,7 @@ public:
       } else {
 	uint64_t quo = den70 / dor;
 	uint64_t rem = den70 % dor;
-	const uint64_t mask35 = W36::rMask(35);
-	W72 ret{(quo & mask35) | signBit, (rem & mask35) | signBit};
+	W72 ret{W36{(quo & W36::magMask) | signBit}, W36{(rem & W36::magMask) | signBit}};
 	return ret;
       }
     };
@@ -566,27 +567,41 @@ public:
       }
 
       case 0117: {		 // DDIV
-	auto const W140 den{
+	const W140 den{
 	  state.acGetN(iw.ac+0),
 	  state.acGetN(iw.ac+1),
 	  state.acGetN(iw.ac+2),
 	  state.acGetN(iw.ac+3)};
-	auto const W72 div72{state.memGetN(ea.u+0), state.memGetN(ea.u+1)};
+	const W72 div72{state.memGetN(ea.u+0), state.memGetN(ea.u+1)};
 	auto const div = div72.toU70();
 
-	if (den.isGE(div)) {
+	if (den.isGE70(div)) {
 	  state.flags.tr1 = state.flags.ov = state.flags.ndv = 1;
 	  return;
 	}
 
 	int denNeg = !!den.signBit;
-	int divNeg = !!div.signBit;
+	int divNeg = div72.hiSign;
 
-	uint128_t quo;
-	uint128_t rem;
+	/*
+	  Divide 192 bit n2||n1||n0 by d, returning remainder in rem.
+	  performs : (n2||n1||0) = ((n2||n1||n0) / d)
+	  d : a 128bit unsigned integer
+	*/
+	uint64_t n0 = den.lo70;
+	uint64_t n1 = den.hi70 | (den.lo70 >> 64);
+	uint64_t n2 = den.hi70 >> 6;
 
-	const W72 quo72{quo};
-	const W72 rem72{rem};
+	uint128_t remainder = n2 % div;
+	n2 = n2 / div;
+	uint128_t partial = (remainder << 64) | n1;
+	n1 = partial / div;
+	remainder = partial % div;
+	partial = (remainder << 64) | n0;
+	n0 = partial / div;
+
+	const W72 quo72{((uint128_t) n1 << 64) | n0, denNeg ^ divNeg};
+	const W72 rem72{remainder};
 
 	state.acPutN(quo72.hi, iw.ac+0);
 	state.acPutN(quo72.lo, iw.ac+1);

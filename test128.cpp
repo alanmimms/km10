@@ -137,7 +137,27 @@ int main(int argc, char *argv[]) {
 
   testDiv140(uint128_t{0123456<<2},
 	     uint128_t{0123456},
+	     uint128_t{01});
+
+  testDiv140(uint128_t{0123456<<2},
+	     uint128_t{0123456},
+	     uint128_t{010});
+
+  testDiv140(uint128_t{0123456<<2},
+	     uint128_t{0123456},
 	     uint128_t{0100});
+
+  testDiv140(uint128_t{0123456<<2},
+	     uint128_t{0123456},
+	     uint128_t{01000});
+
+  testDiv140(uint128_t{0123456<<2},
+	     uint128_t{0123456},
+	     uint128_t{010000});
+
+  testDiv140(uint128_t{0123456<<2},
+	     uint128_t{0123456},
+	     uint128_t{0100000});
 
   testDiv140(uint128_t{
       ((uint128_t) 0123456'123456ull << 16) |

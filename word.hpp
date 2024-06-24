@@ -88,10 +88,9 @@ struct W36 {
   static inline const auto halfOnes = 0777777u;
   static inline const uint64_t all1s = 0777777'777777ull;
   static inline const uint64_t bit0 = 1ull << 35;
-  static inline const int64_t signedBit0 = 1ll << 35;
-  static inline const int64_t bitM1 = 1ll << 36;
+  static inline const uint64_t magMask = bit0 - 1;
 
-  // Constructors
+  // Constructors/factories
   W36(uint64_t w = 0) : u(w) {}
   W36(unsigned lh, unsigned rh) : rhu(rh), lhu(lh) {}
 
@@ -103,6 +102,13 @@ struct W36 {
     x = aX;
     y = aY;
   }
+
+  // Build up from 35-bit magnitude and a sign bit.
+  static inline W36 fromMag(uint64_t aMag, int aSign) {
+    W36 w(aMag & (bit0 - 1));
+    w.signBit = aSign;
+    return w;
+  }    
 
 
   // Return mask for PDP10 bit number `n`.
@@ -766,17 +772,18 @@ struct W72 {
     };
   };
 
-  W72(int128_t v = 0) : s(v) {}
-  W72(W36 aHi, W36 aLo) : lo(aLo.u), hi(aHi.u) {}
+  using tDW = W36::tDW;
 
   // Take a 70-bit unsigned magnitude and a sign and make a doubleword.
-  W72(uint128_t mag, int isNeg) {
+  W72(uint128_t mag = 0, int isNeg = 0) {
     isNeg = !!isNeg;
     lo35 = mag;
     loSign = isNeg;
     hi35 = mag >> 35;
     hiSign = isNeg;
   }
+
+  W72(W36 aHi, W36 aLo) : lo(aLo.u), hi(aHi.u) {}
 
   operator uint128_t() {return u;}
   operator int128_t() {return s;}
@@ -785,8 +792,6 @@ struct W72 {
   static inline const int128_t sBit1 = ((int128_t) 1) << 70;
   static inline const uint128_t bit36 = ((uint128_t) 1) << 35;
   static inline const uint128_t all1s = (bit0 << 1) - 1;
-  static inline const int128_t signedBit0 = (int128_t) all1s;
-  static inline const int128_t bitM1 = bit0 << 1;
 
 
   // Return mask for PDP10 bit number `n`.
@@ -803,18 +808,16 @@ struct W72 {
   // represention, cutting out the low word's sign bit.
   uint128_t toU70() const {return ((uint128_t) hi35 << 35) | lo35;}
 
-  // Convert our 71-bit internal representation to two words with
-  // duplicated sign bits.
+  // Convert a 72-bit internal representation to two 35-bit magnitudes
+  // with duplicated sign bits.
   static inline auto toDW(int128_t v72) {
-    int64_t hi64 = v72 >> 36;
-    uint64_t lo64 = v72 & W36::rMask(35);
-    uint64_t signBit = hi64 & W36::bit0;
-    return W36::tDW(signBit | hi64, signBit | lo64);
+    const int isNeg = v72 < 0;
+    return tDW(W36::fromMag(v72 >> 36, isNeg), W36::fromMag(v72, isNeg));
   }
 
-  bool isMaxNeg() {
-    return lo == 0400000'000000ull && hi == 0400000'000000ull;
-  }
+    bool isMaxNeg() {
+      return lo == 0400000'000000ull && hi == 0400000'000000ull;
+    }
 
 
   // String formatting
@@ -853,6 +856,7 @@ struct W72 {
 struct W140 {
 
   union {
+
     struct ATTRPACKED {
       uint128_t lo70: 70;
       uint128_t hi70: 70;
@@ -869,6 +873,8 @@ struct W140 {
   // For convenience, this is the sign of our full value as a 36-bit
   // word's bit #0.
   uint64_t signBit;
+
+  using tQW = W36::tQW;
 
   // Build one up from bit integer parts.
   W140(uint128_t aHi=0, uint128_t aLo=0, int aNeg=0)
@@ -926,11 +932,11 @@ struct W140 {
 
   // Compare this 140-bit magnitude against the specified 70-bit
   // magnitude return true if this >= a70.
-  bool isGE70(uint128_t a70) {return hi70 != 0 || lo70 >= a70;}
+  bool isGE70(const uint128_t a70) const {return hi70 != 0 || lo70 >= a70;}
 
 
   // Accessors/converters
-  W36::tQW toQW() const {
+  tQW toQW() const {
 
     return tQW{
       hi35hi | signBit,
