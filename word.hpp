@@ -30,10 +30,8 @@ struct W36 {
 
   union {
     int64_t s: 36;
-    int64_t s64: 64;
 
     uint64_t u: 36;
-    uint64_t u64: 64;
 
     struct ATTRPACKED {
       signed rhs: 18;
@@ -47,7 +45,7 @@ struct W36 {
 
     struct ATTRPACKED {
       uint64_t mag: 35;
-      unsigned signBit: 1;
+      unsigned sign: 1;
     };
 
     // This is done this way instead of doing union/struct for the
@@ -91,7 +89,7 @@ struct W36 {
   static inline const uint64_t magMask = bit0 - 1;
 
   // Constructors/factories
-  W36(uint64_t w = 0) : u(w) {}
+  W36(int64_t w = 0) : s(w) {}
   W36(unsigned lh, unsigned rh) : rhu(rh), lhu(lh) {}
 
   // "Assembler"
@@ -104,9 +102,9 @@ struct W36 {
   }
 
   // Build up from 35-bit magnitude and a sign bit.
-  static inline W36 fromMag(uint64_t aMag, int aSign) {
-    W36 w(aMag & (bit0 - 1));
-    w.signBit = aSign;
+  static inline W36 fromMag(uint64_t aMag, int aSign = 0) {
+    W36 w(aMag & magMask);
+    w.sign = aSign;
     return w;
   }    
 
@@ -123,7 +121,7 @@ struct W36 {
 
   // Accessors
   operator uint64_t() const {return u;}
-  int64_t extend() const {return s < 0 ? (int64_t) s | ~0ll << 36 : s;}
+  int64_t ext64() const {return s < 0 ? (int64_t) s | ~0ll << 36 : s;}
   bool operator==(const W36 &other) const {return u == other.u;}
 
 
@@ -146,8 +144,8 @@ struct W36 {
 
 
   // Typedefs
-  using tDW = tuple<W36,W36>;
-  using tQW = tuple<W36,W36,W36,W36>;
+  using tDoubleWord = tuple<W36,W36>;
+  using tQuadWord = tuple<W36,W36,W36,W36>;
 
 
   // Formatters
@@ -772,18 +770,17 @@ struct W72 {
     };
   };
 
-  using tDW = W36::tDW;
+  using tDoubleWord = W36::tDoubleWord;
 
-  // Take a 70-bit unsigned magnitude and a sign and make a doubleword.
-  W72(uint128_t mag = 0, int isNeg = 0) {
-    isNeg = !!isNeg;
-    lo35 = mag;
-    loSign = isNeg;
-    hi35 = mag >> 35;
-    hiSign = isNeg;
-  }
-
+  W72(uint128_t v = 0) : u(v) {}
   W72(W36 aHi, W36 aLo) : lo(aLo.u), hi(aHi.u) {}
+  W72(uint64_t mag0, uint64_t mag1, int isNeg) : lo35(mag1), loSign(isNeg), hi35(mag0), hiSign(isNeg) {}
+
+  // Factory to take a 70-bit unsigned magnitude and a sign and make a
+  // doubleword.
+  static inline W72 fromMag(uint128_t mag, int isNeg = 0) {
+    return W72{(uint64_t) mag, (uint64_t) mag >> 35, !!isNeg};
+  }
 
   operator uint128_t() {return u;}
   operator int128_t() {return s;}
@@ -812,7 +809,7 @@ struct W72 {
   // with duplicated sign bits.
   static inline auto toDW(int128_t v72) {
     const int isNeg = v72 < 0;
-    return tDW(W36::fromMag(v72 >> 36, isNeg), W36::fromMag(v72, isNeg));
+    return tDoubleWord(W36::fromMag(v72 >> 36, isNeg), W36::fromMag(v72, isNeg));
   }
 
     bool isMaxNeg() {
@@ -853,51 +850,62 @@ struct W72 {
 
 // This is a 140-bit word whose internal representation is four copies
 // of the sign bit interspersed with four 35-bit magnitude words.
-struct W140 {
+struct W144 {
 
   union {
 
     struct ATTRPACKED {
-      uint128_t lo70: 70;
-      uint128_t hi70: 70;
+      uint128_t w3: 36;
+      uint128_t w2: 36;
+      uint128_t w1: 36;
+      uint128_t w0: 36;
     };
 
     struct ATTRPACKED {
-      uint128_t lo35lo: 35;
-      uint128_t lo35hi: 35;
-      uint128_t hi35lo: 35;
-      uint128_t hi35hi: 35;
+      uint128_t mag3: 35;
+      unsigned sign3: 1;
+      uint128_t mag2: 35;
+      unsigned sign2: 1;
+      uint128_t mag1: 35;
+      unsigned sign1: 1;
+      uint128_t mag0: 35;
+      unsigned sign0: 1;
     };
   };
 
-  // For convenience, this is the sign of our full value as a 36-bit
-  // word's bit #0.
-  uint64_t signBit;
+  // Set if negative magnitude value.
+  unsigned sign: 1;
 
-  using tQW = W36::tQW;
+  using tQuadWord = W36::tQuadWord;
 
-  // Build one up from bit integer parts.
-  W140(uint128_t aHi=0, uint128_t aLo=0, int aNeg=0)
-    : lo70(aLo),
-      hi70(aHi),
-      signBit(aNeg ? W72::bit0 : 0)
-  { }
-
-
-  // Build one up from four W36s.
-  W140(W36 a0, W36 a1, W36 a2, W36 a3) {
-    hi35hi = a0.mag;
-    hi35lo = a1.mag;
-    lo35hi = a2.mag;
-    lo35lo = a3.mag;
-    signBit = a0.signBit;
+  // Build one up from four W36s. This only uses the sign from the
+  // highest order word.
+  W144(W36 a0, W36 a1, W36 a2, W36 a3) {
+    mag0 = a0.mag;
+    sign0 = a0.sign;
+    mag1 = a1.mag;
+    sign1 = a0.sign;
+    mag2 = a2.mag;
+    sign2 = a0.sign;
+    mag3 = a3.mag;
+    sign3 = a0.sign;
   }
 
+
+  static inline W144 fromMag(uint128_t aMag0, uint128_t aMag1, int aNeg) {
+    aNeg = !!aNeg;
+
+    return W144{
+      W36::fromMag((uint64_t) ((aMag1 >> 105) | aMag0), aNeg),
+      W36::fromMag((uint64_t) (aMag1 >> 70), aNeg),
+      W36::fromMag((uint64_t) (aMag1 >> 35), aNeg),
+      W36::fromMag((uint64_t) aMag1, aNeg)};
+  }
 
   // Make a 140-bit product from two 70-bit unsigned magnitudes and a
   // sign (0=>positive, 1=>negative). See _Hacker's Delight_ Second
   // Edition, Chapter 8.
-  static inline W140 product(uint128_t a, uint128_t b, int aNeg) {
+  static inline W144 product(uint128_t a, uint128_t b, int aNeg) {
     array<uint32_t,3>u{(uint32_t) a, (uint32_t) (a >> 32), (uint32_t) (a >> 64)};
     array<uint32_t,3>v{(uint32_t) b, (uint32_t) (b >> 32), (uint32_t) (b >> 64)};
     array<uint32_t,6>w{};
@@ -923,26 +931,36 @@ struct W140 {
 
     // Since we know we only have 70-bit multiplicands, the result
     // is at most 140 bits and will therefore be found in w[0..4].
-    return W140{
+    return W144::fromMag(
       (uint128_t) w[2] >> 6 | (uint128_t) w[3] << 24 | (((uint128_t) w[4] << 56) & 077),
       (uint128_t) w[0] << 0 | (uint128_t) w[1] << 32 | (((uint128_t) w[2] << 64) & 077),
-      aNeg};
+      aNeg);
+  }
+
+
+  uint128_t lowerU70() const {
+    return ((uint128_t) mag2 << 35) | (uint128_t) mag3; 
+  }
+
+  uint128_t upperU70() const {
+    return ((uint128_t) mag0 << 35) | (uint128_t) mag1;
   }
 
 
   // Compare this 140-bit magnitude against the specified 70-bit
   // magnitude return true if this >= a70.
-  bool isGE70(const uint128_t a70) const {return hi70 != 0 || lo70 >= a70;}
+  bool operator >= (const uint128_t a70) const {return upperU70() != 0 || lowerU70() >= a70;}
 
 
   // Accessors/converters
-  tQW toQW() const {
+  tQuadWord toQuadWord() const {
+    auto const signBit = sign ? W36::bit0 : 0ull;
 
-    return tQW{
-      hi35hi | signBit,
-      hi35lo | signBit,
-      lo35hi | signBit,
-      lo35lo | signBit
+    return tQuadWord{
+      mag0 | signBit,
+      mag1 | signBit,
+      mag2 | signBit,
+      mag3 | signBit
     };
   }
 };

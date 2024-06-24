@@ -145,7 +145,7 @@ class InstructionADD: public KM10Test {
 TEST_F(InstructionADD, CY1) {
   a = aBig;
   b = expectMem = aBig;
-  result = expectAC = a.extend() + b.extend();
+  result = expectAC = a.ext64() + b.ext64();
   test(VW36{W36(0270, acLoc, 0, 0, opnLoc)},
        &InstructionADD::check,
        &InstructionADD::checkFlagsC1);
@@ -155,7 +155,7 @@ TEST_F(InstructionADD, CY1) {
 TEST_F(InstructionADD, CY0) {
   a = bNeg;
   b = expectMem = bNeg;
-  result = expectAC = a.extend() + b.extend();
+  result = expectAC = a.ext64() + b.ext64();
   test(VW36{W36(0270, acLoc, 0, 0, opnLoc)},
        &InstructionADD::check,
        &InstructionADD::checkFlagsC0);
@@ -164,7 +164,7 @@ TEST_F(InstructionADD, CY0) {
 TEST_F(InstructionADD, NC) {
   a = aBig;
   b = expectMem = bPos;
-  result = expectAC = a.extend() + b.extend();
+  result = expectAC = a.ext64() + b.ext64();
   test(VW36{W36(0270, acLoc, 0, 0, opnLoc)},
        &InstructionADD::check,
        &InstructionADD::checkFlagsNC);
@@ -173,7 +173,7 @@ TEST_F(InstructionADD, NC) {
 TEST_F(InstructionADD, I_NC) {
   a = aBig;
   b = bPos.rhu;
-  result = expectAC = a.extend() + b.extend();
+  result = expectAC = a.ext64() + b.ext64();
   test(VW36{W36(0271, acLoc, 0, 0, b.rhu)},
        &InstructionADD::checkI,
        &InstructionADD::checkFlagsNC);
@@ -182,7 +182,7 @@ TEST_F(InstructionADD, I_NC) {
 TEST_F(InstructionADD, M_NC) {
   a = expectAC = aBig;
   b = bPos;
-  result = expectMem = a.extend() + b.extend();
+  result = expectMem = a.ext64() + b.ext64();
   test(VW36{W36(0272, acLoc, 0, 0, opnLoc)},
        &InstructionADD::check,
        &InstructionADD::checkFlagsNC);
@@ -191,7 +191,7 @@ TEST_F(InstructionADD, M_NC) {
 TEST_F(InstructionADD, B_NC) {
   a = aBig;
   b = bPos;
-  result = expectMem = expectAC = a.extend() + b.extend();
+  result = expectMem = expectAC = a.ext64() + b.ext64();
   test(VW36{W36(0273, acLoc, 0, 0, opnLoc)},
        &InstructionADD::check,
        &InstructionADD::checkFlagsNC);
@@ -206,7 +206,7 @@ class InstructionSUB: public KM10Test {
 TEST_F(InstructionSUB, CY1) {
   a = aBig;
   b = expectMem = bNg1;
-  result = expectAC = a.extend() - b.extend();
+  result = expectAC = a.ext64() - b.ext64();
   test(VW36{W36(0274, acLoc, 0, 0, opnLoc)},
        &InstructionADD::check,
        &InstructionADD::checkFlagsC1);
@@ -215,7 +215,7 @@ TEST_F(InstructionSUB, CY1) {
 TEST_F(InstructionSUB, CY0) {
   a = bNg1;
   b = expectMem = bPos;
-  result = expectAC = a.extend() - b.extend();
+  result = expectAC = a.ext64() - b.ext64();
   test(VW36{W36(0274, acLoc, 0, 0, opnLoc)},
        &InstructionADD::check,
        &InstructionADD::checkFlagsC0);
@@ -224,7 +224,7 @@ TEST_F(InstructionSUB, CY0) {
 TEST_F(InstructionSUB, NC) {
   a = aBig;
   b = expectMem = bPos;
-  result = expectAC = a.extend() - b.extend();
+  result = expectAC = a.ext64() - b.ext64();
   test(VW36{W36(0274, acLoc, 0, 0, opnLoc)},
        &InstructionADD::check,
        &InstructionADD::checkFlagsNC);
@@ -233,7 +233,7 @@ TEST_F(InstructionSUB, NC) {
 TEST_F(InstructionSUB, I_NC) {
   a = aBig;
   b = bPos.rhu;
-  result = expectAC = a.extend() - b.extend();
+  result = expectAC = a.ext64() - b.ext64();
   test(VW36{W36(0275, acLoc, 0, 0, b.rhu)},
        &InstructionADD::checkI,
        &InstructionADD::checkFlagsNC);
@@ -242,7 +242,7 @@ TEST_F(InstructionSUB, I_NC) {
 TEST_F(InstructionSUB, M_NC) {
   a = expectAC = aBig;
   b = bPos;
-  result = expectMem = a.extend() - b.extend();
+  result = expectMem = a.ext64() - b.ext64();
   test(VW36{W36(0276, acLoc, 0, 0, opnLoc)},
        &InstructionADD::check,
        &InstructionADD::checkFlagsNC);
@@ -251,7 +251,7 @@ TEST_F(InstructionSUB, M_NC) {
 TEST_F(InstructionSUB, B_NC) {
   a = aBig;
   b = bPos;
-  result = expectAC = expectMem = a.extend() - b.extend();
+  result = expectAC = expectMem = a.ext64() - b.ext64();
   test(VW36{W36(0277, acLoc, 0, 0, opnLoc)},
        &InstructionADD::check,
        &InstructionADD::checkFlagsNC);
@@ -266,7 +266,8 @@ public:
   using ResultF = function<W72(W36,W36)>;
 
   static inline ResultF defaultResultF = [](W36 aA, W36 aB) -> W72 const {
-    return W72(((int128_t) aA.extend() * (int128_t) aB.extend()));
+    int128_t prod = (int128_t) aA.ext64() * (int128_t) aB.ext64();
+    return W72::fromMag(prod < 0 ? -prod : prod, prod < 0);
   };
 
   void test(VW36 insns, CallbackFn72 checker, CallbackFn flagChecker,
@@ -384,7 +385,7 @@ public:
     const int isNeg = s1.s < 0;
     const uint64_t quo = den70 / dor;
     const uint64_t rem = den70 % dor;
-    W72 ret{W36::fromMag(quo & W36::magMask, isNeg), W36::fromMag(rem & W36::magMask, isNeg)};
+    W72 ret{W36::fromMag(quo, isNeg), W36::fromMag(rem, isNeg)};
     return ret;
   };
 
@@ -532,10 +533,13 @@ public:
 
   static inline ResultF defaultResultF = [](W36 s1, W36 s2) {
 
-    if ((s1.u == W36::bit0 && s2.s == -1ll) || s2.u == 0ull) {
+    if (s2.u == 0ull || (s1.u == W36::bit0 && s2.s == -1ll)) {
       return W72{s1, s2};
     } else {
-      return W72{W36{s1 / s2}, W36{s1 % s2}};
+      int64_t quo = s1.s / s2.s;
+      int64_t rem = abs(s1.s % s2.s);
+      if (quo < 0) rem = -rem;
+      return W72{W36{quo}, W36{abs(rem)}};
     }
   };
 
@@ -614,15 +618,15 @@ TEST_F(InstructionIDIV, NDVbig) {
 
 TEST_F(InstructionIDIV, NCpp) {
   a = W36{0654321};
-  b = expectMem = W36{3};
+  b = expectMem = W36{11};
   test(VW36{W36(0230, acLoc, 0, 0, opnLoc)},
        &InstructionIDIV::check72,
        &KM10Test::checkFlagsNC);
 };
 
 TEST_F(InstructionIDIV, NCnn) {
-  a = W36{(uint64_t) -0123456};
-  b = expectMem = W36{(uint64_t) -3};
+  a = W36{-0123456ll};
+  b = expectMem = W36{-11ll};
   test(VW36{W36(0230, acLoc, 0, 0, opnLoc)},
        &InstructionIDIV::check72,
        &KM10Test::checkFlagsNC);
@@ -630,8 +634,8 @@ TEST_F(InstructionIDIV, NCnn) {
 
 
 TEST_F(InstructionIDIV, NCnp) {
-  a = W36{(uint64_t) -0123456};
-  b = expectMem = W36{3};
+  a = W36{-0123456ll};
+  b = expectMem = W36{11};
   test(VW36{W36(0230, acLoc, 0, 0, opnLoc)},
        &InstructionIDIV::check72,
        &KM10Test::checkFlagsNC);
@@ -640,7 +644,7 @@ TEST_F(InstructionIDIV, NCnp) {
 
 TEST_F(InstructionIDIV, NCpn) {
   a = W36{0654321};
-  b = expectMem = W36{(uint64_t) -3};
+  b = expectMem = W36{-11ll};
   test(VW36{W36(0230, acLoc, 0, 0, opnLoc)},
        &InstructionIDIV::check72,
        &KM10Test::checkFlagsNC);
@@ -648,7 +652,7 @@ TEST_F(InstructionIDIV, NCpn) {
 
 
 TEST_F(InstructionIDIV, I_NC) {
-  a = W36{0, 0111111};
+  a = W36{0u, 0111111u};
   b = expectMem = W36{0, 3};
   test(VW36{W36(0231, acLoc, 0, 0, 3)},
        &InstructionIDIV::checkI72,
@@ -656,16 +660,16 @@ TEST_F(InstructionIDIV, I_NC) {
 };
 
 TEST_F(InstructionIDIV, M_NC) {
-  a = W36{0, 0654321};
-  b = W36{0303030, 0};
+  a = W36{0u, 0654321u};
+  b = W36{0303030u, 0u};
   test(VW36{W36(0232, acLoc, 0, 0, opnLoc)},
        &InstructionIDIV::checkM72,
        &KM10Test::checkFlagsNC);
 }
 
 TEST_F(InstructionIDIV, B_NC) {
-  a = W36{0, 0654321};
-b = W36{0, 3};
+  a = W36{0u, 0654321u};
+  b = W36{0u, 11u};
   test(VW36{W36(0233, acLoc, 0, 0, opnLoc)},
        &InstructionIDIV::checkB72,
        &KM10Test::checkFlagsNC);
@@ -931,13 +935,13 @@ public:
   W72 a;
   W72 b;
 
-  using CallbackFn140 = void (InstructionDMUL::*)(W140 result140);
+  using CallbackFn140 = void (InstructionDMUL::*)(W144 result140);
   using CallbackFn = void (InstructionDMUL::*)();
 
-  using ResultF = function<W140(W72,W72)>;
+  using ResultF = function<W144(W72,W72)>;
 
   static inline ResultF defaultResultF = [](W72 a, W72 b) {
-    return W140::product(a.toU70(), b.toU70(), (a.s < 0) ^ (b.s < 0));
+    return W144::product(a.toU70(), b.toU70(), (a.s < 0) ^ (b.s < 0));
   };
 
   virtual void setupMachine() override {
@@ -952,7 +956,7 @@ public:
 		    CallbackFn flagChecker,
 		    ResultF getResultF = defaultResultF)
   {
-    W140 result140(getResultF(a, b));
+    W144 result140(getResultF(a, b));
     KM10Test::test(insns, &KM10Test::noCheck, (KM10Test::CallbackFn) flagChecker);
     invoke(checker, this, result140);
   }
@@ -978,8 +982,8 @@ public:
   }
 
 
-  virtual void check140(W140 result140) {
-    auto const [a0, a1, a2, a3] = result140.toQW();
+  virtual void check140(W144 result140) {
+    auto const [a0, a1, a2, a3] = result140.toQuadWord();
     EXPECT_EQ(state.AC[acLoc+0], a0);
     EXPECT_EQ(state.AC[acLoc+1], a1);
     EXPECT_EQ(state.AC[acLoc+2], a2);
@@ -987,7 +991,7 @@ public:
   }
 
 
-  virtual void check140T1(W140 result140) {
+  virtual void check140T1(W144 result140) {
     const W36 big1{0400000,0};
     EXPECT_EQ(state.AC[acLoc+0], big1);
     EXPECT_EQ(state.AC[acLoc+1], big1);
@@ -1007,10 +1011,8 @@ TEST_F(InstructionDMUL, T1) {
 };
 
 TEST_F(InstructionDMUL, NCpp) {
-  //  a = W72{1, 0123456654321ull};
-  //  b = W72{7, 0654321654321ull};
-  a = W72{7};
-  b = W72{5};
+  a = W72{077777ul};
+  b = W72{055555ul};
   test(VW36{W36(0116, acLoc, 0, 0, opnLoc)},
        &InstructionDMUL::check140,
        &InstructionDMUL::checkFlagsNC);

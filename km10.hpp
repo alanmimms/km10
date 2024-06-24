@@ -291,7 +291,7 @@ public:
     WFuncWW eqvCBWord = [&](W36 s1, W36 s2) -> auto const {return ~(~s1.u ^ ~s2.u);};
 
     WFuncWW addWord = [&](W36 s1, W36 s2) -> auto const {
-      int64_t sum = s1.extend() + s2.extend();
+      int64_t sum = s1.ext64() + s2.ext64();
 
       if (sum < -(int64_t) W36::bit0) {
 	state.flags.tr1 = state.flags.ov = state.flags.cy0 = 1;
@@ -303,7 +303,7 @@ public:
     };
     
     WFuncWW subWord = [&](W36 s1, W36 s2) -> auto const {
-      int64_t diff = s1.extend() - s2.extend();
+      int64_t diff = s1.ext64() - s2.ext64();
 
       if (diff < -(int64_t) W36::bit0) {
 	state.flags.tr1 = state.flags.ov = state.flags.cy0 = 1;
@@ -315,8 +315,8 @@ public:
     };
     
     DFuncWW mulWord = [&](W36 s1, W36 s2) -> auto const {
-      int128_t prod128 = (int128_t) s1.extend() * s2.extend();
-      W72 prod{(uint128_t) (prod128 < 0 ? -prod128 : prod128), prod128 < 0};
+      int128_t prod128 = (int128_t) s1.ext64() * s2.ext64();
+      W72 prod = W72::fromMag((uint128_t) (prod128 < 0 ? -prod128 : prod128), prod128 < 0);
 
       if (s1.u == W36::bit0 && s2.u == W36::bit0) {
 	state.flags.tr1 = state.flags.ov = 1;
@@ -327,8 +327,8 @@ public:
     };
     
     WFuncWW imulWord = [&](W36 s1, W36 s2) -> auto const {
-      int128_t prod128 = (int128_t) s1.extend() * s2.extend();
-      W72 prod{(uint128_t) (prod128 < 0 ? -prod128 : prod128), prod128 < 0};
+      int128_t prod128 = (int128_t) s1.ext64() * s2.ext64();
+      W72 prod = W72::fromMag((uint128_t) (prod128 < 0 ? -prod128 : prod128), prod128 < 0);
 
       if (s1.u == W36::bit0 && s2.u == W36::bit0) {
 	state.flags.tr1 = state.flags.ov = 1;
@@ -343,7 +343,10 @@ public:
 	state.flags.ndv = state.flags.tr1 = state.flags.ov = 1;
 	return W72{s1, s2};
       } else {
-	return W72{W36{s1 / s2}, W36{s1 % s2}};
+	int64_t quo = s1.s / s2.s;
+	int64_t rem = abs(s1.s % s2.s);
+	if (quo < 0) rem = -rem;
+	return W72{W36{quo}, W36{abs(rem)}};
       }
     };
     
@@ -356,9 +359,11 @@ public:
 	state.flags.ndv = state.flags.tr1 = state.flags.ov = 1;
 	return s1;
       } else {
-	uint64_t quo = den70 / dor;
-	uint64_t rem = den70 % dor;
-	W72 ret{W36{(quo & W36::magMask) | signBit}, W36{(rem & W36::magMask) | signBit}};
+	int64_t quo = den70 / dor;
+	int64_t rem = den70 % dor;
+	W72 ret{
+	  W36{(int64_t) ((quo & W36::magMask) | signBit)},
+	  W36{(int64_t) ((rem & W36::magMask) | signBit)}};
 	return ret;
       }
     };
@@ -390,12 +395,12 @@ public:
 
 
     // Binary comparison predicates
-    BoolPredWW isLT    = [&](W36 v1, W36 v2) -> bool const {return v1.extend() <  v2.extend();};
-    BoolPredWW isLE    = [&](W36 v1, W36 v2) -> bool const {return v1.extend() <= v2.extend();};
-    BoolPredWW isGT    = [&](W36 v1, W36 v2) -> bool const {return v1.extend() >  v2.extend();};
-    BoolPredWW isGE    = [&](W36 v1, W36 v2) -> bool const {return v1.extend() >= v2.extend();};
-    BoolPredWW isNE    = [&](W36 v1, W36 v2) -> bool const {return v1.extend() != v2.extend();};
-    BoolPredWW isEQ    = [&](W36 v1, W36 v2) -> bool const {return v1.extend() == v2.extend();};
+    BoolPredWW isLT    = [&](W36 v1, W36 v2) -> bool const {return v1.ext64() <  v2.ext64();};
+    BoolPredWW isLE    = [&](W36 v1, W36 v2) -> bool const {return v1.ext64() <= v2.ext64();};
+    BoolPredWW isGT    = [&](W36 v1, W36 v2) -> bool const {return v1.ext64() >  v2.ext64();};
+    BoolPredWW isGE    = [&](W36 v1, W36 v2) -> bool const {return v1.ext64() >= v2.ext64();};
+    BoolPredWW isNE    = [&](W36 v1, W36 v2) -> bool const {return v1.ext64() != v2.ext64();};
+    BoolPredWW isEQ    = [&](W36 v1, W36 v2) -> bool const {return v1.ext64() == v2.ext64();};
     BoolPredWW always2 = [&](W36 v1, W36 v2) -> bool const {return true;};
     BoolPredWW never2  = [&](W36 v1, W36 v2) -> bool const {return false;};
 
@@ -426,7 +431,7 @@ public:
 
 	if (v.u == W36::all1s >> 1) {
 	  state.flags.tr1 = state.flags.ov  = state.flags.cy1 = 1;
-	} else if (v.extend() == -1) {
+	} else if (v.ext64() == -1) {
 	  state.flags.cy0 = state.flags.cy1 = 1;
 	}
       } else {			// Decrement
@@ -544,8 +549,8 @@ public:
       case 0116: {		 // DMUL
 	auto a = W72{state.memGetN(ea.u+0), state.memGetN(ea.u+1)};
 	auto b = W72{state.acGetN(iw.ac+0), state.acGetN(iw.ac+1)};
-	const uint128_t u = a.toU70();
-	const uint128_t v = b.toU70();
+	const uint128_t a70 = a.toU70();
+	const uint128_t b70 = b.toU70();
 
 	if (a.isMaxNeg() && b.isMaxNeg()) {
 	  const W36 big1{0400000,0};
@@ -557,8 +562,8 @@ public:
 	  return;
 	}
 
-	W140 prod{W140::product(u, v, (a.s < 0) ^ (b.s < 0))};
-	auto [r0, r1, r2, r3] = prod.toQW();
+	W144 prod{W144::product(a70, b70, (a.s < 0) ^ (b.s < 0))};
+	auto [r0, r1, r2, r3] = prod.toQuadWord();
 	state.acPutN(r0, iw.ac+0);
 	state.acPutN(r1, iw.ac+1);
 	state.acPutN(r2, iw.ac+2);
@@ -567,7 +572,7 @@ public:
       }
 
       case 0117: {		 // DDIV
-	const W140 den{
+	const W144 den{
 	  state.acGetN(iw.ac+0),
 	  state.acGetN(iw.ac+1),
 	  state.acGetN(iw.ac+2),
@@ -575,12 +580,12 @@ public:
 	const W72 div72{state.memGetN(ea.u+0), state.memGetN(ea.u+1)};
 	auto const div = div72.toU70();
 
-	if (den.isGE70(div)) {
+	if (den >= div) {
 	  state.flags.tr1 = state.flags.ov = state.flags.ndv = 1;
 	  return;
 	}
 
-	int denNeg = !!den.signBit;
+	int denNeg = den.sign;
 	int divNeg = div72.hiSign;
 
 	/*
@@ -588,9 +593,11 @@ public:
 	  performs : (n2||n1||0) = ((n2||n1||n0) / d)
 	  d : a 128bit unsigned integer
 	*/
-	uint64_t n0 = den.lo70;
-	uint64_t n1 = den.hi70 | (den.lo70 >> 64);
-	uint64_t n2 = den.hi70 >> 6;
+	const uint128_t lo70 = den.lowerU70();
+	const uint128_t hi70 = den.upperU70();
+	uint64_t n0 = lo70;
+	uint64_t n1 = hi70 | (lo70 >> 64);
+	uint64_t n2 = hi70 >> 6;
 
 	uint128_t remainder = n2 % div;
 	n2 = n2 / div;
@@ -600,8 +607,8 @@ public:
 	partial = (remainder << 64) | n0;
 	n0 = partial / div;
 
-	const W72 quo72{((uint128_t) n1 << 64) | n0, denNeg ^ divNeg};
-	const W72 rem72{remainder};
+	const auto quo72 = W72::fromMag(((uint128_t) n1 << 64) | n0, denNeg ^ divNeg);
+	const auto rem72 = W72::fromMag(remainder, denNeg);
 
 	state.acPutN(quo72.hi, iw.ac+0);
 	state.acPutN(quo72.lo, iw.ac+1);
@@ -779,7 +786,7 @@ public:
       case 0240: {		// ASH
 	int n = ea.rhs % 36;
 	W36 a(acGet());
-	auto aSigned{a.extend()};
+	auto aSigned{a.ext64()};
 
 	W36 lostBits;
 
@@ -794,7 +801,7 @@ public:
 
 	// Set flags. XXX not sure if these should be set for negative
 	// shift count. 1982_ProcRefMan.pdf p.97 is not clear.
-	if ((a.extend() > 0 && lostBits.u != 0) || (a.extend() < 0 && lostBits.u == 0))
+	if ((a.ext64() > 0 && lostBits.u != 0) || (a.ext64() < 0 && lostBits.u == 0))
 	  state.flags.tr1 = state.flags.ov = 1;
 
 	// Restore sign bit from before shift.
@@ -837,10 +844,10 @@ public:
       case 0243: 		// JFFO
 	tmp = acGet();
 
-	if (tmp.extend() != 0) {
+	if (tmp.ext64() != 0) {
 	  unsigned count = 0;
 
-	  while (tmp.extend() >= 0) {
+	  while (tmp.ext64() >= 0) {
 	    ++count;
 	    tmp.u <<= 1;
 	  }
@@ -903,7 +910,7 @@ public:
 	tmp = W36(tmp.lhu + 1, tmp.rhu + 1);
 	acPut(tmp);
 
-	if (tmp.extend() >= 0) {
+	if (tmp.ext64() >= 0) {
 	  logFlow("jump");
 	  nextPC = ea;
 	}
@@ -915,7 +922,7 @@ public:
 	tmp = W36(tmp.lhu + 1, tmp.rhu + 1);
 	acPut(tmp);
 
-	if (tmp.extend() < 0) {
+	if (tmp.ext64() < 0) {
 	  logFlow("jump");
 	  nextPC = ea;
 	}
