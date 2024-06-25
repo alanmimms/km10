@@ -382,7 +382,12 @@ public:
 		       WFuncW &doModifyF,
 		       FuncW &doPutDstF) -> void
     {
-      doPutDstF(doModifyF(doGetSrcF()));
+      W36 result = doModifyF(doGetSrcF());
+
+      // Don't modify registers if we trap
+      if (state.flags.tr1 || state.flags.cy0 || state.flags.cy1) return;
+
+      doPutDstF(result);
     };
 
 

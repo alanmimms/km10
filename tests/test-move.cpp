@@ -130,3 +130,80 @@ TEST_F(InstructionMOVS, MOVSS0AC) {
        &InstructionMOVS::check,
        &InstructionMOVS::checkAllFlagsUnmodified);
 };
+
+
+////////////////////////////////////////////////////////////////
+class InstructionMOVN: public KM10Test {
+public:
+  virtual void checkFlagsC01() {
+    EXPECT_EQ(state.flags.tr1, 0);
+    EXPECT_EQ(state.flags.cy1, 1);
+    EXPECT_EQ(state.flags.cy0, 1);
+    EXPECT_EQ(state.flags.ov, 0);
+  }
+};
+
+
+TEST_F(InstructionMOVN, CY1) {
+  a = expectAC = aBig;
+  b = expectMem = W36::bit0;
+  result = b;
+  test(VW36{W36(0210, acLoc, 0, 0, opnLoc)},
+       &InstructionMOVN::check,
+       &InstructionMOVN::checkFlagsC1);
+};
+
+TEST_F(InstructionMOVN, CY01) {
+  a = expectAC = aBig;
+  b = expectMem = 0;
+  result = b;
+  test(VW36{W36(0210, acLoc, 0, 0, opnLoc)},
+       &InstructionMOVN::check,
+       (CallbackFn) &InstructionMOVN::checkFlagsC01);
+};
+
+TEST_F(InstructionMOVN, NCp) {
+  a = aBig;
+  b = expectMem = bPos;
+  result = expectAC = -b.s;
+  test(VW36{W36(0210, acLoc, 0, 0, opnLoc)},
+       &InstructionMOVN::check,
+       &InstructionMOVN::checkFlagsNC);
+};
+
+TEST_F(InstructionMOVN, NCn) {
+  a = aBig;
+  b = expectMem = bNeg;
+  result = expectAC = -b.s;
+  test(VW36{W36(0210, acLoc, 0, 0, opnLoc)},
+       &InstructionMOVN::check,
+       &InstructionMOVN::checkFlagsNC);
+};
+
+TEST_F(InstructionMOVN, MOVNI) {
+  a = aBig;
+  b = expectMem = bPos;
+  result = expectAC = -(int64_t) opnLoc;
+  test(VW36{W36(0211, acLoc, 0, 0, opnLoc)},
+       &InstructionMOVN::check,
+       &InstructionMOVN::checkFlagsNC);
+};
+
+TEST_F(InstructionMOVN, MOVNM) {
+  a = expectAC = aBig;
+  b = bPos;
+  result = expectMem = -(int64_t) a;
+  test(VW36{W36(0212, acLoc, 0, 0, opnLoc)},
+       &InstructionMOVN::check,
+       &InstructionMOVN::checkFlagsNC);
+};
+
+TEST_F(InstructionMOVN, MOVNS) {
+  a = aBig;
+  b = bPos;
+  result = expectAC = expectMem = -(int64_t) a;
+  test(VW36{W36(0213, acLoc, 0, 0, opnLoc)},
+       &InstructionMOVN::check,
+       &InstructionMOVN::checkFlagsNC);
+};
+
