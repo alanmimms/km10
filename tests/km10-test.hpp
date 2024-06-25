@@ -37,9 +37,9 @@ public:
   W36 expectMem;
 
   KMState state;
-  const unsigned pc;
-  const unsigned opnLoc;
-  const unsigned acLoc;
+  unsigned pc;
+  unsigned opnLoc;
+  unsigned acLoc;
 
   const W36 aBig;
   const W36 aNeg;
