@@ -51,6 +51,18 @@ public:
   void noCheck() { }
 
 
+  virtual void checkAllFlagsUnmodified() {
+    EXPECT_EQ(state.flags.ndv | state.flags.fuf, 0);
+    EXPECT_EQ(state.flags.afi | state.flags.pub, 0);
+    EXPECT_EQ(state.flags.uio | state.flags.usr, 0);
+    EXPECT_EQ(state.flags.fpd | state.flags.fov, 0);
+    EXPECT_EQ(state.flags.tr2, 0);
+    EXPECT_EQ(state.flags.tr1, 0);
+    EXPECT_EQ(state.flags.cy1, 0);
+    EXPECT_EQ(state.flags.cy0, 0);
+    EXPECT_EQ(state.flags.ov, 0) ;
+  }
+
   virtual void checkUnmodifiedFlags() {
     EXPECT_EQ(state.flags.ndv | state.flags.fuf, 0);
     EXPECT_EQ(state.flags.afi | state.flags.pub, 0);
