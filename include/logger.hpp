@@ -1,6 +1,11 @@
 #pragma once
 #include <iostream>
 #include <set>
+#include <fstream>
+#include <iostream>
+#include <vector>
+
+using namespace std;
 
 
 class KMState;

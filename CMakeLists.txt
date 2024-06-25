@@ -29,12 +29,6 @@ FetchContent_Declare(fmt
 
 FetchContent_MakeAvailable(gflags googletest fmt)
 
-add_executable(km10 km10.cpp)
-target_compile_options(km10 PUBLIC ${CPPOptionsForALL})
-target_link_libraries(${PROJECT_NAME} PRIVATE gflags::gflags fmt::fmt)
-
-add_executable(km10-test km10-test.cpp)
-target_compile_options(km10-test PUBLIC ${CPPOptionsForALL})
-target_link_libraries(km10-test PRIVATE gflags::gflags GTest::gtest_main fmt::fmt)
-
-#gtest_discover_tests(km10-test)
+add_subdirectory(src)
+add_subdirectory(lib)
+add_subdirectory(tests)
