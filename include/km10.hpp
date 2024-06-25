@@ -668,7 +668,7 @@ public:
 	break;
 
       case 0203:		// MOVES
-	doMOVXX(acGet, noModification, selfPut);
+	doMOVXX(memGet, noModification, selfPut);
 	break;
 
       case 0204:		// MOVS
