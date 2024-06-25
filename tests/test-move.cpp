@@ -207,3 +207,62 @@ TEST_F(InstructionMOVN, MOVNS) {
        &InstructionMOVN::checkFlagsNC);
 };
 
+
+////////////////////////////////////////////////////////////////
+class InstructionMOVM: public KM10Test {
+};
+
+
+TEST_F(InstructionMOVM, CY1) {
+  a = expectAC = aBig;
+  b = expectMem = W36::bit0;
+  result = b;
+  test(VW36{W36(0214, acLoc, 0, 0, opnLoc)},
+       &InstructionMOVM::check,
+       &InstructionMOVM::checkFlagsC1);
+};
+
+TEST_F(InstructionMOVM, NCp) {
+  a = aBig;
+  b = expectMem = bPos;
+  result = expectAC = b;
+  test(VW36{W36(0214, acLoc, 0, 0, opnLoc)},
+       &InstructionMOVM::check,
+       &InstructionMOVM::checkFlagsNC);
+};
+
+TEST_F(InstructionMOVM, NCn) {
+  a = aBig;
+  b = expectMem = bNeg;
+  result = expectAC = -b.s;
+  test(VW36{W36(0214, acLoc, 0, 0, opnLoc)},
+       &InstructionMOVM::check,
+       &InstructionMOVM::checkFlagsNC);
+};
+
+TEST_F(InstructionMOVM, MOVMI) {
+  a = aBig;
+  b = expectMem = bNeg;
+  result = expectAC = (int64_t) opnLoc;
+  test(VW36{W36(0215, acLoc, 0, 0, opnLoc)},
+       &InstructionMOVM::check,
+       &InstructionMOVM::checkFlagsNC);
+};
+
+TEST_F(InstructionMOVM, MOVMM) {
+  a = expectAC = aNeg;
+  b = bNeg;
+  result = expectMem = -(int64_t) a;
+  test(VW36{W36(0216, acLoc, 0, 0, opnLoc)},
+       &InstructionMOVM::check,
+       &InstructionMOVM::checkFlagsNC);
+};
+
+TEST_F(InstructionMOVM, MOVMS) {
+  a = aNeg;
+  b = bPos;
+  result = expectAC = expectMem = -(int64_t) a;
+  test(VW36{W36(0217, acLoc, 0, 0, opnLoc)},
+       &InstructionMOVM::check,
+       &InstructionMOVM::checkFlagsNC);
+};
