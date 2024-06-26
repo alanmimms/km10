@@ -137,7 +137,7 @@ public:
       memPut(v.hi);
     };
 
-    WFuncW swap = [&](W36 src) -> W36 {return W36(src.rhu, src.lhu);};
+    WFuncW swap = [&](W36 src) -> W36 {return W36{src.rhu, src.lhu};};
 
     WFuncW negate = [&](W36 src) -> W36 {
       W36 v(-src.s);
@@ -198,6 +198,10 @@ public:
     WFuncW compMaskR = [&](W36 s) -> auto const {return s.u ^ ea.rhu;};
     WFuncW compMaskL = [&](W36 s) -> auto const {return s.u ^ ((uint64_t) ea.rhu << 18);};
 
+    WFuncW zeroMask  = [&](W36 s) -> auto const {return acGet().u & ~s.u;};
+    WFuncW onesMask  = [&](W36 s) -> auto const {return acGet().u | s.u;};
+    WFuncW compMask  = [&](W36 s) -> auto const {return acGet().u ^ s.u;};
+
     WFuncW zeroWord = [&](W36 s) -> auto const {return 0;};
     WFuncW onesWord = [&](W36 s) -> auto const {return W36::all1s;};
     WFuncW compWord = [&](W36 s) -> auto const {return ~s.u;};
@@ -209,7 +213,7 @@ public:
 		       BoolPredW &condF,
 		       FuncW &doStoreF) -> void
     {
-      W36 eaw = doGetF() & ea;
+      W36 eaw = doGetF();
 
       if (condF(eaw)) {
 	logFlow("skip");
@@ -382,10 +386,11 @@ public:
 		       WFuncW &doModifyF,
 		       FuncW &doPutDstF) -> void
     {
+      auto preFlags = state.flags;
       W36 result = doModifyF(doGetSrcF());
 
-      // Don't modify registers if we trap
-      if (state.flags.tr1 || state.flags.cy0 || state.flags.cy1) return;
+      // Don't modify registers if we trapped in this instruction.
+      if (state.flags.tr1 && !preFlags.tr1) return;
 
       doPutDstF(result);
     };
@@ -1016,7 +1021,7 @@ public:
 	break;
 
       case 0265:		// JSP
-	nextPC.u = ea.u + 1;	// XXX Wrap?
+	nextPC.u = ea.u;	// XXX Wrap?
 	acPut(state.pc.isSection0() ? state.flagsWord(nextPC.rhu) : W36(nextPC.vma));
 	state.flags.fpd = state.flags.afi = state.flags.tr2 = state.flags.tr1 = 0;
 	break;
@@ -1369,7 +1374,7 @@ public:
 	break;
 
       case 0414:		// SETM
-	doSETXX(acGet, noModification, memPut);
+	doSETXX(memGet, noModification, acPut);
 	break;
 
       case 0415:		// SETMI
@@ -1449,19 +1454,19 @@ public:
 	break;
 
       case 0440:		// ANDCBM
-	doBinOp(acGet, memGet, andCBWord, acPut);
+	doBinOp(memGet, acGet, andCBWord, acPut);
 	break;
 
       case 0441:		// ANDCBMI
-	doBinOp(acGet, immediate, andCBWord, acPut);
+	doBinOp(immediate, acGet, andCBWord, acPut);
 	break;
 
       case 0442:		// ANDCBMM
-	doBinOp(acGet, memGet, andCBWord, memPut);
+	doBinOp(memGet, acGet, andCBWord, memPut);
 	break;
 
       case 0443:		// ANDCBMB
-	doBinOp(acGet, memGet, andCBWord, bothPut);
+	doBinOp(memGet, acGet, andCBWord, bothPut);
 	break;
 
       case 0444:		// EQV
@@ -1513,19 +1518,19 @@ public:
 	break;
 
       case 0460:		// SETCM
-	doSETXX(acGet, compWord, memPut);
+	doSETXX(memGet, compWord, acPut);
 	break;
 
       case 0461:		// SETCMI
-	doSETXX(immediate, compWord, memPut);
+	doSETXX(immediate, compWord, acPut);
 	break;
 
       case 0462:		// SETCMM
-	doSETXX(acGet, compWord, memPut);
+	doSETXX(memGet, compWord, memPut);
 	break;
 
       case 0463:		// SETCMB
-	doSETXX(acGet, compWord, bothPut);
+	doSETXX(memGet, compWord, bothPut);
 	break;
 
       case 0464:		// ORCM
@@ -1545,19 +1550,19 @@ public:
 	break;
 
       case 0470:		// ORCB
-	doBinOp(acGet, memGet, iorCBWord, acPut);
+	doBinOp(memGet, acGet, iorCBWord, acPut);
 	break;
 
       case 0471:		// ORCBI
-	doBinOp(acGet, immediate, iorCBWord, acPut);
+	doBinOp(immediate, acGet, iorCBWord, acPut);
 	break;
 
       case 0472:		// ORCBM
-	doBinOp(acGet, memGet, iorCBWord, memPut);
+	doBinOp(memGet, acGet, iorCBWord, memPut);
 	break;
 
       case 0473:		// ORCBB
-	doBinOp(acGet, memGet, iorCBWord, bothPut);
+	doBinOp(memGet, acGet, iorCBWord, bothPut);
 	break;
 
       case 0474:		// SETO
@@ -1565,7 +1570,7 @@ public:
 	break;
 
       case 0475:		// SETOI
-	doSETXX(immediate, onesWord, acPut);
+	doSETXX(acGet, onesWord, acPut);
 	break;
 
       case 0476:		// SETOM
@@ -1993,35 +1998,99 @@ public:
 	break;
 
       case 0630:		// TDZ
-	doTXXXX(memGet, dirMask, never, acPut);
+	doTXXXX(memGet, zeroMask, never, acPut);
 	break;
 
       case 0631:		// TSZ
-	doTXXXX(memGetSwapped, dirMask, never, acPut);
+	doTXXXX(memGetSwapped, zeroMask, never, acPut);
 	break;
 
       case 0632:		// TDZE
-	doTXXXX(memGet, dirMask, isEQ0, acPut);
+	doTXXXX(memGet, zeroMask, isEQ0, acPut);
 	break;
 
       case 0633:		// TSZE
-	doTXXXX(memGetSwapped, dirMask, isEQ0, acPut);
+	doTXXXX(memGetSwapped, zeroMask, isEQ0, acPut);
 	break;
 
       case 0634:		// TDZA
-	doTXXXX(memGet, dirMask, always, acPut);
+	doTXXXX(memGet, zeroMask, always, acPut);
 	break;
 
       case 0635:		// TSZA
-	doTXXXX(memGetSwapped, dirMask, always, acPut);
+	doTXXXX(memGetSwapped, zeroMask, always, acPut);
 	break;
 
       case 0636:		// TDZN
-	doTXXXX(memGet, dirMask, isNE0, acPut);
+	doTXXXX(memGet, zeroMask, isNE0, acPut);
 	break;
 
       case 0637:		// TSZN
-	doTXXXX(memGetSwapped, dirMask, isNE0, acPut);
+	doTXXXX(memGetSwapped, zeroMask, isNE0, acPut);
+	break;
+
+      case 0650:		// TDC
+	doTXXXX(memGet, compMask, never, acPut);
+	break;
+
+      case 0651:		// TSC
+	doTXXXX(memGetSwapped, compMask, never, acPut);
+	break;
+
+      case 0652:		// TDCE
+	doTXXXX(memGet, compMask, isEQ0, acPut);
+	break;
+
+      case 0653:		// TSCE
+	doTXXXX(memGetSwapped, compMask, isEQ0, acPut);
+	break;
+
+      case 0654:		// TDCA
+	doTXXXX(memGet, compMask, always, acPut);
+	break;
+
+      case 0655:		// TSCA
+	doTXXXX(memGetSwapped, compMask, always, acPut);
+	break;
+
+      case 0656:		// TDCN
+	doTXXXX(memGet, compMask, isNE0, acPut);
+	break;
+
+      case 0657:		// TSZCN
+	doTXXXX(memGetSwapped, compMask, isNE0, acPut);
+	break;
+
+      case 0670:		// TDO
+	doTXXXX(memGet, onesMask, never, acPut);
+	break;
+
+      case 0671:		// TSO
+	doTXXXX(memGetSwapped, onesMask, never, acPut);
+	break;
+
+      case 0672:		// TDOE
+	doTXXXX(memGet, onesMask, isEQ0, acPut);
+	break;
+
+      case 0673:		// TSOE
+	doTXXXX(memGetSwapped, onesMask, isEQ0, acPut);
+	break;
+
+      case 0674:		// TDOA
+	doTXXXX(memGet, onesMask, always, acPut);
+	break;
+
+      case 0675:		// TSOA
+	doTXXXX(memGetSwapped, onesMask, always, acPut);
+	break;
+
+      case 0676:		// TDON
+	doTXXXX(memGet, onesMask, isNE0, acPut);
+	break;
+
+      case 0677:		// TSON
+	doTXXXX(memGetSwapped, onesMask, isNE0, acPut);
 	break;
 
       default:
@@ -2031,6 +2100,7 @@ public:
 	  Device::handleIO(iw, ea, state);
 	} else {
 	  logger.nyi(state);
+	  state.running = false;
 	}
 
 	break;
@@ -2039,6 +2109,8 @@ public:
       state.pc = nextPC;
 
       if ((state.flags.tr1 || state.flags.tr2) && pag.pagerEnabled()) {
+	// XXX for now, stop on trap if paging is enabled.
+	state.running = false;
 	iw = state.flags.tr1 ? state.eptP->trap1Insn : state.eptP->stackOverflowInsn;
       } else {
 	iw = state.memGetN(state.pc.vma);

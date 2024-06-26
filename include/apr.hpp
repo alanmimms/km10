@@ -1,5 +1,7 @@
 #pragma once
 
+#include <iostream>
+
 #include "logger.hpp"
 #include "word.hpp"
 #include "device.hpp"
@@ -22,6 +24,19 @@ struct APRDevice: Device {
     };
 
     unsigned u: 8;
+
+    string toString() const {
+      stringstream ss;
+      if (sbusError)	  ss << " sbusError";
+      if (noMemory)	  ss << " noMemory";
+      if (ioPageFail)	  ss << " ioPageFail";
+      if (mbParity)	  ss << " mbParity";
+      if (cacheDirParity) ss << " cacheDirParity";
+      if (addrParity)	  ss << " addrParity";
+      if (powerFailure)	  ss << " powerFailure";
+      if (sweepDone)	  ss << " sweepDone";
+      return ss.str();
+    };
   };
   
   // CONI APR status bits (some used in CONO APR)
@@ -43,6 +58,16 @@ struct APRDevice: Device {
     };
 
     uint64_t u: 36;
+
+    string toString() const {
+      stringstream ss;
+      ss << "enabled: " << enabled.toString();
+      if (sweepBusy) ss << " sweepBusy";
+      ss << "active: " << active.toString() << " ";
+      ss << "intRequest: " << intRequest << " ";
+      ss << "intLevel: " << intLevel;
+      return ss.str();
+    }
   } aprState;
 
 
@@ -67,6 +92,18 @@ struct APRDevice: Device {
     unsigned u: 18;
 
     APRFunctions(unsigned v) :u(v) {};
+
+    string toString() const {
+      stringstream ss;
+      if (clearIO) ss << " clearIO";
+      if (enable)  ss << " enable";
+      if (disable) ss << " disable";
+      if (clear)   ss << " clear";
+      if (set)     ss << " set";
+      ss << select.toString() << " ";
+      ss << "intLevel: " << intLevel;
+      return ss.str();
+    }
   };
 
   struct APRLevels {
@@ -166,7 +203,7 @@ struct APRDevice: Device {
   }
 
   void doCONI(W36 iw, W36 ea) {		// RDAPR
-    logger.nyi(state);
+    state.memPutN(aprState.u, ea);
   }
 
   void clearIO() {

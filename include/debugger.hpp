@@ -1,5 +1,6 @@
 // TODO:
 // * Add command capability to change ACs, memory, PC, flags.
+// * Add display of APR state and program flags
 // * Add history ring buffer for PC and a way to dump it.
 #pragma once
 
@@ -65,6 +66,7 @@ struct Debugger {
   m,memory A N  Dump N (octal) words of memory starting at A (octal). A can be 'pc'.
   pc [N]        Dump PC and flags, or if N is specified set PC to N (octal).
   s,step N      Step N (octal) instructions at current PC.
+  show apr|flags Display APR state or program flags.
   stats         Display emulator statistics.
   q,quit        Quit the KM10 simulator.
 )"sv.substr(1);	// ""
@@ -210,6 +212,24 @@ struct Debugger {
 	}
 
 	doContinue();
+      });
+
+      COMMAND("show", nullptr, [&]() {
+
+	if (words.size() == 1) {
+	  cout << "Must specify apr or flags" << logger.endl;
+	} else if (words.size() == 2) {
+
+	  if (words[1] == "apr") {
+	    cout << km10.apr.aprState.toString() << logger.endl;
+	  } else if (words[1] == "flags") {
+	    cout << state.flags.toString() << logger.endl;
+	  } else {
+	    cout << "Must specify apr or flags" << logger.endl;
+	  }
+	}
+
+	cout << flush;
       });
 
       COMMAND("log", "l", [&]() {

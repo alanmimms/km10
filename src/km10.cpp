@@ -15,7 +15,7 @@ using namespace std;
 Logger logger{};
 
 
-DEFINE_string(load, "../images/klddt/klddt.a10", ".A10 file to load");
+DEFINE_string(load, "../images/klddt/klddt.a10", ".A10 or .SAV file to load");
 DEFINE_bool(debug, false, "run the build-in debugger instead of starting execution");
 
 
@@ -28,7 +28,16 @@ int main(int argc, char *argv[]) {
   KMState state(4 * 1024 * 1024);
 
   if (FLAGS_load != "none") {
-    state.loadA10(FLAGS_load.c_str());
+
+    if (FLAGS_load.ends_with(".a10")) {
+      state.loadA10(FLAGS_load.c_str());
+    } else if (FLAGS_load.ends_with(".sav")) {
+      //      state.loadSAV(FLAGS_load.c_str());
+    } else {
+      cerr << "ERROR: '-load' option must name a .a10 or .sav file" << logger.endl;
+      return -1;
+    }
+
     cerr << "[Loaded " << FLAGS_load << "  start=" << state.pc.fmtVMA() << "]" << logger.endl;
   }
 
