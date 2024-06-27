@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.14)
 project(km10)
 
-set(CPPOptionsForALL -Wall -g)
+add_compile_options(-Wall -g -fdiagnostics-color=always)
 
 # Require at least C++20
 set(CMAKE_CXX_STANDARD 20)
