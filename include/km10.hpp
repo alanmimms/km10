@@ -284,15 +284,15 @@ public:
 
 
     // doCopyF functions
-    WFuncWW copyHRR = [&](W36 src, W36 dst) -> auto const {return W36(src.lhu, dst.rhu);};
-    WFuncWW copyHRL = [&](W36 src, W36 dst) -> auto const {return W36(dst.rhu, src.rhu);};
-    WFuncWW copyHLL = [&](W36 src, W36 dst) -> auto const {return W36(dst.lhu, src.rhu);};
-    WFuncWW copyHLR = [&](W36 src, W36 dst) -> auto const {return W36(src.lhu, dst.lhu);};
+    WFuncWW copyHRR = [&](W36 src, W36 dst) -> auto const {return W36(dst.lhu, src.rhu);};
+    WFuncWW copyHRL = [&](W36 src, W36 dst) -> auto const {return W36(src.rhu, dst.rhu);};
+    WFuncWW copyHLL = [&](W36 src, W36 dst) -> auto const {return W36(src.lhu, dst.rhu);};
+    WFuncWW copyHLR = [&](W36 src, W36 dst) -> auto const {return W36(dst.lhu, src.lhu);};
 
     // doModifyF functions
     WFuncW zeroR = [&](W36 v) -> auto const {return W36(v.lhu, 0);};
     WFuncW onesR = [&](W36 v) -> auto const {return W36(v.lhu, W36::halfOnes);};
-    WFuncW extnR = [&](W36 v) -> auto const {return W36(v.lhu, extnOf(v.lhu));};
+    WFuncW extnR = [&](W36 v) -> auto const {return W36(v.lhu, v.lhu);};
     WFuncW zeroL = [&](W36 v) -> auto const {return W36(0, v.rhu);};
     WFuncW onesL = [&](W36 v) -> auto const {return W36(W36::halfOnes, v.rhu);};
     WFuncW extnL = [&](W36 v) -> auto const {return W36(extnOf(v.rhu), v.rhu);};
@@ -1821,19 +1821,19 @@ public:
 	break;
 
       case 0570:		// HRRE
-	doHXXXX(memGet, acGet, copyHRR, extnL, acPut);
+	doHXXXX(memGet, acGet, copyHRR, extnR, acPut);
 	break;
 
       case 0571:		// HRREI
-	doHXXXX(immediate, acGet, copyHRR, extnL, acPut);
+	doHXXXX(immediate, acGet, copyHRR, extnR, acPut);
 	break;
 
       case 0572:		// HRREM
-	doHXXXX(acGet, memGet, copyHRR, extnL, memPut);
+	doHXXXX(acGet, memGet, copyHRR, extnR, memPut);
 	break;
 
       case 0573:		// HRRES
-	doHXXXX(memGet, memGet, copyHRR, extnL, selfPut);
+	doHXXXX(memGet, memGet, copyHRR, extnR, selfPut);
 	break;
 
       case 0574:		// HLRE
