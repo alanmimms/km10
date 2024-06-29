@@ -83,7 +83,7 @@ struct W36 {
 
 
   // Constants
-  static inline const auto halfOnes = 0777777u;
+  static inline const unsigned halfOnes = 0777'777u;
   static inline const uint64_t all1s = 0777777'777777ull;
   static inline const uint64_t bit0 = 1ull << 35;
   static inline const uint64_t magMask = bit0 - 1;

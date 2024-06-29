@@ -279,7 +279,7 @@ public:
     // For a given low halfword, this computes an upper halfword by
     // extending the low halfword's sign.
     auto extnOf = [&](const unsigned v) -> unsigned const {
-      return (v & 04000000) ? W36::halfOnes : 0;
+      return (v & 0400'000) ? W36::halfOnes : 0u;
     };
 
 
@@ -292,10 +292,10 @@ public:
     // doModifyF functions
     WFuncW zeroR = [&](W36 v) -> auto const {return W36(v.lhu, 0);};
     WFuncW onesR = [&](W36 v) -> auto const {return W36(v.lhu, W36::halfOnes);};
-    WFuncW extnR = [&](W36 v) -> auto const {return W36(v.lhu, v.lhu);};
+    WFuncW extnR = [&](W36 v) -> auto const {return W36(extnOf(v.rhu), v.rhu);};
     WFuncW zeroL = [&](W36 v) -> auto const {return W36(0, v.rhu);};
     WFuncW onesL = [&](W36 v) -> auto const {return W36(W36::halfOnes, v.rhu);};
-    WFuncW extnL = [&](W36 v) -> auto const {return W36(extnOf(v.rhu), v.rhu);};
+    WFuncW extnL = [&](W36 v) -> auto const {return W36(v.lhu, extnOf(v.lhu));};
 
     // binary doModifyF functions
     WFuncWW andWord = [&](W36 s1, W36 s2) -> auto const {return s1.u & s2.u;};
@@ -1693,35 +1693,35 @@ public:
 	break;
 
       case 0530:		// HLLE
-	doHXXXX(memGet, acGet, copyHLL, extnR, acPut);
+	doHXXXX(memGet, acGet, copyHLL, extnL, acPut);
 	break;
 
       case 0531:		// HLLEI
-	doHXXXX(immediate, acGet, copyHLL, extnR, acPut);
+	doHXXXX(immediate, acGet, copyHLL, extnL, acPut);
 	break;
 
       case 0532:		// HLLEM
-	doHXXXX(acGet, memGet, copyHLL, extnR, memPut);
+	doHXXXX(acGet, memGet, copyHLL, extnL, memPut);
 	break;
 
       case 0533:		// HLLES
-	doHXXXX(memGet, memGet, copyHLL, extnR, selfPut);
+	doHXXXX(memGet, memGet, copyHLL, extnL, selfPut);
 	break;
 
       case 0534:		// HRLE
-	doHXXXX(memGet, acGet, copyHRL, extnR, acPut);
+	doHXXXX(memGet, acGet, copyHRL, extnL, acPut);
 	break;
 
       case 0535:		// HRLEI
-	doHXXXX(immediate, acGet, copyHRL, extnR, acPut);
+	doHXXXX(immediate, acGet, copyHRL, extnL, acPut);
 	break;
 
       case 0536:		// HRLEM
-	doHXXXX(acGet, memGet, copyHRL, extnR, memPut);
+	doHXXXX(acGet, memGet, copyHRL, extnL, memPut);
 	break;
 
       case 0537:		// HRLES
-	doHXXXX(memGet, memGet, copyHRL, extnR, selfPut);
+	doHXXXX(memGet, memGet, copyHRL, extnL, selfPut);
 	break;
 
       case 0540:		// HRR
@@ -1837,19 +1837,19 @@ public:
 	break;
 
       case 0574:		// HLRE
-	doHXXXX(memGet, acGet, copyHLR, extnL, acPut);
+	doHXXXX(memGet, acGet, copyHLR, extnR, acPut);
 	break;
 
       case 0575:		// HLREI
-	doHXXXX(immediate, acGet, copyHLR, extnL, acPut);
+	doHXXXX(immediate, acGet, copyHLR, extnR, acPut);
 	break;
 
       case 0576:		// HLREM
-	doHXXXX(acGet, memGet, copyHLR, extnL, memPut);
+	doHXXXX(acGet, memGet, copyHLR, extnR, memPut);
 	break;
 
       case 0577:		// HLRES
-	doHXXXX(memGet, memGet, copyHLR, extnL, selfPut);
+	doHXXXX(memGet, memGet, copyHLR, extnR, selfPut);
 	break;
 
       case 0600:		// TRN
