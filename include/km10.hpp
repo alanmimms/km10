@@ -318,6 +318,19 @@ public:
 	state.flags.tr1 = state.flags.ov = state.flags.cy0 = 1;
       } else if ((uint64_t) sum >= W36::bit0) {
 	state.flags.tr1 = state.flags.ov = state.flags.cy1 = 1;
+      } else {
+
+	if (s1.s < 0 && s2.s < 0) {
+	  state.flags.cy0 = state.flags.cy1 = 1;
+	} else if ((s1.s < 0) != (s2.s < 0)) {
+	  const uint64_t mag1 = abs(s1.s);
+	  const uint64_t mag2 = abs(s2.s);
+
+	  if ((s1.s >= 0 && mag1 >= mag2) ||
+	      (s2.s >= 0 && mag2 >= mag1)) {
+	    state.flags.cy0 = state.flags.cy1 = 1;
+	  }
+	}
       }
 
       return sum;
