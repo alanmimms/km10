@@ -20,6 +20,7 @@ struct Logger {
   bool dte;
   bool mem;
   bool load;
+  bool ea;
 
 
   Logger()
@@ -34,7 +35,7 @@ struct Logger {
   bool loggingToFile;
 
 
-  inline static const std::set<string> flags{"ac","io","pc","dte","mem","load"};
+  inline static const std::set<string> flags{"ac","io","pc","dte","ea","mem","load"};
 
 
   // Logger

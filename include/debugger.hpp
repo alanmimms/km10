@@ -60,7 +60,7 @@ struct Debugger {
                 Use -A to remove existing breakpoint or 'clear' to clear all breakpoints.
   c,continue    Continue execution at current PC.
   ?,help        Display this help.
-  l,log [ac|io|pc|dte|mem|load|off|all] Display logging flags, toggle one, or turn all on or off.
+  l,log [ac|io|pc|dte|ea|mem|load|off|all] Display logging flags, toggle one, or turn all on or off.
   l,log file [FILENAME] Log to FILENAME or 'km10.log' if not specified (overwriting).
   l,log tty     Log to console.
   m,memory A N  Dump N (octal) words of memory starting at A (octal). A can be 'pc'.
@@ -240,6 +240,7 @@ struct Debugger {
 	  if (logger.io) cout << " io";
 	  if (logger.pc) cout << " pc";
 	  if (logger.dte) cout << " dte";
+	  if (logger.ea) cout << " ea";
 	  if (logger.mem) cout << " mem";
 	  if (logger.load) cout << " load";
 	  cout << logger.endl;
