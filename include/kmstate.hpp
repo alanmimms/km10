@@ -69,31 +69,36 @@ struct KMState {
 
   union ATTRPACKED ProgramFlags {
 
+    // 13-bit field LEFTMOST-ALIGNED in the LH.
     struct ATTRPACKED {
-      unsigned: 5;
       unsigned ndv: 1;
+
       unsigned fuf: 1;
       unsigned tr1: 1;
       unsigned tr2: 1;
+
       unsigned afi: 1;
       unsigned pub: 1;
       unsigned uio: 1;
+
       unsigned usr: 1;
       unsigned fpd: 1;
       unsigned fov: 1;
+
       unsigned cy1: 1;
       unsigned cy0: 1;
       unsigned ov: 1;
     };
 
+    // Two flags have different name/usage, depending on context.
     struct ATTRPACKED {
-      unsigned: 11;
+      unsigned: 6;
       unsigned pcu: 1;
       unsigned: 5;
       unsigned pcp: 1;
     };
 
-    unsigned u: 18;
+    unsigned u: 13;
 
     ProgramFlags(unsigned newFlags) {
       u = newFlags;
@@ -101,7 +106,7 @@ struct KMState {
 
     string toString() {
       ostringstream ss;
-      ss << oct << setw(6) << setfill('0') << u;
+      ss << oct << setw(6) << setfill('0') << ((unsigned) u << 5);
       if (ndv) ss << " NDV";
       if (fuf) ss << " FUF";
       if (tr1) ss << " TR1";
@@ -281,7 +286,7 @@ struct KMState {
 
 
   // Effective address calculation
-  unsigned getEA(unsigned i, unsigned x, unsigned y) {
+  uint64_t getEA(unsigned i, unsigned x, uint64_t y) {
 
     // While we keep getting indirection, loop for new EA words.
     // XXX this only works for non-extended addressing.
@@ -292,14 +297,19 @@ struct KMState {
       // and indirection steps. For now, this can work for section 0
       // or unextended code.
 
-      if (x != 0) y += acGetN(x).rhs;
+      if (x != 0) {
+	if (logger.ea) logger.s << "EA (" << oct << x << ")=" << acGetN(x).fmt36() << logger.endl;
+	y += acGetN(x).u;
+      }
 
       if (i != 0) {		// Indirection
 	W36 eaw(memGetN(y));
+	if (logger.ea) logger.s << "EA @" << W36(y).fmt36() << "=" << eaw.fmt36() << logger.endl;
 	y = eaw.y;
 	x = eaw.x;
 	i = eaw.i;
       } else {			// No indexing or indirection
+	if (logger.ea) logger.s << "EA=" << W36(y).fmt36() << logger.endl;
 	return y;
       }
     }
@@ -310,7 +320,9 @@ struct KMState {
   bool userMode() {return !!flags.usr;}
 
   W36 flagsWord(unsigned pc) {
-    return W36(flags.u, pc);
+    W36 v(pc);
+    v.pcFlags = flags.u;
+    return v;
   }
 
 
