@@ -61,14 +61,38 @@ struct APRDevice: Device {
 
     string toString() const {
       stringstream ss;
-      ss << "enabled: " << enabled.toString();
+      ss << " enabled=" << enabled.toString();
       if (sweepBusy) ss << " sweepBusy";
-      ss << "active: " << active.toString() << " ";
-      ss << "intRequest: " << intRequest << " ";
-      ss << "intLevel: " << intLevel;
+      ss << " active=" << active.toString();
+      ss << " intRequest=" << intRequest;
+      ss << " intLevel=" << intLevel;
       return ss.str();
     }
   } aprState;
+
+
+  union APRBreakState {
+
+    struct ATTRPACKED {
+      unsigned vma: 23;
+      unsigned user: 1;
+      unsigned write: 1;
+      unsigned read: 1;
+      unsigned fetch: 1;
+    };
+
+    uint64_t u: 36;
+
+    string toString() const {
+      stringstream ss;
+      ss << " " << W36(u).fmt36() << " ";
+      if (fetch) ss << " fetch";
+      if (write)  ss << " write";
+      if (read) ss << " read";
+      ss << " vma=" << W36(vma).fmtVMA();
+      return ss.str();
+    }
+  } breakState;
 
 
   // CONO APR function bits
@@ -166,6 +190,10 @@ struct APRDevice: Device {
 
   void doBLKO(W36 iw, W36 ea) {		// WRFIL
     logger.nyi(state);
+  }
+
+  void doDATAI(W36 iw, W36 ea) {
+    state.memPutN(breakState.u, ea);
   }
 
   void doCONO(W36 iw, W36 ea) {		// WRAPR

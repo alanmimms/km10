@@ -95,13 +95,16 @@ public:
 
     WFunc acGetRH = [&]() -> W36 {
       W36 value{0, acGet().rhu};
-      if (logger.mem) logger.s << "; acRH" << oct << iw.ac << ": " << value.fmt36();
+      if (logger.mem) logger.s << "; acRH" << oct << iw.ac << ": " << value.fmt18();
       return value;
     };
 
+    // This retrieves LH into the RH of the return value, which is
+    // required for things like TLNN to work properly since they use
+    // the EA as a mask.
     WFunc acGetLH = [&]() -> W36 {
       W36 value{0, acGet().lhu};
-      if (logger.mem) logger.s << "; acLH" << oct << iw.ac << ": " << value.fmt36();
+      if (logger.mem) logger.s << "; acLH" << oct << iw.ac << ": " << value.fmt18();
       return value;
     };
 
@@ -113,8 +116,12 @@ public:
       acPut(W36(acGet().lhu, value.rhu));
     };
 
+    // This is used to store back in, e.g., TLZE. But the LH of AC is
+    // in the RH of the word we're passed because of how the testing
+    // logic of these instructions must work. So we put the RH of the
+    // value into the LH of the AC, keeping the AC's RH intact.
     FuncW acPutLH = [&](W36 value) -> void {
-      acPut(W36(value.lhu, acGet().rhu));
+      acPut(W36(value.rhu, acGet().rhu));
     };
 
     DFunc acGet2 = [&]() {
@@ -213,16 +220,16 @@ public:
     WFuncW  noMod1 = [&](W36 a) -> auto const {return a;};
     WFuncWW noMod2 = [&](W36 a, W36 b) -> auto const {return a;};
 
+    // There is no `zeroMaskL`, `compMaskR`, `onesMaskL` because,
+    // e.g., TLZE operates on the LH of the AC while it's in the RH of
+    // the value so the testing/masking work properly.
     WFuncWW zeroMaskR = [&](W36 a, W36 b) -> auto const {return a.u & ~(uint64_t) b.rhu;};
-    WFuncWW zeroMaskL = [&](W36 a, W36 b) -> auto const {return a.u & ~((uint64_t) b.rhu << 18);};
     WFuncWW zeroMask  = [&](W36 a, W36 b) -> auto const {return a.u & ~b.u;};
 
     WFuncWW onesMaskR = [&](W36 a, W36 b) -> auto const {return a.u | b.rhu;};
-    WFuncWW onesMaskL = [&](W36 a, W36 b) -> auto const {return a.u | ((uint64_t) b.rhu << 18);};
     WFuncWW onesMask  = [&](W36 a, W36 b) -> auto const {return a.u | b.u;};
 
     WFuncWW compMaskR = [&](W36 a, W36 b) -> auto const {return a.u ^ b.rhu;};
-    WFuncWW compMaskL = [&](W36 a, W36 b) -> auto const {return a.u ^ ((uint64_t) b.rhu << 18);};
     WFuncWW compMask  = [&](W36 a, W36 b) -> auto const {return a.u ^ b.u;};
 
     WFuncW zeroWord = [&](W36 a) -> auto const {return 0;};
@@ -906,6 +913,26 @@ public:
 	state.acPutN(tmp, iw.ac+1);
 	break;
 
+      case 0245: {		// ROTC
+	int n = ea.rhs % 72;
+	uint128_t a = ((uint128_t) state.acGetN(iw.ac+0) << 36) | state.acGetN(iw.ac+1);
+
+	if (n > 0) {
+	  uint128_t newLSBs = a >> (72-n);
+	  a <<= n;
+	  a |= newLSBs;
+	} else if (n < 0) {
+	  n = -n;
+	  uint128_t newMSBs = a << (72-n);
+	  a >>= n;
+	  a |= newMSBs;
+	}
+
+	state.acPutN((a >> 36) & W36::all1s, iw.ac+0);
+	state.acPutN(a & W36::all1s, iw.ac+1);
+	break;
+      }
+
       case 0246: {		// LSHC
 	W72 a(acGet(), state.acGetN(iw.ac+1));
 
@@ -1062,9 +1089,9 @@ public:
 	break;
 
       case 0265:		// JSP
-	nextPC.u = ea.u;	// XXX Wrap?
 	acPut(state.pc.isSection0() ? state.flagsWord(nextPC.rhu) : W36(nextPC.vma));
 	state.flags.fpd = state.flags.afi = state.flags.tr2 = state.flags.tr1 = 0;
+	nextPC.u = ea.u;	// XXX Wrap?
 	break;
 
       case 0266:		// JSA
@@ -1911,7 +1938,7 @@ public:
 	break;
 
       case 0621:		// TLZ
-	doTXXXX(acGetLH, getE, zeroMaskL, neverT, acPutLH);
+	doTXXXX(acGetLH, getE, zeroMaskR, neverT, acPutLH);
 	break;
 
       case 0622:		// TRZE
@@ -1919,7 +1946,7 @@ public:
 	break;
 
       case 0623:		// TLZE
-	doTXXXX(acGetLH, getE, zeroMaskL, isEQ0T, acPutLH);
+	doTXXXX(acGetLH, getE, zeroMaskR, isEQ0T, acPutLH);
 	break;
 
       case 0624:		// TRZA
@@ -1927,7 +1954,7 @@ public:
 	break;
 
       case 0625:		// TLZA
-	doTXXXX(acGetLH, getE, zeroMaskL, alwaysT, acPutLH);
+	doTXXXX(acGetLH, getE, zeroMaskR, alwaysT, acPutLH);
 	break;
 
       case 0626:		// TRZN
@@ -1935,7 +1962,7 @@ public:
 	break;
 
       case 0627:		// TLZN
-	doTXXXX(acGetLH, getE, zeroMaskL, isNE0T, acPutLH);
+	doTXXXX(acGetLH, getE, zeroMaskR, isNE0T, acPutLH);
 	break;
 
       case 0640:		// TRC
@@ -1943,7 +1970,7 @@ public:
 	break;
 
       case 0641:		// TLC
-	doTXXXX(acGetLH, getE, compMaskL, neverT, acPutLH);
+	doTXXXX(acGetLH, getE, compMaskR, neverT, acPutLH);
 	break;
 
       case 0642:		// TRCE
@@ -1951,7 +1978,7 @@ public:
 	break;
 
       case 0643:		// TLCE
-	doTXXXX(acGetLH, getE, compMaskL, isEQ0T, acPutLH);
+	doTXXXX(acGetLH, getE, compMaskR, isEQ0T, acPutLH);
 	break;
 
       case 0644:		// TRCA
@@ -1959,7 +1986,7 @@ public:
 	break;
 
       case 0645:		// TLCA
-	doTXXXX(acGetLH, getE, compMaskL, alwaysT, acPutLH);
+	doTXXXX(acGetLH, getE, compMaskR, alwaysT, acPutLH);
 	break;
 
       case 0646:		// TRCN
@@ -1967,7 +1994,7 @@ public:
 	break;
 
       case 0647:		// TLCN
-	doTXXXX(acGetLH, getE, compMaskL, isNE0T, acPutLH);
+	doTXXXX(acGetLH, getE, compMaskR, isNE0T, acPutLH);
 	break;
 
       case 0660:		// TRO
@@ -1975,7 +2002,7 @@ public:
 	break;
 
       case 0661:		// TLO
-	doTXXXX(acGetLH, getE, onesMaskL, neverT, acPutLH);
+	doTXXXX(acGetLH, getE, onesMaskR, neverT, acPutLH);
 	break;
 
       case 0662:		// TROE
@@ -1983,7 +2010,7 @@ public:
 	break;
 
       case 0663:		// TLOE
-	doTXXXX(acGetLH, getE, onesMaskL, isEQ0T, acPutLH);
+	doTXXXX(acGetLH, getE, onesMaskR, isEQ0T, acPutLH);
 	break;
 
       case 0664:		// TROA
@@ -1991,7 +2018,7 @@ public:
 	break;
 
       case 0665:		// TLOA
-	doTXXXX(acGetLH, getE, onesMaskL, alwaysT, acPutLH);
+	doTXXXX(acGetLH, getE, onesMaskR, alwaysT, acPutLH);
 	break;
 
       case 0666:		// TRON
@@ -1999,7 +2026,7 @@ public:
 	break;
 
       case 0667:		// TLON
-	doTXXXX(acGetLH, getE, onesMaskL, isNE0T, acPutLH);
+	doTXXXX(acGetLH, getE, onesMaskR, isNE0T, acPutLH);
 	break;
 
       case 0610:		// TDN
@@ -2132,7 +2159,7 @@ public:
 
 	if (iw.ioSeven == 7) {	// Only handle I/O instructions this way
 	  if (logger.io) logger.s << "; ioDev=" << oct << iw.ioDev << " ioOp=" << oct << iw.ioOp;
-	  Device::handleIO(iw, ea, state);
+	  Device::handleIO(iw, ea, state, nextPC);
 	} else {
 	  logger.nyi(state);
 	  state.running = false;

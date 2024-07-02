@@ -35,7 +35,7 @@ struct Device {
 
   // Handle an I/O instruction by calling the appropriate device
   // driver's I/O instruction handler method.
-  static void handleIO(W36 iw, W36 ea, KMState &state) {
+  static void handleIO(W36 iw, W36 ea, KMState &state, W36 &nextPC) {
     auto devP = devices[(unsigned) iw.ioDev];
 
 
@@ -73,11 +73,11 @@ struct Device {
       break;
 
     case W36::CONSZ:
-      devP->doCONSZ(iw, ea);
+      devP->doCONSZ(iw, ea, nextPC);
       break;
 
     case W36::CONSO:
-      devP->doCONSZ(iw, ea);
+      devP->doCONSO(iw, ea, nextPC);
       break;
 
     default:
@@ -115,7 +115,13 @@ struct Device {
     logger.nyi(state);
   }
 
-  virtual void doCONSZ(W36 iw, W36 ea) {
+  virtual void doCONSZ(W36 iw, W36 ea, W36 &nextPC) {
     logger.nyi(state);
+    ++nextPC.u;			// XXX ALWAYS SKIP FOR NOW
+  }
+
+  virtual void doCONSO(W36 iw, W36 ea, W36 &nextPC) {
+    logger.nyi(state);
+    ++nextPC.u;			// XXX ALWAYS SKIP FOR NOW
   }
 };
