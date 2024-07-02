@@ -109,6 +109,14 @@ public:
       state.acPutN(value, iw.ac);
     };
 
+    FuncW acPutRH = [&](W36 value) -> void {
+      acPut(W36(acGet().lhu, value.rhu));
+    };
+
+    FuncW acPutLH = [&](W36 value) -> void {
+      acPut(W36(value.lhu, acGet().rhu));
+    };
+
     DFunc acGet2 = [&]() {
       W72 ret{state.acGetN(iw.ac+0), state.acGetN(iw.ac+1)};
       return ret;
@@ -724,7 +732,7 @@ public:
 	break;
 
       case 0207:		// MOVSS
-	doMOVXX(acGet, swap, selfPut);
+	doMOVXX(memGet, swap, selfPut);
 	break;
 
       case 0210:		// MOVN
@@ -740,7 +748,7 @@ public:
 	break;
 
       case 0213:		// MOVNS
-	doMOVXX(acGet, negate, selfPut);
+	doMOVXX(memGet, negate, selfPut);
 	break;
 
       case 0214:		// MOVM
@@ -756,7 +764,7 @@ public:
 	break;
 
       case 0217:		// MOVMS
-	doMOVXX(acGet, magnitude, selfPut);
+	doMOVXX(memGet, magnitude, selfPut);
 	break;
 
       case 0220:		// IMUL
@@ -977,16 +985,18 @@ public:
 	  break;
 
 	case 002: {		// JRSTF
-	  KMState::ProgramFlags newFlags{ea.pcFlags};
+	  KMState::ProgramFlags newFlags{(unsigned) ea.pcFlags};
 
-	  // Disallow clearing of USR flag from user mode.
-	  newFlags.usr = state.flags.usr;
+	  // User mode cannot clear USR. User mode cannot set UIO.
+	  if (state.flags.usr) {
+	    newFlags.uio = 0;
+	    newFlags.usr = 1;
+	  }
 
-	  // Disallow clearing of PUB unless JRSTF is running in
-	  // executive mode and switching to user mode.
-	  if (newFlags.pub || state.flags.usr || !newFlags.usr) newFlags.pub = 1;
+	  // A program running in PUB mode cannot clear PUB mode.
+	  if (state.flags.pub) newFlags.pub = 1;
 
-	  state.flags = newFlags.u;
+	  state.flags.u = newFlags.u;
 	  nextPC.u = ea.vma;
 	  break;
 	}
@@ -1004,12 +1014,13 @@ public:
 
 	break;
 
-      case 0255:		// JFCL
-	if ((iw.ac & 8) && state.flags.ov)  {state.flags.ov = 0; nextPC = ea;}
-	if ((iw.ac & 4) && state.flags.cy0) {state.flags.cy0 = 0; nextPC = ea;}
-	if ((iw.ac & 2) && state.flags.cy1) {state.flags.cy1 = 0; nextPC = ea;}
-	if ((iw.ac & 1) && state.flags.fov) {state.flags.fov = 0; nextPC = ea;}
+      case 0255: {		// JFCL
+	unsigned wasFlags = state.flags.u;
+	unsigned testFlags = (unsigned) iw.ac << 9; // Align with OV,CY0,CY1,FOV
+	state.flags.u &= ~testFlags;
+	if (wasFlags & testFlags) nextPC = ea;
 	break;
+      }
 
       case 0256:		// XCT/PXCT
 
@@ -1059,11 +1070,11 @@ public:
       case 0266:		// JSA
 	memPut(acGet());
 	nextPC = ea.u + 1;
-	acPut(W36(ea.lhu, nextPC.rhu));
+	acPut(W36(ea.rhu, state.pc.rhu + 1));
 	break;
 
       case 0267:		// JRA
-	acPut(state.memGetN(acGet()));
+	acPut(state.memGetN(acGet().lhu));
 	nextPC = ea;
 	break;
 
@@ -1250,7 +1261,7 @@ public:
 	break;
 
       case 0346:		// AOJN
-	doAOSXX(acGet, 1, acPut, never, jumpAction);
+	doAOSXX(acGet, 1, acPut, isNE0, jumpAction);
 	break;
 
       case 0347:		// AOJG
@@ -1282,7 +1293,7 @@ public:
 	break;
 
       case 0356:		// AOSN
-	doAOSXX(memGet, 1, memPut, never, skipAction);
+	doAOSXX(memGet, 1, memPut, isNE0, skipAction);
 	break;
 
       case 0357:		// AOSG
@@ -1314,7 +1325,7 @@ public:
 	break;
 
       case 0366:		// SOJN
-	doAOSXX(acGet, -1, acPut, never, jumpAction);
+	doAOSXX(acGet, -1, acPut, isNE0, jumpAction);
 	break;
 
       case 0367:		// SOJG
@@ -1346,7 +1357,7 @@ public:
 	break;
 
       case 0376:		// SOSN
-	doAOSXX(memGet, -1, memPut, never, skipAction);
+	doAOSXX(memGet, -1, memPut, isNE0, skipAction);
 	break;
 
       case 0377:		// SOSG
@@ -1406,15 +1417,15 @@ public:
 	break;
 
       case 0415:		// SETMI
-	doSETXX(immediate, noMod1, memPut);
+	doSETXX(immediate, noMod1, acPut);
 	break;
 
       case 0416:		// SETMM
-	doSETXX(acGet, noMod1, memPut);
+	doSETXX(memGet, noMod1, memPut);
 	break;
 
       case 0417:		// SETMB
-	doSETXX(acGet, noMod1, bothPut);
+	doSETXX(memGet, noMod1, bothPut);
 	break;
 
       case 0420:		// ANDCM
@@ -1438,7 +1449,7 @@ public:
 	break;
 
       case 0425:		// SETAI
-	doSETXX(immediate, noMod1, acPut);
+	doSETXX(acGet, noMod1, acPut);
 	break;
 
       case 0426:		// SETAM
@@ -1518,7 +1529,7 @@ public:
 	break;
 
       case 0451:		// SETCAI
-	doSETXX(immediate, compWord, acPut);
+	doSETXX(acGet, compWord, acPut);
 	break;
 
       case 0452:		// SETCAM
@@ -1594,7 +1605,7 @@ public:
 	break;
 
       case 0474:		// SETO
-	doSETXX(memGet, onesWord, acPut);
+	doSETXX(acGet, onesWord, acPut);
 	break;
 
       case 0475:		// SETOI
@@ -1880,11 +1891,11 @@ public:
 	break;
 
       case 0604:		// TRNA
-	doSKIP(always);
+	++nextPC.u;
 	break;
 
       case 0605:		// TLNA
-	doSKIP(always);
+	++nextPC.u;
 	break;
 
       case 0606:		// TRNN
@@ -1896,99 +1907,99 @@ public:
 	break;
 
       case 0620:		// TRZ
-	doTXXXX(acGetRH, getE, zeroMaskR, neverT, acPut);
+	doTXXXX(acGetRH, getE, zeroMaskR, neverT, acPutRH);
 	break;
 
       case 0621:		// TLZ
-	doTXXXX(acGetLH, getE, zeroMaskL, neverT, acPut);
+	doTXXXX(acGetLH, getE, zeroMaskL, neverT, acPutLH);
 	break;
 
       case 0622:		// TRZE
-	doTXXXX(acGetRH, getE, zeroMaskR, isEQ0T, acPut);
+	doTXXXX(acGetRH, getE, zeroMaskR, isEQ0T, acPutRH);
 	break;
 
       case 0623:		// TLZE
-	doTXXXX(acGetLH, getE, zeroMaskL, isEQ0T, acPut);
+	doTXXXX(acGetLH, getE, zeroMaskL, isEQ0T, acPutLH);
 	break;
 
       case 0624:		// TRZA
-	doTXXXX(acGetRH, getE, zeroMaskR, alwaysT, acPut);
+	doTXXXX(acGetRH, getE, zeroMaskR, alwaysT, acPutRH);
 	break;
 
       case 0625:		// TLZA
-	doTXXXX(acGetLH, getE, zeroMaskL, alwaysT, acPut);
+	doTXXXX(acGetLH, getE, zeroMaskL, alwaysT, acPutLH);
 	break;
 
       case 0626:		// TRZN
-	doTXXXX(acGetRH, getE, zeroMaskR, isNE0T, acPut);
+	doTXXXX(acGetRH, getE, zeroMaskR, isNE0T, acPutRH);
 	break;
 
       case 0627:		// TLZN
-	doTXXXX(acGetLH, getE, zeroMaskL, isNE0T, acPut);
+	doTXXXX(acGetLH, getE, zeroMaskL, isNE0T, acPutLH);
 	break;
 
       case 0640:		// TRC
-	doTXXXX(acGetRH, getE, compMaskR, neverT, acPut);
+	doTXXXX(acGetRH, getE, compMaskR, neverT, acPutRH);
 	break;
 
       case 0641:		// TLC
-	doTXXXX(acGetLH, getE, compMaskL, neverT, acPut);
+	doTXXXX(acGetLH, getE, compMaskL, neverT, acPutLH);
 	break;
 
       case 0642:		// TRCE
-	doTXXXX(acGetRH, getE, compMaskR, isEQ0T, acPut);
+	doTXXXX(acGetRH, getE, compMaskR, isEQ0T, acPutRH);
 	break;
 
       case 0643:		// TLCE
-	doTXXXX(acGetLH, getE, compMaskL, isEQ0T, acPut);
+	doTXXXX(acGetLH, getE, compMaskL, isEQ0T, acPutLH);
 	break;
 
       case 0644:		// TRCA
-	doTXXXX(acGetRH, getE, compMaskR, alwaysT, acPut);
+	doTXXXX(acGetRH, getE, compMaskR, alwaysT, acPutRH);
 	break;
 
       case 0645:		// TLCA
-	doTXXXX(acGetLH, getE, compMaskL, alwaysT, acPut);
+	doTXXXX(acGetLH, getE, compMaskL, alwaysT, acPutLH);
 	break;
 
       case 0646:		// TRCN
-	doTXXXX(acGetRH, getE, compMaskR, isNE0T, acPut);
+	doTXXXX(acGetRH, getE, compMaskR, isNE0T, acPutRH);
 	break;
 
       case 0647:		// TLCN
-	doTXXXX(acGetLH, getE, compMaskL, isNE0T, acPut);
+	doTXXXX(acGetLH, getE, compMaskL, isNE0T, acPutLH);
 	break;
 
       case 0660:		// TRO
-	doTXXXX(acGetRH, getE, onesMaskR, neverT, acPut);
+	doTXXXX(acGetRH, getE, onesMaskR, neverT, acPutRH);
 	break;
 
       case 0661:		// TLO
-	doTXXXX(acGetLH, getE, onesMaskL, neverT, acPut);
+	doTXXXX(acGetLH, getE, onesMaskL, neverT, acPutLH);
 	break;
 
       case 0662:		// TROE
-	doTXXXX(acGetRH, getE, onesMaskR, isEQ0T, acPut);
+	doTXXXX(acGetRH, getE, onesMaskR, isEQ0T, acPutRH);
 	break;
 
       case 0663:		// TLOE
-	doTXXXX(acGetLH, getE, onesMaskL, isEQ0T, acPut);
+	doTXXXX(acGetLH, getE, onesMaskL, isEQ0T, acPutLH);
 	break;
 
       case 0664:		// TROA
-	doTXXXX(acGetRH, getE, onesMaskR, alwaysT, acPut);
+	doTXXXX(acGetRH, getE, onesMaskR, alwaysT, acPutRH);
 	break;
 
       case 0665:		// TLOA
-	doTXXXX(acGetLH, getE, onesMaskL, alwaysT, acPut);
+	doTXXXX(acGetLH, getE, onesMaskL, alwaysT, acPutLH);
 	break;
 
       case 0666:		// TRON
-	doTXXXX(acGetRH, getE, onesMaskR, isNE0T, acPut);
+	doTXXXX(acGetRH, getE, onesMaskR, isNE0T, acPutRH);
 	break;
 
       case 0667:		// TLON
-	doTXXXX(acGetLH, getE, onesMaskL, isNE0T, acPut);
+	doTXXXX(acGetLH, getE, onesMaskL, isNE0T, acPutLH);
 	break;
 
       case 0610:		// TDN
@@ -2006,11 +2017,11 @@ public:
 	break;
 
       case 0614:		// TDNA
-	doSKIP(always);
+	++nextPC.u;
 	break;
 
       case 0615:		// TSNA
-	doSKIP(always);
+	++nextPC.u;
 	break;
 
       case 0616:		// TDNN
