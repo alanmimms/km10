@@ -22,15 +22,15 @@ int main(int argc, char *argv[]) {
 }
 
 
-void Logger::nyi(KMState& state) {
-  s << " [not yet implemented]";
+void Logger::nyi(KMState& state, const string &context) {
+  s << " [not yet implemented: " << context << "]";
   cerr << "Not yet implemented at " << state.pc.fmtVMA() << endl;
   ADD_FAILURE();
 }
 
 
-void Logger::nsd(KMState& state) {
-  s << " [no such device]";
+void Logger::nsd(KMState& state, const string &context) {
+  s << " [no such device]: " << context << "]";
   cerr << "No such device at " << state.pc.fmtVMA() << endl;
   ADD_FAILURE();
 }

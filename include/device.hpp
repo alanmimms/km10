@@ -37,51 +37,50 @@ struct Device {
   // driver's I/O instruction handler method.
   static void handleIO(W36 iw, W36 ea, KMState &state, W36 &nextPC) {
     auto devP = devices[(unsigned) iw.ioDev];
+    string opName;
 
-
-    if (!devP) {
-      cerr << "handleIO at " << state.pc.fmtVMA()
-	   << " ioDev=" << oct << (int) iw.ioDev
-	   << logger.endl;
-      logger.nsd(state);
-      return;
-    }
+    if (devP == nullptr) devP = devices[0777777ul];
 
     switch (iw.ioOp) {
     case W36::BLKI:
-      devP->doBLKI(iw, ea);
-      break;
+      devP->doBLKI(iw, ea, nextPC);
+      return;
 
     case W36::DATAI:
       devP->doDATAI(iw, ea);
-      break;
+      return;
 
     case W36::BLKO:
-      devP->doBLKO(iw, ea);
-      break;
+      devP->doBLKO(iw, ea, nextPC);
+      return;
 
     case W36::DATAO:
       devP->doDATAO(iw, ea);
-      break;
+      return;
 
     case W36::CONO:
       devP->doCONO(iw, ea);
-      break;
+      return;
 
     case W36::CONI:
       devP->doCONI(iw, ea);
-      break;
+      return;
 
     case W36::CONSZ:
       devP->doCONSZ(iw, ea, nextPC);
-      break;
+      return;
 
     case W36::CONSO:
       devP->doCONSO(iw, ea, nextPC);
-      break;
+      return;
 
-    default:
-      logger.nyi(state);
+    default: {
+      stringstream ss;
+      ss << "???" << oct << iw.ioOp << "???";
+      opName = ss.str();
+      logger.nyi(state, ss.str());
+      break;
+      }
     }
   }
 
@@ -92,36 +91,35 @@ struct Device {
 
 
   virtual void doDATAI(W36 iw, W36 ea) {
-    logger.nyi(state);
   }
   
-  virtual void doBLKI(W36 iw, W36 ea) {
-    logger.nyi(state);
+  virtual void doBLKI(W36 iw, W36 ea, W36 &nextPC) {
+    W36 e{state.memGetN(ea)};
+    state.memPutN(W36{++e.lhu, ++e.rhu}, ea);
+    this->doDATAI(iw, e.rhu);
+    if (e.lhu != 0) ++nextPC.rhu;
   }
 
-  virtual void doBLKO(W36 iw, W36 ea) {
-    logger.nyi(state);
+  virtual void doBLKO(W36 iw, W36 ea, W36 &nextPC) {
+    W36 e{state.memGetN(ea)};
+    state.memPutN(W36{++e.lhu, ++e.rhu}, ea);
+    this->doDATAO(iw, e.rhu);
+    if (e.lhu != 0) ++nextPC.rhu;
   }
 
   virtual void doDATAO(W36 iw, W36 ea) {
-    logger.nyi(state);
   }
 
   virtual void doCONO(W36 iw, W36 ea) {
-    logger.nyi(state);
   }
 
   virtual void doCONI(W36 iw, W36 ea) {
-    logger.nyi(state);
   }
 
   virtual void doCONSZ(W36 iw, W36 ea, W36 &nextPC) {
-    logger.nyi(state);
-    ++nextPC.u;			// XXX ALWAYS SKIP FOR NOW
+    ++nextPC.rhu;		// ALWAYS SKIP
   }
 
   virtual void doCONSO(W36 iw, W36 ea, W36 &nextPC) {
-    logger.nyi(state);
-    ++nextPC.u;			// XXX ALWAYS SKIP FOR NOW
   }
 };

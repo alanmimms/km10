@@ -56,8 +56,8 @@ struct Logger {
     loggingToFile = false;
   }
 
-  void nyi(KMState &state);
-  void nsd(KMState &state);
+  void nyi(KMState &state, const string &context = "");
+  void nsd(KMState &state, const string &context = "");
 };
 
 

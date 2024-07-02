@@ -184,19 +184,19 @@ struct APRDevice: Device {
 
 
   // I/O instruction handlers
-  void doBLKI(W36 iw, W36 ea) {		// APRID
+  virtual void doBLKI(W36 iw, W36 ea, W36 &nextPC) {		// APRID
     state.memPutN(aprIDValue.u, ea);
   }
 
-  void doBLKO(W36 iw, W36 ea) {		// WRFIL
+  virtual void doBLKO(W36 iw, W36 ea, W36 &nextPC) {		// WRFIL
     logger.nyi(state);
   }
 
-  void doDATAI(W36 iw, W36 ea) {
+  virtual void doDATAI(W36 iw, W36 ea) {
     state.memPutN(breakState.u, ea);
   }
 
-  void doCONO(W36 iw, W36 ea) {		// WRAPR
+  virtual void doCONO(W36 iw, W36 ea) {				// WRAPR
     APRFunctions func(ea.u);
 
     if (logger.mem) cerr << "; " << ea.fmt18();
@@ -230,11 +230,11 @@ struct APRDevice: Device {
     if (func.clearIO) Device::clearAll();
   }
 
-  void doCONI(W36 iw, W36 ea) {		// RDAPR
+  virtual void doCONI(W36 iw, W36 ea) {		// RDAPR
     state.memPutN(aprState.u, ea);
   }
 
-  void clearIO() {
+  virtual void clearIO() {
     aprState.u = 0;
   }
 };
