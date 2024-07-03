@@ -59,6 +59,8 @@ struct APRDevice: Device {
 
     uint64_t u: 36;
 
+    APRState(W36 v=0) :u(v.u) {}
+
     string toString() const {
       stringstream ss;
       ss << " enabled={" << enabled.toString() << "}";
@@ -83,6 +85,8 @@ struct APRDevice: Device {
     };
 
     uint64_t u: 36;
+
+    APRBreakState(W36 v = 0) :u(v.u) {}
 
     string toString() const {
       stringstream ss;
@@ -116,7 +120,7 @@ struct APRDevice: Device {
 
     unsigned u: 18;
 
-    APRFunctions(unsigned v) :u(v) {};
+    APRFunctions(unsigned v=0) :u(v) {};
 
     string toString() const {
       stringstream ss;
@@ -198,15 +202,20 @@ struct APRDevice: Device {
   }
 
   virtual void doCONO(W36 iw, W36 ea) {				// WRAPR
-    APRFunctions func(ea.u);
+    APRFunctions func{ea.rhu};
 
     if (logger.mem) cerr << "; " << ea.fmt18();
 
+    cerr << state.pc.fmtVMA() << " WRAPR: ea=" << ea.fmt18() << " intLevel=" << oct << func.intLevel;
     aprState.intLevel = func.intLevel;
 
-    if (func.clear) aprState.active.u &= ~func.select.u;
+    if (func.clear) {
+      cerr << " clear=" << oct << func.select.u;
+      aprState.active.u &= ~func.select.u;
+    }
 
     if (func.set) {
+      cerr << " set=" << oct << func.select.u;
       aprState.active.u |= func.select.u;
 
       // This block argues the APR state needs to be metaprogrammed
@@ -225,12 +234,28 @@ struct APRDevice: Device {
       }
     }
 
-    if (func.enable) aprState.enabled.u |= func.select.u;
-    if (func.disable) aprState.enabled.u &= ~func.select.u;
-    if (func.clearIO) Device::clearAll();
+    if (func.disable) {
+      cerr << " disable=" << oct << func.select.u;
+      aprState.enabled.u &= ~func.select.u;
+    }
+
+    if (func.enable) {
+      cerr << " enable=" << oct << func.select.u;
+      aprState.enabled.u |= func.select.u;
+    }
+
+    if (func.clearIO) {
+      cerr << " clearIO";
+      Device::clearAll();
+    }
+
+    cerr << logger.endl;
   }
 
   virtual void doCONI(W36 iw, W36 ea) {		// RDAPR
+    cerr << state.pc.fmtVMA() << " RDAPR aprState=" << W36(aprState.u).fmt36()
+	 << " ea=" << ea.fmtVMA()
+	 << logger.endl;
     state.memPutN(aprState.u, ea);
   }
 
