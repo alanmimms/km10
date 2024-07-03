@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <map>
+#include <assert.h>
 
 using namespace std;
 
@@ -36,10 +37,15 @@ struct Device {
   // Handle an I/O instruction by calling the appropriate device
   // driver's I/O instruction handler method.
   static void handleIO(W36 iw, W36 ea, KMState &state, W36 &nextPC) {
-    auto devP = devices[(unsigned) iw.ioDev];
-    string opName;
+    Device *devP;
 
-    if (devP == nullptr) devP = devices[0777777ul];
+    try {
+      devP = devices.at((unsigned) iw.ioDev);
+    } catch (const exception &e) {
+      devP = devices[0777777ul];
+    }
+
+    assert(devP != nullptr);
 
     switch (iw.ioOp) {
     case W36::BLKI:
@@ -77,7 +83,6 @@ struct Device {
     default: {
       stringstream ss;
       ss << "???" << oct << iw.ioOp << "???";
-      opName = ss.str();
       logger.nyi(state, ss.str());
       break;
       }
