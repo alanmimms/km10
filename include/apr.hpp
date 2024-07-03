@@ -10,7 +10,7 @@
 struct APRDevice: Device {
 
   // CONI APR interrupt flags
-  union APRFlags {
+  union ATTRPACKED APRFlags {
 
     struct ATTRPACKED {
       unsigned sweepDone: 1;
@@ -40,7 +40,7 @@ struct APRDevice: Device {
   };
   
   // CONI APR status bits (some used in CONO APR)
-  union APRState {
+  union ATTRPACKED APRState {
 
     struct ATTRPACKED {
       unsigned intLevel: 3;
@@ -61,17 +61,18 @@ struct APRDevice: Device {
 
     string toString() const {
       stringstream ss;
-      ss << " enabled=" << enabled.toString();
+      ss << " enabled={" << enabled.toString() << "}";
       if (sweepBusy) ss << " sweepBusy";
-      ss << " active=" << active.toString();
+      ss << " active={" << active.toString() << "}";
       ss << " intRequest=" << intRequest;
       ss << " intLevel=" << intLevel;
+      ss << " u=" << W36(u).fmt36();
       return ss.str();
     }
   } aprState;
 
 
-  union APRBreakState {
+  union ATTRPACKED APRBreakState {
 
     struct ATTRPACKED {
       unsigned vma: 23;
@@ -96,7 +97,7 @@ struct APRDevice: Device {
 
 
   // CONO APR function bits
-  union APRFunctions {
+  union ATTRPACKED APRFunctions {
 
     struct ATTRPACKED {
       unsigned intLevel: 3;
@@ -201,16 +202,17 @@ struct APRDevice: Device {
 
     if (logger.mem) cerr << "; " << ea.fmt18();
 
-    if (func.clear) {
-      aprState.active.u &= ~func.select.u;
-    } else if (func.set) {
+    aprState.intLevel = func.intLevel;
+
+    if (func.clear) aprState.active.u &= ~func.select.u;
+
+    if (func.set) {
       aprState.active.u |= func.select.u;
 
-      // This block argues the APR state needs to be
-      // metaprogrammed with C++17 parameter pack superpowers
-      // instead of this old fashioned mnaual method. This might
-      // be an interesting thing to do in the future. For now,
-      // it's done the 1940s hard way.
+      // This block argues the APR state needs to be metaprogrammed
+      // with C++17 parameter pack superpowers. This might be an
+      // interesting thing to do in the future. For now, it's done the
+      // 1940s hard way.
       if (func.intLevel != 0) {
 	if (func.select.sweepDone != 0)      aprLevels.sweepDone = func.intLevel;
 	if (func.select.powerFailure != 0)   aprLevels.powerFailure = func.intLevel;
@@ -221,12 +223,10 @@ struct APRDevice: Device {
 	if (func.select.noMemory != 0)       aprLevels.noMemory = func.intLevel;
 	if (func.select.sbusError != 0)      aprLevels.sbusError = func.intLevel;
       }
-    } else if (func.enable) {
-      aprState.enabled.u |= func.select.u;
-    } else if (func.disable) {
-      aprState.enabled.u &= ~func.select.u;
     }
 
+    if (func.enable) aprState.enabled.u |= func.select.u;
+    if (func.disable) aprState.enabled.u &= ~func.select.u;
     if (func.clearIO) Device::clearAll();
   }
 
