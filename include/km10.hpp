@@ -36,21 +36,21 @@ class KM10 {
 public:
   KMState &state;
 
-  Device noDevice;
   APRDevice apr;
   PIDevice pi;
   PAGDevice pag;
   DTE20 dte;
+  Device noDevice;
 
 
   // Constructors
   KM10(KMState &aState)
     : state(aState),
-      noDevice(0777777ul, "?NoDevice?", aState),
       apr(state),
       pi(state),
       pag(state),
-      dte(040, state)
+      dte(040, state),
+      noDevice(0777777ul, "?NoDevice?", aState)
   {}
 
   
