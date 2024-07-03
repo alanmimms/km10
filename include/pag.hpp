@@ -26,7 +26,7 @@ struct PAGDevice: Device {
 
   // Constructors
   PAGDevice(KMState &aState):
-    Device(3, "PAG", aState)
+    Device(003, "PAG", aState)
   {
     pagState.u = 0;
   }
