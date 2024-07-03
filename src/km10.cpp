@@ -15,7 +15,7 @@ using namespace std;
 Logger logger{};
 
 
-DEFINE_string(load, "../images/klddt/klddt.a10", ".A10 or .SAV file to load");
+DEFINE_string(load, "../images/klad/dfkaa.a10", ".A10 or .SAV file to load");
 DEFINE_bool(debug, false, "run the build-in debugger instead of starting execution");
 
 
