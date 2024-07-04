@@ -39,16 +39,18 @@ struct PAGDevice: Device {
 
 
   // I/O instruction handlers
-  void doCONO(W36 iw, W36 ea) {
+  virtual void doCONO(W36 iw, W36 ea) override {
     if (logger.mem) logger.s << "; " << ea.fmt18();
     pagState.u = iw.y;
   }
 
-  void doCONI(W36 iw, W36 ea) {
-    state.memPutN(W36(state.memGetN(ea).lhu, pagState.u), ea);
+  virtual W36 doCONI(W36 iw, W36 ea) override {
+    W36 conditions{state.memGetN(ea).lhu, pagState.u};
+    state.memPutN(conditions, ea);
+    return conditions;
   }
 
-  void clearIO() {
+  virtual void clearIO() {
     pagState.u = 0;
   }
 };

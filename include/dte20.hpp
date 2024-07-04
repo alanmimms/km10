@@ -153,12 +153,12 @@ struct DTE20: Device {
 
 
   // I/O instruction handlers
-  virtual void clearIO() {
+  virtual void clearIO() override {
     if (logger.dte) logger.s << "; DTE CLEAR IO";
   }
 
 
-  virtual void doCONO(W36 iw, W36 ea) {
+  virtual void doCONO(W36 iw, W36 ea) override {
     CONOMask req(ea);
     if (logger.dte) logger.s << "; DTE CONO " << oct << ea;
 
@@ -215,8 +215,9 @@ struct DTE20: Device {
   }
 
 
-  virtual void doCONI(W36 iw, W36 ea) {
+  virtual W36 doCONI(W36 iw, W36 ea) override {
     if (logger.dte) logger.s << "; DTE CONI";
+    return 0;
   }
 
 

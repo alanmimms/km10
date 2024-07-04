@@ -95,20 +95,22 @@ struct Device {
   }
 
 
-  virtual void doDATAI(W36 iw, W36 ea) {
+  virtual W36 doDATAI(W36 iw, W36 ea) {
+    state.memPutN(0, ea);
+    return 0;
   }
   
   virtual void doBLKI(W36 iw, W36 ea, W36 &nextPC) {
     W36 e{state.memGetN(ea)};
     state.memPutN(W36{++e.lhu, ++e.rhu}, ea);
-    this->doDATAI(iw, e.rhu);
+    doDATAI(iw, e.rhu);
     if (e.lhu != 0) ++nextPC.rhu;
   }
 
   virtual void doBLKO(W36 iw, W36 ea, W36 &nextPC) {
     W36 e{state.memGetN(ea)};
     state.memPutN(W36{++e.lhu, ++e.rhu}, ea);
-    this->doDATAO(iw, e.rhu);
+    doDATAO(iw, e.rhu);
     if (e.lhu != 0) ++nextPC.rhu;
   }
 
@@ -118,13 +120,18 @@ struct Device {
   virtual void doCONO(W36 iw, W36 ea) {
   }
 
-  virtual void doCONI(W36 iw, W36 ea) {
+  virtual W36 doCONI(W36 iw, W36 ea) {
+    state.memPutN(0, ea);
+    return 0;
   }
 
   virtual void doCONSZ(W36 iw, W36 ea, W36 &nextPC) {
-    ++nextPC.rhu;		// ALWAYS SKIP
+    W36 conditions = doCONI(iw, ea);
+    if ((conditions.rhu & ea.rhu) == 0) ++nextPC.rhu;
   }
 
   virtual void doCONSO(W36 iw, W36 ea, W36 &nextPC) {
+    W36 conditions = doCONI(iw, ea);
+    if ((conditions.rhu & ea.rhu) != 0) ++nextPC.rhu;
   }
 };

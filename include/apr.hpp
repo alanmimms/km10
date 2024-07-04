@@ -6,6 +6,25 @@
 #include "word.hpp"
 #include "device.hpp"
 
+#define GCC_BUG 1
+
+// This is necessitated by a bug in G++ 11.4 for embedded structs in
+// side packed unions - they aren't packed without leaving an
+// alignment gap before the struct. Harumphf.
+#if GCC_BUG
+#define APRFLAGS(PREFIX)	\
+  APRFLAG(PREFIX,sweepDone);	\
+  APRFLAG(PREFIX,powerFailure);	\
+  APRFLAG(PREFIX,addrParity);	\
+  APRFLAG(PREFIX,cacheDirParity);\
+  APRFLAG(PREFIX,mbParity);	\
+  APRFLAG(PREFIX,ioPageFail);	\
+  APRFLAG(PREFIX,noMemory);	\
+  APRFLAG(PREFIX,sbusError)
+#define APRFLAG(PFIX,FLAG)	unsigned PFIX##_##FLAG : 1
+#else
+#define APRFLAGS(FIELDNAME)	APRFlags FIELDNAME
+#endif
 
 struct APRDevice: Device {
 
@@ -25,6 +44,10 @@ struct APRDevice: Device {
 
     unsigned u: 8;
 
+    // Constructors
+    APRFlags(unsigned a) :u(a) {}
+
+    // Accessors
     string toString() const {
       stringstream ss;
       if (sbusError)	  ss << " sbusError";
@@ -46,26 +69,42 @@ struct APRDevice: Device {
       unsigned intLevel: 3;
       unsigned intRequest: 1;
 
-      APRFlags active;
+      APRFLAGS(active);
+
       unsigned: 4;
 
       unsigned sweepBusy: 1;
       unsigned: 5;
 
-      APRFlags enabled;
+      APRFLAGS(enabled);
 
       unsigned: 6;
     };
+
+#if GCC_BUG
+    struct ATTRPACKED {
+      unsigned: 4;
+      unsigned active: 8;
+      unsigned: 6;
+      unsigned enabled: 8;
+    };
+#endif
 
     uint64_t u: 36;
 
     APRState(W36 v=0) :u(v.u) {}
 
+    APRFlags getActive() const { return APRFlags{active}; }
+    void setActive(const APRFlags a) { active = a.u; }
+
+    APRFlags getEnabled() const { return APRFlags{enabled}; }
+    void setEnabled(const APRFlags a) { enabled = a.u; }
+
     string toString() const {
       stringstream ss;
-      ss << " enabled={" << enabled.toString() << "}";
+      ss << " enabled={" << getEnabled().toString() << "}";
       if (sweepBusy) ss << " sweepBusy";
-      ss << " active={" << active.toString() << "}";
+      ss << " active={" << getActive().toString() << "}";
       ss << " intRequest=" << intRequest;
       ss << " intLevel=" << intLevel;
       ss << " u=" << W36(u).fmt36();
@@ -107,7 +146,7 @@ struct APRDevice: Device {
       unsigned intLevel: 3;
       unsigned: 1;
 
-      APRFlags select;
+      APRFLAGS(select);
 
       unsigned set: 1;
       unsigned clear: 1;
@@ -118,9 +157,19 @@ struct APRDevice: Device {
       unsigned: 1;
     };
 
+#if GCC_BUG
+    struct ATTRPACKED {
+      unsigned: 4;
+      unsigned select: 8;
+    };
+#endif
+
     unsigned u: 18;
 
     APRFunctions(unsigned v=0) :u(v) {};
+
+    APRFlags getSelect() const { return APRFlags{select}; }
+    void setSelect(const APRFlags a) { select = a.u; }
 
     string toString() const {
       stringstream ss;
@@ -129,7 +178,7 @@ struct APRDevice: Device {
       if (disable) ss << " disable";
       if (clear)   ss << " clear";
       if (set)     ss << " set";
-      ss << select.toString() << " ";
+      ss << getSelect().toString() << " ";
       ss << "intLevel: " << intLevel;
       return ss.str();
     }
@@ -189,59 +238,60 @@ struct APRDevice: Device {
 
 
   // I/O instruction handlers
-  virtual void doBLKI(W36 iw, W36 ea, W36 &nextPC) {		// APRID
+  virtual void doBLKI(W36 iw, W36 ea, W36 &nextPC) override {	// APRID
     state.memPutN(aprIDValue.u, ea);
   }
 
-  virtual void doBLKO(W36 iw, W36 ea, W36 &nextPC) {		// WRFIL
+  virtual void doBLKO(W36 iw, W36 ea, W36 &nextPC) override {	// WRFIL
     logger.nyi(state);
   }
 
-  virtual void doDATAI(W36 iw, W36 ea) {
+  virtual W36 doDATAI(W36 iw, W36 ea) override {
     state.memPutN(breakState.u, ea);
+    return breakState.u;
   }
 
-  virtual void doCONO(W36 iw, W36 ea) {				// WRAPR
+  virtual void doCONO(W36 iw, W36 ea) override {		// WRAPR
     APRFunctions func{ea.rhu};
 
     if (logger.mem) cerr << "; " << ea.fmt18();
 
-    cerr << state.pc.fmtVMA() << " WRAPR: ea=" << ea.fmt18() << " intLevel=" << oct << func.intLevel;
+    cerr << state.pc.fmtVMA() << " WRAPR: intLevel=" << oct << func.intLevel;
     aprState.intLevel = func.intLevel;
 
     if (func.clear) {
-      cerr << " clear=" << oct << func.select.u;
-      aprState.active.u &= ~func.select.u;
+      cerr << " clear=" << oct << func.getSelect().toString();
+      aprState.setActive(aprState.getActive().u & ~func.getSelect().u);
     }
 
     if (func.set) {
-      cerr << " set=" << oct << func.select.u;
-      aprState.active.u |= func.select.u;
+      cerr << " set=" << oct << func.getSelect().toString();
+      aprState.setActive(aprState.getActive().u | func.getSelect().u);
 
       // This block argues the APR state needs to be metaprogrammed
       // with C++17 parameter pack superpowers. This might be an
       // interesting thing to do in the future. For now, it's done the
       // 1940s hard way.
       if (func.intLevel != 0) {
-	if (func.select.sweepDone != 0)      aprLevels.sweepDone = func.intLevel;
-	if (func.select.powerFailure != 0)   aprLevels.powerFailure = func.intLevel;
-	if (func.select.addrParity != 0)     aprLevels.addrParity = func.intLevel;
-	if (func.select.cacheDirParity != 0) aprLevels.cacheDirParity = func.intLevel;
-	if (func.select.mbParity != 0)       aprLevels.mbParity = func.intLevel;
-	if (func.select.ioPageFail != 0)     aprLevels.ioPageFail = func.intLevel;
-	if (func.select.noMemory != 0)       aprLevels.noMemory = func.intLevel;
-	if (func.select.sbusError != 0)      aprLevels.sbusError = func.intLevel;
+	if (func.getSelect().sweepDone != 0)      aprLevels.sweepDone = func.intLevel;
+	if (func.getSelect().powerFailure != 0)   aprLevels.powerFailure = func.intLevel;
+	if (func.getSelect().addrParity != 0)     aprLevels.addrParity = func.intLevel;
+	if (func.getSelect().cacheDirParity != 0) aprLevels.cacheDirParity = func.intLevel;
+	if (func.getSelect().mbParity != 0)       aprLevels.mbParity = func.intLevel;
+	if (func.getSelect().ioPageFail != 0)     aprLevels.ioPageFail = func.intLevel;
+	if (func.getSelect().noMemory != 0)       aprLevels.noMemory = func.intLevel;
+	if (func.getSelect().sbusError != 0)      aprLevels.sbusError = func.intLevel;
       }
     }
 
     if (func.disable) {
-      cerr << " disable=" << oct << func.select.u;
-      aprState.enabled.u &= ~func.select.u;
+      cerr << " disable=" << oct << func.getSelect().toString();
+      aprState.setEnabled(aprState.getEnabled().u & ~func.getSelect().u);
     }
 
     if (func.enable) {
-      cerr << " enable=" << oct << func.select.u;
-      aprState.enabled.u |= func.select.u;
+      cerr << " enable=" << oct << func.getSelect().toString();
+      aprState.setEnabled(aprState.getEnabled().u | func.getSelect().u);
     }
 
     if (func.clearIO) {
@@ -252,14 +302,16 @@ struct APRDevice: Device {
     cerr << logger.endl;
   }
 
-  virtual void doCONI(W36 iw, W36 ea) {		// RDAPR
-    cerr << state.pc.fmtVMA() << " RDAPR aprState=" << W36(aprState.u).fmt36()
+  virtual W36 doCONI(W36 iw, W36 ea) override {		// RDAPR
+    W36 conditions{(int64_t) aprState.u};
+    cerr << state.pc.fmtVMA() << " RDAPR aprState=" << conditions.fmt36()
 	 << " ea=" << ea.fmtVMA()
 	 << logger.endl;
-    state.memPutN(aprState.u, ea);
+    state.memPutN(conditions, ea);
+    return conditions;
   }
 
-  virtual void clearIO() {
+  virtual void clearIO() override {
     aprState.u = 0;
   }
 };

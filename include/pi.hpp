@@ -94,7 +94,9 @@ struct PIDevice: Device {
 
   }
 
-  void doCONI(W36 iw, W36 ea) {
-    state.memPutN(piState.u, ea);
+  virtual W36 doCONI(W36 iw, W36 ea) override {
+    W36 conditions{(int64_t) piState.u};
+    state.memPutN(conditions, ea);
+    return conditions;
   }
 };
