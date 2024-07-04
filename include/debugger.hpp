@@ -60,13 +60,13 @@ struct Debugger {
                 Use -A to remove existing breakpoint or 'clear' to clear all breakpoints.
   c,continue    Continue execution at current PC.
   ?,help        Display this help.
-  l,log [ac|io|pc|dte|ea|mem|load|off|all] Display logging flags, toggle one, or turn all on or off.
-  l,log file [FILENAME] Log to FILENAME or 'km10.log' if not specified (overwriting).
+  l,log [ac|io|pc|dte|ea|mem|load|off|all]  Display logging flags, toggle one, or turn all on or off.
+  l,log file [FILENAME]  Log to FILENAME or 'km10.log' if not specified (overwriting).
   l,log tty     Log to console.
   m,memory A N  Dump N (octal) words of memory starting at A (octal). A can be 'pc'.
   pc [N]        Dump PC and flags, or if N is specified set PC to N (octal).
   s,step N      Step N (octal) instructions at current PC.
-  show apr|flags Display APR state or program flags.
+  show apr|pi|flags  Display APR or PI state or program flags.
   stats         Display emulator statistics.
   q,quit        Quit the KM10 simulator.
 )"sv.substr(1);	// ""
@@ -222,6 +222,8 @@ struct Debugger {
 
 	  if (words[1] == "apr") {
 	    cout << km10.apr.aprState.toString() << logger.endl;
+	  } else if (words[1] == "pi") {
+	    cout << km10.pi.piState.toString() << logger.endl;
 	  } else if (words[1] == "flags") {
 	    cout << state.flags.toString() << logger.endl;
 	  } else {
