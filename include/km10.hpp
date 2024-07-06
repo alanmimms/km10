@@ -531,7 +531,7 @@ public:
       // device changes what instruction we're about to execute based
       // on the highest enabled interrupt that is pending or doesn't
       // if there isn't one.
-      pi.handleInterrupts(&iw);
+      pi.handleInterrupts(iw);
 
       nextPC.lhu = state.pc.lhu;
       nextPC.rhu = state.pc.rhu + 1;

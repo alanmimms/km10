@@ -17,7 +17,7 @@ struct PIDevice: Device {
 
       unsigned levelsTurnOff: 1;
       unsigned levelsTurnOn: 1;
-      unsigned levelsInitiate: 1;
+      unsigned levelsPR: 1;
       
       unsigned clearPI: 1;
       unsigned dropRequests: 1;
@@ -41,7 +41,7 @@ struct PIDevice: Device {
       if (turnPIOff) ss << " turnPIOff";
       if (levelsTurnOff) ss << " levelsTurnOff";
       if (levelsTurnOn) ss << " levelsTurnOn";
-      if (levelsInitiate) ss << " levelsInitiate";
+      if (levelsPR) ss << " levelsPR";
       if (clearPI) ss << " clearPI";
       if (dropRequests) ss << " dropRequests";
       if (writeEvenParityDir) ss << " writeEvenParityDir";
@@ -57,11 +57,11 @@ struct PIDevice: Device {
     struct ATTRPACKED {
       unsigned levelsOn: 7;
       unsigned piEnabled: 1;
-      unsigned intInProgress: 7;
+      unsigned held: 7;
       unsigned writeEvenParityDir: 1;
       unsigned writeEvenParityData: 1;
       unsigned writeEvenParityAddr: 1;
-      unsigned levelsRequested: 7;
+      unsigned prLevels: 7;
       unsigned: 11;
     };
 
@@ -75,11 +75,11 @@ struct PIDevice: Device {
       stringstream ss;
       ss << " levelsOn=" << levelsOn;
       if (piEnabled) ss << " piEnabled";
-      ss << " intInProgress=" << intInProgress;
+      ss << " held=" << held;
       if (writeEvenParityDir) ss << " writeEvenParityDir";
       if (writeEvenParityData) ss << " writeEvenParityData";
       if (writeEvenParityAddr) ss << " writeEvenParityAddr";
-      ss << " levelsRequested=" << levelsRequested;
+      ss << " prLevels=" << prLevels;
       return ss.str();
     }
   } piState;
@@ -112,16 +112,17 @@ struct PIDevice: Device {
     // XXX for now just return until PI interrupt handling is written.
     return;
 
-    // Find highest pending interrupt and its mask. If none is found
-    // or the highest pending is at same or lower level than
-    // currentLevel, just exit.
+    // Find highest pending interrupt and its mask.
     unsigned levelMask = 1u<<7;
     unsigned highestPending = 1;
-    for (; (levelsOn & levelMask) == 0; ++highestPending, levelMask>>=1) ;
+    for (; (piState.levelsOn & levelMask) == 0; ++highestPending, levelMask>>=1) ;
+
+    // If none is found, or if the highest pending is at same or lower
+    // level than currentLevel, just exit.
     if (levelMask == 0 || highestPending >= currentLevel) return;
 
     // We have a pending interrupt at `highestPending` level that isn't being serviced.
-    piState.intInProgress |= levelMask;		// Mark this level as in progress.
+    piState.held |= levelMask;		// Mark this level as held.
   }
 
 
@@ -149,9 +150,9 @@ struct PIDevice: Device {
       } else if (pif.turnPIOff) {
 	piState.piEnabled = 0;
       } else if (pif.dropRequests != 0) {
-	piState.levelsRequested &= ~pif.levels;
-      } else if (pif.levelsInitiate) {
-	piState.levelsRequested |= pif.levels;
+	piState.prLevels &= ~pif.levels;
+      } else if (pif.levelsPR) {
+	piState.prLevels |= pif.levels;
       } else if (pif.levelsTurnOff) {
 	piState.levelsOn &= ~pif.levels;
       } else if (pif.levelsTurnOn) {
