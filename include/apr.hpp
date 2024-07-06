@@ -8,9 +8,16 @@
 
 #define GCC_BUG 1
 
-// This is necessitated by a bug in G++ 11.4 for embedded structs in
-// side packed unions - they aren't packed without leaving an
-// alignment gap before the struct. Harumphf.
+// TODO: File this as a bug report.
+//
+// This is necessitated by an apparent bug in G++ 11.4.0 for embedded
+// structs in side packed unions - they have an alignment gap.
+// Harrumph.
+//
+// Instead of using the APRFlags union inside other unions/structs, we
+// use this hack of declaring `prefix_field` for each field and use
+// the accessor functions to get and set the value of the entire
+// APRFlags bitfield.
 #if GCC_BUG
 #define APRFLAGS(PREFIX)	\
   APRFLAG(PREFIX,sweepDone);	\
@@ -21,7 +28,7 @@
   APRFLAG(PREFIX,ioPageFail);	\
   APRFLAG(PREFIX,noMemory);	\
   APRFLAG(PREFIX,sbusError)
-#define APRFLAG(PFIX,FLAG)	unsigned PFIX##_##FLAG : 1
+#define APRFLAG(PREFIX,FLAG)	unsigned PREFIX ## _ ## FLAG : 1
 #else
 #define APRFLAGS(FIELDNAME)	APRFlags FIELDNAME
 #endif
@@ -237,13 +244,24 @@ struct APRDevice: Device {
   { }
 
 
+  // Interface for CCA to set and clear our sweep status.
+  void startSweep() {
+    aprState.sweepBusy = 1;
+  }
+
+  void endSweep() {
+    aprState.sweepBusy = 0;
+    aprState.active_sweepDone = 1;
+    requestInterrupt();
+  }
+
   // I/O instruction handlers
   virtual void doBLKI(W36 iw, W36 ea, W36 &nextPC) override {	// APRID
     state.memPutN(aprIDValue.u, ea);
   }
 
   virtual void doBLKO(W36 iw, W36 ea, W36 &nextPC) override {	// WRFIL
-    logger.nyi(state);
+    // This is essentially a no-op.
   }
 
   virtual W36 doDATAI(W36 iw, W36 ea) override {

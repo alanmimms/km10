@@ -14,14 +14,20 @@ struct Device {
   unsigned ioAddress;
   string &name;
   KMState &state;
+  int intLevel;
+
+  // Set this in DTE20 device so it can get interrupts on level #0.
+  bool canIntLevel0;
 
   static inline map<unsigned, Device *> devices{};
 
   // Constructors
-  Device(unsigned anAddr, string aName, KMState &aState)
+  Device(unsigned anAddr, string aName, KMState &aState, bool aCanIntLevel0 = false)
     : ioAddress(anAddr),
       name(aName),
-      state(aState)
+      state(aState),
+      intLevel(0),
+      canIntLevel0(aCanIntLevel0)
   {
     devices[ioAddress] = this;
   }
@@ -31,6 +37,14 @@ struct Device {
   // point.
   static void clearAll() {
     for (auto [ioDev, devP]: devices) devP->clearIO();
+  }
+
+
+  // Request an interrupt at this Device's assigned level.
+  void requestInterrupt() {
+
+    // Do nothing if interrupt is disabled
+    if (!canIntLevel0 && intLevel == 0) return;
   }
 
 

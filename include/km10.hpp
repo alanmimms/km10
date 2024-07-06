@@ -27,6 +27,7 @@ using namespace fmt;
 #include "bytepointer.hpp"
 #include "device.hpp"
 #include "apr.hpp"
+#include "cca.hpp"
 #include "pag.hpp"
 #include "pi.hpp"
 #include "dte20.hpp"
@@ -37,6 +38,7 @@ public:
   KMState &state;
 
   APRDevice apr;
+  CCADevice cca;
   PIDevice pi;
   PAGDevice pag;
   DTE20 dte;
@@ -47,6 +49,7 @@ public:
   KM10(KMState &aState)
     : state(aState),
       apr(state),
+      cca(state, apr),
       pi(state),
       pag(state),
       dte(040, state),
@@ -513,14 +516,23 @@ public:
     // Connect our DTE20 (put console into raw mode)
     dte.connect();
 
-    if ((state.flags.tr1 || state.flags.tr2) && pag.pagerEnabled()) {
-      iw = state.flags.tr1 ? state.eptP->trap1Insn : state.eptP->stackOverflowInsn;
-    } else {
-      iw = state.memGetN(state.pc.vma);
-    }
-
     // The instruction loop
     do {
+
+      if ((state.flags.tr1 || state.flags.tr2) && pag.pagerEnabled()) {
+	// XXX for now, stop on trap if paging is enabled.
+	state.running = false;
+	iw = state.flags.tr1 ? state.eptP->trap1Insn : state.eptP->stackOverflowInsn;
+      } else {
+	iw = state.memGetN(state.pc.vma);
+      }
+
+      // KLDIFF: We don't handle interrupts when we're halted. The PI
+      // device changes what instruction we're about to execute based
+      // on the highest enabled interrupt that is pending or doesn't
+      // if there isn't one.
+      pi.handleInterrupts(&iw);
+
       nextPC.lhu = state.pc.lhu;
       nextPC.rhu = state.pc.rhu + 1;
 
@@ -528,10 +540,13 @@ public:
       // pathway so we can XCT an instruction while stepping.
       if ((state.maxInsns != 0 && state.nInsns >= state.maxInsns) ||
 	  state.executeBPs.contains(state.pc.vma))
-	{
-	  state.running = false;
-	  if (nInsnsThisTime != 0) break;
-	}
+      {
+	state.running = false;
+	if (nInsnsThisTime != 0) break;
+      }
+
+      // Keep the sweep timer going until DING.
+      cca.handleSweep();
 
     XCT_ENTRYPOINT:
       // When we XCT we have already set PC to point to the
@@ -2171,14 +2186,6 @@ public:
       }
 
       state.pc = nextPC;
-
-      if ((state.flags.tr1 || state.flags.tr2) && pag.pagerEnabled()) {
-	// XXX for now, stop on trap if paging is enabled.
-	state.running = false;
-	iw = state.flags.tr1 ? state.eptP->trap1Insn : state.eptP->stackOverflowInsn;
-      } else {
-	iw = state.memGetN(state.pc.vma);
-      }
 
       if (logger.pc || logger.mem || logger.ac || logger.io || logger.dte)
 	logger.s << logger.endl << flush;

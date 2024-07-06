@@ -16,9 +16,10 @@ using namespace std;
 
 
 struct KMState {
-  KMState(unsigned nWords = 512 * 1024)
+  KMState(unsigned nWords = 4096 * 1024)
     : pc(0),
       flags(0u),
+      era(0u),
       AC(ACbanks[0]),
       memorySize(nWords),
       maxInsns(0),
@@ -29,7 +30,7 @@ struct KMState {
     physicalP = (W36 *) mmap(nullptr,
 			     memorySize * sizeof(uint64_t),
 			     PROT_READ | PROT_WRITE,
-			     MAP_SHARED | MAP_ANONYMOUS,
+			     MAP_PRIVATE | MAP_ANONYMOUS,
 			     0, 0);
     assert(physicalP != nullptr);
 
@@ -124,7 +125,6 @@ struct KMState {
     }
   } flags;
 
-
   union FlagsDWord {
     struct ATTRPACKED {
       unsigned processorDependent: 18; // What does KL10 use here?
@@ -137,6 +137,7 @@ struct KMState {
     uint64_t u: 36;
   };
 
+  W36 era;
 
   // See 1982_ProcRefMan.pdf p.230
   struct ExecutiveProcessTable {
