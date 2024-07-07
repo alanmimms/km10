@@ -149,10 +149,7 @@ struct KMState {
       W36 reserved;
     } channelLogout[8];
 
-    W36 reserved40_41[2];	// 040
-
-    W36 pioInstructions[14];
-
+    W36 pioInstructions[16];	// 040
     W36 channelBlockFill[4];	// 060
 
     W36 reserved64_137[44];

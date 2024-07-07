@@ -35,8 +35,10 @@ struct Device {
 
   // Return the device's interrupt function word for its highest
   // pending interrupt. Default is to use fixed vector for the level.
-  virtual W36 getIntFuncWord() {
-    return 0;
+  // Return zero for level to indicate no pending interrupt from this
+  // device.
+  virtual tuple<unsigned,W36> getIntFuncWord() {
+    return tuple<unsigned,W36>(0, 0);
   }
 
 

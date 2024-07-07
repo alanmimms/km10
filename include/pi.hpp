@@ -51,7 +51,7 @@ struct PIDevice: Device {
     // Accessors
     string toString() const {
       stringstream ss;
-      ss << " levels=" << levels;
+      ss << " levels=" << levelsToStr(levels);
       if (turnPIOn) ss << " turnPIOn";
       if (turnPIOff) ss << " turnPIOff";
       if (levelsTurnOff) ss << " levelsTurnOff";
@@ -88,13 +88,13 @@ struct PIDevice: Device {
     // Accessors
     string toString() const {
       stringstream ss;
-      ss << " levelsOn=" << levelsOn;
+      ss << " levelsOn=" << levelsToStr(levelsOn);
       if (piEnabled) ss << " piEnabled";
-      ss << " held=" << held;
+      ss << " held=" << levelsToStr(held);
       if (writeEvenParityDir) ss << " writeEvenParityDir";
       if (writeEvenParityData) ss << " writeEvenParityData";
       if (writeEvenParityAddr) ss << " writeEvenParityAddr";
-      ss << " prLevels=" << prLevels;
+      ss << " prLevels=" << levelsToStr(prLevels);
       return ss.str();
     }
   } piState;
@@ -115,6 +115,20 @@ struct PIDevice: Device {
   {
     piState.u = 0;
     currentLevel = noLevel;
+  }
+
+
+  static inline string levelsToStr(unsigned levels) {
+    stringstream ss;
+    ss << "{";
+
+    char digit = '1';
+    for (unsigned mask=0100; mask; mask >>= 1, ++digit) {
+      if (levels & mask) ss << digit;
+    }
+
+    ss << "}";
+    return ss.str();
   }
 
 
@@ -141,11 +155,19 @@ struct PIDevice: Device {
       // We don't bother ordering the devices by physical ID. Instead
       // we just service the first one we find at this level.
       if (devP->intLevel == highestPending) {
-	W36 ifw = devP->getIntFuncWord();
+	auto [level, ifw] = devP->getIntFuncWord();
+
+	if (logger.ints) {
+	  logger.s << "<<<<INTERRUPT>>>>: pc=" << state.pc.fmtVMA()
+		   << " level=" << level
+		   << " ifw=" << ifw.fmt36()
+		   << logger.endl;
+	}
 
 	switch (ifw.intFunction) {
 	case W36::zeroIF:
 	case W36::standardIF:
+	  iw = state.eptP->pioInstructions[2*level];
 	  break;
 
 	default:
@@ -160,11 +182,11 @@ struct PIDevice: Device {
 
 
   // I/O instruction handlers
-  void clearIO() {
+  void clearIO() override {
     piState.u = 0;
   }
 
-  void doCONO(W36 iw, W36 ea) {
+  void doCONO(W36 iw, W36 ea) override {
     PIFunctions pif(ea.u);
 
     if (logger.mem) logger.s << "; " << ea.fmt18();
@@ -178,21 +200,18 @@ struct PIDevice: Device {
       piState.writeEvenParityData = pif.writeEvenParityData;
       piState.writeEvenParityAddr = pif.writeEvenParityAddr;
 
-      if (pif.turnPIOn) {
-	piState.piEnabled = 1;
-      } else if (pif.turnPIOff) {
-	piState.piEnabled = 0;
-      } else if (pif.dropPR != 0) {
-	piState.prLevels &= ~pif.levels;
-      } else if (pif.initiatePR) {
-	piState.prLevels |= pif.levels;
-      } else if (pif.levelsTurnOff) {
-	piState.levelsOn &= ~pif.levels;
-      } else if (pif.levelsTurnOn) {
-	piState.levelsOn |= pif.levels;
-      }
-    }
+      cerr << "levelsTurnOn=" << pif.levelsTurnOn
+	   << " levels=" << levelsToStr(pif.levels)
+	   << " levelsOn=" << levelsToStr(piState.levelsOn)
+	   << logger.endl;
 
+      if (pif.turnPIOn) piState.piEnabled = 1;
+      if (pif.turnPIOff) piState.piEnabled = 0;
+      if (pif.dropPR != 0) piState.prLevels &= ~pif.levels;
+      if (pif.initiatePR) piState.prLevels |= pif.levels;
+      if (pif.levelsTurnOff) piState.levelsOn &= ~pif.levels;
+      if (pif.levelsTurnOn) piState.levelsOn |= pif.levels;
+    }
   }
 
   virtual W36 doCONI(W36 iw, W36 ea) override {
