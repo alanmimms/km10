@@ -1,3 +1,18 @@
+// KL10 Priority Interrupts device.
+//
+// KL10/KI10 interrupt terminology (in modern terms):
+//
+// * "Active" means the interrupt is enabled.
+//
+// * "Held" means the interrupt is pending.
+//
+// * "Level" is the interrupt's priority, where lower numbered levels
+//   are serviced ahead of higher numbered levels.
+//
+// Note: only higher priority levels can interrupt lower priority
+// levels. An interrupt at a given level cannot be interrupted by a
+// same or lower priority level interrupt.
+
 #pragma once
 
 #include "word.hpp"
@@ -17,10 +32,10 @@ struct PIDevice: Device {
 
       unsigned levelsTurnOff: 1;
       unsigned levelsTurnOn: 1;
-      unsigned levelsPR: 1;
+      unsigned initiatePR: 1;
       
       unsigned clearPI: 1;
-      unsigned dropRequests: 1;
+      unsigned dropPR: 1;
       unsigned: 1;
 
       unsigned writeEvenParityDir: 1;
@@ -41,9 +56,9 @@ struct PIDevice: Device {
       if (turnPIOff) ss << " turnPIOff";
       if (levelsTurnOff) ss << " levelsTurnOff";
       if (levelsTurnOn) ss << " levelsTurnOn";
-      if (levelsPR) ss << " levelsPR";
+      if (initiatePR) ss << " initiatePR";
       if (clearPI) ss << " clearPI";
-      if (dropRequests) ss << " dropRequests";
+      if (dropPR) ss << " dropPR";
       if (writeEvenParityDir) ss << " writeEvenParityDir";
       if (writeEvenParityData) ss << " writeEvenParityData";
       if (writeEvenParityAddr) ss << " writeEvenParityAddr";
@@ -149,9 +164,9 @@ struct PIDevice: Device {
 	piState.piEnabled = 1;
       } else if (pif.turnPIOff) {
 	piState.piEnabled = 0;
-      } else if (pif.dropRequests != 0) {
+      } else if (pif.dropPR != 0) {
 	piState.prLevels &= ~pif.levels;
-      } else if (pif.levelsPR) {
+      } else if (pif.initiatePR) {
 	piState.prLevels |= pif.levels;
       } else if (pif.levelsTurnOff) {
 	piState.levelsOn &= ~pif.levels;
