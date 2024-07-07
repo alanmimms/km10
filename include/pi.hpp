@@ -200,17 +200,12 @@ struct PIDevice: Device {
       piState.writeEvenParityData = pif.writeEvenParityData;
       piState.writeEvenParityAddr = pif.writeEvenParityAddr;
 
-      cerr << "levelsTurnOn=" << pif.levelsTurnOn
-	   << " levels=" << levelsToStr(pif.levels)
-	   << " levelsOn=" << levelsToStr(piState.levelsOn)
-	   << logger.endl;
-
-      if (pif.turnPIOn) piState.piEnabled = 1;
-      if (pif.turnPIOff) piState.piEnabled = 0;
-      if (pif.dropPR != 0) piState.prLevels &= ~pif.levels;
-      if (pif.initiatePR) piState.prLevels |= pif.levels;
+      if (pif.turnPIOn)	     piState.piEnabled = 1;
+      if (pif.turnPIOff)     piState.piEnabled = 0;
+      if (pif.dropPR)	     piState.prLevels &= ~pif.levels;
+      if (pif.initiatePR)    piState.prLevels |= pif.levels;
       if (pif.levelsTurnOff) piState.levelsOn &= ~pif.levels;
-      if (pif.levelsTurnOn) piState.levelsOn |= pif.levels;
+      if (pif.levelsTurnOn)  piState.levelsOn |= pif.levels;
     }
   }
 
