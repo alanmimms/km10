@@ -28,6 +28,25 @@ struct W36 {
     CONSO
   };
 
+
+  enum IntFunction {
+    zeroIF,
+    standardIF,
+    vectorIF,
+    incIF,
+    examineIF,
+    depositIF,
+    byteIF,
+  };
+
+
+  enum AddrSpace {
+    execPT,
+    execVA,
+    physical = 4,
+  };
+
+
   union {
     int64_t s: 36;
 
@@ -78,6 +97,15 @@ struct W36 {
     struct ATTRPACKED {
       unsigned vma: 23;
       unsigned pcFlags: 13;
+    };
+
+    struct ATTRPACKED {
+      unsigned intAddr: 23;
+      unsigned mustBeZero: 2;
+      unsigned device: 4;
+      unsigned q: 1;
+      IntFunction intFunction: 3;
+      AddrSpace addrSpace: 3;
     };
   };
 

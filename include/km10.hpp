@@ -28,8 +28,10 @@ using namespace fmt;
 #include "device.hpp"
 #include "apr.hpp"
 #include "cca.hpp"
+#include "mtr.hpp"
 #include "pag.hpp"
 #include "pi.hpp"
+#include "tim.hpp"
 #include "dte20.hpp"
 
 
@@ -39,8 +41,10 @@ public:
 
   APRDevice apr;
   CCADevice cca;
+  MTRDevice mtr;
   PIDevice pi;
   PAGDevice pag;
+  TIMDevice tim;
   DTE20 dte;
   Device noDevice;
 
@@ -50,8 +54,10 @@ public:
     : state(aState),
       apr(state),
       cca(state, apr),
+      mtr(state),
       pi(state),
       pag(state),
+      tim(state),
       dte(040, state),
       noDevice(0777777ul, "?NoDevice?", aState)
   {}

@@ -14,7 +14,7 @@ struct Device {
   unsigned ioAddress;
   string &name;
   KMState &state;
-  int intLevel;
+  unsigned intLevel;
 
   // Set this in DTE20 device so it can get interrupts on level #0.
   bool canIntLevel0;
@@ -30,6 +30,13 @@ struct Device {
       canIntLevel0(aCanIntLevel0)
   {
     devices[ioAddress] = this;
+  }
+
+
+  // Return the device's interrupt function word for its highest
+  // pending interrupt. Default is to use fixed vector for the level.
+  virtual W36 getIntFuncWord() {
+    return 0;
   }
 
 
