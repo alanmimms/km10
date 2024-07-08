@@ -191,18 +191,6 @@ struct APRDevice: Device {
     }
   };
 
-  struct APRLevels {
-    unsigned sweepDone: 3;
-    unsigned powerFailure: 3;
-    unsigned addrParity: 3;
-    unsigned cacheDirParity: 3;
-    unsigned mbParity: 3;
-    unsigned ioPageFail: 3;
-    unsigned noMemory: 3;
-    unsigned sbusError: 3;
-  } aprLevels;
-
-
   // APRID value see 1982_ProcRefMan.pdf p.244
   inline static const union {
 
@@ -285,21 +273,6 @@ struct APRDevice: Device {
     if (func.set) {
       cerr << " set=" << oct << func.getSelect().toString();
       aprState.setActive(aprState.getActive().u | func.getSelect().u);
-
-      // This block argues the APR state needs to be metaprogrammed
-      // with C++17 parameter pack superpowers. This might be an
-      // interesting thing to do in the future. For now, it's done the
-      // 1940s hard way.
-      if (func.intLevel != 0) {
-	if (func.getSelect().sweepDone != 0)      aprLevels.sweepDone = func.intLevel;
-	if (func.getSelect().powerFailure != 0)   aprLevels.powerFailure = func.intLevel;
-	if (func.getSelect().addrParity != 0)     aprLevels.addrParity = func.intLevel;
-	if (func.getSelect().cacheDirParity != 0) aprLevels.cacheDirParity = func.intLevel;
-	if (func.getSelect().mbParity != 0)       aprLevels.mbParity = func.intLevel;
-	if (func.getSelect().ioPageFail != 0)     aprLevels.ioPageFail = func.intLevel;
-	if (func.getSelect().noMemory != 0)       aprLevels.noMemory = func.intLevel;
-	if (func.getSelect().sbusError != 0)      aprLevels.sbusError = func.intLevel;
-      }
     }
 
     if (func.disable) {
