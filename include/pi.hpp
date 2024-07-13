@@ -101,11 +101,12 @@ struct PIDevice: Device {
 
   // This is the "lowest" level - when no interrupts are being
   // serviced.
-  static const inline unsigned noLevel = ~0u;
+  static const inline unsigned noLevel = 0100u;
 
-  // When no interrupt is being handled, this is `noLevel`. A larger
-  // unsigned value indicates a level less important than
-  // `currentLevel` and therefore must wait.
+  // When no interrupt is being handled, this is `noLevel`. When an
+  // interrupt appears with a larger unsigned value of level, it
+  // indicates the interrupt is less important than `currentLevel` and
+  // therefore must wait.
   unsigned currentLevel;
 
 
@@ -118,6 +119,7 @@ struct PIDevice: Device {
   }
 
 
+  // Formatters
   static inline string levelsToStr(unsigned levels) {
     stringstream ss;
     ss << "{";
@@ -139,35 +141,39 @@ struct PIDevice: Device {
     if (!piState.piEnabled || piState.levelsOn == 0) return;
 
     // Find highest pending interrupt and its mask.
-    unsigned levelMask = 1u<<7;
-    unsigned highestPending = 1;
-    for (; (piState.levelsOn & levelMask) == 0; ++highestPending, levelMask>>=1) ;
+    unsigned levelMask = 0100;
+    unsigned thisLevel = 1;
+    for (; (piState.levelsOn & levelMask) == 0; ++thisLevel, levelMask>>=1) ;
 
     // If none is found, or if the highest pending is at same or lower
-    // level than currentLevel, just exit.
-    if (levelMask == 0 || highestPending >= currentLevel) return;
+    // level than currentLevel (i.e., with unsigned level number >=
+    // the current level), just exit.
+    if (levelMask == 0 || thisLevel >= currentLevel) return;
 
-    // We have a pending interrupt at `highestPending` level that isn't being serviced.
+    // We have a pending interrupt at `thisLevel` level that isn't being serviced.
     piState.held |= levelMask;		// Mark this level as held.
 
     for (auto [ioDev, devP]: Device::devices) {
 
-      // We don't bother ordering the devices by physical ID. Instead
-      // we just service the first one we find at this level.
-      if (devP->intLevel == highestPending) {
+      // We don't bother ordering the devices by physical ID as KL10
+      // does. Instead, we just service the first one we find that has
+      // an interrupt pending.
+      if (devP->intPending && devP->intLevel == thisLevel) {
 	auto [level, ifw] = devP->getIntFuncWord();
+
+	currentLevel = thisLevel;
 
 	if (logger.ints) {
 	  logger.s << "<<<<INTERRUPT>>>>: pc=" << state.pc.fmtVMA()
 		   << " level=" << level
 		   << " ifw=" << ifw.fmt36()
-		   << logger.endl;
+		   << logger.endl << flush;
 	}
 
 	switch (ifw.intFunction) {
 	case W36::zeroIF:
 	case W36::standardIF:
-	  iw = state.eptP->pioInstructions[2*level];
+	  iw = state.eptP->pioInstructions[2*thisLevel];
 	  break;
 
 	default:

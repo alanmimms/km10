@@ -15,8 +15,9 @@ struct Device {
   string &name;
   KMState &state;
   unsigned intLevel;
+  bool intPending;
 
-  // Set this in DTE20 device so it can get interrupts on level #0.
+  // Set this in DTE20 device so it can cause interrupts on level #0.
   bool canIntLevel0;
 
   static inline map<unsigned, Device *> devices{};
@@ -27,6 +28,7 @@ struct Device {
       name(aName),
       state(aState),
       intLevel(0),
+      intPending(false),
       canIntLevel0(aCanIntLevel0)
   {
     devices[ioAddress] = this;
@@ -114,7 +116,8 @@ struct Device {
 
 
   // I/O instruction handlers
-  virtual void clearIO() {	// Default is to do nothing
+  virtual void clearIO() {	// Default is to do mostly nothing
+    intPending = false;
   }
 
 

@@ -259,30 +259,38 @@ struct APRDevice: Device {
 
   virtual void doCONO(W36 iw, W36 ea) override {		// WRAPR
     APRFunctions func{ea.rhu};
+    unsigned select = func.getSelect().u;
 
     if (logger.mem) cerr << "; " << ea.fmt18();
 
     cerr << state.pc.fmtVMA() << " WRAPR: intLevel=" << oct << func.intLevel;
-    aprState.intLevel = func.intLevel;
-
-    if (func.clear) {
-      cerr << " clear=" << oct << func.getSelect().toString();
-      aprState.setActive(aprState.getActive().u & ~func.getSelect().u);
-    }
-
-    if (func.set) {
-      cerr << " set=" << oct << func.getSelect().toString();
-      aprState.setActive(aprState.getActive().u | func.getSelect().u);
-    }
+    intLevel = aprState.intLevel = func.intLevel;
 
     if (func.disable) {
-      cerr << " disable=" << oct << func.getSelect().toString();
-      aprState.setEnabled(aprState.getEnabled().u & ~func.getSelect().u);
+      cerr << " disable=" << oct << select;
+      aprState.setEnabled(aprState.getEnabled().u & ~select);
     }
 
     if (func.enable) {
-      cerr << " enable=" << oct << func.getSelect().toString();
-      aprState.setEnabled(aprState.getEnabled().u | func.getSelect().u);
+      cerr << " enable=" << oct << select;
+      aprState.setEnabled(aprState.getEnabled().u | select);
+    }
+
+    // Are any newly enabled and set interrupts added by this change?
+    // If so, an interrupt is now pending.
+    if (func.enable && func.set && (aprState.getEnabled().u & select) > aprState.getActive().u) {
+      cerr << " <<< WRAPR has triggered an interrupt>>>";
+      intPending = true;
+    }
+
+    if (func.clear) {
+      cerr << " clear=" << oct << select;
+      aprState.setActive(aprState.getActive().u & ~select);
+    }
+
+    if (func.set) {
+      cerr << " set=" << oct << select;
+      aprState.setActive(aprState.getActive().u | select);
     }
 
     if (func.clearIO) {
