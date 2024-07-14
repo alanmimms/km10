@@ -311,6 +311,7 @@ struct APRDevice: Device {
   }
 
   virtual void clearIO() override {
+    Device::clearIO();
     aprState.u = 0;
   }
 };
