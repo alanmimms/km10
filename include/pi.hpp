@@ -114,8 +114,7 @@ struct PIDevice: Device {
   PIDevice(KMState &aState):
     Device(001, "PI", aState)
   {
-    piState.u = 0;
-    currentLevel = noLevel;
+    clearIO();
   }
 
 
@@ -189,7 +188,9 @@ struct PIDevice: Device {
 
   // I/O instruction handlers
   void clearIO() override {
+    Device::clearIO();
     piState.u = 0;
+    currentLevel = noLevel;
   }
 
   void doCONO(W36 iw, W36 ea) override {

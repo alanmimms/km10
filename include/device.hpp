@@ -118,6 +118,7 @@ struct Device {
   // I/O instruction handlers
   virtual void clearIO() {	// Default is to do mostly nothing
     intPending = false;
+    intLevel = 0;
   }
 
 
