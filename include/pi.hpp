@@ -210,9 +210,25 @@ struct PIDevice: Device {
       if (pif.turnPIOn)	     piState.piEnabled = 1;
       if (pif.turnPIOff)     piState.piEnabled = 0;
       if (pif.dropPR)	     piState.prLevels &= ~pif.levels;
-      if (pif.initiatePR)    piState.prLevels |= pif.levels;
       if (pif.levelsTurnOff) piState.levelsOn &= ~pif.levels;
       if (pif.levelsTurnOn)  piState.levelsOn |= pif.levels;
+
+      if (pif.initiatePR) {
+
+	if ((piState.prLevels & pif.levels) == 0) {
+	  cerr << " <<< CONO PI, has triggered an interrupt>>>" << logger.endl << flush;
+	  intPending = true;
+
+	  // Find highest requested interrupt and its mask.
+	  unsigned levelMask = 0100;
+	  unsigned thisLevel = 1;
+	  for (; (pif.levels & levelMask) == 0; ++thisLevel, levelMask>>=1) ;
+
+	  if (levelMask == 0 || thisLevel < currentLevel) intLevel = thisLevel;
+	}
+
+	piState.prLevels |= pif.levels;
+      }
     }
   }
 
