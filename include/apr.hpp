@@ -92,8 +92,9 @@ struct APRDevice: Device {
     struct ATTRPACKED {
       unsigned: 4;
       unsigned active: 8;
-      unsigned: 6;
+      unsigned: 10;
       unsigned enabled: 8;
+      unsigned: 6;
     };
 #endif
 
@@ -279,8 +280,7 @@ struct APRDevice: Device {
     // Are any newly enabled and set interrupts added by this change?
     // If so, an interrupt is now pending.
     if (func.enable && func.set && (aprState.getEnabled().u & select) > aprState.getActive().u) {
-      cerr << " <<< WRAPR has triggered an interrupt>>>";
-      intPending = true;
+      requestInterrupt();
     }
 
     if (func.clear) {
@@ -302,6 +302,7 @@ struct APRDevice: Device {
   }
 
   virtual W36 doCONI(W36 iw, W36 ea) override {		// RDAPR
+    aprState.intLevel = intLevel;	// Refresh our version of the interrupt level
     W36 conditions{(int64_t) aprState.u};
     cerr << state.pc.fmtVMA() << " RDAPR aprState=" << conditions.fmt36()
 	 << " ea=" << ea.fmtVMA()

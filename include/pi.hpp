@@ -9,6 +9,8 @@
 // * "Level" is the interrupt's priority, where lower numbered levels
 //   are serviced ahead of higher numbered levels.
 //
+// * A "PR" is a Programmed Requested interrupt.
+//
 // Note: only higher priority levels can interrupt lower priority
 // levels. An interrupt at a given level cannot be interrupted by a
 // same or lower priority level interrupt.
@@ -77,13 +79,27 @@ struct PIDevice: Device {
       unsigned writeEvenParityData: 1;
       unsigned writeEvenParityAddr: 1;
       unsigned prLevels: 7;
-      unsigned: 11;
+      unsigned: 7;
+
+      // When no interrupt is being handled, this is `noLevel`. When
+      // an interrupt appears with a larger unsigned value of level,
+      // it indicates the interrupt is less important than
+      // `currentLevel` and therefore must wait. This is KM10 specific
+      unsigned currentLevel: 4;
     };
 
     uint64_t u: 36;
 
+    // This is the "lowest" level - when no interrupts are being
+    // serviced.
+    static const inline unsigned noLevel = 010u;
+
+
     // Constructors
-    PIState() :u(0) {}
+    PIState() {
+      u = 0;
+      currentLevel = noLevel;
+    }
 
     // Accessors
     string toString() const {
@@ -95,20 +111,10 @@ struct PIDevice: Device {
       if (writeEvenParityData) ss << " writeEvenParityData";
       if (writeEvenParityAddr) ss << " writeEvenParityAddr";
       ss << " prLevels=" << levelsToStr(prLevels);
+      ss << " currentLevel=" << currentLevel;
       return ss.str();
     }
   } piState;
-
-  // This is the "lowest" level - when no interrupts are being
-  // serviced.
-  static const inline unsigned noLevel = 0100u;
-
-  // When no interrupt is being handled, this is `noLevel`. When an
-  // interrupt appears with a larger unsigned value of level, it
-  // indicates the interrupt is less important than `currentLevel` and
-  // therefore must wait.
-  unsigned currentLevel;
-
 
   // Constructors
   PIDevice(KMState &aState):
@@ -147,7 +153,7 @@ struct PIDevice: Device {
     // If none is found, or if the highest pending is at same or lower
     // level than currentLevel (i.e., with unsigned level number >=
     // the current level), just exit.
-    if (levelMask == 0 || thisLevel >= currentLevel) return;
+    if (levelMask == 0 || thisLevel >= piState.currentLevel) return;
 
     // We have a pending interrupt at `thisLevel` level that isn't being serviced.
     piState.held |= levelMask;		// Mark this level as held.
@@ -160,7 +166,7 @@ struct PIDevice: Device {
       if (devP->intPending && devP->intLevel == thisLevel) {
 	auto [level, ifw] = devP->getIntFuncWord();
 
-	currentLevel = thisLevel;
+	piState.currentLevel = thisLevel;
 
 	if (logger.ints) {
 	  logger.s << "<<<<INTERRUPT>>>>: pc=" << state.pc.fmtVMA()
@@ -190,7 +196,7 @@ struct PIDevice: Device {
   void clearIO() override {
     Device::clearIO();
     piState.u = 0;
-    currentLevel = noLevel;
+    piState.currentLevel = PIState::noLevel;
   }
 
   void doCONO(W36 iw, W36 ea) override {
@@ -224,7 +230,7 @@ struct PIDevice: Device {
 	  unsigned thisLevel = 1;
 	  for (; (pif.levels & levelMask) == 0; ++thisLevel, levelMask>>=1) ;
 
-	  if (levelMask == 0 || thisLevel < currentLevel) intLevel = thisLevel;
+	  if (levelMask == 0 || thisLevel < piState.currentLevel) intLevel = thisLevel;
 	}
 
 	piState.prLevels |= pif.levels;

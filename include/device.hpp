@@ -53,9 +53,11 @@ struct Device {
 
   // Request an interrupt at this Device's assigned level.
   void requestInterrupt() {
-
     // Do nothing if interrupt is disabled
     if (!canIntLevel0 && intLevel == 0) return;
+
+    cerr << " <<< interrupt requested >>>";
+    intPending = true;
   }
 
 
