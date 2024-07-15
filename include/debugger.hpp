@@ -66,7 +66,7 @@ struct Debugger {
   m,memory A N  Dump N (octal) words of memory starting at A (octal). A can be 'pc'.
   pc [N]        Dump PC and flags, or if N is specified set PC to N (octal).
   s,step N      Step N (octal) instructions at current PC.
-  show apr|pi|flags  Display APR or PI state or program flags.
+  show apr|pi|flags|devs  Display APR, PI state, program flags, or device list.
   stats         Display emulator statistics.
   q,quit        Quit the KM10 simulator.
 )"sv.substr(1);	// ""
@@ -226,6 +226,16 @@ struct Debugger {
 	    cout << km10.pi.piState.toString() << logger.endl;
 	  } else if (words[1] == "flags") {
 	    cout << state.flags.toString() << logger.endl;
+	  } else if (words[1] == "devs") {
+
+	    for (auto [ioDev, devP]: Device::devices) {
+	      if (devP->ioAddress == 0777777) continue;
+	      cout << setw(10) << devP->name
+		   << " ioAddr=" << W36(devP->ioAddress).fmt18()
+		   << " intLevel=" << devP->intLevel
+		   << " intPending=" << devP->intPending
+		   << logger.endl;
+	    }
 	  } else {
 	    cout << "Must specify apr or flags" << logger.endl;
 	  }

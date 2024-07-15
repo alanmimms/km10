@@ -174,7 +174,7 @@ struct APRDevice: Device {
 
     unsigned u: 18;
 
-    APRFunctions(unsigned v=0) :u(v) {};
+    APRFunctions(unsigned v=0) :u(v) {}
 
     APRFlags getSelect() const { return APRFlags{select}; }
     void setSelect(const APRFlags a) { select = a.u; }
@@ -313,6 +313,7 @@ struct APRDevice: Device {
 
   virtual void clearIO() override {
     Device::clearIO();
+    cerr << state.pc.fmtVMA() << " APR clearIO" << logger.endl << flush;
     aprState.u = 0;
   }
 };

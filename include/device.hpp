@@ -12,7 +12,7 @@ using namespace std;
 
 struct Device {
   unsigned ioAddress;
-  string &name;
+  string name;
   KMState &state;
   unsigned intLevel;
   bool intPending;
@@ -119,6 +119,7 @@ struct Device {
 
   // I/O instruction handlers
   virtual void clearIO() {	// Default is to do mostly nothing
+    cerr << state.pc.fmtVMA() << " Device " << name << " clearIO" << logger.endl << flush;
     intPending = false;
     intLevel = 0;
   }
