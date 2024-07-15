@@ -84,14 +84,15 @@ struct PIDevice: Device {
       // When no interrupt is being handled, this is `noLevel`. When
       // an interrupt appears with a larger unsigned value of level,
       // it indicates the interrupt is less important than
-      // `currentLevel` and therefore must wait. This is KM10 specific
+      // `currentLevel` and therefore must wait. This is specific to
+      // KM10.
       unsigned currentLevel: 4;
     };
 
     uint64_t u: 36;
 
-    // This is the "lowest" level - when no interrupts are being
-    // serviced.
+    // This is the "lowest" level. This is the `currentLevel` value
+    // when no interrupts are being serviced.
     static const inline unsigned noLevel = 010u;
 
 
@@ -222,9 +223,6 @@ struct PIDevice: Device {
       if (pif.initiatePR) {
 
 	if ((piState.prLevels & pif.levels) == 0) {
-	  cerr << " <<< CONO PI, has triggered an interrupt>>>" << logger.endl << flush;
-	  intPending = true;
-
 	  // Find highest requested interrupt and its mask.
 	  unsigned levelMask = 0100;
 	  unsigned thisLevel = 1;
@@ -234,6 +232,9 @@ struct PIDevice: Device {
 	}
 
 	piState.prLevels |= pif.levels;
+	requestInterrupt();
+	cerr << " <<< CONO PI, has triggered an interrupt on level "
+	     << intLevel << ">>>" << logger.endl << flush;
       }
     }
   }
