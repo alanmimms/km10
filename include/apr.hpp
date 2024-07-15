@@ -241,7 +241,7 @@ struct APRDevice: Device {
   void endSweep() {
     aprState.sweepBusy = 0;
     aprState.active_sweepDone = 1;
-    requestInterrupt();
+    if (aprState.intLevel != 0 && aprState.enabled_sweepDone) requestInterrupt();
   }
 
   // I/O instruction handlers
@@ -313,7 +313,6 @@ struct APRDevice: Device {
 
   virtual void clearIO() override {
     Device::clearIO();
-    cerr << state.pc.fmtVMA() << " APR clearIO" << logger.endl << flush;
     aprState.u = 0;
   }
 };

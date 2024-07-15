@@ -25,7 +25,7 @@ struct CCADevice: Device {
   // interrupt.
   void startSweep() {
     cerr << "CCA: startSweep" << logger.endl;
-    sweepCountDown = 50;
+    sweepCountDown = 10;
     apr.startSweep();
   }
 
@@ -35,7 +35,7 @@ struct CCADevice: Device {
   void handleSweep() {
 
     if (sweepCountDown && --sweepCountDown == 0) {
-      cerr << "CCA: apr.endSweep" << logger.endl;
+      cerr << "CCA: apr.endSweep" << logger.endl << flush;
       apr.endSweep();
     }
   }
@@ -81,6 +81,7 @@ struct CCADevice: Device {
 
 
   virtual void clearIO() {
-    apr.endSweep();
+    if (sweepCountDown) apr.endSweep();
+    sweepCountDown = 0;
   }
 };

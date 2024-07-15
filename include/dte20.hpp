@@ -24,7 +24,10 @@ using namespace std;
 struct DTE20: Device {
 
   DTE20(unsigned anAddr, KMState &aState)
-    : Device(anAddr, string("DTE20.") + to_string(anAddr & 3), aState, true),
+    : Device(anAddr,
+	     string("DTE20.") + to_string(anAddr & 3),
+	     aState,
+	     true),
       protocolMode(SECONDARY),
       isConnected(false),
       console("/dev/tty"),

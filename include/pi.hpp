@@ -195,7 +195,6 @@ struct PIDevice: Device {
   // I/O instruction handlers
   void clearIO() override {
     Device::clearIO();
-    cerr << state.pc.fmtVMA() << " PI clearIO" << logger.endl << flush;
     piState.u = 0;
     piState.currentLevel = PIState::noLevel;
   }
