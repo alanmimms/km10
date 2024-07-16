@@ -246,7 +246,7 @@ struct DTE20: Device {
 
 	if (buf == 0x1C) {
 	  cerr << "[control-\\]\r\n" << flush;
-	  raise(SIGINT);
+	  kill(getpid(), SIGINT);
 	} else {
 	  cerr << "[" << setw(2) << setfill('0') << hex << (int) buf << "]\r\n" << flush;
 	  ctyQ.enqueue(buf);

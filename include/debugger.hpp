@@ -22,6 +22,7 @@ static KMState *stateForHandlerP;
 
 
 static void sigintHandler(int signum) {
+  cerr << "[SIGINT handler]" << logger.endl << flush;
   stateForHandlerP->running = false;
 }
 
