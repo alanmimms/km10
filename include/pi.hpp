@@ -185,10 +185,16 @@ struct PIDevice: Device {
 		 << logger.endl << flush;
       }
 
+      unsigned vectorOffset;
+      uint64_t vectorAddr;
+
       switch (ifw.intFunction) {
       case W36::zeroIF:
       case W36::standardIF:
-	iw = state.eptP->pioInstructions[2*highestLevel];
+	vectorOffset = 2*highestLevel;
+	vectorAddr = &state.eptP->pioInstructions[vectorOffset] - state.memP;
+	state.pc.u = vectorAddr;
+	iw = state.eptP->pioInstructions[vectorOffset];
 	return true;
 
       default:
