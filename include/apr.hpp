@@ -233,6 +233,12 @@ struct APRDevice: Device {
   { }
 
 
+  // Interrupt handling
+  void requestInterrupt() override {
+    aprState.intRequest = 1;
+    Device::requestInterrupt();
+  }
+
   // Interface for CCA to set and clear our sweep status.
   void startSweep() {
     aprState.sweepBusy = 1;

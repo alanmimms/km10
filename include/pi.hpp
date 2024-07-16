@@ -142,54 +142,64 @@ struct PIDevice: Device {
 
   // Handle any pending interrupt by changing the instruction word
   // about to be executed by KM10, or by doing nothing if there is no
-  // pending interrupt.
-  void handleInterrupts(W36 &iw) {
-    if (!piState.piEnabled || piState.levelsOn == 0) return;
+  // pending interrupt. Returns true if interrupt changed iw.
+  bool handleInterrupts(W36 &iw) {
+    if (!piState.piEnabled || piState.levelsOn == 0) return false;
 
     // Find highest pending interrupt and its mask.
-    unsigned levelMask = 0100;
-    unsigned thisLevel = 1;
-    for (; (piState.levelsOn & levelMask) == 0; ++thisLevel, levelMask>>=1) ;
+    unsigned highestLevel = 99;
+    Device *highestDevP = nullptr;
+    unsigned highestMask = 0;
 
-    // If none is found, or if the highest pending is at same or lower
-    // level than currentLevel (i.e., with unsigned level number >=
-    // the current level), just exit.
-    if (levelMask == 0 || thisLevel >= piState.currentLevel) return;
-
-    // We have a pending interrupt at `thisLevel` level that isn't being serviced.
-    piState.held |= levelMask;		// Mark this level as held.
-
+    // Search device list for highest leveled device that has an
+    // interrupt pending.
     for (auto [ioDev, devP]: Device::devices) {
 
       // We don't bother ordering the devices by physical ID as KL10
       // does. Instead, we just service the first one we find that has
       // an interrupt pending.
-      if (devP->intPending && devP->intLevel == thisLevel) {
-	auto [level, ifw] = devP->getIntFuncWord();
+      if (devP->intPending) {
+	const unsigned levelMask = 1 << (7 - devP->intLevel);
 
-	piState.currentLevel = thisLevel;
-
-	if (logger.ints) {
-	  logger.s << "<<<<INTERRUPT>>>>: pc=" << state.pc.fmtVMA()
-		   << " level=" << level
-		   << " ifw=" << ifw.fmt36()
-		   << logger.endl << flush;
-	}
-
-	switch (ifw.intFunction) {
-	case W36::zeroIF:
-	case W36::standardIF:
-	  iw = state.eptP->pioInstructions[2*thisLevel];
-	  break;
-
-	default:
-	  cerr << "PI got IFW from '" << devP->name << "' specifying function "
-	       << (int) ifw.intFunction << ", which is not implemented yet."
-	       << logger.endl;
-	  break;
+	if ((levelMask & piState.levelsOn) && devP->intLevel < highestLevel) {
+	  highestLevel = devP->intLevel;
+	  highestMask = levelMask;
+	  highestDevP = devP;
 	}
       }
     }
+
+    if (highestLevel < piState.currentLevel) {
+
+      // We have a pending interrupt at `highestLevel` level that isn't being serviced.
+      piState.held |= highestMask;		// Mark this level as held.
+      piState.currentLevel = highestLevel;	// Remember we are running at this level.
+
+      // Ask device about its interrupt.
+      auto [level, ifw] = highestDevP->getIntFuncWord();
+
+      if (logger.ints) {
+	logger.s << "<<<<INTERRUPT>>>>: pc=" << state.pc.fmtVMA()
+		 << " level=" << level
+		 << " ifw=" << ifw.fmt36()
+		 << logger.endl << flush;
+      }
+
+      switch (ifw.intFunction) {
+      case W36::zeroIF:
+      case W36::standardIF:
+	iw = state.eptP->pioInstructions[2*highestLevel];
+	return true;
+
+      default:
+	cerr << "PI got IFW from '" << highestDevP->name << "' specifying function "
+	     << (int) ifw.intFunction << ", which is not implemented yet."
+	     << logger.endl;
+	break;
+      }
+    }
+
+    return false;
   }
 
 
@@ -205,7 +215,8 @@ struct PIDevice: Device {
 
     if (logger.mem) logger.s << "; " << ea.fmt18();
 
-    cerr << state.pc.fmtVMA() << ": CONO PI," << pif.toString() << " ea=" << ea.fmt18() << logger.endl;
+    cerr << state.pc.fmtVMA() << ": CONO PI,"
+	 << pif.toString() << " ea=" << ea.fmt18() << logger.endl;
 
     if (pif.clearPI) {
       clearIO();
@@ -234,7 +245,7 @@ struct PIDevice: Device {
 	piState.prLevels |= pif.levels;
 	requestInterrupt();
 	cerr << " <<< CONO PI, has triggered an interrupt on level "
-	     << intLevel << ">>>" << logger.endl << flush;
+	     << intLevel << " >>>" << logger.endl << flush;
       }
     }
   }

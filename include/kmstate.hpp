@@ -17,7 +17,10 @@ using namespace std;
 
 struct KMState {
   KMState(unsigned nWords = 4096 * 1024)
-    : pc(0),
+    : running(false),
+      debugging(false),
+      inInterrupt(false),
+      pc(0),
       flags(0u),
       era(0u),
       AC(ACbanks[0]),
@@ -64,6 +67,10 @@ struct KMState {
   // When debugging, we display different logging stuff (e.g., for
   // "step" command prompt).
   bool debugging;
+
+  // Set for the one instruction that is XCTed for an interrupt and
+  // then automatically cleared in next loop iteration.
+  bool inInterrupt;
 
   W36 pc;
   W36 ACbanks[8][16];

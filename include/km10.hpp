@@ -443,10 +443,14 @@ public:
 		       FuncW &doPutDstF) -> void
     {
       auto preFlags = state.flags;
-      W36 result = doModifyF(doGetSrcF());
+      W36 src = doGetSrcF();
+      W36 result = doModifyF(src);
 
       // Don't modify registers if we trapped in this instruction.
-      if (state.flags.tr1 && !preFlags.tr1) return;
+      if (state.flags.tr1 && state.flags.tr1 != preFlags.tr1) {
+	cerr << state.pc.fmtVMA() << ": doMOVXX set tr1 so no store" << logger.endl << flush;
+	return;
+      }
 
       doPutDstF(result);
     };
@@ -496,7 +500,7 @@ public:
       if (delta > 0) {		// Increment
 
 	if (v.u == W36::all1s >> 1) {
-	  state.flags.tr1 = state.flags.ov  = state.flags.cy1 = 1;
+	  state.flags.tr1 = state.flags.ov = state.flags.cy1 = 1;
 	} else if (v.ext64() == -1) {
 	  state.flags.cy0 = state.flags.cy1 = 1;
 	}
@@ -524,6 +528,9 @@ public:
 
     // The instruction loop
     do {
+      // Each time through we clear this after potentially having
+      // XCTed the interrupt instruction below.
+      state.inInterrupt = false;
 
       if ((state.flags.tr1 || state.flags.tr2) && pag.pagerEnabled()) {
 	// XXX for now, stop on trap if paging is enabled.
@@ -536,11 +543,12 @@ public:
       // KLDIFF: We don't handle interrupts when we're halted. The PI
       // device changes what instruction we're about to execute based
       // on the highest enabled interrupt that is pending or doesn't
-      // if there isn't one.
-      pi.handleInterrupts(iw);
-
-      nextPC.lhu = state.pc.lhu;
-      nextPC.rhu = state.pc.rhu + 1;
+      // if there isn't one. We only increment the PC if an interrupt
+      // instruction is NOT put into iw by pi.handleInterrupts().
+      if (!pi.handleInterrupts(iw)) {
+	nextPC.lhu = state.pc.lhu;
+	nextPC.rhu = state.pc.rhu + 1;
+      }
 
       // Set maxInsns to zero for infinite. This is NOT in the XCT
       // pathway so we can XCT an instruction while stepping.
@@ -1091,6 +1099,7 @@ public:
 	state.flags.fpd = state.flags.afi = state.flags.tr1 = state.flags.tr2 = 0;
 	doPush(state.pc.isSection0() ? state.flagsWord(nextPC.rhu) : W36(nextPC.vma), iw.ac);
 	nextPC = ea;
+	if (state.inInterrupt) state.flags.usr = state.flags.pub = 0;
 	break;
 
       case 0261:		// PUSH
@@ -1109,18 +1118,21 @@ public:
 	memPut(state.pc.isSection0() ? state.flagsWord(nextPC.rhu) : W36(nextPC.vma));
 	nextPC.u = ea.u + 1;	// XXX Wrap?
 	state.flags.fpd = state.flags.afi = state.flags.tr2 = state.flags.tr1 = 0;
+	if (state.inInterrupt) state.flags.usr = state.flags.pub = 0;
 	break;
 
       case 0265:		// JSP
 	acPut(state.pc.isSection0() ? state.flagsWord(nextPC.rhu) : W36(nextPC.vma));
 	state.flags.fpd = state.flags.afi = state.flags.tr2 = state.flags.tr1 = 0;
 	nextPC.u = ea.u;	// XXX Wrap?
+	if (state.inInterrupt) state.flags.usr = state.flags.pub = 0;
 	break;
 
       case 0266:		// JSA
 	memPut(acGet());
 	nextPC = ea.u + 1;
 	acPut(W36(ea.rhu, state.pc.rhu + 1));
+	if (state.inInterrupt) state.flags.usr = 0;
 	break;
 
       case 0267:		// JRA

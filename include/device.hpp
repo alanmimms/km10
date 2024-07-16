@@ -52,7 +52,7 @@ struct Device {
 
 
   // Request an interrupt at this Device's assigned level.
-  void requestInterrupt()  {
+  virtual void requestInterrupt()  {
     cerr << " <<< interrupt requested >>>";
     intPending = true;
   }
