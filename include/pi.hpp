@@ -142,8 +142,8 @@ struct PIDevice: Device {
 
   // Handle any pending interrupt by changing the instruction word
   // about to be executed by KM10, or by doing nothing if there is no
-  // pending interrupt. Returns true if interrupt changed iw.
-  bool handleInterrupts(W36 &iw) {
+  // pending interrupt. Returns true if interrupt cycle is needed.
+  bool interruptCycleNeeded() {
     if (!piState.piEnabled || piState.levelsOn == 0) return false;
 
     // Find highest pending interrupt and its mask.
@@ -185,16 +185,10 @@ struct PIDevice: Device {
 		 << logger.endl << flush;
       }
 
-      unsigned vectorOffset;
-      uint64_t vectorAddr;
-
       switch (ifw.intFunction) {
       case W36::zeroIF:
       case W36::standardIF:
-	vectorOffset = 2*highestLevel;
-	vectorAddr = &state.eptP->pioInstructions[vectorOffset] - state.memP;
-	state.pc.u = vectorAddr;
-	iw = state.eptP->pioInstructions[vectorOffset];
+	state.pc = state.eptAddressFor(&state.eptP->pioInstructions[2*highestLevel]);
 	return true;
 
       default:

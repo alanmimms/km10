@@ -249,6 +249,14 @@ struct KMState {
   unordered_set<unsigned> addressBPs;
   unordered_set<unsigned> executeBPs;
 
+
+  // Return the KM10 memory VIRTUAL address (EPT is in kernel virtual
+  // space) for the specified pointer into the EPT.
+  inline W36 eptAddressFor(const W36 *eptEntryP) {
+    return W36(eptEntryP - (W36 *) eptP);
+  }
+
+
   W36 acGetN(unsigned n) {
     assert(n < 16);
     W36 value = AC[n];

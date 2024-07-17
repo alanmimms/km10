@@ -2300,7 +2300,7 @@ public:
     // The instruction loop
     do {
 
-      if (fetchNext()) {
+      if (!fetchNext()) {
 	nextPC.lhu = state.pc.lhu;
 	nextPC.rhu = state.pc.rhu + 1;
       }
@@ -2348,25 +2348,34 @@ public:
 
 
   // Fetch the next instruction into `iw` and return true if the
-  // instruction is NOT an interrupt or other exception so we know we
-  // need to advance the nextPC value in the emulator.
+  // instruction is an interrupt or other exception so we know we need
+  // to advance the nextPC value in the emulator.
   bool fetchNext() {
+    bool wasException;
 
     if ((state.flags.tr1 || state.flags.tr2) && pag.pagerEnabled()) {
-      iw = state.flags.tr1 ? state.eptP->trap1Insn : state.eptP->stackOverflowInsn;
-      return false;
-    } else if (pi.handleInterrupts(iw)) {
-      // We fetched an instruction to handle an interrupt - anything
-      // more to do here? KLDIFF: We don't handle interrupts when
-      // we're halted. The PI device changes what instruction we're
-      // about to execute based on the highest enabled interrupt
-      // that is pending or doesn't if there isn't one. We only
-      // increment the PC if an interrupt instruction is NOT put
-      // into iw by pi.handleInterrupts().
-      return false;
+
+      // We have a trap.
+      if (state.flags.tr1)
+	state.pc = state.eptAddressFor(&state.eptP->trap1Insn);
+      else
+	state.pc = state.eptAddressFor(&state.eptP->stackOverflowInsn);
+
+      wasException = true;
+    } else if (pi.interruptCycleNeeded()) {
+      // Need to handle an interrupt. KLDIFF: We don't handle
+      // interrupts when we're halted. The PI device changes what
+      // instruction we're about to execute based on the highest
+      // enabled interrupt that is pending or doesn't if there isn't
+      // one. We only increment the PC if an interrupt cycle is needed
+      // as determined by pi.interruptCycleNeeded(), which also sets
+      // `state.pc` to point to the instruction.
+      wasException = true;
     } else {
-      iw = state.memGetN(state.pc.vma);
-      return true;
+      wasException = false;
     }
+
+    iw = state.memGetN(state.pc.vma);
+    return wasException;
   }
 };
