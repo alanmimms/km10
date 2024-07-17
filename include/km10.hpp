@@ -643,79 +643,6 @@ public:
   }
 
 
-  ////////////////////////////////////////////////////////////////////////////////
-  // The instruction emulator. Call this to start, step, or continue
-  // running.
-  void emulate() {
-    uint64_t nInsnsThisTime = 0;
-
-    nextPC = state.pc;
-
-    ////////////////////////////////////////////////////////////////
-    // Connect our DTE20 (put console into raw mode)
-    dte.connect();
-
-    // The instruction loop
-    do {
-      // Each time through we clear this after potentially having
-      // XCTed the interrupt instruction below.
-      state.inInterrupt = false;
-
-      if ((state.flags.tr1 || state.flags.tr2) && pag.pagerEnabled()) {
-	// XXX for now, stop on trap if paging is enabled.
-	state.running = false;
-	iw = state.flags.tr1 ? state.eptP->trap1Insn : state.eptP->stackOverflowInsn;
-      } else {
-	iw = state.memGetN(state.pc.vma);
-      }
-
-      // KLDIFF: We don't handle interrupts when we're halted. The PI
-      // device changes what instruction we're about to execute based
-      // on the highest enabled interrupt that is pending or doesn't
-      // if there isn't one. We only increment the PC if an interrupt
-      // instruction is NOT put into iw by pi.handleInterrupts().
-      if (!pi.handleInterrupts(iw)) {
-	nextPC.lhu = state.pc.lhu;
-	nextPC.rhu = state.pc.rhu + 1;
-      }
-
-      // Set maxInsns to zero for infinite. This is NOT in the XCT
-      // pathway so we can XCT an instruction while stepping.
-      if ((state.maxInsns != 0 && state.nInsns >= state.maxInsns) ||
-	  state.executeBPs.contains(state.pc.vma))
-      {
-	state.running = false;
-	if (nInsnsThisTime != 0) break;
-      }
-
-      // Keep the sweep timer going until DING.
-      cca.handleSweep();
-
-    XCT_ENTRYPOINT:
-      // When we XCT we have already set PC to point to the
-      // instruction to be XCTed and nextPC is pointing after the XCT.
-
-      ++state.nInsns;
-      ++nInsnsThisTime;
-
-      if (logger.loggingToFile && logger.pc) logger.s << state.pc.fmtVMA() << ": " << iw.dump();
-
-      // Execute the instruction in `iw`. If the instruction is an XCT
-      // we just skip back to doing that instruction.
-      if (execute1()) goto XCT_ENTRYPOINT;
-
-      state.pc = nextPC;
-
-      if (logger.pc || logger.mem || logger.ac || logger.io || logger.dte)
-	logger.s << logger.endl << flush;
-
-    } while (state.running);
-
-    // Restore console to normal
-    dte.disconnect();
-  }
-
-
   // Execute the instruction in `iw`, returning true if the
   // instruction is an XCT and thus requiring special handling for the
   // next fetch.
@@ -2355,5 +2282,91 @@ public:
     }
 
     return false;
+  }
+
+
+  ////////////////////////////////////////////////////////////////////////////////
+  // The instruction emulator. Call this to start, step, or continue
+  // running.
+  void emulate() {
+    uint64_t nInsnsThisTime = 0;
+
+    nextPC = state.pc;
+
+    ////////////////////////////////////////////////////////////////
+    // Connect our DTE20 (put console into raw mode)
+    dte.connect();
+
+    // The instruction loop
+    do {
+
+      if (fetchNext()) {
+	nextPC.lhu = state.pc.lhu;
+	nextPC.rhu = state.pc.rhu + 1;
+      }
+
+      // Set maxInsns to zero for infinite. This is NOT in the XCT
+      // pathway so we can XCT an instruction while stepping.
+      if ((state.maxInsns != 0 && state.nInsns >= state.maxInsns) ||
+	  state.executeBPs.contains(state.pc.vma))
+      {
+	state.running = false;
+	if (nInsnsThisTime != 0) break;
+      }
+
+      // Keep the sweep timer going until DING.
+      cca.handleSweep();
+
+    XCT_ENTRYPOINT:
+      // When we XCT we have already set PC to point to the
+      // instruction to be XCTed and nextPC is pointing after the XCT.
+
+      ++state.nInsns;
+      ++nInsnsThisTime;
+
+      if (logger.loggingToFile && logger.pc) logger.s << state.pc.fmtVMA() << ": " << iw.dump();
+
+      // Execute the instruction in `iw`. If the instruction is an XCT
+      // we just skip back to doing that instruction.
+      if (execute1()) goto XCT_ENTRYPOINT;
+
+      // Each time through we clear this after potentially having
+      // XCTed the interrupt instruction below.
+      state.inInterrupt = false;
+
+      // Set up to fetch next instruction.
+      state.pc = nextPC;
+
+      if (logger.pc || logger.mem || logger.ac || logger.io || logger.dte)
+	logger.s << logger.endl << flush;
+
+    } while (state.running);
+
+    // Restore console to normal
+    dte.disconnect();
+  }
+
+
+  // Fetch the next instruction into `iw` and return true if the
+  // instruction is NOT an interrupt or other exception so we know we
+  // need to advance the nextPC value in the emulator.
+  bool fetchNext() {
+
+    if ((state.flags.tr1 || state.flags.tr2) && pag.pagerEnabled()) {
+      iw = state.flags.tr1 ? state.eptP->trap1Insn : state.eptP->stackOverflowInsn;
+      return false;
+    } else if (pi.handleInterrupts(iw)) {
+      // We fetched an instruction to handle an interrupt - anything
+      // more to do here? KLDIFF: We don't handle interrupts when
+      // we're halted. The PI device changes what instruction we're
+      // about to execute based on the highest enabled interrupt
+      // that is pending or doesn't if there isn't one. We only
+      // increment the PC if an interrupt instruction is NOT put
+      // into iw by pi.handleInterrupts().
+      return false;
+    } else {
+      iw = state.memGetN(state.pc.vma);
+      return true;
+    }
   }
 };

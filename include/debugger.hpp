@@ -131,9 +131,10 @@ struct Debugger {
     string prevLine{" "};
 
     while (!done) {
-      W36 iw(state.memGetN(state.pc));
+      (void) km10.fetchNext();
+
       // Show next instruction to execute.
-      cout << state.pc.fmtVMA() << ": " << iw.dump();
+      cout << state.pc.fmtVMA() << ": " << km10.iw.dump();
 
       cout << prompt << flush;
       getline(cin, line);
