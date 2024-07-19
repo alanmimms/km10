@@ -203,6 +203,12 @@ struct PIDevice: Device {
   }
 
 
+  // This ends interrupt service.
+  void dismissInterrupt() {
+    piState.currentLevel = PIState::noLevel;
+  }
+
+
   // I/O instruction handlers
   void clearIO() override {
     Device::clearIO();

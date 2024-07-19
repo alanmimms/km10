@@ -1115,12 +1115,11 @@ public:
 
     case 0254:		// JRST family
 
-      switch (iw.ac) {
-      case 000:		// JRST
-	nextPC.u = ea.u;
-	break;
+      if (iw.ac & 010) {	// Restore interrupt channel (e.g., JRST JEN,)
+	pi.dismissInterrupt();
+      }
 
-      case 002: {		// JRSTF
+      if (iw.ac & 002) {	// Restore flags (e.g., JRST JEN,)
 	KMState::ProgramFlags newFlags{(unsigned) ea.pcFlags};
 
 	// User mode cannot clear USR. User mode cannot set UIO.
@@ -1133,21 +1132,19 @@ public:
 	if (state.flags.pub) newFlags.pub = 1;
 
 	state.flags.u = newFlags.u;
-	nextPC.u = ea.vma;
-	break;
       }
 
-      case 004:		// HALT
+      if (iw.ac & 001) {	// PORTAL: Jump to user program
+	// No PUBLIC in KM10. Do nothing special. Act like JRST 0,.
+      }
+
+      if (iw.ac & 004) {	// HALT
 	cerr << "[HALT at " << state.pc.fmtVMA() << "]" << logger.endl;
 	state.running = false;
-	break;
-
-      default:
-	logger.nyi(state);
-	state.running = false;
-	break;
+	break;			// HALT is the one family member that does not jump.
       }
 
+      nextPC.u = ea.u;		// Done for all members of JRST family.
       break;
 
     case 0255: {		// JFCL
@@ -2300,10 +2297,10 @@ public:
     // The instruction loop
     do {
 
-      if (!fetchNext()) {
-	nextPC.lhu = state.pc.lhu;
-	nextPC.rhu = state.pc.rhu + 1;
-      }
+      (void) fetchNext();
+      
+      nextPC.rhu = state.pc.rhu + 1;
+      nextPC.lhu = state.pc.lhu;
 
       // Set maxInsns to zero for infinite. This is NOT in the XCT
       // pathway so we can XCT an instruction while stepping.
@@ -2317,18 +2314,18 @@ public:
       // Keep the sweep timer going until DING.
       cca.handleSweep();
 
-    XCT_ENTRYPOINT:
       // When we XCT we have already set PC to point to the
       // instruction to be XCTed and nextPC is pointing after the XCT.
+      // This loop executes XCT chains.
+      do {
+	++state.nInsns;
+	++nInsnsThisTime;
 
-      ++state.nInsns;
-      ++nInsnsThisTime;
+	if (logger.loggingToFile && logger.pc) logger.s << state.pc.fmtVMA() << ": " << iw.dump();
 
-      if (logger.loggingToFile && logger.pc) logger.s << state.pc.fmtVMA() << ": " << iw.dump();
-
-      // Execute the instruction in `iw`. If the instruction is an XCT
-      // we just skip back to doing that instruction.
-      if (execute1()) goto XCT_ENTRYPOINT;
+	// Execute the instruction in `iw`. If the instruction is an XCT
+	// we just go back to doing that instruction.
+      } while (execute1());
 
       // Each time through we clear this after potentially having
       // XCTed the interrupt instruction below.
@@ -2370,6 +2367,9 @@ public:
       // one. We only increment the PC if an interrupt cycle is needed
       // as determined by pi.interruptCycleNeeded(), which also sets
       // `state.pc` to point to the instruction.
+      //
+      // XXX this needs to set kernel mode and switch to the kernel
+      // virtual address map.
       wasException = true;
     } else {
       wasException = false;
