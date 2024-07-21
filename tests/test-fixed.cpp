@@ -154,8 +154,8 @@ public:
     return W72::fromMag(prod < 0 ? -prod : prod, prod < 0);
   };
 
-  void test(VW36 insns, CallbackFn72 checker, CallbackFn flagChecker,
-	    ResultF getResultF = defaultResultF)
+  virtual void test(VW36 insns, CallbackFn72 checker, CallbackFn flagChecker,
+		    ResultF getResultF = defaultResultF)
   {
     W72 result72{getResultF(a, b)};
     KM10Test::test(insns, &KM10Test::noCheck, flagChecker);

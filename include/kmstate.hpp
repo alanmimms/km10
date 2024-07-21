@@ -19,7 +19,6 @@ struct KMState {
   KMState(unsigned nWords = 4096 * 1024)
     : running(false),
       debugging(false),
-      inInterrupt(false),
       pc(0),
       flags(0u),
       era(0u),
@@ -64,13 +63,12 @@ struct KMState {
   // The "RUN flop"
   volatile atomic<bool> running;
 
+  // Last fetch address - mostly for debugger.
+  W36 fetchedPC;
+
   // When debugging, we display different logging stuff (e.g., for
   // "step" command prompt).
   bool debugging;
-
-  // Set for the one instruction that is XCTed for an interrupt and
-  // then automatically cleared in next loop iteration.
-  bool inInterrupt;
 
   W36 pc;
   W36 ACbanks[8][16];

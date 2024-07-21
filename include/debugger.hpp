@@ -74,7 +74,9 @@ struct Debugger {
     };
 
     auto dumpAC = [&](int k) {
-      cout << oct << setfill(' ') << setw(2) << k << ": " << state.AC[k].dump(true) << logger.endl;
+      cout << ">>>"
+	   << oct << setfill(' ') << setw(2) << k << ": "
+	   << state.AC[k].dump(true) << logger.endl;
     };
 
     auto dumpACs = [&]() {
@@ -87,7 +89,7 @@ struct Debugger {
       if (words.size() == 1) {
 
 	for (auto bp: s) {
-	  cout << W36(bp).fmtVMA() << logger.endl;
+	  cout << ">>>" << W36(bp).fmtVMA() << logger.endl;
 	}
 
 	cout << flush;
@@ -127,8 +129,10 @@ struct Debugger {
     stateForHandlerP = &state;
     signal(SIGINT, sigintHandler);
 
-    const string prompt{"km10> "};
-    string prevLine{" "};
+    const string prefix{">>>"};
+    const string prompt{prefix + " "};
+    string prevLine{"help"};
+    unsigned lastAddr = 0;
 
     while (!done) {
       (void) km10.fetchNext();
@@ -189,13 +193,18 @@ struct Debugger {
 	      a = state.pc;
 	    else
 	      a = stoll(words[1], 0, 8);
+	  } else {
+	    a.u = lastAddr;
 	  }
 
 	  for (int k=0; k < n; ++k) {
 	    W36 w(state.memGetN(a));
-	    cout << a.fmtVMA() << ": " << w.dump(true) << logger.endl << flush;
+	    cout << prefix << a.fmtVMA() << ": " << w.dump(true) << logger.endl << flush;
 	    a = a + 1;
 	  }
+
+	  lastAddr = a.u;
+	  prevLine = "m";
 	} catch (exception &e) {
 	}
       });
@@ -223,11 +232,11 @@ struct Debugger {
 	} else if (words.size() == 2) {
 
 	  if (words[1] == "apr") {
-	    cout << km10.apr.aprState.toString() << logger.endl;
+	    cout << prefix << km10.apr.aprState.toString() << logger.endl;
 	  } else if (words[1] == "pi") {
-	    cout << km10.pi.piState.toString() << logger.endl;
+	    cout << prefix << km10.pi.piState.toString() << logger.endl;
 	  } else if (words[1] == "flags") {
-	    cout << state.flags.toString() << logger.endl;
+	    cout << prefix << state.flags.toString() << logger.endl;
 	  } else if (words[1] == "devs") {
 
 	    for (auto [ioDev, devP]: Device::devices) {
@@ -249,7 +258,7 @@ struct Debugger {
       COMMAND("log", "l", [&]() {
 
 	if (words.size() == 1) {
-	  cout << "Logging to " << logger.destination << ": ";
+	  cout << prefix << "Logging to " << logger.destination << ": ";
 	  if (logger.ac) cout << " ac";
 	  if (logger.io) cout << " io";
 	  if (logger.pc) cout << " pc";
@@ -286,8 +295,9 @@ struct Debugger {
       COMMAND("pc", nullptr, [&]() {
 
 	if (words.size() == 1) {
-	  cout << "Flags:  " << state.flags.toString() << logger.endl
-		   << "   PC: " << state.pc.fmtVMA() << logger.endl;
+	  cout << prefix
+	       << "Flags:  " << state.flags.toString() << logger.endl
+	       << "   PC: " << state.pc.fmtVMA() << logger.endl;
 	} else {
 
 	  try {
@@ -305,7 +315,7 @@ struct Debugger {
       });
 
       COMMAND("stats", nullptr, [&]() {
-	cout << "Instructions: " << state.nInsns << logger.endl << flush;
+	cout << prefix << "Instructions: " << state.nInsns << logger.endl << flush;
       });
 
       COMMAND("help", "?", doHelp);

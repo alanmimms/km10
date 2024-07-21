@@ -117,6 +117,7 @@ struct PIDevice: Device {
     }
   } piState;
 
+
   // Constructors
   PIDevice(KMState &aState):
     Device(001, "PI", aState)
@@ -142,9 +143,10 @@ struct PIDevice: Device {
 
   // Handle any pending interrupt by changing the instruction word
   // about to be executed by KM10, or by doing nothing if there is no
-  // pending interrupt. Returns true if interrupt cycle is needed.
-  bool interruptCycleNeeded() {
-    if (!piState.piEnabled || piState.levelsOn == 0) return false;
+  // pending interrupt. Returns the address to fetch the interrupt
+  // handler instruction from if any, or 0 otherwise.
+  W36 interruptCycleNeeded() {
+    if (!piState.piEnabled || piState.levelsOn == 0) return 0;
 
     // Find highest pending interrupt and its mask.
     unsigned highestLevel = 99;
@@ -185,11 +187,13 @@ struct PIDevice: Device {
 		 << logger.endl << flush;
       }
 
+      // Function word is saved here by KL10 microcode.
+      state.ACbanks[7][3] = ifw;
+
       switch (ifw.intFunction) {
       case W36::zeroIF:
       case W36::standardIF:
-	state.pc = state.eptAddressFor(&state.eptP->pioInstructions[2*highestLevel]);
-	return true;
+	return state.eptAddressFor(&state.eptP->pioInstructions[2*highestLevel]);
 
       default:
 	cerr << "PI got IFW from '" << highestDevP->name << "' specifying function "
@@ -199,7 +203,7 @@ struct PIDevice: Device {
       }
     }
 
-    return false;
+    return 0;
   }
 
 

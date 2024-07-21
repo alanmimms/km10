@@ -646,7 +646,7 @@ public:
   // Execute the instruction in `iw`, returning true if the
   // instruction is an XCT and thus requiring special handling for the
   // next fetch.
-  bool execute1() {
+  bool execute1(bool inInterrupt) {
     W36 tmp;
 
     ea.u = state.getEA(iw.i, iw.x, iw.y);
@@ -1174,7 +1174,7 @@ public:
       state.flags.fpd = state.flags.afi = state.flags.tr1 = state.flags.tr2 = 0;
       doPush(state.pc.isSection0() ? state.flagsWord(nextPC.rhu) : W36(nextPC.vma), iw.ac);
       nextPC = ea;
-      if (state.inInterrupt) state.flags.usr = state.flags.pub = 0;
+      if (inInterrupt) state.flags.usr = state.flags.pub = 0;
       break;
 
     case 0261:		// PUSH
@@ -1193,21 +1193,21 @@ public:
       memPut(state.pc.isSection0() ? state.flagsWord(nextPC.rhu) : W36(nextPC.vma));
       nextPC.u = ea.u + 1;	// XXX Wrap?
       state.flags.fpd = state.flags.afi = state.flags.tr2 = state.flags.tr1 = 0;
-      if (state.inInterrupt) state.flags.usr = state.flags.pub = 0;
+      if (inInterrupt) state.flags.usr = state.flags.pub = 0;
       break;
 
     case 0265:		// JSP
       acPut(state.pc.isSection0() ? state.flagsWord(nextPC.rhu) : W36(nextPC.vma));
-      state.flags.fpd = state.flags.afi = state.flags.tr2 = state.flags.tr1 = 0;
       nextPC.u = ea.u;	// XXX Wrap?
-      if (state.inInterrupt) state.flags.usr = state.flags.pub = 0;
+      state.flags.fpd = state.flags.afi = state.flags.tr2 = state.flags.tr1 = 0;
+      if (inInterrupt) state.flags.usr = state.flags.pub = 0;
       break;
 
     case 0266:		// JSA
       memPut(acGet());
       nextPC = ea.u + 1;
       acPut(W36(ea.rhu, state.pc.rhu + 1));
-      if (state.inInterrupt) state.flags.usr = 0;
+      if (inInterrupt) state.flags.usr = 0;
       break;
 
     case 0267:		// JRA
@@ -2296,14 +2296,11 @@ public:
 
     // The instruction loop
     do {
-
-      (void) fetchNext();
-      
+      bool inInterrupt = fetchNext();
       nextPC.rhu = state.pc.rhu + 1;
       nextPC.lhu = state.pc.lhu;
 
-      // Set maxInsns to zero for infinite. This is NOT in the XCT
-      // pathway so we can XCT an instruction while stepping.
+      // Set maxInsns to zero for infinite.
       if ((state.maxInsns != 0 && state.nInsns >= state.maxInsns) ||
 	  state.executeBPs.contains(state.pc.vma))
       {
@@ -2325,11 +2322,7 @@ public:
 
 	// Execute the instruction in `iw`. If the instruction is an XCT
 	// we just go back to doing that instruction.
-      } while (execute1());
-
-      // Each time through we clear this after potentially having
-      // XCTed the interrupt instruction below.
-      state.inInterrupt = false;
+      } while (execute1(inInterrupt));
 
       // Set up to fetch next instruction.
       state.pc = nextPC;
@@ -2349,17 +2342,18 @@ public:
   // to advance the nextPC value in the emulator.
   bool fetchNext() {
     bool wasException;
+    W36 exceptionPC{0};
 
     if ((state.flags.tr1 || state.flags.tr2) && pag.pagerEnabled()) {
 
       // We have a trap.
       if (state.flags.tr1)
-	state.pc = state.eptAddressFor(&state.eptP->trap1Insn);
+	exceptionPC = state.eptAddressFor(&state.eptP->trap1Insn);
       else
-	state.pc = state.eptAddressFor(&state.eptP->stackOverflowInsn);
+	exceptionPC = state.eptAddressFor(&state.eptP->stackOverflowInsn);
 
       wasException = true;
-    } else if (pi.interruptCycleNeeded()) {
+    } else if ((exceptionPC = pi.interruptCycleNeeded()).u != 0) { // Sets PC
       // Need to handle an interrupt. KLDIFF: We don't handle
       // interrupts when we're halted. The PI device changes what
       // instruction we're about to execute based on the highest
@@ -2375,7 +2369,9 @@ public:
       wasException = false;
     }
 
-    iw = state.memGetN(state.pc.vma);
+    // Remember where we got this instruction - mostly for debugger.
+    state.pc = wasException ? exceptionPC.vma : state.pc.vma;
+    iw = state.memGetN(state.pc);
     return wasException;
   }
 };
