@@ -1156,12 +1156,13 @@ public:
     }
 
     case 0256:		// XCT/PXCT
-
       if (state.userMode() || iw.ac == 0) {
-	state.pc = ea;
-	iw = memGet();
-	if (logger.mem) logger.s << "; ";
-	return true;
+
+	do {
+	  iw = memGet();
+	  if (logger.mem) logger.s << "; ";
+	  ea.u = state.getEA(iw.i, iw.x, iw.y);
+	} while (iw.op == 0256 && iw.ac == 0);
       } else {
 	logger.nyi(state);
 	state.running = false;
@@ -2370,8 +2371,8 @@ public:
     }
 
     // Remember where we got this instruction - mostly for debugger.
-    state.pc = wasException ? exceptionPC.vma : state.pc.vma;
-    iw = state.memGetN(state.pc);
+    state.fetchedPC = wasException ? exceptionPC.vma : state.pc.vma;
+    iw = state.memGetN(state.fetchedPC);
     return wasException;
   }
 };

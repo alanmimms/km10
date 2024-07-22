@@ -55,46 +55,17 @@ When this completes, run `./km10 --help` to see built in help for the
 command line.
 
 
-# Instruction Execution Sequence
+# PDP-10 is More Than a Little Strange
+The XCT instruction changes a lot about how the CPU determines what
+instruction to run next. XCTing a skip instruction and or a
+jump-and-save instruction will skip or save the PC after an arbitrary
+number of sequential XCTs.
 
-* `noIncPC` is set when PC should not increment before next fetch.
-
-
-* `NEXT`:
-When we get here we have the instruction in IR.
-
-* Check for pending interrupt, HALTed, meter interrupt, trap. If any of these:
-  * Set `noIncPC` flag.
-  * If meter interrupt:
-	* TBD: Handle meter interrupt.
-	* Goto NEXT
-  * If interrupt:
-	* IR = 40 + n*2.
-	* Goto NEXT
-  * If HALTed:
-	* Goto NEXT
-  * If trap:
-	* IR = 420+trap.
-	* Goto NEXT
-
-
-* `COMPUTE_EA`:
-This is used when PC is in section zero.
-Initially IW = IR.
-
-  * Extract I, X, Y from IW.
-  * If X != 0, E = RH(AC[X] + Y) else E = Y.
-  * If I != 0, IW = fetch(E); goto `COMPUTE_EA`; else done
-
-
-`EXTENDED_COMPUTE_EA`:
-This is used when PC is in a nonzero section.
-Initially EAIR = IR.
-
-
-
-
-FETCH:
-* IR = *PC.
-* If !noIncPC ++PC;
-
+The interrupt and exception handling acts like an XCT was issued from
+the point of the interrupted execution to run the interrupt/exception
+vector instruction. This means that an interrupt/exception vector
+instruction that skips skips the instruction after the interrupted
+instruction or the instruction of the exception-causing instruction,
+and a JSR or JSP (or similar) instruction in an interrupt/exception
+vector saves the PC after the interrupted or the PC of the
+exception-causing instruction.
