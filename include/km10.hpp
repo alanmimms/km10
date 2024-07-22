@@ -418,17 +418,7 @@ public:
 		  WFuncW &doModifyF,
 		  FuncW &doPutDstF) -> void
     {
-      auto preFlags = state.flags;
-      W36 src = doGetSrcF();
-      W36 result = doModifyF(src);
-
-      // Don't modify registers if we trapped in this instruction.
-      if (state.flags.tr1 && state.flags.tr1 != preFlags.tr1) {
-	cerr << state.pc.fmtVMA() << ": doMOVXX set tr1 so no store" << logger.endl << flush;
-	return;
-      }
-
-      doPutDstF(result);
+      doPutDstF(doModifyF(doGetSrcF()));
     };
 
 
@@ -1144,6 +1134,10 @@ public:
 	break;			// HALT is the one family member that does not jump.
       }
 
+      if (iw.ac == 012) {
+	cerr << ">>>>>> JEN ea=" << ea.fmtVMA() << logger.endl << flush;
+      }
+
       nextPC.u = ea.u;		// Done for all members of JRST family.
       break;
 
@@ -1158,11 +1152,10 @@ public:
     case 0256:		// XCT/PXCT
       if (state.userMode() || iw.ac == 0) {
 
-	do {
-	  iw = memGet();
-	  if (logger.mem) logger.s << "; ";
-	  ea.u = state.getEA(iw.i, iw.x, iw.y);
-	} while (iw.op == 0256 && iw.ac == 0);
+       state.pc = ea;
+       iw = memGet();
+       if (logger.mem) logger.s << "; ";
+       return true;
       } else {
 	logger.nyi(state);
 	state.running = false;
@@ -2289,8 +2282,6 @@ public:
   void emulate() {
     uint64_t nInsnsThisTime = 0;
 
-    nextPC = state.pc;
-
     ////////////////////////////////////////////////////////////////
     // Connect our DTE20 (put console into raw mode)
     dte.connect();
@@ -2371,8 +2362,8 @@ public:
     }
 
     // Remember where we got this instruction - mostly for debugger.
-    state.fetchedPC = wasException ? exceptionPC.vma : state.pc.vma;
-    iw = state.memGetN(state.fetchedPC);
+    state.pc = wasException ? exceptionPC.vma : state.pc.vma;
+    iw = state.memGetN(state.pc);
     return wasException;
   }
 };

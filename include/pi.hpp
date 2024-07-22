@@ -181,7 +181,7 @@ struct PIDevice: Device {
       auto [level, ifw] = highestDevP->getIntFuncWord();
 
       if (logger.ints) {
-	logger.s << "<<<<INTERRUPT>>>>: pc=" << state.pc.fmtVMA()
+	logger.s << "<<<<INTERRUPT>>>> by " << highestDevP->name << ": pc=" << state.pc.fmtVMA()
 		 << " level=" << level
 		 << " ifw=" << ifw.fmt36()
 		 << logger.endl << flush;
@@ -256,6 +256,8 @@ struct PIDevice: Device {
 	requestInterrupt();
 	cerr << " <<< CONO PI, has triggered an interrupt on level "
 	     << intLevel << " >>>" << logger.endl << flush;
+      } else {
+	intPending = false;
       }
     }
   }
