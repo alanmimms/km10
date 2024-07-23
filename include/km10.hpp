@@ -187,7 +187,7 @@ public:
 
       if (condF(acGet())) {
 	logFlow("jump");
-	nextPC.rhu = ea;
+	nextPC.rhu = ea.rhu;
       }
     };
 
@@ -452,8 +452,8 @@ public:
     };
 
 
-    skipAction = [&] {++nextPC.u;};
-    jumpAction = [&] {nextPC.u = ea;};
+    skipAction = [&] {++nextPC.rhu;};
+    jumpAction = [&] {nextPC.rhu = ea.rhu;};
 
     doAOSXX = [&](WFunc &doGetF,
 		  const signed delta,
@@ -1138,7 +1138,7 @@ public:
 	cerr << ">>>>>> JEN ea=" << ea.fmtVMA() << logger.endl << flush;
       }
 
-      nextPC.u = ea.u;		// Done for all members of JRST family.
+      nextPC.rhu = ea.rhu;	// Done for all members of JRST family.
       break;
 
     case 0255: {		// JFCL
@@ -1185,21 +1185,23 @@ public:
 
     case 0264:		// JSR
       memPut(state.pc.isSection0() ? state.flagsWord(nextPC.rhu) : W36(nextPC.vma));
-      nextPC.u = ea.u + 1;	// XXX Wrap?
+      nextPC.rhu = ea.rhu + 1;
       state.flags.fpd = state.flags.afi = state.flags.tr2 = state.flags.tr1 = 0;
       if (inInterrupt) state.flags.usr = state.flags.pub = 0;
       break;
 
     case 0265:		// JSP
-      acPut(state.pc.isSection0() ? state.flagsWord(nextPC.rhu) : W36(nextPC.vma));
-      nextPC.u = ea.u;	// XXX Wrap?
+      tmp = state.pc.isSection0() ? state.flagsWord(nextPC.rhu) : W36(nextPC.vma);
+      cerr << ">>>>>> JSP set ac=" << tmp.fmt36() << "  ea=" << ea.fmt36() << logger.endl << flush;
+      acPut(tmp);
+      nextPC.rhu = ea.rhu;
       state.flags.fpd = state.flags.afi = state.flags.tr2 = state.flags.tr1 = 0;
       if (inInterrupt) state.flags.usr = state.flags.pub = 0;
       break;
 
     case 0266:		// JSA
       memPut(acGet());
-      nextPC = ea.u + 1;
+      nextPC.rhu = ea.rhu + 1;
       acPut(W36(ea.rhu, state.pc.rhu + 1));
       if (inInterrupt) state.flags.usr = 0;
       break;
@@ -2022,11 +2024,11 @@ public:
       break;
 
     case 0604:		// TRNA
-      ++nextPC.u;
+      ++nextPC.rhu;
       break;
 
     case 0605:		// TLNA
-      ++nextPC.u;
+      ++nextPC.rhu;
       break;
 
     case 0606:		// TRNN
@@ -2148,11 +2150,11 @@ public:
       break;
 
     case 0614:		// TDNA
-      ++nextPC.u;
+      ++nextPC.rhu;
       break;
 
     case 0615:		// TSNA
-      ++nextPC.u;
+      ++nextPC.rhu;
       break;
 
     case 0616:		// TDNN
@@ -2288,9 +2290,11 @@ public:
 
     // The instruction loop
     do {
-      bool inInterrupt = fetchNext();
+      // Capture PC BEFORE we possibly set up to handle an exception or interrupt.
       nextPC.rhu = state.pc.rhu + 1;
       nextPC.lhu = state.pc.lhu;
+
+      bool inInterrupt = fetchNext();
 
       // Set maxInsns to zero for infinite.
       if ((state.maxInsns != 0 && state.nInsns >= state.maxInsns) ||
@@ -2345,6 +2349,9 @@ public:
 	exceptionPC = state.eptAddressFor(&state.eptP->stackOverflowInsn);
 
       wasException = true;
+
+      // Remember where we got this instruction - mostly for debugger.
+      state.pc = exceptionPC.vma;
     } else if ((exceptionPC = pi.interruptCycleNeeded()).u != 0) { // Sets PC
       // Need to handle an interrupt. KLDIFF: We don't handle
       // interrupts when we're halted. The PI device changes what
@@ -2357,12 +2364,13 @@ public:
       // XXX this needs to set kernel mode and switch to the kernel
       // virtual address map.
       wasException = true;
+
+      // Remember where we got this instruction - mostly for debugger.
+      state.pc = exceptionPC.vma;
     } else {
       wasException = false;
     }
 
-    // Remember where we got this instruction - mostly for debugger.
-    state.pc = wasException ? exceptionPC.vma : state.pc.vma;
     iw = state.memGetN(state.pc);
     return wasException;
   }

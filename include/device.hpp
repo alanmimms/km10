@@ -153,7 +153,15 @@ struct Device {
 
   virtual void doCONSZ(W36 iw, W36 ea, W36 &nextPC) {
     W36 conditions = doCONI(iw, ea);
-    if ((conditions.rhu & ea.rhu) == 0) ++nextPC.rhu;
+    bool skip = (conditions.rhu & ea.rhu) == 0;
+
+    cerr << ">>>>>>> CONSZ " << name << ",: conditions=" << conditions.fmt36()
+	 << "  skip=" << skip
+	 << logger.endl << flush;
+
+    if (skip) {
+      ++nextPC.rhu;
+    }
   }
 
   virtual void doCONSO(W36 iw, W36 ea, W36 &nextPC) {

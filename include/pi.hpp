@@ -15,6 +15,11 @@
 // levels. An interrupt at a given level cannot be interrupted by a
 // same or lower priority level interrupt.
 
+// TODO XXX:
+//
+// * Force PRs even on disabled interrupt channels as stated in
+//   1982_ProcRefMan.pdf p.208.
+
 #pragma once
 
 #include "word.hpp"
