@@ -146,12 +146,11 @@ struct PIDevice: Device {
   }
 
 
-  // Handle any pending interrupt by changing the instruction word
-  // about to be executed by KM10, or by doing nothing if there is no
-  // pending interrupt. Returns the address to fetch the interrupt
-  // handler instruction from if any, or 0 otherwise.
-  W36 interruptCycleNeeded() {
-    if (!piState.piEnabled || piState.levelsOn == 0) return 0;
+  // Configure `state.pc` to handle any pending interrupt by changing
+  // the instruction word about to be executed by KM10, or by doing
+  // nothing if there is no pending interrupt.
+  void setUpInterruptCycle() {
+    if (!piState.piEnabled || piState.levelsOn == 0) return;
 
     // Find highest pending interrupt and its mask.
     unsigned highestLevel = 99;
@@ -186,19 +185,23 @@ struct PIDevice: Device {
       auto [level, ifw] = highestDevP->getIntFuncWord();
 
       if (logger.ints) {
-	logger.s << "<<<<INTERRUPT>>>> by " << highestDevP->name << ": pc=" << state.pc.fmtVMA()
+	logger.s << "<<<<INTERRUPT>>>> by " << highestDevP->name
+		 << ": pc=" << state.pc.fmtVMA()
 		 << " level=" << level
 		 << " ifw=" << ifw.fmt36()
 		 << logger.endl << flush;
       }
 
-      // Function word is saved here by KL10 microcode.
+      // Function word is saved here by KL10 microcode. Does anyone
+      // look at this? Who knows.
       state.ACbanks[7][3] = ifw;
 
       switch (ifw.intFunction) {
       case W36::zeroIF:
       case W36::standardIF:
-	return state.eptAddressFor(&state.eptP->pioInstructions[2*highestLevel]);
+	state.pc = state.eptAddressFor(&state.eptP->pioInstructions[2*highestLevel]);
+	cerr << ">>>>> interrupt cycle PC now=" << state.pc.fmtVMA() << logger.endl << flush;
+	break;
 
       default:
 	cerr << "PI got IFW from '" << highestDevP->name << "' specifying function "
@@ -207,8 +210,6 @@ struct PIDevice: Device {
 	break;
       }
     }
-
-    return 0;
   }
 
 

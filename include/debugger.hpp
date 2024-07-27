@@ -135,10 +135,13 @@ struct Debugger {
     unsigned lastAddr = 0;
 
     while (!done) {
-      (void) km10.fetchNext();
+      W36 beforeFetchPC = state.pc;
+      km10.fetchNext();
+      bool wasException = beforeFetchPC.u != state.pc.u;
 
       // Show next instruction to execute.
       cout << state.pc.fmtVMA() << ": " << km10.iw.dump();
+      if (wasException) cout << " [EXCEPTION] ";
 
       cout << prompt << flush;
       getline(cin, line);

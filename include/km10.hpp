@@ -1,9 +1,36 @@
 // This is the KM10 CPU implementation.
 
+/*
+  Some notes:
+
+  * INVARIANT: Debugger always shows next instruction to execute in
+    its prompt.
+
+    * Interrupt vector instruction.
+    * Exception vector instruction.
+    * XCT next instruction in chain.
+    * Normal code flow instruction.
+
+  * INVARIANT: `state.pc` always points to instruction that is about
+    to execute or is executing.
+
+    * Therefore, in exception/interrupt handling, `state.pc` points to
+      interrupt instruction.
+
+  * INVARIANT: `nextPC` always points to next instruction to fetch
+    after current one completes.
+
+    * Instructions like JSP/JSR save the initial value of `nextPC` as
+      their "return address" and modify it to point to the jump
+      destination the same way in both normal and in
+      interrupt/exception contexts.
+*/
+
 // TODO:
 //
 // * Globally use U32,S32, U64,S64, U128,S128 typedefs instead of
 //   verbose <cstdint> names.
+// * Fix the logging stuff. It's seriously broken.
 
 #pragma once
 #include <string>
@@ -2283,6 +2310,8 @@ public:
   // running.
   void emulate() {
     uint64_t nInsnsThisTime = 0;
+    W36 exceptionPC{0};
+    bool inInterrupt = false;
 
     ////////////////////////////////////////////////////////////////
     // Connect our DTE20 (put console into raw mode)
@@ -2290,11 +2319,13 @@ public:
 
     // The instruction loop
     do {
-      // Capture PC BEFORE we possibly set up to handle an exception or interrupt.
+      W36 pcBeforeFetch = state.pc;
+      fetchNext();
+      inInterrupt = pcBeforeFetch.u != state.pc.u; 
+
+      // Capture next PC AFTER we possibly set up to handle an exception or interrupt.
       nextPC.rhu = state.pc.rhu + 1;
       nextPC.lhu = state.pc.lhu;
-
-      bool inInterrupt = fetchNext();
 
       // Set maxInsns to zero for infinite.
       if ((state.maxInsns != 0 && state.nInsns >= state.maxInsns) ||
@@ -2309,15 +2340,25 @@ public:
 
       // When we XCT we have already set PC to point to the
       // instruction to be XCTed and nextPC is pointing after the XCT.
-      // This loop executes XCT chains.
+      // This loop executes XCT chains but limited to < maxXCT chain
+      // length.
+      int maxXCT = 1000;
+
       do {
+
+	if (--maxXCT < 0) {
+	  cerr << state.pc.fmtVMA() << ": " << iw.dump()
+	       << " ;;; >>>>> XCT chain exceeds maximum length"
+	       << logger.endl << flush;
+	  break;
+	}
+
 	++state.nInsns;
 	++nInsnsThisTime;
 
 	if (logger.loggingToFile && logger.pc) logger.s << state.pc.fmtVMA() << ": " << iw.dump();
 
-	// Execute the instruction in `iw`. If the instruction is an XCT
-	// we just go back to doing that instruction.
+	// Execute the instruction in `iw`. Loop until not an XCT.
       } while (execute1(inInterrupt));
 
       // Set up to fetch next instruction.
@@ -2334,44 +2375,24 @@ public:
 
 
   // Fetch the next instruction into `iw` and return true if the
-  // instruction is an interrupt or other exception so we know we need
-  // to advance the nextPC value in the emulator.
-  bool fetchNext() {
-    bool wasException;
-    W36 exceptionPC{0};
+  // instruction is an interrupt or other exception.
+  void fetchNext() {
 
     if ((state.flags.tr1 || state.flags.tr2) && pag.pagerEnabled()) {
 
       // We have a trap.
       if (state.flags.tr1)
-	exceptionPC = state.eptAddressFor(&state.eptP->trap1Insn);
+	state.pc = state.eptAddressFor(&state.eptP->trap1Insn);
       else
-	exceptionPC = state.eptAddressFor(&state.eptP->stackOverflowInsn);
+	state.pc = state.eptAddressFor(&state.eptP->stackOverflowInsn);
 
-      wasException = true;
-
-      // Remember where we got this instruction - mostly for debugger.
-      state.pc = exceptionPC.vma;
-    } else if ((exceptionPC = pi.interruptCycleNeeded()).u != 0) { // Sets PC
-      // Need to handle an interrupt. KLDIFF: We don't handle
-      // interrupts when we're halted. The PI device changes what
-      // instruction we're about to execute based on the highest
-      // enabled interrupt that is pending or doesn't if there isn't
-      // one. We only increment the PC if an interrupt cycle is needed
-      // as determined by pi.interruptCycleNeeded(), which also sets
-      // `state.pc` to point to the instruction.
-      //
-      // XXX this needs to set kernel mode and switch to the kernel
-      // virtual address map.
-      wasException = true;
-
-      // Remember where we got this instruction - mostly for debugger.
-      state.pc = exceptionPC.vma;
+      cerr << ">>>>> exception cycle PC now=" << state.pc.fmtVMA() << logger.endl << flush;
     } else {
-      wasException = false;
+
+      // Set up to handle an interrupt if one is pending.
+      pi.setUpInterruptCycle();
     }
 
     iw = state.memGetN(state.pc);
-    return wasException;
   }
 };
