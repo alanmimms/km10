@@ -63,8 +63,8 @@ struct KMState {
   // The "RUN flop"
   volatile atomic<bool> running;
 
-  // Last fetch address - mostly for debugger.
-  W36 fetchedPC;
+  // PC of instruction to execute AFTER current one.
+  W36 nextPC;
 
   // When debugging, we display different logging stuff (e.g., for
   // "step" command prompt).

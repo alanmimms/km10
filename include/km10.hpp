@@ -17,10 +17,10 @@
     * Therefore, in exception/interrupt handling, `state.pc` points to
       interrupt instruction.
 
-  * INVARIANT: `nextPC` always points to next instruction to fetch
+  * INVARIANT: `state.nextPC` always points to next instruction to fetch
     after current one completes.
 
-    * Instructions like JSP/JSR save the initial value of `nextPC` as
+    * Instructions like JSP/JSR save the initial value of `state.nextPC` as
       their "return address" and modify it to point to the jump
       destination the same way in both normal and in
       interrupt/exception contexts.
@@ -214,7 +214,7 @@ public:
 
       if (condF(acGet())) {
 	logFlow("jump");
-	nextPC.rhu = ea.rhu;
+	state.nextPC.rhu = ea.rhu;
       }
     };
 
@@ -223,7 +223,7 @@ public:
 
       if (condF(eaw)) {
 	logFlow("skip");
-	++nextPC.rhu;
+	++state.nextPC.rhu;
       }
       
       if (iw.ac != 0) acPut(eaw);
@@ -263,7 +263,7 @@ public:
 
       if (condF(a1, a2)) {
 	logFlow("skip");
-	++nextPC.rhu;
+	++state.nextPC.rhu;
       }
       
       doStoreF(doModifyF(a1, a2));
@@ -474,13 +474,13 @@ public:
 
       if (condF(doGetSrc1F(), doGetSrc2F())) {
 	logFlow("skip");
-	++nextPC.rhu;
+	++state.nextPC.rhu;
       }
     };
 
 
-    skipAction = [&] {++nextPC.rhu;};
-    jumpAction = [&] {nextPC.rhu = ea.rhu;};
+    skipAction = [&] {++state.nextPC.rhu;};
+    jumpAction = [&] {state.nextPC.rhu = ea.rhu;};
 
     doAOSXX = [&](WFunc &doGetF,
 		  const signed delta,
@@ -517,7 +517,6 @@ public:
 
   W36 iw;
   W36 ea;
-  W36 nextPC;
   
   template <class S1, class S2, class M, class D>
   void doBinOp(S1 &doGetSrc1F, S2 &doGetSrc2F, M &doModifyF, D &doPutDstF) {
@@ -1113,7 +1112,7 @@ public:
 
       if (tmp.ext64() >= 0) {
 	logFlow("jump");
-	nextPC = ea;
+	state.nextPC = ea;
       }
 
       break;
@@ -1125,7 +1124,7 @@ public:
 
       if (tmp.ext64() < 0) {
 	logFlow("jump");
-	nextPC = ea;
+	state.nextPC = ea;
       }
 
       break;
@@ -1165,14 +1164,14 @@ public:
 	cerr << ">>>>>> JEN ea=" << ea.fmtVMA() << logger.endl << flush;
       }
 
-      nextPC.rhu = ea.rhu;	// Done for all members of JRST family.
+      state.nextPC.rhu = ea.rhu;	// Done for all members of JRST family.
       break;
 
     case 0255: {		// JFCL
       unsigned wasFlags = state.flags.u;
       unsigned testFlags = (unsigned) iw.ac << 9; // Align with OV,CY0,CY1,FOV
       state.flags.u &= ~testFlags;
-      if (wasFlags & testFlags) nextPC = ea;
+      if (wasFlags & testFlags) state.nextPC = ea;
       break;
     }
 
@@ -1193,8 +1192,8 @@ public:
       // Note this sets the flags that are cleared by PUSHJ before
       // doPush() since doPush() can set flags.tr2.
       state.flags.fpd = state.flags.afi = state.flags.tr1 = state.flags.tr2 = 0;
-      doPush(state.pc.isSection0() ? state.flagsWord(nextPC.rhu) : W36(nextPC.vma), iw.ac);
-      nextPC = ea;
+      doPush(state.pc.isSection0() ? state.flagsWord(state.nextPC.rhu) : W36(state.nextPC.vma), iw.ac);
+      state.nextPC = ea;
       if (inInterrupt) state.flags.usr = state.flags.pub = 0;
       break;
 
@@ -1207,35 +1206,35 @@ public:
       break;
 
     case 0263:		// POPJ
-      nextPC.rhu = doPop(iw.ac).rhu;
+      state.nextPC.rhu = doPop(iw.ac).rhu;
       break;
 
     case 0264:		// JSR
-      memPut(state.pc.isSection0() ? state.flagsWord(nextPC.rhu) : W36(nextPC.vma));
-      nextPC.rhu = ea.rhu + 1;
+      memPut(state.pc.isSection0() ? state.flagsWord(state.nextPC.rhu) : W36(state.nextPC.vma));
+      state.nextPC.rhu = ea.rhu + 1;
       state.flags.fpd = state.flags.afi = state.flags.tr2 = state.flags.tr1 = 0;
       if (inInterrupt) state.flags.usr = state.flags.pub = 0;
       break;
 
     case 0265:		// JSP
-      tmp = state.pc.isSection0() ? state.flagsWord(nextPC.rhu) : W36(nextPC.vma);
+      tmp = state.pc.isSection0() ? state.flagsWord(state.nextPC.rhu) : W36(state.nextPC.vma);
       cerr << ">>>>>> JSP set ac=" << tmp.fmt36() << "  ea=" << ea.fmt36() << logger.endl << flush;
       acPut(tmp);
-      nextPC.rhu = ea.rhu;
+      state.nextPC.rhu = ea.rhu;
       state.flags.fpd = state.flags.afi = state.flags.tr2 = state.flags.tr1 = 0;
       if (inInterrupt) state.flags.usr = state.flags.pub = 0;
       break;
 
     case 0266:		// JSA
       memPut(acGet());
-      nextPC.rhu = ea.rhu + 1;
+      state.nextPC.rhu = ea.rhu + 1;
       acPut(W36(ea.rhu, state.pc.rhu + 1));
       if (inInterrupt) state.flags.usr = 0;
       break;
 
     case 0267:		// JRA
       acPut(state.memGetN(acGet().lhu));
-      nextPC = ea;
+      state.nextPC = ea;
       break;
 
     case 0270:		// ADD
@@ -2051,11 +2050,11 @@ public:
       break;
 
     case 0604:		// TRNA
-      ++nextPC.rhu;
+      ++state.nextPC.rhu;
       break;
 
     case 0605:		// TLNA
-      ++nextPC.rhu;
+      ++state.nextPC.rhu;
       break;
 
     case 0606:		// TRNN
@@ -2177,11 +2176,11 @@ public:
       break;
 
     case 0614:		// TDNA
-      ++nextPC.rhu;
+      ++state.nextPC.rhu;
       break;
 
     case 0615:		// TSNA
-      ++nextPC.rhu;
+      ++state.nextPC.rhu;
       break;
 
     case 0616:		// TDNN
@@ -2292,7 +2291,7 @@ public:
 
       if (iw.ioSeven == 7) {	// Only handle I/O instructions this way
 	if (logger.io) logger.s << "; ioDev=" << oct << iw.ioDev << " ioOp=" << oct << iw.ioOp;
-	Device::handleIO(iw, ea, state, nextPC);
+	Device::handleIO(iw, ea, state, state.nextPC);
       } else {
 	logger.nyi(state);
 	state.running = false;
@@ -2324,8 +2323,8 @@ public:
       inInterrupt = pcBeforeFetch.u != state.pc.u; 
 
       // Capture next PC AFTER we possibly set up to handle an exception or interrupt.
-      nextPC.rhu = state.pc.rhu + 1;
-      nextPC.lhu = state.pc.lhu;
+      state.nextPC.rhu = state.pc.rhu + 1;
+      state.nextPC.lhu = state.pc.lhu;
 
       // Set maxInsns to zero for infinite.
       if ((state.maxInsns != 0 && state.nInsns >= state.maxInsns) ||
@@ -2339,7 +2338,7 @@ public:
       cca.handleSweep();
 
       // When we XCT we have already set PC to point to the
-      // instruction to be XCTed and nextPC is pointing after the XCT.
+      // instruction to be XCTed and state.nextPC is pointing after the XCT.
       // This loop executes XCT chains but limited to < maxXCT chain
       // length.
       int maxXCT = 1000;
@@ -2362,7 +2361,7 @@ public:
       } while (execute1(inInterrupt));
 
       // Set up to fetch next instruction.
-      state.pc = nextPC;
+      state.pc = state.nextPC;
 
       if (logger.pc || logger.mem || logger.ac || logger.io || logger.dte)
 	logger.s << logger.endl << flush;
@@ -2377,8 +2376,12 @@ public:
   // Fetch the next instruction into `iw` and return true if the
   // instruction is an interrupt or other exception.
   void fetchNext() {
+    // We save the PC of the instruction we were about to execute so
+    // we know where we exception happend or were interrupted from.
+    W36 savedPC = state.pc;
 
     if ((state.flags.tr1 || state.flags.tr2) && pag.pagerEnabled()) {
+      state.nextPC = savedPC;
 
       // We have a trap.
       if (state.flags.tr1)
@@ -2388,11 +2391,11 @@ public:
 
       cerr << ">>>>> exception cycle PC now=" << state.pc.fmtVMA() << logger.endl << flush;
     } else {
-
       // Set up to handle an interrupt if one is pending.
-      pi.setUpInterruptCycle();
+      if (pi.setUpInterruptCycleIfPending()) state.nextPC = savedPC;
     }
 
+    // Now fetch the instruction at our normal, exception, or interrupt PC.
     iw = state.memGetN(state.pc);
   }
 };
