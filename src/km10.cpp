@@ -16,11 +16,14 @@ Logger logger{};
 
 
 DEFINE_string(load, "../images/klad/dfkaa.a10", ".A10 or .SAV file to load");
-DEFINE_bool(debug, false, "run the build-in debugger instead of starting execution");
+DEFINE_bool(debug, false, "run the built-in debugger instead of starting execution");
 
 
 //////////////////////////////////////////////////////////////
-int main(int argc, char *argv[]) {
+// This is invoked in a loop to allow the "restart" command to work
+// properly. Therefore this needs to clean up the state of the machine
+// before it returns. This is mostly done by auto destructors.
+static int loopedMain(int argc, char *argv[]) {
   assert(sizeof(KMState::ExecutiveProcessTable) == 512 * 8);
   assert(sizeof(KMState::UserProcessTable) == 512 * 8);
   gflags::ParseCommandLineFlags(&argc, &argv, true);
@@ -47,12 +50,22 @@ int main(int argc, char *argv[]) {
   if (FLAGS_debug) {
     Debugger dbg(km10, state);
     dbg.debug();
+    return dbg.restart ? 1 : 0;
   } else {
     state.running = true;
     km10.emulate();
   }
 
   return 0;
+}
+
+
+////////////////////////////////////////////////////////////////
+int main(int argc, char *argv[]) {
+  int st;
+  
+  while ((st = loopedMain(argc, argv)) > 0) ;
+  return st;
 }
 
 

@@ -31,12 +31,13 @@ struct Debugger {
 
   Debugger(KM10 &aKM10, KMState &aState)
     : km10(aKM10),
-      state(aState)
+      state(aState),
+      restart(false)
   {}
 
   KM10 &km10;
   KMState &state;
-
+  bool restart;
 
   void debug() {
     string line;
@@ -66,6 +67,7 @@ struct Debugger {
   l,log tty     Log to console.
   m,memory A N  Dump N (octal) words of memory starting at A (octal). A can be 'pc'.
   pc [N]        Dump PC and flags, or if N is specified set PC to N (octal).
+  restart       Reset and reload as if started from scratch again.
   s,step N      Step N (octal) instructions at current PC.
   show apr|pi|flags|devs  Display APR, PI state, program flags, or device list.
   stats         Display emulator statistics.
@@ -210,6 +212,13 @@ struct Debugger {
 	  prevLine = "m";
 	} catch (exception &e) {
 	}
+      });
+
+      COMMAND("restart", nullptr, [&]() {
+	restart = true;
+	state.debugging = true;
+	state.running = false;
+	done = true;
       });
 
       COMMAND("step", "s", [&]() {
