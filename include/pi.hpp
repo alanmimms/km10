@@ -194,7 +194,7 @@ struct PIDevice: Device {
       }
 
       // Function word is saved here by KL10 microcode. Does anyone
-      // look at this? Who knows.
+      // look at this? Who knows?
       state.ACbanks[7][3] = ifw;
 
       switch (ifw.intFunction) {

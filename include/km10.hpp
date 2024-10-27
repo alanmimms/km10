@@ -1199,7 +1199,7 @@ public:
        iw = memGet();
        if (logger.mem) logger.s << "; ";
        return true;
-      } else {
+      } else {					// PXCT
 	logger.nyi(state);
 	state.running = false;
 	break;
@@ -1227,14 +1227,27 @@ public:
       break;
 
     case 0264:		// JSR
-      memPut(state.pc.isSection0() ? state.flagsWord(state.nextPC.rhu) : W36(state.nextPC.vma));
+
+      if (inInterrupt) {
+	tmp = state.pc.isSection0() ? state.flagsWord(state.pc.rhu) : W36(state.pc.vma);
+      } else {
+	tmp = state.pc.isSection0() ? state.flagsWord(state.nextPC.rhu) : W36(state.nextPC.vma);
+      }
+
+      memPut(tmp);
       state.nextPC.rhu = ea.rhu + 1;
       state.flags.fpd = state.flags.afi = state.flags.tr2 = state.flags.tr1 = 0;
       if (inInterrupt) state.flags.usr = state.flags.pub = 0;
       break;
 
     case 0265:		// JSP
-      tmp = state.pc.isSection0() ? state.flagsWord(state.nextPC.rhu) : W36(state.nextPC.vma);
+
+      if (inInterrupt) {
+	tmp = state.pc.isSection0() ? state.flagsWord(state.pc.rhu) : W36(state.pc.vma);
+      } else {
+	tmp = state.pc.isSection0() ? state.flagsWord(state.nextPC.rhu) : W36(state.nextPC.vma);
+      }
+
       cerr << ">>>>>> JSP set ac=" << tmp.fmt36() << "  ea=" << ea.fmt36() << logger.endl << flush;
       acPut(tmp);
       state.nextPC.rhu = ea.rhu;
