@@ -1131,40 +1131,57 @@ public:
 
     case 0254:		// JRST family
 
-      if (iw.ac & 010) {	// Restore interrupt channel (e.g., JRST JEN,)
-	pi.dismissInterrupt();
-      }
+      switch (iw.ac) {
+      case 000:					// JRST
+	state.nextPC.rhu = ea.rhu;
+	break;
 
-      if (iw.ac & 002) {	// Restore flags (e.g., JRST JEN,)
-	KMState::ProgramFlags newFlags{(unsigned) ea.pcFlags};
+      case 001:					// PORTAL
+	logger.nyi(state);
+	break;
 
-	// User mode cannot clear USR. User mode cannot set UIO.
-	if (state.flags.usr) {
-	  newFlags.uio = 0;
-	  newFlags.usr = 1;
-	}
+      case 002:					// JRSTF
+	state.restoreFlags(ea);
+	state.nextPC.rhu = ea.rhu;
+	break;
 
-	// A program running in PUB mode cannot clear PUB mode.
-	if (state.flags.pub) newFlags.pub = 1;
-
-	state.flags.u = newFlags.u;
-      }
-
-      if (iw.ac & 001) {	// PORTAL: Jump to user program
-	// No PUBLIC in KM10. Do nothing special. Act like JRST 0,.
-      }
-
-      if (iw.ac & 004) {	// HALT
+      case 004:					// HALT
 	cerr << "[HALT at " << state.pc.fmtVMA() << "]" << logger.endl;
 	state.running = false;
-	break;			// HALT is the one family member that does not jump.
-      }
+	state.nextPC.rhu = ea.rhu;		// HALT actually does change PC
+	break;
 
-      if (iw.ac == 012) {
+      case 005:					// XJRSTF
+	logger.nyi(state);
+	break;
+
+      case 006:					// XJEN
+	logger.nyi(state);
+	break;
+
+      case 007:					// XPCW
+	logger.nyi(state);
+	break;
+
+      case 010:					// 25440 - no mnemonic
+	state.restoreFlags(ea);
+	break;
+
+      case 012:					// JEN
 	cerr << ">>>>>> JEN ea=" << ea.fmtVMA() << logger.endl << flush;
+	state.restoreFlags(ea);
+	state.nextPC.rhu = ea.rhu;
+	break;
+
+      case 014:					// SFM
+	logger.nyi(state);
+	break;
+
+      default:
+	logger.nyi(state);
+	break;
       }
 
-      state.nextPC.rhu = ea.rhu;	// Done for all members of JRST family.
       break;
 
     case 0255: {		// JFCL

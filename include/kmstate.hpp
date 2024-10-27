@@ -337,6 +337,23 @@ struct KMState {
   }
 
 
+  // Used by JRSTF and JEN
+  void restoreFlags(W36 ea) {
+    ProgramFlags newFlags{(unsigned) ea.pcFlags};
+
+    // User mode cannot clear USR. User mode cannot set UIO.
+    if (flags.usr) {
+      newFlags.uio = 0;
+      newFlags.usr = 1;
+    }
+
+    // A program running in PUB mode cannot clear PUB mode.
+    if (flags.pub) newFlags.pub = 1;
+
+    flags.u = newFlags.u;
+  }
+
+
   // Loaders
   /*
     PDP-10 ASCIIZED FILE FORMAT

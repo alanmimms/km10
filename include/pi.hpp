@@ -4,7 +4,7 @@
 //
 // * "Active" means the interrupt is enabled.
 //
-// * "Held" means the interrupt is pending.
+// * "Held" means the interrupt handler is executing.
 //
 // * "Level" is the interrupt's priority, where lower numbered levels
 //   are serviced ahead of higher numbered levels.
