@@ -179,7 +179,7 @@ struct PIDevice: Device {
     if (highestLevel < piState.currentLevel) {
 
       // We have a pending interrupt at `highestLevel` level that isn't being serviced.
-      piState.held |= highestMask;		// Mark this level as held.
+      piState.held |= highestMask;		// Mark this level as held - i.e., ACTIVELY RUNNING.
       piState.currentLevel = highestLevel;	// Remember we are running at this level.
 
       // Ask device about its interrupt.
@@ -201,7 +201,6 @@ struct PIDevice: Device {
       case W36::zeroIF:
       case W36::standardIF:
 	state.pc = state.eptAddressFor(&state.eptP->pioInstructions[2*highestLevel]);
-	cerr << ">>>>> interrupt cycle PC now=" << state.pc.fmtVMA() << logger.endl << flush;
 	return true;
 	break;
 

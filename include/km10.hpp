@@ -1227,13 +1227,8 @@ public:
       break;
 
     case 0264:		// JSR
-
-      if (inInterrupt) {
-	tmp = state.pc.isSection0() ? state.flagsWord(state.pc.rhu) : W36(state.pc.vma);
-      } else {
-	tmp = state.pc.isSection0() ? state.flagsWord(state.nextPC.rhu) : W36(state.nextPC.vma);
-      }
-
+      tmp = state.pc.isSection0() ? state.flagsWord(state.nextPC.rhu) : W36(state.nextPC.vma);
+      cerr << ">>>>>> JSR saved PC=" << tmp.fmt36() << "  ea=" << ea.fmt36() << logger.endl << flush;
       memPut(tmp);
       state.nextPC.rhu = ea.rhu + 1;
       state.flags.fpd = state.flags.afi = state.flags.tr2 = state.flags.tr1 = 0;
@@ -1241,13 +1236,7 @@ public:
       break;
 
     case 0265:		// JSP
-
-      if (inInterrupt) {
-	tmp = state.pc.isSection0() ? state.flagsWord(state.pc.rhu) : W36(state.pc.vma);
-      } else {
-	tmp = state.pc.isSection0() ? state.flagsWord(state.nextPC.rhu) : W36(state.nextPC.vma);
-      }
-
+      tmp = state.pc.isSection0() ? state.flagsWord(state.nextPC.rhu) : W36(state.nextPC.vma);
       cerr << ">>>>>> JSP set ac=" << tmp.fmt36() << "  ea=" << ea.fmt36() << logger.endl << flush;
       acPut(tmp);
       state.nextPC.rhu = ea.rhu;
@@ -2348,13 +2337,14 @@ public:
 
     // The instruction loop
     do {
-      W36 pcBeforeFetch = state.pc;
-      fetchNext();
-      inInterrupt = pcBeforeFetch.u != state.pc.u; 
 
-      // Capture next PC AFTER we possibly set up to handle an exception or interrupt.
-      state.nextPC.rhu = state.pc.rhu + 1;
-      state.nextPC.lhu = state.pc.lhu;
+      if (fetchNext()) {
+	inInterrupt = true;
+      } else {
+	// Capture next PC AFTER we possibly set up to handle an exception or interrupt.
+	state.nextPC.rhu = state.pc.rhu + 1;
+	state.nextPC.lhu = state.pc.lhu;
+      }
 
       // Set maxInsns to zero for infinite.
       if ((state.maxInsns != 0 && state.nInsns >= state.maxInsns) ||
@@ -2405,27 +2395,36 @@ public:
 
   // Fetch the next instruction into `iw` and return true if the
   // instruction is an interrupt or other exception.
-  void fetchNext() {
+  bool fetchNext() {
     // We save the PC of the instruction we were about to execute so
-    // we know where we exception happend or were interrupted from.
+    // we know where the exception happened or where we were
+    // interrupted from.
     W36 savedPC = state.pc;
+    bool isExceptionOrInterrupt;
 
     if ((state.flags.tr1 || state.flags.tr2) && pag.pagerEnabled()) {
-      state.nextPC = savedPC;
-
       // We have a trap.
-      if (state.flags.tr1)
-	state.pc = state.eptAddressFor(&state.eptP->trap1Insn);
-      else
-	state.pc = state.eptAddressFor(&state.eptP->stackOverflowInsn);
-
-      cerr << ">>>>> exception cycle PC now=" << state.pc.fmtVMA() << logger.endl << flush;
+      state.pc = state.eptAddressFor(state.flags.tr1 ?
+				     &state.eptP->trap1Insn :
+				     &state.eptP->stackOverflowInsn);
+      cerr << ">>>>> trap cycle PC now=" << state.pc.fmtVMA()
+	   << "  savedPC=" << savedPC.fmtVMA()
+	   << logger.endl << flush;
+      state.nextPC = savedPC;
+      isExceptionOrInterrupt = true;
+    } else if (pi.setUpInterruptCycleIfPending()) {
+      // We have an active interrupt.
+      cerr << ">>>>> interrupt cycle PC now=" << state.pc.fmtVMA()
+	   << "  savedPC=" << savedPC.fmtVMA()
+	   << logger.endl << flush;
+      state.nextPC = savedPC;
+      isExceptionOrInterrupt = true;
     } else {
-      // Set up to handle an interrupt if one is pending.
-      if (pi.setUpInterruptCycleIfPending()) state.nextPC = savedPC;
+      isExceptionOrInterrupt = false;
     }
 
     // Now fetch the instruction at our normal, exception, or interrupt PC.
     iw = state.memGetN(state.pc);
+    return isExceptionOrInterrupt;
   }
 };
