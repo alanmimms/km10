@@ -2340,11 +2340,11 @@ public:
 
       if (fetchNext()) {
 	inInterrupt = true;
-      } else {
-	// Capture next PC AFTER we possibly set up to handle an exception or interrupt.
-	state.nextPC.rhu = state.pc.rhu + 1;
-	state.nextPC.lhu = state.pc.lhu;
       }
+
+      // Capture next PC AFTER we possibly set up to handle an exception or interrupt.
+      state.nextPC.rhu = state.pc.rhu + 1;
+      state.nextPC.lhu = state.pc.lhu;
 
       // Set maxInsns to zero for infinite.
       if ((state.maxInsns != 0 && state.nInsns >= state.maxInsns) ||
@@ -2396,29 +2396,27 @@ public:
   // Fetch the next instruction into `iw` and return true if the
   // instruction is an interrupt or other exception.
   bool fetchNext() {
-    // We save the PC of the instruction we were about to execute so
-    // we know where the exception happened or where we were
-    // interrupted from.
-    W36 savedPC = state.pc;
     bool isExceptionOrInterrupt;
+    W36 vector;
 
     if ((state.flags.tr1 || state.flags.tr2) && pag.pagerEnabled()) {
       // We have a trap.
+      state.exceptionPC = state.pc;
       state.pc = state.eptAddressFor(state.flags.tr1 ?
 				     &state.eptP->trap1Insn :
 				     &state.eptP->stackOverflowInsn);
+      isExceptionOrInterrupt = true;
       cerr << ">>>>> trap cycle PC now=" << state.pc.fmtVMA()
-	   << "  savedPC=" << savedPC.fmtVMA()
+	   << "  exceptionPC=" << state.exceptionPC.fmtVMA()
 	   << logger.endl << flush;
-      state.nextPC = savedPC;
-      isExceptionOrInterrupt = true;
-    } else if (pi.setUpInterruptCycleIfPending()) {
+    } else if ((vector = pi.setUpInterruptCycleIfPending()) != W36(0)) {
       // We have an active interrupt.
-      cerr << ">>>>> interrupt cycle PC now=" << state.pc.fmtVMA()
-	   << "  savedPC=" << savedPC.fmtVMA()
-	   << logger.endl << flush;
-      state.nextPC = savedPC;
+      state.exceptionPC = state.pc;
+      state.pc = vector;
       isExceptionOrInterrupt = true;
+      cerr << ">>>>> interrupt cycle PC now=" << state.pc.fmtVMA()
+	   << "  exceptionPC=" << state.exceptionPC.fmtVMA()
+	   << logger.endl << flush;
     } else {
       isExceptionOrInterrupt = false;
     }

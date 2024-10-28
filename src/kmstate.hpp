@@ -19,7 +19,10 @@ struct KMState {
   KMState(unsigned nWords = 4096 * 1024)
     : running(false),
       debugging(false),
+      nextPC(0),
+      exceptionPC(0),
       pc(0),
+      ACbanks{},
       flags(0u),
       era(0u),
       AC(ACbanks[0]),
@@ -63,14 +66,20 @@ struct KMState {
   // The "RUN flop"
   volatile atomic<bool> running;
 
-  // PC of instruction to execute AFTER current one.
-  W36 nextPC;
-
   // When debugging, we display different logging stuff (e.g., for
   // "step" command prompt).
   bool debugging;
 
+  // PC of instruction to execute AFTER current one.
+  W36 nextPC;
+
+  // PC of instruction that was interrupted or caused a trap.
+  W36 exceptionPC;
+
+  // The processor's program counter.
   W36 pc;
+
+  // KL10 has 8 banks of 16 ACs.
   W36 ACbanks[8][16];
 
   union ATTRPACKED ProgramFlags {
