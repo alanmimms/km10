@@ -30,5 +30,4 @@ FetchContent_Declare(fmt
 FetchContent_MakeAvailable(gflags googletest fmt)
 
 add_subdirectory(src)
-add_subdirectory(lib)
 add_subdirectory(tests)
