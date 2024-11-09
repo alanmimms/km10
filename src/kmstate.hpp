@@ -16,18 +16,19 @@ using namespace std;
 
 
 struct KMState {
-  KMState(unsigned nWords = 4096 * 1024)
+  KMState(unsigned nWords = 4 * 1024 * 1024)
     : running(false),
-      debugging(false),
+      restart(false),
       nextPC(0),
       exceptionPC(0),
       pc(0),
       ACbanks{},
       flags(0u),
+      inInterrupt(false),
       era(0u),
       AC(ACbanks[0]),
       memorySize(nWords),
-      maxInsns(0),
+      nSteps(0),
       addressBPs{},
       executeBPs{}
   {
@@ -66,9 +67,8 @@ struct KMState {
   // The "RUN flop"
   volatile atomic<bool> running;
 
-  // When debugging, we display different logging stuff (e.g., for
-  // "step" command prompt).
-  bool debugging;
+  // The "REBOOT flop"
+  bool restart;
 
   // PC of instruction to execute AFTER current one.
   W36 nextPC;
@@ -150,6 +150,9 @@ struct KMState {
 
     uint64_t u: 36;
   };
+
+  // True if we are running in an interrupt state or trap state.
+  bool inInterrupt;
 
   W36 era;
 
@@ -251,7 +254,7 @@ struct KMState {
 
   W36 *AC;
   unsigned memorySize;
-  uint64_t maxInsns;
+  uint64_t nSteps;
   uint64_t nInsns;
   unordered_set<unsigned> addressBPs;
   unordered_set<unsigned> executeBPs;

@@ -62,6 +62,9 @@ using namespace fmt;
 #include "dte20.hpp"
 
 
+class Debugger;
+
+
 class KM10 {
 public:
   KMState &state;
@@ -74,6 +77,7 @@ public:
   TIMDevice tim;
   DTE20 dte;
   Device noDevice;
+  Debugger *debuggerP;
 
 
   // I find these a lot less ugly in the emulator...
@@ -101,7 +105,8 @@ public:
       pag(state),
       tim(state),
       dte(040, state),
-      noDevice(0777777ul, "?NoDevice?", aState)
+      noDevice(0777777ul, "?NoDevice?", aState),
+      debuggerP(nullptr)
   {
     acGet = [&]() {
       return state.acGetN(iw.ac);
@@ -515,6 +520,10 @@ public:
     };
   }
 
+
+  void setDebugger(Debugger *p) { debuggerP = p; }
+
+
   W36 iw;
   W36 ea;
   
@@ -662,7 +671,7 @@ public:
   // Execute the instruction in `iw`, returning true if the
   // instruction is an XCT and thus requiring special handling for the
   // next fetch.
-  bool execute1(bool inInterrupt) {
+  bool execute1() {
     W36 tmp;
 
     ea.u = state.getEA(iw.i, iw.x, iw.y);
@@ -1193,10 +1202,9 @@ public:
     }
 
     case 0256:		// XCT/PXCT
-      if (state.userMode() || iw.ac == 0) {
 
-       state.pc = ea;
-       iw = memGet();
+      if (state.userMode() || iw.ac == 0) {
+       iw = state.memGetN(ea);
        if (logger.mem) logger.s << "; ";
        return true;
       } else {					// PXCT
@@ -1211,7 +1219,7 @@ public:
       state.flags.fpd = state.flags.afi = state.flags.tr1 = state.flags.tr2 = 0;
       doPush(state.pc.isSection0() ? state.flagsWord(state.nextPC.rhu) : W36(state.nextPC.vma), iw.ac);
       state.nextPC = ea;
-      if (inInterrupt) state.flags.usr = state.flags.pub = 0;
+      if (state.inInterrupt) state.flags.usr = state.flags.pub = 0;
       break;
 
     case 0261:		// PUSH
@@ -1227,28 +1235,34 @@ public:
       break;
 
     case 0264:		// JSR
-      tmp = state.pc.isSection0() ? state.flagsWord(state.nextPC.rhu) : W36(state.nextPC.vma);
-      cerr << ">>>>>> JSR saved PC=" << tmp.fmt36() << "  ea=" << ea.fmt36() << logger.endl << flush;
+      tmp = state.inInterrupt ? state.exceptionPC : state.nextPC;
+      tmp = state.pc.isSection0() ? state.flagsWord(tmp.rhu) : W36(tmp.vma);
+      cerr << ">>>>>> JSR saved PC=" << tmp.fmt36() << "  ea=" << ea.fmt36()
+	   << (state.inInterrupt ? "[inInterrupt]" : "[!inInterrupt]")
+	   << logger.endl << flush;
       memPut(tmp);
       state.nextPC.rhu = ea.rhu + 1;
       state.flags.fpd = state.flags.afi = state.flags.tr2 = state.flags.tr1 = 0;
-      if (inInterrupt) state.flags.usr = state.flags.pub = 0;
+      if (state.inInterrupt) state.flags.usr = state.flags.pub = 0;
       break;
 
     case 0265:		// JSP
-      tmp = state.pc.isSection0() ? state.flagsWord(state.nextPC.rhu) : W36(state.nextPC.vma);
-      cerr << ">>>>>> JSP set ac=" << tmp.fmt36() << "  ea=" << ea.fmt36() << logger.endl << flush;
+      tmp = state.inInterrupt ? state.exceptionPC : state.nextPC;
+      tmp = state.pc.isSection0() ? state.flagsWord(tmp.rhu) : W36(tmp.vma);
+      cerr << ">>>>>> JSP set ac=" << tmp.fmt36() << "  ea=" << ea.fmt36()
+	   << (state.inInterrupt ? "[inInterrupt]" : "[!inInterrupt]")
+	   << logger.endl << flush;
       acPut(tmp);
       state.nextPC.rhu = ea.rhu;
       state.flags.fpd = state.flags.afi = state.flags.tr2 = state.flags.tr1 = 0;
-      if (inInterrupt) state.flags.usr = state.flags.pub = 0;
+      if (state.inInterrupt) state.flags.usr = state.flags.pub = 0;
       break;
 
     case 0266:		// JSA
       memPut(acGet());
       state.nextPC.rhu = ea.rhu + 1;
       acPut(W36(ea.rhu, state.pc.rhu + 1));
-      if (inInterrupt) state.flags.usr = 0;
+      if (state.inInterrupt) state.flags.usr = 0;
       break;
 
     case 0267:		// JRA
@@ -2319,110 +2333,16 @@ public:
       break;
     }
 
-    return false;
+    return false;		// Not an XCT
   }
 
 
   ////////////////////////////////////////////////////////////////////////////////
   // The instruction emulator. Call this to start, step, or continue
   // running.
-  void emulate() {
-    uint64_t nInsnsThisTime = 0;
-    W36 exceptionPC{0};
-    bool inInterrupt = false;
+  void emulate(Debugger *debugger);
 
-    ////////////////////////////////////////////////////////////////
-    // Connect our DTE20 (put console into raw mode)
-    dte.connect();
-
-    // The instruction loop
-    do {
-
-      if (fetchNext()) {
-	inInterrupt = true;
-      }
-
-      // Capture next PC AFTER we possibly set up to handle an exception or interrupt.
-      state.nextPC.rhu = state.pc.rhu + 1;
-      state.nextPC.lhu = state.pc.lhu;
-
-      // Set maxInsns to zero for infinite.
-      if ((state.maxInsns != 0 && state.nInsns >= state.maxInsns) ||
-	  state.executeBPs.contains(state.pc.vma))
-      {
-	state.running = false;
-	if (nInsnsThisTime != 0) break;
-      }
-
-      // Keep the sweep timer going until DING.
-      cca.handleSweep();
-
-      // When we XCT we have already set PC to point to the
-      // instruction to be XCTed and state.nextPC is pointing after the XCT.
-      // This loop executes XCT chains but limited to < maxXCT chain
-      // length.
-      int maxXCT = 1000;
-
-      do {
-
-	if (--maxXCT < 0) {
-	  cerr << state.pc.fmtVMA() << ": " << iw.dump()
-	       << " ;;; >>>>> XCT chain exceeds maximum length"
-	       << logger.endl << flush;
-	  break;
-	}
-
-	++state.nInsns;
-	++nInsnsThisTime;
-
-	if (logger.loggingToFile && logger.pc) logger.s << state.pc.fmtVMA() << ": " << iw.dump();
-
-	// Execute the instruction in `iw`. Loop until not an XCT.
-      } while (execute1(inInterrupt));
-
-      // Set up to fetch next instruction.
-      state.pc = state.nextPC;
-
-      if (logger.pc || logger.mem || logger.ac || logger.io || logger.dte)
-	logger.s << logger.endl << flush;
-
-    } while (state.running);
-
-    // Restore console to normal
-    dte.disconnect();
-  }
-
-
-  // Fetch the next instruction into `iw` and return true if the
-  // instruction is an interrupt or other exception.
-  bool fetchNext() {
-    bool isExceptionOrInterrupt;
-    W36 vector;
-
-    if ((state.flags.tr1 || state.flags.tr2) && pag.pagerEnabled()) {
-      // We have a trap.
-      state.exceptionPC = state.pc;
-      state.pc = state.eptAddressFor(state.flags.tr1 ?
-				     &state.eptP->trap1Insn :
-				     &state.eptP->stackOverflowInsn);
-      isExceptionOrInterrupt = true;
-      cerr << ">>>>> trap cycle PC now=" << state.pc.fmtVMA()
-	   << "  exceptionPC=" << state.exceptionPC.fmtVMA()
-	   << logger.endl << flush;
-    } else if ((vector = pi.setUpInterruptCycleIfPending()) != W36(0)) {
-      // We have an active interrupt.
-      state.exceptionPC = state.pc;
-      state.pc = vector;
-      isExceptionOrInterrupt = true;
-      cerr << ">>>>> interrupt cycle PC now=" << state.pc.fmtVMA()
-	   << "  exceptionPC=" << state.exceptionPC.fmtVMA()
-	   << logger.endl << flush;
-    } else {
-      isExceptionOrInterrupt = false;
-    }
-
-    // Now fetch the instruction at our normal, exception, or interrupt PC.
-    iw = state.memGetN(state.pc);
-    return isExceptionOrInterrupt;
-  }
+  // (temporary?)
+  // Fetch next instruction (taking into account traps and interrupts).
+  bool fetchNext();
 };
