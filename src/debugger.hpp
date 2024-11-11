@@ -11,11 +11,16 @@ struct Debugger {
 
   Debugger(KM10 &aKM10, KMState &aState)
     : km10(aKM10),
-      state(aState)
+      state(aState),
+      prevLine("help"),
+      lastAddr(0)
   {}
 
   KM10 &km10;
   KMState &state;
+  string prevLine;
+  unsigned lastAddr;
+
 
   // This is how debugger tells our emulator loop what to do when it
   // returns.

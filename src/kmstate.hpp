@@ -16,7 +16,7 @@ using namespace std;
 
 
 struct KMState {
-  KMState(unsigned nWords = 4 * 1024 * 1024)
+  KMState(unsigned nWords, unordered_set<unsigned> &aBPs, unordered_set<unsigned> &eBPs)
     : running(false),
       restart(false),
       nextPC(0),
@@ -29,8 +29,9 @@ struct KMState {
       AC(ACbanks[0]),
       memorySize(nWords),
       nSteps(0),
-      addressBPs{},
-      executeBPs{}
+      inXCT(false),
+      addressBPs(aBPs),
+      executeBPs(eBPs)
   {
     // Note this anonymous mmap() implicitly zeroes the virtual memory.
     physicalP = (W36 *) mmap(nullptr,
@@ -255,9 +256,10 @@ struct KMState {
   W36 *AC;
   unsigned memorySize;
   uint64_t nSteps;
+  bool inXCT;
   uint64_t nInsns;
-  unordered_set<unsigned> addressBPs;
-  unordered_set<unsigned> executeBPs;
+  unordered_set<unsigned> &addressBPs;
+  unordered_set<unsigned> &executeBPs;
 
 
   // Return the KM10 memory VIRTUAL address (EPT is in kernel virtual

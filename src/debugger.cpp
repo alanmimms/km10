@@ -29,7 +29,6 @@ static void sigintHandler(int signum) {
 Debugger::DebugAction Debugger::debug() {
   string line;
   vector<string> words;
-  bool done{false};
 
 
   auto COMMAND = [&](const char *s1, const char *s2, auto handler) {
@@ -82,17 +81,24 @@ Debugger::DebugAction Debugger::debug() {
   // Put console back into normal mode
   km10.dte.disconnect();
 
-  cout << "[KM-10 debugger]" << logger.endl << flush;
+  static bool firstTime{true};
+  if (firstTime) {
+    stateForHandlerP = &state;
+    signal(SIGINT, sigintHandler);
 
-  stateForHandlerP = &state;
-  signal(SIGINT, sigintHandler);
+    cout << "[KM-10 debugger]" << logger.endl << flush;
+    firstTime = false;
+  }
 
   const string prefix{">>>"};
   const string prompt{prefix + " "};
-  string prevLine{"help"};
-  unsigned lastAddr = 0;
 
-  while (!done) {
+
+  // While this stays `noop` we keep looping, reading, and executing
+  // debugger commands.
+  DebugAction action{noop};
+
+  do {
     // Show next instruction to execute.
     cout << state.pc.fmtVMA() << ": " << km10.iw.dump();
     if (state.inInterrupt) cout << " [EXCEPTION] ";
@@ -117,7 +123,7 @@ Debugger::DebugAction Debugger::debug() {
     COMMAND("quit", "q", [&]() {
       state.running = false;
       state.restart = false;
-      done = true;
+      action = quit;
     });
 
     COMMAND("abp", nullptr, [&]() {handleBPCommand(state.addressBPs);});
@@ -172,7 +178,7 @@ Debugger::DebugAction Debugger::debug() {
     COMMAND("restart", nullptr, [&]() {
       state.restart = true;
       state.running = false;
-      done = true;
+      action = restart;
     });
 
     COMMAND("step", "s", [&]() {
@@ -189,6 +195,7 @@ Debugger::DebugAction Debugger::debug() {
       }
 
       state.running = true;
+      action = step;
     });
 
     COMMAND("show", nullptr, [&]() {
@@ -264,6 +271,10 @@ Debugger::DebugAction Debugger::debug() {
 	cout << prefix
 	     << "Flags:  " << state.flags.toString() << logger.endl
 	     << "   PC: " << state.pc.fmtVMA() << logger.endl;
+
+	if (state.inXCT) {
+	  cout << " [XCT]" << logger.endl;
+	}
       } else {
 
 	try {
@@ -273,11 +284,13 @@ Debugger::DebugAction Debugger::debug() {
       }
 
       cout << flush;
+      action = pcChanged;
     });
 
     COMMAND("continue", "c", [&]() {
       state.nSteps = 0;
       state.running = true;
+      action = run;
     });
 
     COMMAND("stats", nullptr, [&]() {
@@ -308,9 +321,9 @@ Debugger::DebugAction Debugger::debug() {
   q,quit        Quit the KM10 simulator.
 )"sv.substr(1);	// "" (this helps Emacs parse the syntax properly)
     });
-  }
+  } while (action == noop);
 
   // Restore console to raw mode for FE input/output.
   km10.dte.connect();
-  return run;
+  return action;
 }

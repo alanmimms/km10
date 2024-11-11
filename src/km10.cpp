@@ -14,7 +14,13 @@ using namespace std;
 
 Logger logger{};
 
+// We keep these breakpoint sets outside of the looped main so they
+// stick across restart.
+static unordered_set<unsigned> aBPs;
+static unordered_set<unsigned> eBPs;
 
+
+// Definitions for our command line options
 DEFINE_string(load, "../images/klad/dfkaa.a10", ".A10 or .SAV file to load");
 DEFINE_bool(debug, false, "run the built-in debugger instead of starting execution");
 
@@ -28,7 +34,7 @@ void KM10::emulate(Debugger *debuggerP) {
   dte.connect();
 
   // The instruction loop
-  do {
+  for (;;) {
     // Keep the cache sweep timer ticking until it goes DING.
     cca.handleSweep();
 
@@ -63,13 +69,14 @@ void KM10::emulate(Debugger *debuggerP) {
     iw = state.memGetN(state.pc);
 
     // Capture next PC AFTER we possibly set up to handle an exception or interrupt.
-    state.nextPC.rhu = state.pc.rhu + 1;
-    state.nextPC.lhu = state.pc.lhu;
+    if (!state.inXCT) {
+      state.nextPC.rhu = state.pc.rhu + 1;
+      state.nextPC.lhu = state.pc.lhu;
+    }
 
     // If we're debugging, this is where we pause to let the user
-    // inspect and change things. If we exit from the debugger with
-    // our state set to !running, it means the user wants to quite
-    // the emulator.
+    // inspect and change things. The debugger tells us what our next
+    // action should be based on its return value.
     if (!state.running) {
 
       switch (debuggerP->debug()) {
@@ -89,29 +96,33 @@ void KM10::emulate(Debugger *debuggerP) {
 	continue;
 
       default:			// This should never happen...
-	break;
+	assert("Debugger returned unknown action" == nullptr);
+	return;
       }
     }
 
     // Handle nSteps so we don't keep running if we run out of step
     // count. THIS instruction is our single remaining step. If
     // state.nSteps is zero we just keep going "forever".
-    if (state.nSteps > 0 && --state.nSteps == 0) state.running = false;
+    if (state.nSteps > 0) {
+      if (--state.nSteps <= 0) state.running = false;
+    }
 
     if (logger.loggingToFile && logger.pc) logger.s << state.pc.fmtVMA() << ": " << iw.dump();
 
-    // Execute the instruction in `iw`. If `execute1()` returns true
-    // we go back around and execute the next instruction in `iw`
-    // (since `execute1()` fetched it when processing an XCT).
-    if (execute1() && state.running) continue;
+    // Unless we encounter ANOTHER XCT we're not in one now.
+    state.inXCT = false;
 
-    // Set up to fetch next instruction.
-    state.pc = state.nextPC;
+    // Execute the instruction in `iw`. If `execute1()` returns true,
+    // we're executing an XCT instruction, so don't update PC. It was
+    // already set to the XCT instruction's EA.
+    if (!execute1()) {
+      state.pc = state.nextPC;
+    }
 
     if (logger.pc || logger.mem || logger.ac || logger.io || logger.dte)
       logger.s << logger.endl << flush;
-
-  } while (state.running);
+  }
 
   // Restore console to normal
   dte.disconnect();
@@ -127,7 +138,7 @@ static int loopedMain(int argc, char *argv[]) {
   assert(sizeof(KMState::UserProcessTable) == 512 * 8);
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
-  KMState state(4 * 1024 * 1024);
+  KMState state(4 * 1024 * 1024, aBPs, eBPs);
 
   if (FLAGS_load != "none") {
 

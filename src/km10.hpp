@@ -1204,9 +1204,9 @@ public:
     case 0256:		// XCT/PXCT
 
       if (state.userMode() || iw.ac == 0) {
-       iw = state.memGetN(ea);
-       if (logger.mem) logger.s << "; ";
-       return true;
+	state.pc = ea;
+	state.inXCT = true;
+	return true;
       } else {					// PXCT
 	logger.nyi(state);
 	state.running = false;
