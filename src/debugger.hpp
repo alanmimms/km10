@@ -20,6 +20,8 @@ struct Debugger {
   KMState &state;
   string prevLine;
   unsigned lastAddr;
+  map<string, vector<W36>> symbolToValue;
+  multimap<W36, string> valueToSymbol;
 
 
   // This is how debugger tells our emulator loop what to do when it
@@ -36,4 +38,6 @@ struct Debugger {
   };
 
   DebugAction debug();
+
+  void loadSEQ(const char *fileNameP);
 };

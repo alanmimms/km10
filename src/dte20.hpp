@@ -11,6 +11,7 @@
 
 #include <stdexcept>
 #include <thread>
+#include <signal.h>
 
 using namespace std;
 

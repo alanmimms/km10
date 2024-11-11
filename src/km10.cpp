@@ -22,6 +22,7 @@ static unordered_set<unsigned> eBPs;
 
 // Definitions for our command line options
 DEFINE_string(load, "../images/klad/dfkaa.a10", ".A10 or .SAV file to load");
+DEFINE_string(seq, "../images/klad/dfkaa.seq", ".SEQ file to load symbols from");
 DEFINE_bool(debug, false, "run the built-in debugger instead of starting execution");
 
 
@@ -145,6 +146,8 @@ static int loopedMain(int argc, char *argv[]) {
     if (FLAGS_load.ends_with(".a10")) {
       state.loadA10(FLAGS_load.c_str());
     } else if (FLAGS_load.ends_with(".sav")) {
+      cerr << "ERROR: For now, '-load' option must name a .a10 file" << logger.endl;
+      return -1;
       //      state.loadSAV(FLAGS_load.c_str());
     } else {
       cerr << "ERROR: '-load' option must name a .a10 or .sav file" << logger.endl;
@@ -156,6 +159,10 @@ static int loopedMain(int argc, char *argv[]) {
 
   KM10 km10(state);
   Debugger debugger(km10, state);
+
+  if (FLAGS_seq != "none") {
+    debugger.loadSEQ(FLAGS_seq.c_str());
+  }
 
   state.running = !FLAGS_debug;
   km10.emulate(&debugger);

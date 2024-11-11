@@ -327,3 +327,89 @@ Debugger::DebugAction Debugger::debug() {
   km10.dte.connect();
   return action;
 }
+
+
+// Grab the next non-whitespace "word" in the istringstream, skipping
+// any leading whitesapce and return it in word. Return true if the
+// lineS stream is exhausted before any non-whitespace characters are
+// found.
+static bool grabNextWord(istringstream &lineS, string &word) {
+}
+
+
+// Load a listing file (*.SEQ) to get symbol definitions for symbolic
+// debugging.
+void Debugger::loadSEQ(const char *fileNameP) {
+  static const int WIDEST_NORMAL_LINE = 122;
+  ifstream inS(fileNameP);
+  bool scanningSymbols{false};
+
+  string symbolName;		// Symbol we're defining at the moment
+  vector<W36> values;		// List of values for current symbol so far
+
+  bool havePreviousSymbol{false};
+
+  while (!ioS.eof()) {
+    string scaningLine;
+    getline(inS, scanningLine);
+
+    // When we find the end of the assembly listing, the symbols
+    // follow after a summary:
+    //
+    // 001 NO ERRORS DETECTED
+    // 002
+    // 003 PROGRAM BREAK IS 000000
+    // 004 ABSLUTE BREAK IS 071356
+    // 005 CPU TIME USED 03:37.242
+    // 006
+    // 007 18K CORE USED
+    // 008
+    // 009A00	   902#					[first symbol definition is here]
+    if (!scanningSymbols && scanningLine == "NO ERRORS DETECTED") {
+      getline(inS, scanningLine);	// Gobble 002
+      getline(inS, scanningLine);	// Gobble 003
+      getline(inS, scanningLine);	// Gobble 004
+      getline(inS, scanningLine);	// Gobble 005
+      getline(inS, scanningLine);	// Gobble 006
+      getline(inS, scanningLine);	// Gobble 007
+      getline(inS, scanningLine);	// Gobble 008
+      scanningSymbols = true;
+      continue;
+    } else if (!scanningSymbols || scanningLine.empty()) {
+      continue;			// Just skip all assembly and blank lines
+    }
+
+    // Everything we see from this point is a symbol definition line
+    // or continuation thereof until EOF. Note EOF ends with a FF and
+    // some NULs, which we ignore.
+    istringstream lineS(scanningLine);
+
+    // Throw the SEQ xxxxx at column 123 if present.
+    if (scanningLine.length() > WIDEST_NORMAL_LINE) {
+      scanningLine.resize(WIDEST_NORMAL_LINE);
+    }
+
+    // Discard ^L when we encounter it.
+    if (lineS.peek() == '\f') lineS.get();
+
+    // If there's no leading whitespace, we're defining a new symbol
+    // name. Finish previous symbol definition (if there is one). Then
+    // grab the new symbol name and start parsing values.
+    if (!isspace(lineS.peek())) {
+
+      // This is really a "first time through" check. Save the symbol
+      // values for the symbol that has just been defined.
+      if (havePreviousSymbol) {
+	symbolToValue[symbolName] = values
+      }
+
+      havePreviousSymbol = true;
+      values = vector<W36>{};	// Empty values list out for this new symbol
+
+      // Grab the next of the symbol from the leading word on the line.
+      lineS >> symbolName;
+    }
+
+    // We're now gobbling values for the definition of symbolName.
+  }
+}
