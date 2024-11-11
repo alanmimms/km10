@@ -20,7 +20,8 @@ struct Debugger {
   KMState &state;
   string prevLine;
   unsigned lastAddr;
-  map<string, vector<W36>> symbolToValue;
+
+  map<string, W36> symbolToValue;
   multimap<W36, string> valueToSymbol;
 
 

@@ -329,29 +329,49 @@ Debugger::DebugAction Debugger::debug() {
 }
 
 
-// Grab the next non-whitespace "word" in the istringstream, skipping
-// any leading whitesapce and return it in word. Return true if the
-// lineS stream is exhausted before any non-whitespace characters are
-// found.
-static bool grabNextWord(istringstream &lineS, string &word) {
-}
-
-
 // Load a listing file (*.SEQ) to get symbol definitions for symbolic
 // debugging.
 void Debugger::loadSEQ(const char *fileNameP) {
   static const int WIDEST_NORMAL_LINE = 122;
   ifstream inS(fileNameP);
+  vector<string> lines{"this is line #0"};	// Each listing line from SEQ file is placed in here
+  bool scanningAssembly{false};
   bool scanningSymbols{false};
 
-  string symbolName;		// Symbol we're defining at the moment
-  vector<W36> values;		// List of values for current symbol so far
+  string symbolName;	   // Symbol we're defining at the moment
+  W36 value;		   // Line number where the symbol is DEFINED ("#")
 
-  bool havePreviousSymbol{false};
-
-  while (!ioS.eof()) {
-    string scaningLine;
+  while (!inS.eof()) {
+    string scanningLine;
     getline(inS, scanningLine);
+
+    // If we are skipping the front matter before the assembly listing
+    // begins, check for the heading that indicates the assembly
+    // listing has begun. This is indicated by a line that starts with
+    // '\f' and has the MACRO program's heading format. If this is
+    // true, we can start scanning the assembly listing.
+    if (!scanningAssembly &&
+	scanningLine.length() > 0 &&
+	scanningLine[0] == '\f' &&
+	scanningLine.find("MACRO %") != string::npos)
+    {
+      scanningAssembly = true;
+      continue;
+    } else if (!scanningAssembly) continue; // Keep looking for that MACRO heading
+
+    // Ignore listing page headers (two lines) if we're not yet to the
+    // symbol CREF part of the listing.
+    if (!scanningSymbols &&
+	scanningLine.length() > 0 &&
+	scanningLine[0] == '\f')
+    {
+      getline(inS, scanningLine);
+      continue;
+    }
+
+    istringstream lineS(scanningLine);
+    string word;
+    int lineNumber;
 
     // When we find the end of the assembly listing, the symbols
     // follow after a summary:
@@ -375,14 +395,27 @@ void Debugger::loadSEQ(const char *fileNameP) {
       getline(inS, scanningLine);	// Gobble 008
       scanningSymbols = true;
       continue;
-    } else if (!scanningSymbols || scanningLine.empty()) {
-      continue;			// Just skip all assembly and blank lines
+    } else if (!scanningSymbols) {
+
+      // If we see a formfeed we have to ignore the line and the one following it.
+      if (lineS.peek() == '\f') {
+	getline(inS, scanningLine); // Grab second line of page heading and throw it away.
+	continue;
+      }
+
+      // If we get here it's a normal listing line. Grab the line
+      // number from the first "word". Save the line for back
+      // referencing from symbol CREF.
+      lineS >> word;
+      lineNumber = stoi(word);
+      lines[lineNumber] = scanningLine;
+      continue;
     }
 
     // Everything we see from this point is a symbol definition line
     // or continuation thereof until EOF. Note EOF ends with a FF and
     // some NULs, which we ignore.
-    istringstream lineS(scanningLine);
+
 
     // Throw the SEQ xxxxx at column 123 if present.
     if (scanningLine.length() > WIDEST_NORMAL_LINE) {
@@ -392,24 +425,67 @@ void Debugger::loadSEQ(const char *fileNameP) {
     // Discard ^L when we encounter it.
     if (lineS.peek() == '\f') lineS.get();
 
-    // If there's no leading whitespace, we're defining a new symbol
-    // name. Finish previous symbol definition (if there is one). Then
-    // grab the new symbol name and start parsing values.
+    // If there's no leading whitespace, we're defining a new symbol.
+    // Grab the name of the symbol from the leading word on the line.
     if (!isspace(lineS.peek())) {
-
-      // This is really a "first time through" check. Save the symbol
-      // values for the symbol that has just been defined.
-      if (havePreviousSymbol) {
-	symbolToValue[symbolName] = values
-      }
-
-      havePreviousSymbol = true;
-      values = vector<W36>{};	// Empty values list out for this new symbol
-
-      // Grab the next of the symbol from the leading word on the line.
       lineS >> symbolName;
     }
 
-    // We're now gobbling values for the definition of symbolName.
+    // We're now gobbling values for the definition of symbolName,
+    // looking for the one with "#" indicating the line number the
+    // symbol is defined on.
+    while (lineS >> word) {
+
+      // If the last character of the "word" is "#" it means this word
+      // contains the line number in the listing file where the symbol
+      // is defined. Get that line and find its address and save that
+      // as the symbol's value.
+      if (!word.empty() && word.back() == '#') {
+	// Strip trailing '#' and scan the integer line number.
+	lineNumber = stoi(word.substr(0, word.size() - 1));
+	istringstream listingS(lines[lineNumber]);
+
+	// Examine the listing line to determine if it's an assembly
+	// of a word (one tab char after the line number) or a 36-bit
+	// constant valued symbol (TWO tabs after the line number)
+	// that is being defined there.
+	listingS >> word;	// Grab the line number
+
+	if (listingS.get() == '\t' && listingS.peek() == '\t') {
+
+	  listingS.get();	// Consume the second tab
+
+	  // Check for fullword (two tabs) or halfword (three tabs).
+	  if (listingS.peek() == '\t') {
+	    // A halfword symbol definition with THREE tabs.
+	    // 42927			000774			LAST=774	...
+	    listingS >> word;	// Grab symbol's octal value
+	    value = W36(stoi(word, nullptr, 8));
+	  } else {
+	    // 36-bit constant flavor (two tabs)
+	    // 42937		700600	031577			OPDEF	CLRPI	...
+	  }
+
+	  listingS >> word;	// Grab the symbol's LH octal value
+	  int lh = stoi(word, nullptr, 8);
+	  listingS >> word;	// Grab the symbol's RH octal value
+	  value = W36(lh, stoi(word, nullptr, 8));
+	} else {
+	  // Assembly word flavor (one tab):
+	  //  42914	057634	402 00 0 00 030037 	BEGIOT:	...
+	  listingS >> word;	// Grab the symbol's octal value
+	  value = W36(stoi(word, nullptr, 8));
+	}
+
+	// Given the value, save the symbol's definition. We cannot
+	// get a symbol definition that already exists in
+	// `symbolToValue[]`, but we may have many symbols with the
+	// same value. The first part of this means we don't ever have
+	// to worry about inserting multiple entries in
+	// `valueToSymbol[]` with the same `symbolName`.
+	symbolToValue[symbolName] = value;
+	valueToSymbol.insert(pair(value, symbolName));
+      }
+    }
   }
 }
