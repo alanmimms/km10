@@ -334,7 +334,7 @@ Debugger::DebugAction Debugger::debug() {
 void Debugger::loadSEQ(const char *fileNameP) {
   static const int WIDEST_NORMAL_LINE = 122;
   ifstream inS(fileNameP);
-  vector<string> lines{"this is line #0"};	// Each listing line from SEQ file is placed in here
+  map<int, string> lines;	// Each listing line from SEQ file is placed in here
   bool scanningAssembly{false};
   bool scanningSymbols{false};
 
@@ -344,27 +344,26 @@ void Debugger::loadSEQ(const char *fileNameP) {
   while (!inS.eof()) {
     string scanningLine;
     getline(inS, scanningLine);
+    if (scanningLine.length() == 0) continue;
 
     // If we are skipping the front matter before the assembly listing
     // begins, check for the heading that indicates the assembly
     // listing has begun. This is indicated by a line that starts with
     // '\f' and has the MACRO program's heading format. If this is
     // true, we can start scanning the assembly listing.
-    if (!scanningAssembly &&
-	scanningLine.length() > 0 &&
-	scanningLine[0] == '\f' &&
-	scanningLine.find("MACRO %") != string::npos)
-    {
-      scanningAssembly = true;
+    if (!scanningAssembly) {
+
+      if (scanningLine[0] == '\f' && scanningLine.find("MACRO %") != string::npos) {
+	scanningAssembly = true;
+	getline(inS, scanningLine);		// Discard second line of page header
+      }
+
       continue;
-    } else if (!scanningAssembly) continue; // Keep looking for that MACRO heading
+    }
 
     // Ignore listing page headers (two lines) if we're not yet to the
     // symbol CREF part of the listing.
-    if (!scanningSymbols &&
-	scanningLine.length() > 0 &&
-	scanningLine[0] == '\f')
-    {
+    if (!scanningSymbols && scanningLine.front() == '\f') {
       getline(inS, scanningLine);
       continue;
     }
@@ -452,26 +451,29 @@ void Debugger::loadSEQ(const char *fileNameP) {
 	listingS >> word;	// Grab the line number
 
 	if (listingS.get() == '\t' && listingS.peek() == '\t') {
-
 	  listingS.get();	// Consume the second tab
+	  unsigned lh = 0;
+	  unsigned rh = 0;
 
-	  // Check for fullword (two tabs) or halfword (three tabs).
+	  // Test whether we have fullword (two tabs) or halfword
+	  // (three tabs) constant.
 	  if (listingS.peek() == '\t') {
-	    // A halfword symbol definition with THREE tabs.
+	    // A halfword symbol - THREE tabs and just one octal value.
 	    // 42927			000774			LAST=774	...
-	    listingS >> word;	// Grab symbol's octal value
-	    value = W36(stoi(word, nullptr, 8));
+	    listingS >> word;	// Grab the symbol's halfword octal value
+	    rh = stoi(word, nullptr, 8);
 	  } else {
-	    // 36-bit constant flavor (two tabs)
+	    // 36-bit constant flavor (two tabs), value is LH\tRH.
 	    // 42937		700600	031577			OPDEF	CLRPI	...
+	    listingS >> word;	// Grab the symbol's LH octal value
+	    lh = stoi(word, nullptr, 8);
+	    listingS >> word;	// Grab the symbol's RH octal value
+	    rh = stoi(word, nullptr, 8);
 	  }
 
-	  listingS >> word;	// Grab the symbol's LH octal value
-	  int lh = stoi(word, nullptr, 8);
-	  listingS >> word;	// Grab the symbol's RH octal value
-	  value = W36(lh, stoi(word, nullptr, 8));
+	  value = W36(lh, rh);
 	} else {
-	  // Assembly word flavor (one tab):
+	  // Assembly word flavor (one tab), where the value is just a halfword:
 	  //  42914	057634	402 00 0 00 030037 	BEGIOT:	...
 	  listingS >> word;	// Grab the symbol's octal value
 	  value = W36(stoi(word, nullptr, 8));
