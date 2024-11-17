@@ -48,8 +48,9 @@ struct Debugger {
 
   DebugAction debug();
 
+  string dump(W36 w, W36 pc, bool showCharForm=false);
+
   void loadSEQ(const char *fileNameP);
   void loadREL(const char *fileNameP);
-
   void loadWord(unsigned addr, W36 value);
 };

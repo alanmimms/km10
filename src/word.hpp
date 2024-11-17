@@ -223,32 +223,6 @@ struct W36 {
   }
 
 
-  string dump(bool showCharForm=false) {
-    ostringstream s;
-
-    s << fmt36()
-      << "  "
-      << oct << setfill('0')
-      << " " << setw(3) << op
-      << " " << setw(2) << ac
-      << " " << setw(1) << i
-      << " " << setw(2) << x
-      << " " << setw(6) << y
-      << "  " << disasm();
-
-    if (showCharForm) {
-      s << "  " << "/" << sixbit() << "/";
-
-      if (u < 0400 && u > ' ')
-	s << "  " << "'" << (char) u << "'";
-      else
-	s << "  " << "'" << ascii() << "'";
-    }
-
-    return s.str();
-  }
-
-
   // Disassembly of instruction words
   string disasm() {
     ostringstream s;

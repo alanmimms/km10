@@ -52,7 +52,7 @@ Debugger::DebugAction Debugger::debug() {
   auto dumpAC = [&](int k) {
     cout << ">>>"
 	 << oct << setfill(' ') << setw(2) << k << ": "
-	 << state.AC[k].dump(true) << logger.endl;
+	 << dump(state.AC[k], W36(k), true) << logger.endl;
   };
 
 
@@ -110,7 +110,7 @@ Debugger::DebugAction Debugger::debug() {
 
   do {
     // Show next instruction to execute.
-    cout << state.pc.fmtVMA() << ": " << km10.iw.dump();
+    cout << state.pc.fmtVMA() << ": " << dump(km10.iw, state.pc);
     if (state.inInterrupt) cout << " [EXCEPTION] ";
 
     cout << prompt << flush;
@@ -175,7 +175,7 @@ Debugger::DebugAction Debugger::debug() {
 
 	for (int k=0; k < n; ++k) {
 	  W36 w(state.memGetN(a));
-	  cout << prefix << a.fmtVMA() << ": " << w.dump(true) << logger.endl << flush;
+	  cout << prefix << a.fmtVMA() << ": " << dump(w, a, true) << logger.endl << flush;
 	  a = a + 1;
 	}
 
@@ -336,6 +336,43 @@ Debugger::DebugAction Debugger::debug() {
   // Restore console to raw mode for FE input/output.
   km10.dte.connect();
   return action;
+}
+
+
+// Dump a string represenation of an instruction word in numeric and
+// disassembled, symbolic form, label derived from the specified PC.
+string Debugger::dump(W36 iw, W36 pc, bool showCharForm) {
+  ostringstream s;
+
+  s << iw.fmt36();
+
+  s << oct << setfill('0')
+    << " " << setw(3) << iw.op
+    << " " << setw(2) << iw.ac
+    << " " << setw(1) << iw.i
+    << " " << setw(2) << iw.x
+    << " " << setw(6) << iw.y;
+
+  s << "  " << left << setfill(' ') << setw(10);
+
+  if (auto it = valueToSymbol.find(pc); it != valueToSymbol.end()) {
+    s << (it->second + ":");
+  } else {
+    s << " ";
+  }
+
+  s << iw.disasm();
+
+  if (showCharForm) {
+    s << "  " << "/" << iw.sixbit() << "/";
+
+    if (iw.u < 0400 && iw.u > ' ')
+      s << "  " << "'" << (char) iw.u << "'";
+    else
+      s << "  " << "'" << iw.ascii() << "'";
+  }
+
+  return s.str();
 }
 
 
@@ -680,7 +717,7 @@ void Debugger::loadREL(const char *fileNameP) {
       ++x;
     }
 
-    if (verboseLoad) cout << "loadAddr=" << right << oct << loadAddr << endl;
+    if (verboseLoad) cout << "loadAddr=" << W36(loadAddr).fmtVMA() << endl;
 
     for (unsigned k=x; k - relX < sc; ++k, ++loadAddr, ++x) {
       loadWord(loadAddr, rel[k]);
@@ -874,38 +911,51 @@ void Debugger::loadREL(const char *fileNameP) {
     valueToSymbol[pair.second] = pair.first;
   }
 
+#if 0
   for (const auto &pair: localInvisibleSymbols) {
     valueToSymbol[pair.second] = pair.first;
   }
+#endif
 
-  // Display our results proudly.
-  if (verboseLoad) {
-    static const string bannerDash(30, '-');
+  // Dump our results proudly to a log file.
+  static const string bannerDash(30, '-');
+  static const string symLogFileName{"rel-symbols.log"};
+  ofstream symLog(symLogFileName);
 
-    if (globalSymbols.size() != 0) {
-      cout << endl << bannerDash << "GLOBAL SYMBOLS" << bannerDash << endl;
+  if (globalSymbols.size() != 0) {
+    symLog << endl << bannerDash << "GLOBAL SYMBOLS" << bannerDash << endl;
 
-      for (const auto &pair: globalSymbols) {
-	cout << pair.first << ": " << pair.second.fmt36() << endl;
-      }
-    }
-
-    if (localSymbols.size() != 0) {
-      cout << endl << bannerDash << "LOCAL SYMBOLS" << bannerDash << endl;
-
-      for (const auto &pair: localSymbols) {
-	cout << pair.first << ": " << pair.second.fmt36() << endl;
-      }
-    }
-
-    if (localInvisibleSymbols.size() != 0) {
-      cout << endl << bannerDash << "LOCAL INVISIBLE SYMBOLS" << bannerDash << endl;
-
-      for (const auto &pair: localInvisibleSymbols) {
-	cout << pair.first << ": " << pair.second.fmt36() << endl;
-      }
+    for (const auto &pair: globalSymbols) {
+      symLog << pair.first << ": " << pair.second.fmt36() << endl;
     }
   }
+
+  if (localSymbols.size() != 0) {
+    symLog << endl << bannerDash << "LOCAL SYMBOLS" << bannerDash << endl;
+
+    for (const auto &pair: localSymbols) {
+      symLog << pair.first << ": " << pair.second.fmt36() << endl;
+    }
+  }
+
+  if (localInvisibleSymbols.size() != 0) {
+    symLog << endl << bannerDash << "LOCAL INVISIBLE SYMBOLS" << bannerDash << endl;
+
+    for (const auto &pair: localInvisibleSymbols) {
+      symLog << pair.first << ": " << pair.second.fmt36() << endl;
+    }
+  }
+
+  if (valueToSymbol.size() != 0) {
+    symLog << endl << bannerDash << "VALUES TO SYMBOLS" << bannerDash << endl;
+
+    for (const auto &pair: valueToSymbol) {
+      symLog << pair.first.fmt36() << "=" << pair.second << endl;
+    }
+  }
+
+  symLog.close();
+  cout << "[symbols dumped to " << symLogFileName << "]" << endl;
 
   cout << "[done]" << endl << flush;
 }

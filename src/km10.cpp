@@ -110,7 +110,9 @@ void KM10::emulate(Debugger *debuggerP) {
       if (--state.nSteps <= 0) state.running = false;
     }
 
-    if (logger.loggingToFile && logger.pc) logger.s << state.pc.fmtVMA() << ": " << iw.dump();
+    if (logger.loggingToFile && logger.pc) {
+      logger.s << state.pc.fmtVMA() << ": " << debuggerP->dump(iw, state.pc);
+    }
 
     // Unless we encounter ANOTHER XCT we're not in one now.
     state.inXCT = false;
