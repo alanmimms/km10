@@ -576,10 +576,9 @@ static vector<W36> readFileW36s(const char* filename) {
 struct Radix50Word {
   union {
 
-    struct {
-      unsigned: 64 - 36;
-      unsigned format: 4;
+    struct ATTRPACKED {
       unsigned rad50: 32;
+      unsigned format: 4;
     };
     
     uint64_t u;
@@ -587,30 +586,35 @@ struct Radix50Word {
 
 
   Radix50Word(unsigned aFormat, unsigned aRad50)
-    : format(aFormat),
-      rad50(aRad50)
+    : rad50(aRad50),
+      format(aFormat)
   { }
 
 
   Radix50Word(W36 w)
-    : format(w.u >> 32),
-      rad50(w.u & 0xFFFFFFFFul)
+    : rad50(w.u & W36::rMask(32)),
+      format(w.u >> 32)
   { }
 
 
-  static inline const char RADIX50[] = " ABCDEFGHIJKLMNOPQRSTUVWXYZ$.%0123456789";
+  // Human octal readable version of bits 0..3
+  inline unsigned flavor() const {return (unsigned) format << 2; }
+
+  static inline const char RADIX50[] = " 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ$.%";
 
 
   string toString() const {
     unsigned v = rad50;
-    ostringstream s;
+    vector<char> s;
+    s.reserve(16);
 
-    for (int k=0; k < 4; ++k) {
-      s << RADIX50[v % 40];
+    for (int k=7; k >= 0 && v != 0; --k) {
+      s.insert(s.begin(), RADIX50[v % 40]);
       v /= 40;
     }
 
-    return s.str();
+    string str(s.begin(), s.end());
+    return str;
   }
 
 
@@ -619,13 +623,6 @@ struct Radix50Word {
     *os << w.toString();
   }
 };
-
-
-// Return the number of words in a block with `sc` as its short count.
-// This includes the relocation words required to map that many words.
-static unsigned shortCountWords(unsigned sc) {
-  return sc + sc / 18;
-}
 
 
 static void loadWord(unsigned addr, W36 value) {
@@ -660,50 +657,67 @@ void Debugger::loadREL(const char *fileNameP) {
     // If "address word" has binary 1100 in top four bits, it's a
     // symbol we have to relocate address by. Otherwise, I guess we
     // don't relocate.
-    Radix50Word codeSymbol{rel[x++]};
+    W36 symOrAddr{rel[x++]};
+    Radix50Word codeSymbol{symOrAddr};
     unsigned loadAddr;
+
+    if ((symOrAddr >> 18) != 0) {
+      cout << "Symbol " << codeSymbol.toString()
+	   << " flavor=" << codeSymbol.flavor()
+	   << endl;
+    }
 
     // If it's a symbol, we use its value plus the word following as
     // the load address.
-    if (codeSymbol.format == 014) {
+    if ((symOrAddr >> 32) == 014) {
       string symbol = codeSymbol.toString();
       loadAddr = globalSymbols[symbol];
       cout << "Offset by " << symbol << "=" << W36(loadAddr).fmtVMA() << endl;
-      loadAddr += rel[x++].u;	 // Add the offset
+      loadAddr += rel[x++].u;	// Add the offset
     } else {
-      loadAddr = rel[x++].u;	// Get the load address
+      loadAddr = symOrAddr;	// Get the load addres
+      ++x;
     }
 
-    for (unsigned k=x; k - relX < sc - 1; ++k, ++loadAddr, ++x) {
+    cout << "loadAddr=" << right << oct << loadAddr << endl;
+
+    for (unsigned k=x; k - relX < sc; ++k, ++loadAddr, ++x) {
       loadWord(loadAddr, rel[k]);
     }
   };
 
 
   blockTypeHandler[002] = [&]() {
-    Radix50Word sym{rel[x++]};
 
-    switch (sym.format << 2) { // Shifted up to make it work properly as octal
-    case 000:			// ILLEGAL
-    default:
-      cout << "ILLEGAL Radix50Word symbol flavor: " << sym.format
-	   << " for word " << W36(x-1).fmt36()
-	   << endl;
-      break;
+    while (x - relX < sc) {
+      unsigned startX = x;
+      Radix50Word sym{rel[x++]};
+      W36 value = W36{rel[x++]};
 
-    case 004:			// Global symbol
-      cout << "Define global " << sym.toString() << " as " << rel[x].fmt36() << endl;
-      globalSymbols[sym.toString()] = rel[x++];
-      break;
+      switch (sym.flavor()) {
+      case 000:			// ILLEGAL
+      default:
+	cout << "[" << oct << startX << "] ILLEGAL Radix50Word symbol flavor "
+	     << oct << sym.flavor() << endl;
+	break;
 
-    case 010:			// Local symbol
-    case 014:			// Block name
-      cout << "Define local " << sym.toString() << " as " << rel[x].fmt36() << endl;
-      localSymbols[sym.toString()] = rel[x++];
-      break;
+      case 004:			// Global symbol
+	cout << "[" << oct << startX << "] Define global " << sym.toString()
+	     << " as " << value.fmt36() << endl;
+	globalSymbols[sym.toString()] = value;
+	break;
 
-    case 024:			// Partially defined global symbol
-      break;
+      case 010:			// Local symbol
+      case 014:			// Block name
+      case 050:			// DDT invisible local symbol
+	cout << "[" << oct << startX << "] Define local " << sym.toString()
+	     << " as " << value.fmt36() << endl;
+	localSymbols[sym.toString()] = value;
+	break;
+
+      case 024:			// Partially defined global symbol
+	break;
+      }
     }
   };
   
@@ -728,6 +742,12 @@ void Debugger::loadREL(const char *fileNameP) {
   };
 
 
+  // End of program
+  blockTypeHandler[005] = [&]() {
+    // we ignore this
+  };
+
+
   // Program name
   blockTypeHandler[006] = [&]() {
     Radix50Word sym{rel[x++]};
@@ -735,7 +755,7 @@ void Debugger::loadREL(const char *fileNameP) {
     uint64_t w = rel[x++].u;
     unsigned cpu = w >> 30;
     unsigned compiler = (w >> 18) & 07777ul;
-    unsigned lengthOfBlankCommon = w & 0777777ul;
+    unsigned lengthOfBlankCommon = w & W36::halfOnes;
 
     if (cpu & 010) cout << " KS10";
     if (cpu & 004) cout << " KL10";
@@ -772,6 +792,21 @@ void Debugger::loadREL(const char *fileNameP) {
   };
 
 
+  // Start
+  blockTypeHandler[007] = [&]() {
+    W36 startAddr{rel[x++]};
+
+    cout << "[" << oct << x << "] Start: " << startAddr.fmtVMA();
+
+    if (sc >= 2) {
+      Radix50Word sym{rel[x++]};
+      if (sym.flavor() == 060) cout << " offset by " << sym.toString();
+    }
+
+    cout << endl;
+  };
+
+
   cout << "[loading " << fileNameP << " " << right << oct << relSize << "words]" << endl << flush;
 
   for (x=0; x < relSize; ) {
@@ -780,7 +815,7 @@ void Debugger::loadREL(const char *fileNameP) {
     blockType = rel[x].lhu;
 
     // Length of the block excluding header word and relocation word.
-    sc = shortCountWords(rel[x].rhu);
+    sc = rel[x].rhu;
 
     ++x;			// Consume block header
 
@@ -791,8 +826,8 @@ void Debugger::loadREL(const char *fileNameP) {
     relX = x;
 
     cout << "[" << right << oct << startX << "] Block " << blockType
-	 << " sc=" << sc
-	 << " relW=" << W36(rw).fmt36() << endl;
+	 << " shortCount=" << sc
+	 << " relocationWord=" << W36(rw).fmt36() << endl;
 
     auto it = blockTypeHandler.find(blockType);
 
@@ -800,7 +835,26 @@ void Debugger::loadREL(const char *fileNameP) {
       it->second();		// Invoke the handler
     } else {
       cout << "blockType " << right << oct << blockType << " not defined" << endl;
+      return;			// FOR NOW
       x += sc;			// Try to skip the block
+    }
+  }
+
+  static const string bannerDash(30, '-');
+
+  if (globalSymbols.size() != 0) {
+    cout << bannerDash << "GLOBAL SYMBOLS" << bannerDash << endl;
+
+    for (const auto &pair: globalSymbols) {
+      cout << pair.first << ": " << pair.second.fmt36() << endl;
+    }
+  }
+
+  if (localSymbols.size() != 0) {
+    cout << bannerDash << "LOCAL SYMBOLS" << bannerDash << endl;
+
+    for (const auto &pair: localSymbols) {
+      cout << pair.first << ": " << pair.second.fmt36() << endl;
     }
   }
 
