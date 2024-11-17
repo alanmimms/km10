@@ -22,7 +22,8 @@ static unordered_set<unsigned> eBPs;
 
 // Definitions for our command line options
 DEFINE_string(load, "../images/klad/dfkaa.a10", ".A10 or .SAV file to load");
-DEFINE_string(seq, "../images/klad/dfkaa.seq", ".SEQ file to load symbols from");
+//DEFINE_string(seq, "../images/klad/dfkaa.seq", ".SEQ file to load symbols from");
+DEFINE_string(rel, "../images/klad/dfkaa.rel", ".REL file to load symbols from");
 DEFINE_bool(debug, false, "run the built-in debugger instead of starting execution");
 
 
@@ -160,8 +161,14 @@ static int loopedMain(int argc, char *argv[]) {
   KM10 km10(state);
   Debugger debugger(km10, state);
 
+#if 0
   if (FLAGS_seq != "none") {
     debugger.loadSEQ(FLAGS_seq.c_str());
+  }
+#endif
+
+  if (FLAGS_rel != "none") {
+    debugger.loadREL(FLAGS_rel.c_str());
   }
 
   state.running = !FLAGS_debug;

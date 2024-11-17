@@ -41,4 +41,5 @@ struct Debugger {
   DebugAction debug();
 
   void loadSEQ(const char *fileNameP);
+  void loadREL(const char *fileNameP);
 };

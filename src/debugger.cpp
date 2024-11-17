@@ -9,6 +9,16 @@
 
 #include <signal.h>
 
+#include <iostream>
+#include <cstdint>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <cstring>
+#include <stdexcept>
+#include <vector>
+
 using namespace std;
 
 
@@ -490,4 +500,309 @@ void Debugger::loadSEQ(const char *fileNameP) {
       }
     }
   }
+}
+
+
+static vector<W36> readFileW36s(const char* filename) {
+  // Open the file
+  int fd = open(filename, O_RDONLY);
+  if (fd == -1) {
+    throw runtime_error("Failed to open file");
+  }
+
+  // Get the file size
+  struct stat st;
+  if (fstat(fd, &st) == -1) {
+    close(fd);
+    throw runtime_error("Failed to get file size");
+  }
+  size_t fileSize = static_cast<size_t>(st.st_size);
+
+  // Ensure file size is divisible by 9
+  if (fileSize % 9 != 0) {
+    close(fd);
+    throw runtime_error("File size is not divisible by 9");
+  }
+
+  // Map the file into memory
+  void* mappedData = mmap(nullptr, fileSize, PROT_READ, MAP_PRIVATE, fd, 0);
+  close(fd); // Can close file descriptor after mmap
+  if (mappedData == MAP_FAILED) {
+    throw runtime_error("Failed to mmap file");
+  }
+
+  // Calculate the number of 36-bit values
+  size_t numValues = (fileSize / 9) * 2;
+
+  // Create the output vector and pre-allocate capacity
+  vector<W36> output;
+  output.reserve(numValues);
+
+  // Process the file data
+  const uint8_t* inputBytes = static_cast<const uint8_t*>(mappedData);
+
+  for (size_t i = 0; i < fileSize; i += 9) {
+    // Extract 9 bytes
+    const uint8_t* chunk = inputBytes + i;
+
+    // Create the first 36-bit value
+    uint64_t value1 = (static_cast<uint64_t>(chunk[0]) << 28) |
+                      (static_cast<uint64_t>(chunk[1]) << 20) |
+                      (static_cast<uint64_t>(chunk[2]) << 12) |
+                      (static_cast<uint64_t>(chunk[3]) << 4) |
+                      (static_cast<uint64_t>(chunk[4]) >> 4);
+
+    // Create the second 36-bit value
+    uint64_t value2 = (static_cast<uint64_t>(chunk[4] & 0x0F) << 32) |
+                      (static_cast<uint64_t>(chunk[5]) << 24) |
+                      (static_cast<uint64_t>(chunk[6]) << 16) |
+                      (static_cast<uint64_t>(chunk[7]) << 8) |
+                      (static_cast<uint64_t>(chunk[8]));
+
+    // Add the values to the output vector
+    output.emplace_back(value1);
+    output.emplace_back(value2);
+  }
+
+  // Unmap the file
+  if (munmap(mappedData, fileSize) == -1) {
+    throw runtime_error("Failed to unmap file");
+  }
+
+  return output;
+}
+
+
+struct Radix50Word {
+  union {
+
+    struct {
+      unsigned: 64 - 36;
+      unsigned format: 4;
+      unsigned rad50: 32;
+    };
+    
+    uint64_t u;
+  };
+
+
+  Radix50Word(unsigned aFormat, unsigned aRad50)
+    : format(aFormat),
+      rad50(aRad50)
+  { }
+
+
+  Radix50Word(W36 w)
+    : format(w.u >> 32),
+      rad50(w.u & 0xFFFFFFFFul)
+  { }
+
+
+  static inline const char RADIX50[] = " ABCDEFGHIJKLMNOPQRSTUVWXYZ$.%0123456789";
+
+
+  string toString() const {
+    unsigned v = rad50;
+    ostringstream s;
+
+    for (int k=0; k < 4; ++k) {
+      s << RADIX50[v % 40];
+      v /= 40;
+    }
+
+    return s.str();
+  }
+
+
+  // For googletest stringification
+  friend void PrintTo(const Radix50Word& w, std::ostream* os) {
+    *os << w.toString();
+  }
+};
+
+
+// Return the number of words in a block with `sc` as its short count.
+// This includes the relocation words required to map that many words.
+static unsigned shortCountWords(unsigned sc) {
+  return sc + sc / 18;
+}
+
+
+static void loadWord(unsigned addr, W36 value) {
+  cout << W36(addr).fmtVMA() << ": " << value.fmt36() << endl;
+}
+
+
+// Load a listing file (*.REL) to get symbol definitions for symbolic
+// debugging.
+void Debugger::loadREL(const char *fileNameP) {
+  map<string, W36> globalSymbols{};
+  map<string, W36> localSymbols{};
+  vector<W36> rel = readFileW36s(fileNameP);
+  size_t relSize = rel.size();
+  unsigned rw = 0;     // Relocation word we're working with right now
+  unsigned blockType;
+  unsigned sc;
+  unsigned x;
+  unsigned relX;
+
+  map<unsigned, function<void()>> blockTypeHandler{};
+
+
+  // 000: Ignored
+  blockTypeHandler[000] = [&]() {
+    x += sc;
+  };
+
+
+  // 001 Code
+  blockTypeHandler[001] = [&]() {
+    // If "address word" has binary 1100 in top four bits, it's a
+    // symbol we have to relocate address by. Otherwise, I guess we
+    // don't relocate.
+    Radix50Word codeSymbol{rel[x++]};
+    unsigned loadAddr;
+
+    // If it's a symbol, we use its value plus the word following as
+    // the load address.
+    if (codeSymbol.format == 014) {
+      string symbol = codeSymbol.toString();
+      loadAddr = globalSymbols[symbol];
+      cout << "Offset by " << symbol << "=" << W36(loadAddr).fmtVMA() << endl;
+      loadAddr += rel[x++].u;	 // Add the offset
+    } else {
+      loadAddr = rel[x++].u;	// Get the load address
+    }
+
+    for (unsigned k=x; k - relX < sc - 1; ++k, ++loadAddr, ++x) {
+      loadWord(loadAddr, rel[k]);
+    }
+  };
+
+
+  blockTypeHandler[002] = [&]() {
+    Radix50Word sym{rel[x++]};
+
+    switch (sym.format << 2) { // Shifted up to make it work properly as octal
+    case 000:			// ILLEGAL
+    default:
+      cout << "ILLEGAL Radix50Word symbol flavor: " << sym.format
+	   << " for word " << W36(x-1).fmt36()
+	   << endl;
+      break;
+
+    case 004:			// Global symbol
+      cout << "Define global " << sym.toString() << " as " << rel[x].fmt36() << endl;
+      globalSymbols[sym.toString()] = rel[x++];
+      break;
+
+    case 010:			// Local symbol
+    case 014:			// Block name
+      cout << "Define local " << sym.toString() << " as " << rel[x].fmt36() << endl;
+      localSymbols[sym.toString()] = rel[x++];
+      break;
+
+    case 024:			// Partially defined global symbol
+      break;
+    }
+  };
+  
+
+  // HISEG
+  blockTypeHandler[003] = [&]() {
+
+    for (unsigned k=0; k <= sc; ++k) {
+      Radix50Word sym{rel[x++]};
+      cout << "Entry " << sym.toString() << endl;
+    }
+  };
+
+
+  // Entry symbols
+  blockTypeHandler[004] = [&]() {
+
+    for (unsigned k=0; k < sc; ++k) {
+      Radix50Word sym{rel[x++]};
+      cout << "Entry " << sym.toString() << endl;
+    }
+  };
+
+
+  // Program name
+  blockTypeHandler[006] = [&]() {
+    Radix50Word sym{rel[x++]};
+    cout << "Program " << sym.toString();
+    uint64_t w = rel[x++].u;
+    unsigned cpu = w >> 30;
+    unsigned compiler = (w >> 18) & 07777ul;
+    unsigned lengthOfBlankCommon = w & 0777777ul;
+
+    if (cpu & 010) cout << " KS10";
+    if (cpu & 004) cout << " KL10";
+    if (cpu & 002) cout << " KI10";
+    if (cpu & 001) cout << " KA10";
+
+    if (compiler == 000) cout << " Unknown";
+    if (compiler == 001) cout << " (Not used)";
+    if (compiler == 002) cout << " COBOL-68";
+    if (compiler == 003) cout << " ALGOL";
+    if (compiler == 004) cout << " NELIAC";
+    if (compiler == 005) cout << " PL/I";
+    if (compiler == 006) cout << " BLISS";
+    if (compiler == 007) cout << " SAIL";
+
+    if (compiler == 010) cout << " FORTRAN";
+    if (compiler == 011) cout << " MACRO";
+    if (compiler == 012) cout << " FAIL";
+    if (compiler == 013) cout << " BCPL";
+    if (compiler == 014) cout << " MIDAS";
+    if (compiler == 015) cout << " SIMULA";
+    if (compiler == 016) cout << " COBOL-7";
+    if (compiler == 017) cout << " COBOL";
+
+    if (compiler == 020) cout << " BLISS-36";
+    if (compiler == 021) cout << " BASIC";
+    if (compiler == 022) cout << " SITGO";
+    if (compiler == 023) cout << " (Reserved)";
+    if (compiler == 024) cout << " PASCAL";
+    if (compiler == 025) cout << " JOVIAL";
+    if (compiler == 026) cout << " ADA";
+
+    cout << " common=" << right << oct << lengthOfBlankCommon << endl;
+  };
+
+
+  cout << "[loading " << fileNameP << " " << right << oct << relSize << "words]" << endl << flush;
+
+  for (x=0; x < relSize; ) {
+    unsigned startX = x;
+
+    blockType = rel[x].lhu;
+
+    // Length of the block excluding header word and relocation word.
+    sc = shortCountWords(rel[x].rhu);
+
+    ++x;			// Consume block header
+
+    // Relocation word.
+    rw = rel[x++].u;
+
+    // Offset of where our data words start.
+    relX = x;
+
+    cout << "[" << right << oct << startX << "] Block " << blockType
+	 << " sc=" << sc
+	 << " relW=" << W36(rw).fmt36() << endl;
+
+    auto it = blockTypeHandler.find(blockType);
+
+    if (it != blockTypeHandler.end()) {
+      it->second();		// Invoke the handler
+    } else {
+      cout << "blockType " << right << oct << blockType << " not defined" << endl;
+      x += sc;			// Try to skip the block
+    }
+  }
+
+  cout << "[done]" << endl << flush;
 }
