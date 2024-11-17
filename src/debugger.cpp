@@ -491,11 +491,11 @@ void Debugger::loadSEQ(const char *fileNameP) {
 
 	// Given the value, save the symbol's definition. We cannot
 	// get a symbol definition that already exists in
-	// `symbolToValue[]`, but we may have many symbols with the
+	// `globalSymbols[]`, but we may have many symbols with the
 	// same value. The first part of this means we don't ever have
 	// to worry about inserting multiple entries in
 	// `valueToSymbol[]` with the same `symbolName`.
-	symbolToValue[symbolName] = value;
+	globalSymbols[symbolName] = value;
 	valueToSymbol.insert(pair(value, symbolName));
       }
     }
@@ -625,16 +625,14 @@ struct Radix50Word {
 };
 
 
-static void loadWord(unsigned addr, W36 value) {
-  cout << W36(addr).fmtVMA() << ": " << value.fmt36() << endl;
+void Debugger::loadWord(unsigned addr, W36 value)  {
+  if (verboseLoad) cout << W36(addr).fmtVMA() << ": " << value.fmt36() << endl;
 }
 
 
 // Load a listing file (*.REL) to get symbol definitions for symbolic
 // debugging.
 void Debugger::loadREL(const char *fileNameP) {
-  map<string, W36> globalSymbols{};
-  map<string, W36> localSymbols{};
   vector<W36> rel = readFileW36s(fileNameP);
   size_t relSize = rel.size();
   unsigned rw = 0;     // Relocation word we're working with right now
@@ -661,10 +659,13 @@ void Debugger::loadREL(const char *fileNameP) {
     Radix50Word codeSymbol{symOrAddr};
     unsigned loadAddr;
 
-    if ((symOrAddr >> 18) != 0) {
-      cout << "Symbol " << codeSymbol.toString()
-	   << " flavor=" << codeSymbol.flavor()
-	   << endl;
+    if (verboseLoad) {
+
+      if ((symOrAddr >> 18) != 0) {
+	cout << "Symbol " << codeSymbol.toString()
+	     << " flavor=" << codeSymbol.flavor()
+	     << endl;
+      }
     }
 
     // If it's a symbol, we use its value plus the word following as
@@ -672,14 +673,14 @@ void Debugger::loadREL(const char *fileNameP) {
     if ((symOrAddr >> 32) == 014) {
       string symbol = codeSymbol.toString();
       loadAddr = globalSymbols[symbol];
-      cout << "Offset by " << symbol << "=" << W36(loadAddr).fmtVMA() << endl;
+      if (verboseLoad) cout << "Offset by " << symbol << "=" << W36(loadAddr).fmtVMA() << endl;
       loadAddr += rel[x++].u;	// Add the offset
     } else {
       loadAddr = symOrAddr;	// Get the load addres
       ++x;
     }
 
-    cout << "loadAddr=" << right << oct << loadAddr << endl;
+    if (verboseLoad) cout << "loadAddr=" << right << oct << loadAddr << endl;
 
     for (unsigned k=x; k - relX < sc; ++k, ++loadAddr, ++x) {
       loadWord(loadAddr, rel[k]);
@@ -702,17 +703,31 @@ void Debugger::loadREL(const char *fileNameP) {
 	break;
 
       case 004:			// Global symbol
-	cout << "[" << oct << startX << "] Define global " << sym.toString()
-	     << " as " << value.fmt36() << endl;
+	if (verboseLoad) {
+	  cout << "[" << oct << startX << "] Define global " << sym.toString()
+	       << " as " << value.fmt36() << endl;
+	}
+
 	globalSymbols[sym.toString()] = value;
 	break;
 
       case 010:			// Local symbol
       case 014:			// Block name
-      case 050:			// DDT invisible local symbol
-	cout << "[" << oct << startX << "] Define local " << sym.toString()
-	     << " as " << value.fmt36() << endl;
+	if (verboseLoad) {
+	  cout << "[" << oct << startX << "] Define local " << sym.toString()
+	       << " as " << value.fmt36() << endl;
+	}
+
 	localSymbols[sym.toString()] = value;
+	break;
+
+      case 050:			// DDT invisible local symbol
+	if (verboseLoad) {
+	  cout << "[" << oct << startX << "] Define invisible local " << sym.toString()
+	       << " as " << value.fmt36() << endl;
+	}
+
+	localInvisibleSymbols[sym.toString()] = value;
 	break;
 
       case 024:			// Partially defined global symbol
@@ -737,7 +752,7 @@ void Debugger::loadREL(const char *fileNameP) {
 
     for (unsigned k=0; k < sc; ++k) {
       Radix50Word sym{rel[x++]};
-      cout << "Entry " << sym.toString() << endl;
+      if (verboseLoad) cout << "Entry " << sym.toString() << endl;
     }
   };
 
@@ -751,44 +766,46 @@ void Debugger::loadREL(const char *fileNameP) {
   // Program name
   blockTypeHandler[006] = [&]() {
     Radix50Word sym{rel[x++]};
-    cout << "Program " << sym.toString();
+    if (verboseLoad) cout << "Program " << sym.toString();
     uint64_t w = rel[x++].u;
     unsigned cpu = w >> 30;
     unsigned compiler = (w >> 18) & 07777ul;
     unsigned lengthOfBlankCommon = w & W36::halfOnes;
 
-    if (cpu & 010) cout << " KS10";
-    if (cpu & 004) cout << " KL10";
-    if (cpu & 002) cout << " KI10";
-    if (cpu & 001) cout << " KA10";
+    if (verboseLoad) {
+      if (cpu & 010) cout << " KS10";
+      if (cpu & 004) cout << " KL10";
+      if (cpu & 002) cout << " KI10";
+      if (cpu & 001) cout << " KA10";
 
-    if (compiler == 000) cout << " Unknown";
-    if (compiler == 001) cout << " (Not used)";
-    if (compiler == 002) cout << " COBOL-68";
-    if (compiler == 003) cout << " ALGOL";
-    if (compiler == 004) cout << " NELIAC";
-    if (compiler == 005) cout << " PL/I";
-    if (compiler == 006) cout << " BLISS";
-    if (compiler == 007) cout << " SAIL";
+      if (compiler == 000) cout << " Unknown";
+      if (compiler == 001) cout << " (Not used)";
+      if (compiler == 002) cout << " COBOL-68";
+      if (compiler == 003) cout << " ALGOL";
+      if (compiler == 004) cout << " NELIAC";
+      if (compiler == 005) cout << " PL/I";
+      if (compiler == 006) cout << " BLISS";
+      if (compiler == 007) cout << " SAIL";
 
-    if (compiler == 010) cout << " FORTRAN";
-    if (compiler == 011) cout << " MACRO";
-    if (compiler == 012) cout << " FAIL";
-    if (compiler == 013) cout << " BCPL";
-    if (compiler == 014) cout << " MIDAS";
-    if (compiler == 015) cout << " SIMULA";
-    if (compiler == 016) cout << " COBOL-7";
-    if (compiler == 017) cout << " COBOL";
+      if (compiler == 010) cout << " FORTRAN";
+      if (compiler == 011) cout << " MACRO";
+      if (compiler == 012) cout << " FAIL";
+      if (compiler == 013) cout << " BCPL";
+      if (compiler == 014) cout << " MIDAS";
+      if (compiler == 015) cout << " SIMULA";
+      if (compiler == 016) cout << " COBOL-7";
+      if (compiler == 017) cout << " COBOL";
 
-    if (compiler == 020) cout << " BLISS-36";
-    if (compiler == 021) cout << " BASIC";
-    if (compiler == 022) cout << " SITGO";
-    if (compiler == 023) cout << " (Reserved)";
-    if (compiler == 024) cout << " PASCAL";
-    if (compiler == 025) cout << " JOVIAL";
-    if (compiler == 026) cout << " ADA";
+      if (compiler == 020) cout << " BLISS-36";
+      if (compiler == 021) cout << " BASIC";
+      if (compiler == 022) cout << " SITGO";
+      if (compiler == 023) cout << " (Reserved)";
+      if (compiler == 024) cout << " PASCAL";
+      if (compiler == 025) cout << " JOVIAL";
+      if (compiler == 026) cout << " ADA";
 
-    cout << " common=" << right << oct << lengthOfBlankCommon << endl;
+      cout << " common=" << right << oct << lengthOfBlankCommon << endl;
+    }
   };
 
 
@@ -796,18 +813,23 @@ void Debugger::loadREL(const char *fileNameP) {
   blockTypeHandler[007] = [&]() {
     W36 startAddr{rel[x++]};
 
-    cout << "[" << oct << x << "] Start: " << startAddr.fmtVMA();
+    if (verboseLoad) cout << "[" << oct << x << "] Start: " << startAddr.fmtVMA();
 
     if (sc >= 2) {
       Radix50Word sym{rel[x++]};
-      if (sym.flavor() == 060) cout << " offset by " << sym.toString();
+
+      if (verboseLoad) {
+	if (sym.flavor() == 060) cout << " offset by " << sym.toString();
+      }
     }
 
-    cout << endl;
+    if (verboseLoad) cout << endl;
   };
 
 
-  cout << "[loading " << fileNameP << " " << right << oct << relSize << "words]" << endl << flush;
+  cout << "[loading " << fileNameP << "  "
+       << right << oct << relSize << " words]"
+       << endl;
 
   for (x=0; x < relSize; ) {
     unsigned startX = x;
@@ -825,36 +847,63 @@ void Debugger::loadREL(const char *fileNameP) {
     // Offset of where our data words start.
     relX = x;
 
-    cout << "[" << right << oct << startX << "] Block " << blockType
-	 << " shortCount=" << sc
-	 << " relocationWord=" << W36(rw).fmt36() << endl;
+    if (verboseLoad) {
+      cout << "[" << right << oct << startX << "] Block " << blockType
+	   << " shortCount=" << sc
+	   << " relocationWord=" << W36(rw).fmt36() << endl;
+    }
 
     auto it = blockTypeHandler.find(blockType);
 
     if (it != blockTypeHandler.end()) {
       it->second();		// Invoke the handler
     } else {
-      cout << "blockType " << right << oct << blockType << " not defined" << endl;
+      if (verboseLoad) cout << "blockType " << right << oct << blockType << " not defined" << endl;
       return;			// FOR NOW
       x += sc;			// Try to skip the block
     }
   }
 
-  static const string bannerDash(30, '-');
-
-  if (globalSymbols.size() != 0) {
-    cout << bannerDash << "GLOBAL SYMBOLS" << bannerDash << endl;
-
-    for (const auto &pair: globalSymbols) {
-      cout << pair.first << ": " << pair.second.fmt36() << endl;
-    }
+  // Build our value-to-symbol reverse lookup table from all symbols
+  // we know about.
+  for (const auto &pair: globalSymbols) {
+    valueToSymbol[pair.second] = pair.first;
   }
 
-  if (localSymbols.size() != 0) {
-    cout << bannerDash << "LOCAL SYMBOLS" << bannerDash << endl;
+  for (const auto &pair: localSymbols) {
+    valueToSymbol[pair.second] = pair.first;
+  }
 
-    for (const auto &pair: localSymbols) {
-      cout << pair.first << ": " << pair.second.fmt36() << endl;
+  for (const auto &pair: localInvisibleSymbols) {
+    valueToSymbol[pair.second] = pair.first;
+  }
+
+  // Display our results proudly.
+  if (verboseLoad) {
+    static const string bannerDash(30, '-');
+
+    if (globalSymbols.size() != 0) {
+      cout << endl << bannerDash << "GLOBAL SYMBOLS" << bannerDash << endl;
+
+      for (const auto &pair: globalSymbols) {
+	cout << pair.first << ": " << pair.second.fmt36() << endl;
+      }
+    }
+
+    if (localSymbols.size() != 0) {
+      cout << endl << bannerDash << "LOCAL SYMBOLS" << bannerDash << endl;
+
+      for (const auto &pair: localSymbols) {
+	cout << pair.first << ": " << pair.second.fmt36() << endl;
+      }
+    }
+
+    if (localInvisibleSymbols.size() != 0) {
+      cout << endl << bannerDash << "LOCAL INVISIBLE SYMBOLS" << bannerDash << endl;
+
+      for (const auto &pair: localInvisibleSymbols) {
+	cout << pair.first << ": " << pair.second.fmt36() << endl;
+      }
     }
   }
 

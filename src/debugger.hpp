@@ -13,7 +13,12 @@ struct Debugger {
     : km10(aKM10),
       state(aState),
       prevLine("help"),
-      lastAddr(0)
+      lastAddr(0),
+      globalSymbols{},
+      localSymbols{},
+      localInvisibleSymbols{},
+      valueToSymbol{},
+      verboseLoad(false)
   {}
 
   KM10 &km10;
@@ -21,9 +26,12 @@ struct Debugger {
   string prevLine;
   unsigned lastAddr;
 
-  map<string, W36> symbolToValue;
-  multimap<W36, string> valueToSymbol;
+  map<string, W36> globalSymbols;
+  map<string, W36> localSymbols;
+  map<string, W36> localInvisibleSymbols;
+  map<W36, string> valueToSymbol;
 
+  bool verboseLoad;
 
   // This is how debugger tells our emulator loop what to do when it
   // returns.
@@ -42,4 +50,6 @@ struct Debugger {
 
   void loadSEQ(const char *fileNameP);
   void loadREL(const char *fileNameP);
+
+  void loadWord(unsigned addr, W36 value);
 };
