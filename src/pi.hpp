@@ -94,7 +94,11 @@ struct PIDevice: Device {
       unsigned currentLevel: 4;
     };
 
-    uint64_t u: 36;
+    // The `u` bits are just the CONI bits. We initialize and manage
+    // `currentLevel` separately.
+    struct ATTRPACKED {
+      unsigned u: 25;
+    };
 
     // This is the "lowest" level. This is the `currentLevel` value
     // when no interrupts are being serviced.
@@ -117,7 +121,13 @@ struct PIDevice: Device {
       if (writeEvenParityData) ss << " writeEvenParityData";
       if (writeEvenParityAddr) ss << " writeEvenParityAddr";
       ss << " prLevels=" << levelsToStr(prLevels);
-      ss << " currentLevel=" << currentLevel;
+      ss << " currentLevel=";
+
+      if (currentLevel == PIState::noLevel)
+	ss << "none";
+      else
+	ss << currentLevel;
+
       return ss.str();
     }
   } piState;
@@ -225,9 +235,17 @@ struct PIDevice: Device {
 
   // I/O instruction handlers
   void clearIO() override {
+    // This is apparently only supposed to be a partial reset based on
+    // DFKAA test at 064756.
     Device::clearIO();
+
+    // Preserve the parts of piState that aren't cleared by clearIO().
+    unsigned levelsOn = piState.levelsOn;
+    unsigned piOn = piState.piOn;
     piState.u = 0;
     piState.currentLevel = PIState::noLevel;
+    piState.levelsOn = levelsOn;
+    piState.piOn = piOn;
   }
 
   void doCONO(W36 iw, W36 ea) override {
@@ -240,6 +258,8 @@ struct PIDevice: Device {
 
     if (pif.clearPI) {
       clearIO();
+      piState.u = 0;		// Really clear
+      piState.currentLevel = PIState::noLevel;
     } else {
       piState.writeEvenParityDir = pif.writeEvenParityDir;
       piState.writeEvenParityData = pif.writeEvenParityData;
