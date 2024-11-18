@@ -174,7 +174,8 @@ void KMState::loadA10(const char *fileNameP) {
 	if (a < lowestAddr) lowestAddr = a;
 
 	if (logger.load) {
-	  logger.s << "mem[" << a36.fmtVMA() << "]=" << w36.fmt36() << " " << w36.disasm()
+	  logger.s << "mem[" << a36.fmtVMA() << "]=" << w36.fmt36()
+		   << " " << w36.disasm(nullptr)
 		   << logger.endl;
 	}
 

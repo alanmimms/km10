@@ -361,7 +361,7 @@ string Debugger::dump(W36 iw, W36 pc, bool showCharForm) {
     s << " ";
   }
 
-  s << iw.disasm();
+  s << iw.disasm(this);
 
   if (showCharForm) {
     s << "  " << "/" << iw.sixbit() << "/";
@@ -959,3 +959,32 @@ void Debugger::loadREL(const char *fileNameP) {
 
   cout << "[done]" << endl << flush;
 }
+
+
+string Debugger::symbolicForm(W36 w) {
+  static const int64_t maxDelta = 01000;
+  auto it = valueToSymbol.upper_bound(w.u);
+
+  // Find and return the string (+ offset) for a symbol whose value is
+  // no more than maxDelta greater than w. If no such entry exists,
+  // fall through and return just the octal value.
+  if (it != valueToSymbol.begin()) {
+    --it;			// Seek to previous entry
+
+    int64_t delta = w.u - it->first.u;
+
+    if (delta == 0) {
+      return it->second;
+    } else if (delta < maxDelta) {
+      stringstream ss;
+      ss << it->second << "+" << oct << right << delta;
+      return ss.str();
+    }
+  }
+
+  if (w.lhu != 0)
+    return w.fmt36();
+  else
+    return w.fmt18();
+}
+
