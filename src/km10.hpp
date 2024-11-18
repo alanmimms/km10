@@ -1165,6 +1165,7 @@ public:
 	break;
 
       case 006:					// XJEN
+	pi.dismissInterrupt();
 	logger.nyi(state);
 	break;
 
@@ -1178,6 +1179,7 @@ public:
 
       case 012:					// JEN
 	cerr << ">>>>>> JEN ea=" << ea.fmtVMA() << logger.endl << flush;
+	pi.dismissInterrupt();
 	state.restoreFlags(ea);
 	state.nextPC.rhu = ea.rhu;
 	break;
@@ -2341,8 +2343,4 @@ public:
   // The instruction emulator. Call this to start, step, or continue
   // running.
   void emulate(Debugger *debugger);
-
-  // (temporary?)
-  // Fetch next instruction (taking into account traps and interrupts).
-  bool fetchNext();
 };

@@ -111,7 +111,7 @@ Debugger::DebugAction Debugger::debug() {
   do {
     // Show next instruction to execute.
     cout << state.pc.fmtVMA() << ": " << dump(km10.iw, state.pc);
-    if (state.inInterrupt) cout << " [EXCEPTION] ";
+    if (state.inInterrupt) cout << " [EXC] ";
 
     cout << prompt << flush;
     getline(cin, line);

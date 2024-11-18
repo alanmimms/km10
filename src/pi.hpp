@@ -78,7 +78,7 @@ struct PIDevice: Device {
 
     struct ATTRPACKED {
       unsigned levelsOn: 7;
-      unsigned piEnabled: 1;
+      unsigned piOn: 1;
       unsigned held: 7;
       unsigned writeEvenParityDir: 1;
       unsigned writeEvenParityData: 1;
@@ -98,7 +98,7 @@ struct PIDevice: Device {
 
     // This is the "lowest" level. This is the `currentLevel` value
     // when no interrupts are being serviced.
-    static const inline unsigned noLevel = 010u;
+    static const inline unsigned noLevel = 8;
 
 
     // Constructors
@@ -111,7 +111,7 @@ struct PIDevice: Device {
     string toString() const {
       stringstream ss;
       ss << " levelsOn=" << levelsToStr(levelsOn);
-      if (piEnabled) ss << " piEnabled";
+      if (piOn) ss << " piOn";
       ss << " held=" << levelsToStr(held);
       if (writeEvenParityDir) ss << " writeEvenParityDir";
       if (writeEvenParityData) ss << " writeEvenParityData";
@@ -151,7 +151,7 @@ struct PIDevice: Device {
   // nothing if there is no pending interrupt. Returns true if an
   // interrupt is to be handled.
   W36 setUpInterruptCycleIfPending() {
-    if (!piState.piEnabled || piState.levelsOn == 0) return 0;
+    if (!piState.piOn || piState.levelsOn == 0) return 0;
 
     // Find highest pending interrupt and its mask.
     unsigned highestLevel = 99;
@@ -216,7 +216,10 @@ struct PIDevice: Device {
 
   // This ends interrupt service.
   void dismissInterrupt() {
+    if (logger.ints) logger.s << "PI dismiss current interrupt" << logger.endl << flush;
     piState.currentLevel = PIState::noLevel;
+    piState.held = 0;
+    cerr << " <<< dismissInterrupt, end piState=" << W36(piState.u).fmt18() << logger.endl << flush;
   }
 
 
@@ -242,11 +245,11 @@ struct PIDevice: Device {
       piState.writeEvenParityData = pif.writeEvenParityData;
       piState.writeEvenParityAddr = pif.writeEvenParityAddr;
 
-      if (pif.turnPIOn)	     piState.piEnabled = 1;
-      if (pif.turnPIOff)     piState.piEnabled = 0;
-      if (pif.dropPR)	     piState.prLevels &= ~pif.levels;
+      if (pif.turnPIOn)	     piState.piOn = 1;
+      if (pif.turnPIOff)     piState.piOn = 0;
       if (pif.levelsTurnOff) piState.levelsOn &= ~pif.levels;
       if (pif.levelsTurnOn)  piState.levelsOn |= pif.levels;
+      if (pif.dropPR)	     piState.prLevels &= ~pif.levels;
 
       if (pif.initiatePR) {
 
@@ -267,6 +270,8 @@ struct PIDevice: Device {
 	intPending = false;
       }
     }
+
+    cerr << " <<< CONO PI, end piState=" << W36(piState.u).fmt18() << logger.endl << flush;
   }
 
   virtual W36 doCONI(W36 iw, W36 ea) override {
