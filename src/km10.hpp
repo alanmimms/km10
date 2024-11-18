@@ -668,6 +668,12 @@ public:
   }
 
 
+  void doMUUO() {
+    cerr << "MUUOs aren't implemented yet" << logger.endl << flush;
+    logger.nyi(state);
+  }
+
+
   // Execute the instruction in `iw`, returning true if the
   // instruction is an XCT and thus requiring special handling for the
   // next fetch.
@@ -677,6 +683,72 @@ public:
     ea.u = state.getEA(iw.i, iw.x, iw.y);
 
     switch (iw.op) {
+
+    case 0000:			// LUUOs
+    case 0001:
+    case 0002:
+    case 0003:
+    case 0004:
+    case 0005:
+    case 0006:
+    case 0007:
+    case 0010:
+    case 0011:
+    case 0012:
+    case 0013:
+    case 0014:
+    case 0015:
+    case 0016:
+    case 0017:
+    case 0020:
+    case 0021:
+    case 0022:
+    case 0023:
+    case 0024:
+    case 0025:
+    case 0026:
+    case 0027:
+    case 0030:
+    case 0031:
+    case 0032:
+    case 0033:
+    case 0034:
+    case 0035:
+    case 0036:
+    case 0037:
+
+      if (state.pc.isSection0()) {
+	W36 uuoState;
+	uuoState.op = iw.op;
+	uuoState.ac = iw.ac;
+	uuoState.i = 0;
+	uuoState.x = 0;
+	uuoState.y = ea.rhu;
+
+	// XXX this should select executive virtual space first.
+	state.memPutN(040, uuoState);
+	cerr << "LUUO at " << state.pc.fmtVMA() << " uuoState=" << uuoState.fmt36()
+	     << logger.endl << flush;
+	state.nextPC = 041;
+	return true;		// Trap
+      } else {
+
+	if (state.flags.usr) {
+	  W36 uuoA(state.uptP->luuoAddr);
+	  state.memPutN(W36(((uint64_t) state.flags.u << 23) |
+			    ((uint64_t) iw.op << 15) |
+			    ((uint64_t) iw.ac << 5)), uuoA.u++);
+	  state.memPutN(state.pc, uuoA.u++);
+	  state.memPutN(ea.u, uuoA.u++);
+	  state.nextPC = state.memGetN(uuoA);
+	  return true;	       // Trap
+	} else {	       // Executive mode treats LUUOs as MUUOs
+	  doMUUO();
+	  return true;	       // Trap
+	}
+      }
+
+      break;
 
     case 0114: {		 // DADD
       auto a1 = W72{state.memGetN(ea.u+0), state.memGetN(ea.u+1)};
