@@ -20,6 +20,18 @@
 // * Force PRs even on disabled interrupt channels as stated in
 //   1982_ProcRefMan.pdf p.208.
 
+// NOTE From EK-EBOX-all-OCR2.pdf (PDF p.111):
+// If the instruction at 40 + 2n is a BLKX instruction, a specified
+// number of transfers are performed, one transfer at a time, each
+// time returning to the interrupted program or to a higher level
+// subroutine. On the last transfer, the return to the interrupted
+// program is “NOT SKIPPED” and an instruction is fetched from 41 +
+// 2n. Ina similar fashion, if 40 + 2n contains a SKIP class
+// instruction; when the skip condition is satisfied, a return to the
+// interrupted program takes place. If the skip is not satisfied, the
+// instruction in 41 + 2n is executed instead of the return.
+
+
 #pragma once
 
 #include "word.hpp"

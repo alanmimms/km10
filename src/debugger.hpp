@@ -51,7 +51,6 @@ struct Debugger {
   string dump(W36 w, W36 pc, bool showCharForm=false);
   string symbolicForm(W36 w);
 
-  void loadSEQ(const char *fileNameP);
   void loadREL(const char *fileNameP);
   void loadWord(unsigned addr, W36 value);
 };

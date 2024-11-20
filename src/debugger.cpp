@@ -376,233 +376,71 @@ string Debugger::dump(W36 iw, W36 pc, bool showCharForm) {
 }
 
 
-// Load a listing file (*.SEQ) to get symbol definitions for symbolic
-// debugging.
-void Debugger::loadSEQ(const char *fileNameP) {
-  static const int WIDEST_NORMAL_LINE = 122;
-  ifstream inS(fileNameP);
-  map<int, string> lines;	// Each listing line from SEQ file is placed in here
-  bool scanningAssembly{false};
-  bool scanningSymbols{false};
-
-  string symbolName;	   // Symbol we're defining at the moment
-  W36 value;		   // Line number where the symbol is DEFINED ("#")
-
-  while (!inS.eof()) {
-    string scanningLine;
-    getline(inS, scanningLine);
-    if (scanningLine.length() == 0) continue;
-
-    // If we are skipping the front matter before the assembly listing
-    // begins, check for the heading that indicates the assembly
-    // listing has begun. This is indicated by a line that starts with
-    // '\f' and has the MACRO program's heading format. If this is
-    // true, we can start scanning the assembly listing.
-    if (!scanningAssembly) {
-
-      if (scanningLine[0] == '\f' && scanningLine.find("MACRO %") != string::npos) {
-	scanningAssembly = true;
-	getline(inS, scanningLine);		// Discard second line of page header
-      }
-
-      continue;
-    }
-
-    // Ignore listing page headers (two lines) if we're not yet to the
-    // symbol CREF part of the listing.
-    if (!scanningSymbols && scanningLine.front() == '\f') {
-      getline(inS, scanningLine);
-      continue;
-    }
-
-    istringstream lineS(scanningLine);
-    string word;
-    int lineNumber;
-
-    // When we find the end of the assembly listing, the symbols
-    // follow after a summary:
-    //
-    // 001 NO ERRORS DETECTED
-    // 002
-    // 003 PROGRAM BREAK IS 000000
-    // 004 ABSLUTE BREAK IS 071356
-    // 005 CPU TIME USED 03:37.242
-    // 006
-    // 007 18K CORE USED
-    // 008
-    // 009A00	   902#					[first symbol definition is here]
-    if (!scanningSymbols && scanningLine == "NO ERRORS DETECTED") {
-      getline(inS, scanningLine);	// Gobble 002
-      getline(inS, scanningLine);	// Gobble 003
-      getline(inS, scanningLine);	// Gobble 004
-      getline(inS, scanningLine);	// Gobble 005
-      getline(inS, scanningLine);	// Gobble 006
-      getline(inS, scanningLine);	// Gobble 007
-      getline(inS, scanningLine);	// Gobble 008
-      scanningSymbols = true;
-      continue;
-    } else if (!scanningSymbols) {
-
-      // If we see a formfeed we have to ignore the line and the one following it.
-      if (lineS.peek() == '\f') {
-	getline(inS, scanningLine); // Grab second line of page heading and throw it away.
-	continue;
-      }
-
-      // If we get here it's a normal listing line. Grab the line
-      // number from the first "word". Save the line for back
-      // referencing from symbol CREF.
-      lineS >> word;
-      lineNumber = stoi(word);
-      lines[lineNumber] = scanningLine;
-      continue;
-    }
-
-    // Everything we see from this point is a symbol definition line
-    // or continuation thereof until EOF. Note EOF ends with a FF and
-    // some NULs, which we ignore.
-
-
-    // Throw the SEQ xxxxx at column 123 if present.
-    if (scanningLine.length() > WIDEST_NORMAL_LINE) {
-      scanningLine.resize(WIDEST_NORMAL_LINE);
-    }
-
-    // Discard ^L when we encounter it.
-    if (lineS.peek() == '\f') lineS.get();
-
-    // If there's no leading whitespace, we're defining a new symbol.
-    // Grab the name of the symbol from the leading word on the line.
-    if (!isspace(lineS.peek())) {
-      lineS >> symbolName;
-    }
-
-    // We're now gobbling values for the definition of symbolName,
-    // looking for the one with "#" indicating the line number the
-    // symbol is defined on.
-    while (lineS >> word) {
-
-      // If the last character of the "word" is "#" it means this word
-      // contains the line number in the listing file where the symbol
-      // is defined. Get that line and find its address and save that
-      // as the symbol's value.
-      if (!word.empty() && word.back() == '#') {
-	// Strip trailing '#' and scan the integer line number.
-	lineNumber = stoi(word.substr(0, word.size() - 1));
-	istringstream listingS(lines[lineNumber]);
-
-	// Examine the listing line to determine if it's an assembly
-	// of a word (one tab char after the line number) or a 36-bit
-	// constant valued symbol (TWO tabs after the line number)
-	// that is being defined there.
-	listingS >> word;	// Grab the line number
-
-	if (listingS.get() == '\t' && listingS.peek() == '\t') {
-	  listingS.get();	// Consume the second tab
-	  unsigned lh = 0;
-	  unsigned rh = 0;
-
-	  // Test whether we have fullword (two tabs) or halfword
-	  // (three tabs) constant.
-	  if (listingS.peek() == '\t') {
-	    // A halfword symbol - THREE tabs and just one octal value.
-	    // 42927			000774			LAST=774	...
-	    listingS >> word;	// Grab the symbol's halfword octal value
-	    rh = stoi(word, nullptr, 8);
-	  } else {
-	    // 36-bit constant flavor (two tabs), value is LH\tRH.
-	    // 42937		700600	031577			OPDEF	CLRPI	...
-	    listingS >> word;	// Grab the symbol's LH octal value
-	    lh = stoi(word, nullptr, 8);
-	    listingS >> word;	// Grab the symbol's RH octal value
-	    rh = stoi(word, nullptr, 8);
-	  }
-
-	  value = W36(lh, rh);
-	} else {
-	  // Assembly word flavor (one tab), where the value is just a halfword:
-	  //  42914	057634	402 00 0 00 030037 	BEGIOT:	...
-	  listingS >> word;	// Grab the symbol's octal value
-	  value = W36(stoi(word, nullptr, 8));
-	}
-
-	// Given the value, save the symbol's definition. We cannot
-	// get a symbol definition that already exists in
-	// `globalSymbols[]`, but we may have many symbols with the
-	// same value. The first part of this means we don't ever have
-	// to worry about inserting multiple entries in
-	// `valueToSymbol[]` with the same `symbolName`.
-	globalSymbols[symbolName] = value;
-	valueToSymbol.insert(pair(value, symbolName));
-      }
-    }
-  }
-}
-
-
+// Open and mmap a file full of 9-byte (72-bit) chunks. Slurp two
+// successive 36-bit words from each and deposit them into our 36-bit
+// data array, which we return.
 static vector<W36> readFileW36s(const char* filename) {
-  // Open the file
+  // Open the file.
   int fd = open(filename, O_RDONLY);
-  if (fd == -1) {
+  if (fd < 0) {
     throw runtime_error("Failed to open file");
   }
 
-  // Get the file size
+  // Get the file size.
   struct stat st;
-  if (fstat(fd, &st) == -1) {
+  if (fstat(fd, &st) < 0) {
     close(fd);
     throw runtime_error("Failed to get file size");
   }
   size_t fileSize = static_cast<size_t>(st.st_size);
 
-  // Ensure file size is divisible by 9
+  // Ensure file size is divisible by 9.
   if (fileSize % 9 != 0) {
     close(fd);
     throw runtime_error("File size is not divisible by 9");
   }
 
-  // Map the file into memory
-  void* mappedData = mmap(nullptr, fileSize, PROT_READ, MAP_PRIVATE, fd, 0);
-  close(fd); // Can close file descriptor after mmap
-  if (mappedData == MAP_FAILED) {
+  // Map the file into memory.
+  void* fileP = mmap(nullptr, fileSize, PROT_READ, MAP_PRIVATE, fd, 0);
+  close(fd);	    // We can close the file descriptor after we mmap.
+  if (fileP == MAP_FAILED) {
     throw runtime_error("Failed to mmap file");
   }
 
-  // Calculate the number of 36-bit values
-  size_t numValues = (fileSize / 9) * 2;
+  // Calculate the number of 36-bit values.
+  size_t nWords = (fileSize / 9) * 2;
 
-  // Create the output vector and pre-allocate capacity
+  // Create the output vector and pre-allocate capacity.
   vector<W36> output;
-  output.reserve(numValues);
+  output.reserve(nWords);
 
-  // Process the file data
-  const uint8_t* inputBytes = static_cast<const uint8_t*>(mappedData);
+  const uint8_t* inputBytes = static_cast<const uint8_t*>(fileP);
 
-  for (size_t i = 0; i < fileSize; i += 9) {
-    // Extract 9 bytes
-    const uint8_t* chunk = inputBytes + i;
+  for (size_t i=0; i < fileSize; i += 9) {
+    // Extract 9 bytes.
+    const uint8_t *wordP = inputBytes + i;
 
-    // Create the first 36-bit value
-    uint64_t value1 = (static_cast<uint64_t>(chunk[0]) << 28) |
-                      (static_cast<uint64_t>(chunk[1]) << 20) |
-                      (static_cast<uint64_t>(chunk[2]) << 12) |
-                      (static_cast<uint64_t>(chunk[3]) << 4) |
-                      (static_cast<uint64_t>(chunk[4]) >> 4);
+    // Build up the first 36-bit value.
+    uint64_t value1 = static_cast<uint64_t>(wordP[0]) << 28 |
+                      static_cast<uint64_t>(wordP[1]) << 20 |
+                      static_cast<uint64_t>(wordP[2]) << 12 |
+                      static_cast<uint64_t>(wordP[3]) << 4 |
+                      static_cast<uint64_t>(wordP[4]) >> 4;
 
-    // Create the second 36-bit value
-    uint64_t value2 = (static_cast<uint64_t>(chunk[4] & 0x0F) << 32) |
-                      (static_cast<uint64_t>(chunk[5]) << 24) |
-                      (static_cast<uint64_t>(chunk[6]) << 16) |
-                      (static_cast<uint64_t>(chunk[7]) << 8) |
-                      (static_cast<uint64_t>(chunk[8]));
+    // Build up the second 36-bit value.
+    uint64_t value2 = static_cast<uint64_t>(wordP[4] & 0x0F) << 32 |
+                      static_cast<uint64_t>(wordP[5]) << 24 |
+                      static_cast<uint64_t>(wordP[6]) << 16 |
+                      static_cast<uint64_t>(wordP[7]) << 8 |
+                      static_cast<uint64_t>(wordP[8]);
 
-    // Add the values to the output vector
+    // Add them to the output vector.
     output.emplace_back(value1);
     output.emplace_back(value2);
   }
 
-  // Unmap the file
-  if (munmap(mappedData, fileSize) == -1) {
+  // Unmap the file, effectively closing it finally as well.
+  if (munmap(fileP, fileSize) < 0) {
     throw runtime_error("Failed to unmap file");
   }
 
@@ -611,6 +449,7 @@ static vector<W36> readFileW36s(const char* filename) {
 
 
 struct Radix50Word {
+
   union {
 
     struct ATTRPACKED {

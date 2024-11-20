@@ -32,6 +32,23 @@
 //   verbose <cstdint> names.
 // * Fix the logging stuff. It's seriously broken.
 
+// TODO:
+//
+// Reconfigure so that execute1() runs a single instruction and
+// returns a value indicating the instruction's effect:
+//
+// * Normal
+// * Skip
+// * MUUO/LUUO
+// * Trap
+// * HALT
+// * XCT
+//  etc...
+//
+// Interrupts are checked in the loop surrounding execute1() and
+// dispatched by changing which instruction is executed.
+
+
 #pragma once
 #include <string>
 #include <cstdint>
@@ -668,9 +685,12 @@ public:
   }
 
 
-  void doMUUO() {
+  bool doMUUO() {
     cerr << "MUUOs aren't implemented yet" << logger.endl << flush;
+    state.exceptionPC = state.pc + 1;
+    state.inInterrupt = true;
     logger.nyi(state);
+    return false;
   }
 
 
@@ -730,7 +750,9 @@ public:
 	cerr << "LUUO at " << state.pc.fmtVMA() << " uuoState=" << uuoState.fmt36()
 	     << logger.endl << flush;
 	state.nextPC = 041;
-	return true;		// Trap
+	state.exceptionPC = state.pc + 1;
+	state.inInterrupt = true;
+	return false;		// Trap
       } else {
 
 	if (state.flags.usr) {
@@ -741,10 +763,11 @@ public:
 	  state.memPutN(state.pc, uuoA.u++);
 	  state.memPutN(ea.u, uuoA.u++);
 	  state.nextPC = state.memGetN(uuoA);
-	  return true;	       // Trap
+	  state.exceptionPC = state.pc + 1;
+	  state.inInterrupt = true;
+	  return false;	       // Trap
 	} else {	       // Executive mode treats LUUOs as MUUOs
-	  doMUUO();
-	  return true;	       // Trap
+	  return doMUUO();
 	}
       }
 

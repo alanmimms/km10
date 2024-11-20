@@ -22,7 +22,6 @@ static unordered_set<unsigned> eBPs;
 
 // Definitions for our command line options
 DEFINE_string(load, "../images/klad/dfkaa.a10", ".A10 or .SAV file to load");
-//DEFINE_string(seq, "../images/klad/dfkaa.seq", ".SEQ file to load symbols from");
 DEFINE_string(rel, "../images/klad/dfkaa.rel", ".REL file to load symbols from");
 DEFINE_bool(debug, false, "run the built-in debugger instead of starting execution");
 
@@ -63,8 +62,6 @@ void KM10::emulate(Debugger *debuggerP) {
       cerr << ">>>>> interrupt cycle PC now=" << state.pc.fmtVMA()
 	   << "  exceptionPC=" << state.exceptionPC.fmtVMA()
 	   << logger.endl << flush;
-    } else {
-      state.inInterrupt = false;
     }
 
     // Now fetch the instruction at our normal, exception, or interrupt PC.
@@ -124,6 +121,14 @@ void KM10::emulate(Debugger *debuggerP) {
       state.pc = state.nextPC;
     }
 
+    // If we're in a xUUO trap, only the first instruction we execute
+    // there is special, so clear state.inInterrupt.
+    if (state.inInterrupt) {
+      cerr << "[IN INTERRUPT and about to clear that state]" << logger.endl << flush;
+      state.inInterrupt = false;
+    }
+
+
     if (logger.pc || logger.mem || logger.ac || logger.io || logger.dte)
       logger.s << logger.endl << flush;
   }
@@ -162,12 +167,6 @@ static int loopedMain(int argc, char *argv[]) {
 
   KM10 km10(state);
   Debugger debugger(km10, state);
-
-#if 0
-  if (FLAGS_seq != "none") {
-    debugger.loadSEQ(FLAGS_seq.c_str());
-  }
-#endif
 
   if (FLAGS_rel != "none") {
     debugger.loadREL(FLAGS_rel.c_str());
