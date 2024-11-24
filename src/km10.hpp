@@ -26,28 +26,31 @@
       interrupt/exception contexts.
 */
 
-// TODO:
-//
-// * Globally use U32,S32, U64,S64, U128,S128 typedefs instead of
-//   verbose <cstdint> names.
-// * Fix the logging stuff. It's seriously broken.
+/*
+  TODO:
 
-// TODO:
-//
-// Reconfigure so that execute1() runs a single instruction and
-// returns a value indicating the instruction's effect:
-//
-// * Normal
-// * Skip
-// * MUUO/LUUO
-// * Trap
-// * HALT
-// * XCT
-//  etc...
-//
-// Interrupts are checked in the loop surrounding execute1() and
-// dispatched by changing which instruction is executed.
+  * Globally use U32,S32, U64,S64, U128,S128 typedefs instead of
+    verbose <cstdint> names.
+  * Fix the logging stuff. It's seriously broken.
+*/
 
+/*
+  TODO:
+
+  Reconfigure so that execute1() runs a single instruction and
+  returns a value indicating the instruction's effect:
+
+  * Normal
+  * Skip
+  * MUUO/LUUO
+  * Trap
+  * HALT
+  * XCT
+   etc...
+
+  Interrupts are checked in the loop surrounding execute1() and
+  dispatched by changing which instruction is executed.
+*/
 
 #pragma once
 #include <string>
