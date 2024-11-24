@@ -232,25 +232,6 @@ public:
     alwaysT = [&](W36 a, W36 b) -> bool const {return  true;};
     neverT  = [&](W36 a, W36 b) -> bool const {return false;};
 
-    doJUMP = [&](BoolPredW &condF) -> void {
-
-      if (condF(acGet())) {
-	logFlow("jump");
-	state.nextPC.rhu = ea.rhu;
-      }
-    };
-
-    doSKIP = [&](BoolPredW &condF) -> void {
-      W36 eaw = memGet();
-
-      if (condF(eaw)) {
-	logFlow("skip");
-	++state.nextPC.rhu;
-      }
-      
-      if (iw.ac != 0) acPut(eaw);
-    };
-
     getE = [&]() -> W36 {return ea;};
 
     noMod1 = [&](W36 a) -> auto const {return a;};
@@ -273,59 +254,6 @@ public:
     compWord = [&](W36 a) -> auto const {return ~a.u;};
 
     noStore = [](W36 toSrc) -> void {};
-
-    doTXXXX = [&](WFunc &doGet1F,
-		  WFunc &doGet2F,
-		  WFuncWW &doModifyF,
-		  BoolPredWW &condF,
-		  FuncW &doStoreF) -> void
-    {
-      W36 a1 = doGet1F();
-      W36 a2 = doGet2F();
-
-      if (condF(a1, a2)) {
-	logFlow("skip");
-	++state.nextPC.rhu;
-      }
-      
-      doStoreF(doModifyF(a1, a2));
-    };
-
-    doPush = [&](W36 v, W36 acN) -> void {
-      W36 ac = state.acGetN(acN);
-
-      if (state.pc.isSection0() || ac.lhs < 0 || (ac.lhu & 0007777) == 0) {
-	ac = W36(ac.lhu + 1, ac.rhu + 1);
-
-	if (ac.lhu == 0)
-	  state.flags.tr2 = 1;
-	else			// Correct? Don't access memory for full stack?
-	  state.memPutN(v, ac.rhu);
-      } else {
-	ac = ac + 1;
-	state.memPutN(ac.vma, v);
-      }
-
-      state.acPutN(ac, acN);
-    };
-
-    doPop = [&](unsigned acN) -> W36 {
-      W36 ac = state.acGetN(acN);
-      W36 poppedWord;
-
-      if (state.pc.isSection0() || ac.lhs < 0 || (ac.lhu & 0007777) == 0) {
-	poppedWord = state.memGetN(ac.rhu);
-	ac = W36(ac.lhu - 1, ac.rhu - 1);
-	if (ac.lhs == -1) state.flags.tr2 = 1;
-      } else {
-	poppedWord = state.memGetN(ac.vma);
-	ac = ac - 1;
-      }
-
-      state.acPutN(ac, acN);
-      return poppedWord;
-    };
-
 
     // For a given low halfword, this computes an upper halfword by
     // extending the low halfword's sign.
@@ -386,7 +314,7 @@ public:
 
       return sum;
     };
-    
+
     subWord = [&](W36 s1, W36 s2) -> auto const {
       int64_t diff = s1.ext64() - s2.ext64();
 
@@ -398,7 +326,7 @@ public:
 
       return diff;
     };
-    
+
     mulWord = [&](W36 s1, W36 s2) -> auto const {
       int128_t prod128 = (int128_t) s1.ext64() * s2.ext64();
       W72 prod = W72::fromMag((uint128_t) (prod128 < 0 ? -prod128 : prod128), prod128 < 0);
@@ -410,7 +338,7 @@ public:
 
       return prod;
     };
-    
+
     imulWord = [&](W36 s1, W36 s2) -> auto const {
       int128_t prod128 = (int128_t) s1.ext64() * s2.ext64();
       W72 prod = W72::fromMag((uint128_t) (prod128 < 0 ? -prod128 : prod128), prod128 < 0);
@@ -421,7 +349,7 @@ public:
 
       return W36((prod.s < 0 ? W36::bit0 : 0) | ((W36::all1s >> 1) & prod.u));
     };
-    
+
     idivWord = [&](W36 s1, W36 s2) -> auto const {
 
       if ((s1.u == W36::bit0 && s2.s == -1ll) || s2.u == 0ull) {
@@ -434,7 +362,7 @@ public:
 	return W72{W36{quo}, W36{abs(rem)}};
       }
     };
-    
+
     divWord = [&](W72 s1, W36 s2) -> auto const {
       uint128_t den70 = ((uint128_t) s1.hi35 << 35) | s1.lo35;
       auto dor = s2.mag;
@@ -452,32 +380,6 @@ public:
 	return ret;
       }
     };
-    
-    doHXXXX = [&](WFunc &doGetSrcF,
-		  WFunc &doGetDstF,
-		  WFuncWW &doCopyF,
-		  WFuncW &doModifyF,
-		  FuncW &doPutDstF) -> void
-    {
-      doPutDstF(doModifyF(doCopyF(doGetSrcF(), doGetDstF())));
-    };
-
-
-    doMOVXX = [&](WFunc &doGetSrcF,
-		  WFuncW &doModifyF,
-		  FuncW &doPutDstF) -> void
-    {
-      doPutDstF(doModifyF(doGetSrcF()));
-    };
-
-
-    doSETXX = [&](WFunc &doGetSrcF,
-		  WFuncW &doModifyF,
-		  FuncW &doPutDstF) -> void
-    {
-      doPutDstF(doModifyF(doGetSrcF()));
-    };
-
 
     // Binary comparison predicates
     isLT    = [&](W36 v1, W36 v2) -> bool const {return v1.ext64() <  v2.ext64();};
@@ -489,52 +391,8 @@ public:
     always2 = [&](W36 v1, W36 v2) -> bool const {return true;};
     never2  = [&](W36 v1, W36 v2) -> bool const {return false;};
 
-    doCAXXX = [&](WFunc &doGetSrc1F,
-		  WFunc &doGetSrc2F,
-		  BoolPredWW &condF) -> void
-    {
-
-      if (condF(doGetSrc1F(), doGetSrc2F())) {
-	logFlow("skip");
-	++state.nextPC.rhu;
-      }
-    };
-
-
     skipAction = [&] {++state.nextPC.rhu;};
     jumpAction = [&] {state.nextPC.rhu = ea.rhu;};
-
-    doAOSXX = [&](WFunc &doGetF,
-		  const signed delta,
-		  FuncW &doPutF,
-		  BoolPredW &condF,
-		  VoidFunc &actionF) -> void
-    {
-      W36 v = doGetF();
-
-      if (delta > 0) {		// Increment
-
-	if (v.u == W36::all1s >> 1) {
-	  state.flags.tr1 = state.flags.ov = state.flags.cy1 = 1;
-	} else if (v.ext64() == -1) {
-	  state.flags.cy0 = state.flags.cy1 = 1;
-	}
-      } else {			// Decrement
-
-	if (v.u == W36::bit0) {
-	  state.flags.tr1 = state.flags.ov = state.flags.cy0 = 1;
-	} else if (v.u != 0) {
-	  state.flags.cy0 = state.flags.cy1 = 1;
-	}
-      }
-
-      v.s += delta;
-
-      if (iw.ac != 0) acPut(v);
-      doPutF(v);
-
-      if (condF(v)) actionF();
-    };
   }
 
 
@@ -543,12 +401,6 @@ public:
 
   W36 iw;
   W36 ea;
-  
-  template <class S1, class S2, class M, class D>
-  void doBinOp(S1 &doGetSrc1F, S2 &doGetSrc2F, M &doModifyF, D &doPutDstF) {
-    auto result = doModifyF(doGetSrc1F(), doGetSrc2F());
-    if (!state.flags.ndv) doPutDstF(result);
-  }
 
 
   WFunc acGet;
@@ -588,9 +440,6 @@ public:
   BoolPredWW alwaysT;
   BoolPredWW neverT;
 
-  function<void(BoolPredW &)> doJUMP;
-  function<void(BoolPredW &)> doSKIP;
-
   WFunc getE;
 
   WFuncW  noMod1;
@@ -613,11 +462,6 @@ public:
   WFuncW compWord;
 
   FuncW noStore;
-
-  function<void(WFunc&,WFunc&,WFuncWW&,BoolPredWW&,FuncW&)> doTXXXX;
-
-  function<void(W36,W36)> doPush;
-  function<W36(unsigned)> doPop;
 
   function<unsigned(const unsigned)> extnOf;
 
@@ -656,10 +500,6 @@ public:
   WFuncWW imulWord;
   DFuncWW idivWord;
   DFuncDW divWord;
-    
-  function<void(WFunc&,WFunc&,WFuncWW&,WFuncW&,FuncW&)> doHXXXX;
-  function<void(WFunc&,WFuncW&,FuncW&)> doMOVXX;
-  function<void(WFunc&,WFuncW&,FuncW&)> doSETXX;
 
 
   // Binary comparison predicates
@@ -672,12 +512,135 @@ public:
   BoolPredWW always2;
   BoolPredWW never2;
 
-  function<void(WFunc&,WFunc&,BoolPredWW&)> doCAXXX;
-
   VoidFunc skipAction;
   VoidFunc jumpAction;
 
-  function<void(WFunc&,const signed,FuncW&,BoolPredW&,VoidFunc&)> doAOSXX;
+
+  void doBinOp(auto getSrc1F, auto getSrc2F, auto modifyF, auto putDstF) {
+    auto result = modifyF(getSrc1F(), getSrc2F());
+    if (!state.flags.ndv) putDstF(result);
+  }
+
+
+  void doTXXXX(auto get1F, auto get2F, auto modifyF, auto condF, auto storeF) {
+    W36 a1 = get1F();
+    W36 a2 = get2F();
+
+    if (condF(a1, a2)) {
+      logFlow("skip");
+      ++state.nextPC.rhu;
+    }
+
+    storeF(modifyF(a1, a2));
+  }
+
+
+  void doHXXXX(auto getSrcF, auto getDstF, auto copyF, auto modifyF, auto putDstF) {
+    putDstF(modifyF(copyF(getSrcF(), getDstF())));
+  }
+
+
+  void doMOVXX(auto getSrcF, auto modifyF, auto putDstF) {
+    putDstF(modifyF(getSrcF()));
+  }
+
+
+  void doSETXX(auto getSrcF, auto modifyF, auto putDstF) {
+    putDstF(modifyF(getSrcF()));
+  }
+
+  void doCAXXX(auto getSrc1F, auto getSrc2F, auto condF) {
+
+    if (condF(getSrc1F().ext64(), getSrc2F().ext64())) {
+      logFlow("skip");
+      ++state.nextPC.rhu;
+    }
+  }
+
+  void doJUMP(auto condF) {
+
+    if (condF(acGet())) {
+      logFlow("jump");
+      state.nextPC.rhu = ea.rhu;
+    }
+  }
+
+
+  void doSKIP(auto condF) {
+    W36 eaw = memGet();
+
+    if (condF(eaw)) {
+      logFlow("skip");
+      ++state.nextPC.rhu;
+    }
+
+    if (iw.ac != 0) acPut(eaw);
+  }
+
+
+  void doAOSXX(auto getF, const signed delta, auto putF, auto condF, auto actionF) {
+    W36 v = getF();
+
+    if (delta > 0) {		// Increment
+
+      if (v.u == W36::all1s >> 1) {
+	state.flags.tr1 = state.flags.ov = state.flags.cy1 = 1;
+      } else if (v.ext64() == -1) {
+	state.flags.cy0 = state.flags.cy1 = 1;
+      }
+    } else {			// Decrement
+
+      if (v.u == W36::bit0) {
+	state.flags.tr1 = state.flags.ov = state.flags.cy0 = 1;
+      } else if (v.u != 0) {
+	state.flags.cy0 = state.flags.cy1 = 1;
+      }
+    }
+
+    v.s += delta;
+
+    if (iw.ac != 0) acPut(v);
+    putF(v);
+
+    if (condF(v)) actionF();
+  }
+
+
+  void doPush(W36 v, W36 acN) {
+    W36 ac = state.acGetN(acN);
+
+    if (state.pc.isSection0() || ac.lhs < 0 || (ac.lhu & 0007777) == 0) {
+      ac = W36(ac.lhu + 1, ac.rhu + 1);
+
+      if (ac.lhu == 0)
+	state.flags.tr2 = 1;
+      else			// Correct? Don't access memory for full stack?
+	state.memPutN(v, ac.rhu);
+    } else {
+      ac = ac + 1;
+      state.memPutN(ac.vma, v);
+    }
+
+    state.acPutN(ac, acN);
+  }
+
+
+  W36 doPop(unsigned acN) {
+    W36 ac = state.acGetN(acN);
+    W36 poppedWord;
+
+    if (state.pc.isSection0() || ac.lhs < 0 || (ac.lhu & 0007777) == 0) {
+      poppedWord = state.memGetN(ac.rhu);
+      ac = W36(ac.lhu - 1, ac.rhu - 1);
+      if (ac.lhs == -1) state.flags.tr2 = 1;
+    } else {
+      poppedWord = state.memGetN(ac.vma);
+      ac = ac - 1;
+    }
+
+    state.acPutN(ac, acN);
+    return poppedWord;
+  }
 
 
   void logFlow(const char *msg) {
