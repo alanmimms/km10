@@ -97,7 +97,7 @@ public:
   Debugger *debuggerP;
 
 
-  // I find these a lot less ugly in the emulator...
+  // I find these a lot less ugly...
   using WFunc = function<W36()>;
   using DFunc = function<W72()>;
   using FuncW = function<void(W36)>;
@@ -154,26 +154,31 @@ public:
     return value;
   };
 
+
   FuncW acPut = [&](W36 value) -> void {
     state.acPutN(value, iw.ac);
   };
+
 
   FuncW acPutRH = [&](W36 value) -> void {
     acPut(W36(acGet().lhu, value.rhu));
   };
 
-    // This is used to store back in, e.g., TLZE. But the LH of AC is
-    // in the RH of the word we're passed because of how the testing
-    // logic of these instructions must work. So we put the RH of the
-    // value into the LH of the AC, keeping the AC's RH intact.
+
+  // This is used to store back in, e.g., TLZE. But the LH of AC is
+  // in the RH of the word we're passed because of how the testing
+  // logic of these instructions must work. So we put the RH of the
+  // value into the LH of the AC, keeping the AC's RH intact.
   FuncW acPutLH = [&](W36 value) -> void {
     acPut(W36(value.rhu, acGet().rhu));
   };
+
 
   DFunc acGet2 = [&]() {
     W72 ret{state.acGetN(iw.ac+0), state.acGetN(iw.ac+1)};
     return ret;
   };
+
 
   FuncD acPut2 = [&](W72 v) -> void {
     state.acPutN(v.hi, iw.ac+0);
@@ -278,6 +283,7 @@ public:
 
   FuncW noStore = [](W36 toSrc) -> void {};
 
+
   // For a given low halfword, this computes an upper halfword by
   // extending the low halfword's sign.
   function<unsigned(const unsigned)> extnOf = [&](const unsigned v) -> unsigned const {
@@ -291,6 +297,7 @@ public:
   WFuncWW copyHLL = [&](W36 src, W36 dst) -> auto const {return W36(src.lhu, dst.rhu);};
   WFuncWW copyHLR = [&](W36 src, W36 dst) -> auto const {return W36(dst.lhu, src.lhu);};
 
+
   // doModifyF functions
   WFuncW zeroR = [&](W36 v) -> auto const {return W36(v.lhu, 0);};
   WFuncW onesR = [&](W36 v) -> auto const {return W36(v.lhu, W36::halfOnes);};
@@ -298,6 +305,7 @@ public:
   WFuncW zeroL = [&](W36 v) -> auto const {return W36(0, v.rhu);};
   WFuncW onesL = [&](W36 v) -> auto const {return W36(W36::halfOnes, v.rhu);};
   WFuncW extnL = [&](W36 v) -> auto const {return W36(v.lhu, extnOf(v.lhu));};
+
 
   // binary doModifyF functions
   WFuncWW andWord = [&](W36 s1, W36 s2) -> auto const {return s1.u & s2.u;};
