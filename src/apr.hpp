@@ -234,91 +234,17 @@ struct APRDevice: Device {
 
 
   // Interrupt handling
-  void requestInterrupt() override {
-    aprState.intRequest = 1;
-    Device::requestInterrupt();
-  }
+  void requestInterrupt() override;
 
   // Interface for CCA to set and clear our sweep status.
-  void startSweep() {
-    aprState.sweepBusy = 1;
-  }
-
-  void endSweep() {
-    aprState.sweepBusy = 0;
-    aprState.active_sweepDone = 1;
-    if (aprState.intLevel != 0 && aprState.enabled_sweepDone) requestInterrupt();
-  }
+  void startSweep();
+  void endSweep();
 
   // I/O instruction handlers
-  virtual void doBLKI(W36 iw, W36 ea, W36 &nextPC) override {	// APRID
-    state.memPutN(aprIDValue.u, ea);
-  }
-
-  virtual void doBLKO(W36 iw, W36 ea, W36 &nextPC) override {	// WRFIL
-    // This is essentially a no-op.
-  }
-
-  virtual W36 doDATAI(W36 iw, W36 ea) override {
-    state.memPutN(breakState.u, ea);
-    return breakState.u;
-  }
-
-  virtual void doCONO(W36 iw, W36 ea) override {		// WRAPR
-    APRFunctions func{ea.rhu};
-    unsigned select = func.getSelect().u;
-
-    if (logger.mem) cerr << "; " << ea.fmt18();
-
-    cerr << state.pc.fmtVMA() << " WRAPR: intLevel=" << oct << func.intLevel;
-    intLevel = aprState.intLevel = func.intLevel;
-
-    if (func.disable) {
-      cerr << " disable=" << oct << select;
-      aprState.setEnabled(aprState.getEnabled().u & ~select);
-    }
-
-    if (func.enable) {
-      cerr << " enable=" << oct << select;
-      aprState.setEnabled(aprState.getEnabled().u | select);
-    }
-
-    // Are any newly enabled and set interrupts added by this change?
-    // If so, an interrupt is now pending.
-    if (func.enable && func.set && (aprState.getEnabled().u & select) > aprState.getActive().u) {
-      requestInterrupt();
-    }
-
-    if (func.clear) {
-      cerr << " clear=" << oct << select;
-      aprState.setActive(aprState.getActive().u & ~select);
-    }
-
-    if (func.set) {
-      cerr << " set=" << oct << select;
-      aprState.setActive(aprState.getActive().u | select);
-    }
-
-    if (func.clearIO) {
-      cerr << " clearIO";
-      Device::clearAll();
-    }
-
-    cerr << logger.endl;
-  }
-
-  virtual W36 doCONI(W36 iw, W36 ea) override {		// RDAPR
-    aprState.intLevel = intLevel;	// Refresh our version of the interrupt level
-    W36 conditions{(int64_t) aprState.u};
-    cerr << state.pc.fmtVMA() << " RDAPR aprState=" << conditions.fmt36()
-	 << " ea=" << ea.fmtVMA()
-	 << logger.endl;
-    state.memPutN(conditions, ea);
-    return conditions;
-  }
-
-  virtual void clearIO() override {
-    Device::clearIO();
-    aprState.u = 0;
-  }
+  virtual void doBLKI(W36 iw, W36 ea, W36 &nextPC) override;  // APRID
+  virtual void doBLKO(W36 iw, W36 ea, W36 &nextPC) override;  // WRFIL
+  virtual W36 doDATAI(W36 iw, W36 ea) override;
+  virtual void doCONO(W36 iw, W36 ea) override;		      // WRAPR
+  virtual W36 doCONI(W36 iw, W36 ea) override;		      // RDAPR
+  virtual void clearIO() override;
 };

@@ -48,31 +48,11 @@ struct TIMDevice: Device {
   // This is called from PI during each interrupt check to see if
   // counters are > 1/2 full and service them as interrupts if they
   // are.
-  void updateCounts() {
-  }
-
+  void updateCounts();
 
   // I/O instruction handlers
-  virtual void doCONO(W36 iw, W36 ea) override {
-    if (logger.mem) logger.s << "; " << ea.fmt18();
-    timState.u = iw.y;
-  }
-
-
-  virtual W36 doCONI(W36 iw, W36 ea) override {
-    W36 conditions{(int64_t) timState.u};
-    state.memPutN(conditions, ea);
-    return conditions;
-  }
-
-  // RDTIME
-  virtual W36 doDATAI(W36 iw, W36 ea) {
-    state.memPutN(0, ea);
-    return 0;
-  }
-  
-
-  virtual void clearIO() {
-    timState.u = 0;
-  }
+  virtual void doCONO(W36 iw, W36 ea) override;
+  virtual W36 doCONI(W36 iw, W36 ea) override;
+  virtual W36 doDATAI(W36 iw, W36 ea);
+  virtual void clearIO();
 };

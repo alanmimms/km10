@@ -54,36 +54,11 @@ struct MTRDevice: Device {
   { }
 
 
-  // Accessors
-
-
   // I/O instruction handlers
   // WRTIME
-  virtual void doCONO(W36 iw, W36 ea) override {
-    W36 conditions{state.memGetN(ea).rhu};
-    if (logger.mem) logger.s << "; " << ea.fmt18();
-    mtrState.u = iw.y;
-
-    MTRFunctions funcs{conditions.rhu};
-
-    // XXX do nothing for now . . .
-  }
-
-  virtual W36 doCONI(W36 iw, W36 ea) override {
-    state.memPutN(mtrState.u, ea);
-    return mtrState.u;
-  }
-
-  // RDEACT
-  virtual W36 doDATAI(W36 iw, W36 ea) {
-    return 0;
-  }
-  
-  // RDMACT
-  virtual void doBLKI(W36 iw, W36 ea, W36 &nextPC) {
-  }
-
-  virtual void clearIO() {
-    mtrState.u = 0;
-  }
+  virtual void doCONO(W36 iw, W36 ea) override;
+  virtual W36 doCONI(W36 iw, W36 ea) override;
+  virtual W36 doDATAI(W36 iw, W36 ea);
+  virtual void doBLKI(W36 iw, W36 ea, W36 &nextPC);
+  virtual void clearIO();
 };

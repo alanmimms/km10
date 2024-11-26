@@ -139,7 +139,7 @@ public:
 
 
   // This is indexed by opcode, giving the function to call for that opcode.
-  vector<instructionF> ops;
+  array<instructionF, 512> ops;
 
 
   W36 iw;
@@ -151,7 +151,7 @@ public:
   };
 
 
-  WFunc acGetRH = [&]() -> W36 {
+  WFunc acGetRH = [&]() {
     W36 value{0, acGet().rhu};
     if (logger.mem) logger.s << "; acRH" << oct << iw.ac << ": " << value.fmt18();
     return value;
@@ -160,19 +160,19 @@ public:
     // This retrieves LH into the RH of the return value, which is
     // required for things like TLNN to work properly since they use
     // the EA as a mask.
-  WFunc acGetLH = [&]() -> W36 {
+  WFunc acGetLH = [&]() {
     W36 value{0, acGet().lhu};
     if (logger.mem) logger.s << "; acLH" << oct << iw.ac << ": " << value.fmt18();
     return value;
   };
 
 
-  FuncW acPut = [&](W36 value) -> void {
+  FuncW acPut = [&](W36 value) {
     state.acPutN(value, iw.ac);
   };
 
 
-  FuncW acPutRH = [&](W36 value) -> void {
+  FuncW acPutRH = [&](W36 value) {
     acPut(W36(acGet().lhu, value.rhu));
   };
 
@@ -181,7 +181,7 @@ public:
   // in the RH of the word we're passed because of how the testing
   // logic of these instructions must work. So we put the RH of the
   // value into the LH of the AC, keeping the AC's RH intact.
-  FuncW acPutLH = [&](W36 value) -> void {
+  FuncW acPutLH = [&](W36 value) {
     acPut(W36(value.rhu, acGet().rhu));
   };
 
@@ -192,45 +192,45 @@ public:
   };
 
 
-  FuncD acPut2 = [&](W72 v) -> void {
+  FuncD acPut2 = [&](W72 v) {
     state.acPutN(v.hi, iw.ac+0);
     state.acPutN(v.lo, iw.ac+1);
   };
 
 
-  WFunc memGet = [&]() -> W36 {
+  WFunc memGet = [&]() {
     return state.memGetN(ea);
   };
 
 
-  FuncW memPut = [&](W36 value) -> void {
+  FuncW memPut = [&](W36 value) {
     state.memPutN(value, ea);
   };
 
 
-  FuncW selfPut = [&](W36 value) -> void {
+  FuncW selfPut = [&](W36 value) {
     memPut(value);
     if (iw.ac != 0) acPut(value);
   };
 
 
-  FuncW bothPut = [&](W36 value) -> void {
+  FuncW bothPut = [&](W36 value) {
     acPut(value);
     memPut(value);
   };
 
 
-  FuncD bothPut2 = [&](W72 v) -> void {
+  FuncD bothPut2 = [&](W72 v) {
     state.acPutN(v.hi, iw.ac+0);
     state.acPutN(v.lo, iw.ac+1);
     memPut(v.hi);
   };
 
 
-  WFuncW swap = [&](W36 src) -> W36 {return W36{src.rhu, src.lhu};};
+  WFuncW swap = [&](W36 src) {return W36{src.rhu, src.lhu};};
 
 
-  WFuncW negate = [&](W36 src) -> W36 {
+  WFuncW negate = [&](W36 src) {
     W36 v(-src.s);
     if (src.u == W36::bit0) state.flags.tr1 = state.flags.ov = state.flags.cy1 = 1;
     if (src.u == 0) state.flags.cy0 = state.flags.cy1 = 1;
@@ -238,7 +238,7 @@ public:
   };
 
 
-  WFuncW magnitude = [&](W36 src) -> W36 {
+  WFuncW magnitude = [&](W36 src) {
     W36 v(src.s < 0 ? -src.s : src.s);
     if (src.u == W36::bit0) state.flags.tr1 = state.flags.ov = state.flags.cy1 = 1;
     return v;
@@ -257,84 +257,84 @@ public:
 
 
   // Condition testing predicates
-  BoolPredW isLT0  = [&](W36 v) -> bool const {return v.s  < 0;};
-  BoolPredW isLE0  = [&](W36 v) -> bool const {return v.s <= 0;};
-  BoolPredW isGT0  = [&](W36 v) -> bool const {return v.s  > 0;};
-  BoolPredW isGE0  = [&](W36 v) -> bool const {return v.s >= 0;};
-  BoolPredW isNE0  = [&](W36 v) -> bool const {return v.s != 0;};
-  BoolPredW isEQ0  = [&](W36 v) -> bool const {return v.s == 0;};
-  BoolPredW always = [&](W36 v) -> bool const {return  true;};
-  BoolPredW never  = [&](W36 v) -> bool const {return false;};
+  BoolPredW isLT0  = [&](W36 v) {return v.s  < 0;};
+  BoolPredW isLE0  = [&](W36 v) {return v.s <= 0;};
+  BoolPredW isGT0  = [&](W36 v) {return v.s  > 0;};
+  BoolPredW isGE0  = [&](W36 v) {return v.s >= 0;};
+  BoolPredW isNE0  = [&](W36 v) {return v.s != 0;};
+  BoolPredW isEQ0  = [&](W36 v) {return v.s == 0;};
+  BoolPredW always = [&](W36 v) {return  true;};
+  BoolPredW never  = [&](W36 v) {return false;};
 
-  BoolPredWW isNE0T  = [&](W36 a, W36 b) -> bool const {return (a.u & b.u) != 0;};
-  BoolPredWW isEQ0T  = [&](W36 a, W36 b) -> bool const {return (a.u & b.u) == 0;};
-  BoolPredWW alwaysT = [&](W36 a, W36 b) -> bool const {return  true;};
-  BoolPredWW neverT  = [&](W36 a, W36 b) -> bool const {return false;};
+  BoolPredWW isNE0T  = [&](W36 a, W36 b) {return (a.u & b.u) != 0;};
+  BoolPredWW isEQ0T  = [&](W36 a, W36 b) {return (a.u & b.u) == 0;};
+  BoolPredWW alwaysT = [&](W36 a, W36 b) {return  true;};
+  BoolPredWW neverT  = [&](W36 a, W36 b) {return false;};
 
 
   WFunc getE = [&]() -> W36 {return ea;};
-  WFuncW  noMod1 = [&](W36 a) -> auto const {return a;};
-  WFuncWW noMod2 = [&](W36 a, W36 b) -> auto const {return a;};
+  WFuncW  noMod1 = [&](W36 a) {return a;};
+  WFuncWW noMod2 = [&](W36 a, W36 b) {return a;};
 
 
   // There is no `zeroMaskL`, `compMaskR`, `onesMaskL` because,
   // e.g., TLZE operates on the LH of the AC while it's in the RH of
   // the value so the testing/masking work properly.
-  WFuncWW zeroMaskR = [&](W36 a, W36 b) -> auto const {return a.u & ~(uint64_t) b.rhu;};
-  WFuncWW zeroMask  = [&](W36 a, W36 b) -> auto const {return a.u & ~b.u;};
+  WFuncWW zeroMaskR = [&](W36 a, W36 b) {return a.u & ~(uint64_t) b.rhu;};
+  WFuncWW zeroMask  = [&](W36 a, W36 b) {return a.u & ~b.u;};
 
-  WFuncWW onesMaskR = [&](W36 a, W36 b) -> auto const {return a.u | b.rhu;};
-  WFuncWW onesMask  = [&](W36 a, W36 b) -> auto const {return a.u | b.u;};
+  WFuncWW onesMaskR = [&](W36 a, W36 b) {return a.u | b.rhu;};
+  WFuncWW onesMask  = [&](W36 a, W36 b) {return a.u | b.u;};
 
-  WFuncWW compMaskR = [&](W36 a, W36 b) -> auto const {return a.u ^ b.rhu;};
-  WFuncWW compMask  = [&](W36 a, W36 b) -> auto const {return a.u ^ b.u;};
+  WFuncWW compMaskR = [&](W36 a, W36 b) {return a.u ^ b.rhu;};
+  WFuncWW compMask  = [&](W36 a, W36 b) {return a.u ^ b.u;};
 
-  WFuncW zeroWord = [&](W36 a) -> auto const {return 0;};
-  WFuncW onesWord = [&](W36 a) -> auto const {return W36::all1s;};
-  WFuncW compWord = [&](W36 a) -> auto const {return ~a.u;};
+  WFuncW zeroWord = [&](W36 a) {return 0;};
+  WFuncW onesWord = [&](W36 a) {return W36::all1s;};
+  WFuncW compWord = [&](W36 a) {return ~a.u;};
 
-  FuncW noStore = [](W36 toSrc) -> void {};
+  FuncW noStore = [](W36 toSrc) {};
 
 
   // For a given low halfword, this computes an upper halfword by
   // extending the low halfword's sign.
-  function<unsigned(const unsigned)> extnOf = [&](const unsigned v) -> unsigned const {
+  function<unsigned(const unsigned)> extnOf = [&](const unsigned v) {
     return (v & 0400'000) ? W36::halfOnes : 0u;
   };
 
 
   // doCopyF functions
-  WFuncWW copyHRR = [&](W36 src, W36 dst) -> auto const {return W36(dst.lhu, src.rhu);};
-  WFuncWW copyHRL = [&](W36 src, W36 dst) -> auto const {return W36(src.rhu, dst.rhu);};
-  WFuncWW copyHLL = [&](W36 src, W36 dst) -> auto const {return W36(src.lhu, dst.rhu);};
-  WFuncWW copyHLR = [&](W36 src, W36 dst) -> auto const {return W36(dst.lhu, src.lhu);};
+  WFuncWW copyHRR = [&](W36 src, W36 dst) {return W36(dst.lhu, src.rhu);};
+  WFuncWW copyHRL = [&](W36 src, W36 dst) {return W36(src.rhu, dst.rhu);};
+  WFuncWW copyHLL = [&](W36 src, W36 dst) {return W36(src.lhu, dst.rhu);};
+  WFuncWW copyHLR = [&](W36 src, W36 dst) {return W36(dst.lhu, src.lhu);};
 
 
   // doModifyF functions
-  WFuncW zeroR = [&](W36 v) -> auto const {return W36(v.lhu, 0);};
-  WFuncW onesR = [&](W36 v) -> auto const {return W36(v.lhu, W36::halfOnes);};
-  WFuncW extnR = [&](W36 v) -> auto const {return W36(extnOf(v.rhu), v.rhu);};
-  WFuncW zeroL = [&](W36 v) -> auto const {return W36(0, v.rhu);};
-  WFuncW onesL = [&](W36 v) -> auto const {return W36(W36::halfOnes, v.rhu);};
-  WFuncW extnL = [&](W36 v) -> auto const {return W36(v.lhu, extnOf(v.lhu));};
+  WFuncW zeroR = [&](W36 v) {return W36(v.lhu, 0);};
+  WFuncW onesR = [&](W36 v) {return W36(v.lhu, W36::halfOnes);};
+  WFuncW extnR = [&](W36 v) {return W36(extnOf(v.rhu), v.rhu);};
+  WFuncW zeroL = [&](W36 v) {return W36(0, v.rhu);};
+  WFuncW onesL = [&](W36 v) {return W36(W36::halfOnes, v.rhu);};
+  WFuncW extnL = [&](W36 v) {return W36(v.lhu, extnOf(v.lhu));};
 
 
   // binary doModifyF functions
-  WFuncWW andWord = [&](W36 s1, W36 s2) -> auto const {return s1.u & s2.u;};
-  WFuncWW andCWord = [&](W36 s1, W36 s2) -> auto const {return s1.u & ~s2.u;};
-  WFuncWW andCBWord = [&](W36 s1, W36 s2) -> auto const {return ~s1.u & ~s2.u;};
-  WFuncWW iorWord = [&](W36 s1, W36 s2) -> auto const {return s1.u | s2.u;};
-  WFuncWW iorCWord = [&](W36 s1, W36 s2) -> auto const {return s1.u | ~s2.u;};
-  WFuncWW iorCBWord = [&](W36 s1, W36 s2) -> auto const {return ~s1.u | ~s2.u;};
-  WFuncWW xorWord = [&](W36 s1, W36 s2) -> auto const {return s1.u ^ s2.u;};
-  WFuncWW xorCWord = [&](W36 s1, W36 s2) -> auto const {return s1.u ^ ~s2.u;};
-  WFuncWW xorCBWord = [&](W36 s1, W36 s2) -> auto const {return ~s1.u ^ ~s2.u;};
-  WFuncWW eqvWord = [&](W36 s1, W36 s2) -> auto const {return ~(s1.u ^ s2.u);};
-  WFuncWW eqvCWord = [&](W36 s1, W36 s2) -> auto const {return ~(s1.u ^ ~s2.u);};
-  WFuncWW eqvCBWord = [&](W36 s1, W36 s2) -> auto const {return ~(~s1.u ^ ~s2.u);};
+  WFuncWW andWord =   [&](W36 s1, W36 s2) {return s1.u & s2.u;};
+  WFuncWW andCWord =  [&](W36 s1, W36 s2) {return s1.u & ~s2.u;};
+  WFuncWW andCBWord = [&](W36 s1, W36 s2) {return ~s1.u & ~s2.u;};
+  WFuncWW iorWord =   [&](W36 s1, W36 s2) {return s1.u | s2.u;};
+  WFuncWW iorCWord =  [&](W36 s1, W36 s2) {return s1.u | ~s2.u;};
+  WFuncWW iorCBWord = [&](W36 s1, W36 s2) {return ~s1.u | ~s2.u;};
+  WFuncWW xorWord =   [&](W36 s1, W36 s2) {return s1.u ^ s2.u;};
+  WFuncWW xorCWord =  [&](W36 s1, W36 s2) {return s1.u ^ ~s2.u;};
+  WFuncWW xorCBWord = [&](W36 s1, W36 s2) {return ~s1.u ^ ~s2.u;};
+  WFuncWW eqvWord =   [&](W36 s1, W36 s2) {return ~(s1.u ^ s2.u);};
+  WFuncWW eqvCWord =  [&](W36 s1, W36 s2) {return ~(s1.u ^ ~s2.u);};
+  WFuncWW eqvCBWord = [&](W36 s1, W36 s2) {return ~(~s1.u ^ ~s2.u);};
 
 
-  WFuncWW addWord = [&](W36 s1, W36 s2) -> auto const {
+  WFuncWW addWord = [&](W36 s1, W36 s2) {
     int64_t sum = s1.ext64() + s2.ext64();
 
     if (sum < -(int64_t) W36::bit0) {
@@ -360,7 +360,7 @@ public:
   };
     
 
-  WFuncWW subWord = [&](W36 s1, W36 s2) -> auto const {
+  WFuncWW subWord = [&](W36 s1, W36 s2) {
     int64_t diff = s1.ext64() - s2.ext64();
 
     if (diff < -(int64_t) W36::bit0) {
@@ -373,7 +373,7 @@ public:
   };
     
     
-  DFuncWW mulWord = [&](W36 s1, W36 s2) -> auto const {
+  DFuncWW mulWord = [&](W36 s1, W36 s2) {
     int128_t prod128 = (int128_t) s1.ext64() * s2.ext64();
     W72 prod = W72::fromMag((uint128_t) (prod128 < 0 ? -prod128 : prod128), prod128 < 0);
 
@@ -386,7 +386,7 @@ public:
   };
     
 
-  WFuncWW imulWord = [&](W36 s1, W36 s2) -> auto const {
+  WFuncWW imulWord = [&](W36 s1, W36 s2) {
     int128_t prod128 = (int128_t) s1.ext64() * s2.ext64();
     W72 prod = W72::fromMag((uint128_t) (prod128 < 0 ? -prod128 : prod128), prod128 < 0);
 
@@ -399,7 +399,7 @@ public:
   };
 
     
-  DFuncWW idivWord = [&](W36 s1, W36 s2) -> auto const {
+  DFuncWW idivWord = [&](W36 s1, W36 s2) {
 
     if ((s1.u == W36::bit0 && s2.s == -1ll) || s2.u == 0ull) {
       state.flags.ndv = state.flags.tr1 = state.flags.ov = 1;
@@ -413,7 +413,7 @@ public:
   };
 
     
-  DFuncDW divWord = [&](W72 s1, W36 s2) -> auto const {
+  DFuncDW divWord = [&](W72 s1, W36 s2) {
     uint128_t den70 = ((uint128_t) s1.hi35 << 35) | s1.lo35;
     auto dor = s2.mag;
     auto signBit = s1.s < 0 ? 1ull << 35 : 0ull;
@@ -432,21 +432,22 @@ public:
   };
 
     
-  // Binary comparison predicates
-  BoolPredWW isLT    = [&](W36 v1, W36 v2) -> bool const {return v1.ext64() <  v2.ext64();};
-  BoolPredWW isLE    = [&](W36 v1, W36 v2) -> bool const {return v1.ext64() <= v2.ext64();};
-  BoolPredWW isGT    = [&](W36 v1, W36 v2) -> bool const {return v1.ext64() >  v2.ext64();};
-  BoolPredWW isGE    = [&](W36 v1, W36 v2) -> bool const {return v1.ext64() >= v2.ext64();};
-  BoolPredWW isNE    = [&](W36 v1, W36 v2) -> bool const {return v1.ext64() != v2.ext64();};
-  BoolPredWW isEQ    = [&](W36 v1, W36 v2) -> bool const {return v1.ext64() == v2.ext64();};
-  BoolPredWW always2 = [&](W36 v1, W36 v2) -> bool const {return true;};
-  BoolPredWW never2  = [&](W36 v1, W36 v2) -> bool const {return false;};
+  // Binary comparison predicates.
+  BoolPredWW isLT    = [&](W36 v1, W36 v2) {return v1.ext64() <  v2.ext64();};
+  BoolPredWW isLE    = [&](W36 v1, W36 v2) {return v1.ext64() <= v2.ext64();};
+  BoolPredWW isGT    = [&](W36 v1, W36 v2) {return v1.ext64() >  v2.ext64();};
+  BoolPredWW isGE    = [&](W36 v1, W36 v2) {return v1.ext64() >= v2.ext64();};
+  BoolPredWW isNE    = [&](W36 v1, W36 v2) {return v1.ext64() != v2.ext64();};
+  BoolPredWW isEQ    = [&](W36 v1, W36 v2) {return v1.ext64() == v2.ext64();};
+  BoolPredWW always2 = [&](W36 v1, W36 v2) {return true;};
+  BoolPredWW never2  = [&](W36 v1, W36 v2) {return false;};
 
 
   VoidFunc skipAction = [&] {++state.nextPC.rhu;};
   VoidFunc jumpAction = [&] {state.nextPC.rhu = ea.rhu;};
 
 
+  // Instruction class implementations.
   void doBinOp(auto getSrc1F, auto getSrc2F, auto modifyF, auto putDstF) {
     auto result = modifyF(getSrc1F(), getSrc2F());
     if (!state.flags.ndv) putDstF(result);
@@ -577,6 +578,9 @@ public:
   void logFlow(const char *msg) {
     if (logger.pc) logger.s << " [" << msg << "]";
   }
+
+
+  void setDebugger(Debugger *p) { debuggerP = p; }
 
 
   InstructionResult nyi();
@@ -910,14 +914,6 @@ public:
   InstructionResult doTSOA();
   InstructionResult doTDON();
   InstructionResult doTSON();
-
-
-
-
-
-
-
-  void setDebugger(Debugger *p) { debuggerP = p; }
 
 
   ////////////////////////////////////////////////////////////////////////////////

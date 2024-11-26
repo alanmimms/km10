@@ -25,32 +25,15 @@ struct PAGDevice: Device {
 
 
   // Constructors
-  PAGDevice(KMState &aState):
-    Device(003, "PAG", aState)
-  {
-    pagState.u = 0;
-  }
+  PAGDevice(KMState &aState);
 
 
   // Accessors
-  bool pagerEnabled() {
-    return pagState.enablePager;
-  }
+  bool pagerEnabled();
 
 
   // I/O instruction handlers
-  virtual void doCONO(W36 iw, W36 ea) override {
-    if (logger.mem) logger.s << "; " << ea.fmt18();
-    pagState.u = iw.y;
-  }
-
-  virtual W36 doCONI(W36 iw, W36 ea) override {
-    W36 conditions{state.memGetN(ea).lhu, pagState.u};
-    state.memPutN(conditions, ea);
-    return conditions;
-  }
-
-  virtual void clearIO() {
-    pagState.u = 0;
-  }
+  virtual void doCONO(W36 iw, W36 ea) override;
+  virtual W36 doCONI(W36 iw, W36 ea) override;
+  virtual void clearIO();
 };

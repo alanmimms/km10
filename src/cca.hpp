@@ -2,6 +2,7 @@
 
 #include "word.hpp"
 #include "device.hpp"
+#include "apr.hpp"
 
 
 struct CCADevice: Device {
@@ -23,65 +24,23 @@ struct CCADevice: Device {
   // Set a "sweep" going, waiting this many instruction cycles before
   // handleSweep triggers the end of the cycle and possibly an
   // interrupt.
-  void startSweep() {
-    cerr << "CCA: startSweep" << logger.endl;
-    sweepCountDown = 10;
-    apr.startSweep();
-  }
+  void startSweep();
 
 
   // This is called each instruction cycle to manage the sweep counter
   // and for APR to trigger the optional interrupt when it's done.
-  void handleSweep() {
-
-    if (sweepCountDown && --sweepCountDown == 0) {
-      cerr << "CCA: apr.endSweep" << logger.endl << flush;
-      apr.endSweep();
-    }
-  }
+  void handleSweep();
 
 
   // I/O instruction handlers
-  virtual void doCONO(W36 iw, W36 ea) override {
-    startSweep();
-  }
+  virtual void doCONO(W36 iw, W36 ea) override;
 
-  // SWPIA
-  virtual W36 doDATAI(W36 iw, W36 ea) {
-    startSweep();
-    return 0;
-  }
-  
-  // SWPVA
-  virtual void doBLKO(W36 iw, W36 ea, W36 &nextPC) {
-    startSweep();
-  }
+  virtual W36 doDATAI(W36 iw, W36 ea);		      // SWPIA
+  virtual void doBLKO(W36 iw, W36 ea, W36 &nextPC);   // SWPVA
+  virtual void doDATAO(W36 iw, W36 ea);		      // SWPUA
+  virtual W36 doCONI(W36 iw, W36 ea);		      // SWPIO
+  virtual void doCONSZ(W36 iw, W36 ea, W36 &nextPC);  // SWPVO
+  virtual void doCONSO(W36 iw, W36 ea, W36 &nextPC);  // SWPUO
 
-  // SWPUA
-  virtual void doDATAO(W36 iw, W36 ea) {
-    startSweep();
-  }
-
-
-  // SWPIO
-  virtual W36 doCONI(W36 iw, W36 ea) {
-    startSweep();
-    return 0;
-  }
-
-  // SWPVO
-  virtual void doCONSZ(W36 iw, W36 ea, W36 &nextPC) {
-    startSweep();
-  }
-
-  // SWPUO
-  virtual void doCONSO(W36 iw, W36 ea, W36 &nextPC) {
-    startSweep();
-  }
-
-
-  virtual void clearIO() {
-    if (sweepCountDown) apr.endSweep();
-    sweepCountDown = 0;
-  }
+  virtual void clearIO();
 };

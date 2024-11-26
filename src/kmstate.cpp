@@ -7,6 +7,113 @@
 using namespace std;
 
 
+// Return the KM10 memory VIRTUAL address (EPT is in kernel virtual
+// space) for the specified pointer into the EPT.
+W36 KMState::eptAddressFor(const W36 *eptEntryP) {
+  return W36(eptEntryP - (W36 *) eptP);
+}
+
+
+W36 KMState::acGetN(unsigned n) {
+  assert(n < 16);
+  W36 value = AC[n];
+  if (logger.mem) logger.s << "; ac" << oct << n << ":" << value.fmt36();
+  return value;
+}
+
+
+W36 KMState::acGetEA(unsigned n) {
+  assert(n < 16);
+  W36 value = AC[n];
+  if (logger.mem) logger.s << "; ac" << oct << n << ":" << value.fmt36();
+  return value;
+}
+
+
+void KMState::acPutN(W36 value, unsigned n) {
+  assert(n < 16);
+  AC[n] = value;
+  if (logger.mem) logger.s << "; ac" << oct << n << "=" << value.fmt36();
+}
+
+W36 KMState::memGetN(W36 a) {
+  W36 value = a.rhu < 020 ? acGetEA(a.rhu) : memP[a.rhu];
+  if (logger.mem) logger.s << "; " << a.fmtVMA() << ":" << value.fmt36();
+  if (addressBPs.contains(a.vma)) running = false;
+  return value;
+}
+
+void KMState::memPutN(W36 value, W36 a) {
+
+  if (a.rhu < 020)
+    acPutN(value, a.rhu);
+  else 
+    memP[a.rhu] = value;
+
+  if (logger.mem) logger.s << "; " << a.fmtVMA() << "=" << value.fmt36();
+  if (addressBPs.contains(a.vma)) running = false;
+}
+
+
+// Effective address calculation
+uint64_t KMState::getEA(unsigned i, unsigned x, uint64_t y) {
+
+  // While we keep getting indirection, loop for new EA words.
+  // XXX this only works for non-extended addressing.
+  for (;;) {
+
+    // XXX there are some significant open questions about how much
+    // the address wraps and how much is included in these addition
+    // and indirection steps. For now, this can work for section 0
+    // or unextended code.
+
+    if (x != 0) {
+      if (logger.ea) logger.s << "EA (" << oct << x << ")=" << acGetN(x).fmt36() << logger.endl;
+      y += acGetN(x).u;
+    }
+
+    if (i != 0) {		// Indirection
+      W36 eaw(memGetN(y));
+      if (logger.ea) logger.s << "EA @" << W36(y).fmt36() << "=" << eaw.fmt36() << logger.endl;
+      y = eaw.y;
+      x = eaw.x;
+      i = eaw.i;
+    } else {			// No indexing or indirection
+      if (logger.ea) logger.s << "EA=" << W36(y).fmt36() << logger.endl;
+      return y;
+    }
+  }
+}
+
+
+// Accessors
+bool KMState::userMode() {return !!flags.usr;}
+
+W36 KMState::flagsWord(unsigned pc) {
+  W36 v(pc);
+  v.pcFlags = flags.u;
+  return v;
+}
+
+
+// Used by JRSTF and JEN
+void KMState::restoreFlags(W36 ea) {
+  ProgramFlags newFlags{(unsigned) ea.pcFlags};
+
+  // User mode cannot clear USR. User mode cannot set UIO.
+  if (flags.usr) {
+    newFlags.uio = 0;
+    newFlags.usr = 1;
+  }
+
+  // A program running in PUB mode cannot clear PUB mode.
+  if (flags.pub) newFlags.pub = 1;
+
+  flags.u = newFlags.u;
+}
+
+
+
 // Loaders
 /*
   PDP-10 ASCIIZED FILE FORMAT
