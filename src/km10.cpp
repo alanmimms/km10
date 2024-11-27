@@ -1,15 +1,21 @@
 #include <iostream>
 #include <assert.h>
+#include <atomic>
+#include <unordered_set>
+#include <sys/mman.h>
+#include <assert.h>
+
 using namespace std;
 
 #include <gflags/gflags.h>
 
 #include "word.hpp"
-#include "kmstate.hpp"
 #include "km10.hpp"
 #include "debugger.hpp"
 
 #include "logger.hpp"
+
+using InstructionResult = KM10::InstructionResult;
 
 
 Logger logger{};
@@ -25,372 +31,533 @@ DEFINE_string(load, "../images/klad/dfkaa.a10", ".A10 or .SAV file to load");
 DEFINE_string(rel, "../images/klad/dfkaa.rel", ".REL file to load symbols from");
 DEFINE_bool(debug, false, "run the built-in debugger instead of starting execution");
 
+
 ////////////////////////////////////////////////////////////////
 // Constructor
-KM10::KM10(KMState &aState)
-  : state(aState),
-    apr(aState),
-    cca(aState, apr),
-    mtr(aState),
-    pi(aState),
-    pag(aState),
-    tim(aState),
-    dte(040, aState),
-    noDevice(0777777ul, "?NoDevice?", aState),
-    debuggerP(nullptr)
-{
-  ops[0000] = &KM10::doMUUO;	// ILLEGAL
-  for (unsigned op=1; op < 037; ++op) ops[op] = &KM10::doLUUO;
-  for (unsigned op=040; op < 0102; ++op) ops[op] = &KM10::doMUUO;
+KM10::KM10()
+  : apr(this),
+    cca(this, apr),
+    mtr(this),
+    pi(this),
+    pag(this),
+    tim(this),
+    dte(040, this),
+    noDevice(0777777ul, "?NoDevice?", this),
+    debuggerP(nullptr),
+    running(false),
+    restart(false),
+    nextPC(0),
+    exceptionPC(0),
+    pc(0),
+    ACbanks{},
+    flags(0u),
+    inInterrupt(false),
+    era(0u),
+    AC(ACbanks[0]),
+    memorySize(nWords),
+    nSteps(0),
+    inXCT(false),
+    addressBPs(aBPs),
+    executeBPs(eBPs),    
+    ops{
+      [0000 .... 0777] = &doNYI, // All unspecified instruction entries are doNYI
+      [0000] = &doMUUO,
+      [0001] = &doLUUO,
+      [0002] = &doLUUO,
+      [0003] = &doLUUO,
+      [0004] = &doLUUO,
+      [0005] = &doLUUO,
+      [0006] = &doLUUO,
+      [0007] = &doLUUO,
+      [0010] = &doLUUO,
+      [0011] = &doLUUO,
+      [0012] = &doLUUO,
+      [0013] = &doLUUO,
+      [0014] = &doLUUO,
+      [0015] = &doLUUO,
+      [0016] = &doLUUO,
+      [0017] = &doLUUO,
+      [0020] = &doLUUO,
+      [0021] = &doLUUO,
+      [0022] = &doLUUO,
+      [0023] = &doLUUO,
+      [0024] = &doLUUO,
+      [0025] = &doLUUO,
+      [0026] = &doLUUO,
+      [0027] = &doLUUO,
+      [0030] = &doLUUO,
+      [0031] = &doLUUO,
+      [0032] = &doLUUO,
+      [0033] = &doLUUO,
+      [0034] = &doLUUO,
+      [0035] = &doLUUO,
+      [0036] = &doLUUO,
+      [0037] = &doLUUO,
+      [0040] = &doMUUO,
+      [0041] = &doMUUO,
+      [0042] = &doMUUO,
+      [0043] = &doMUUO,
+      [0044] = &doMUUO,
+      [0045] = &doMUUO,
+      [0046] = &doMUUO,
+      [0047] = &doMUUO,
+      [0050] = &doMUUO,
+      [0051] = &doMUUO,
+      [0052] = &doMUUO,
+      [0053] = &doMUUO,
+      [0054] = &doMUUO,
+      [0055] = &doMUUO,
+      [0056] = &doMUUO,
+      [0057] = &doMUUO,
+      [0060] = &doMUUO,
+      [0061] = &doMUUO,
+      [0062] = &doMUUO,
+      [0063] = &doMUUO,
+      [0064] = &doMUUO,
+      [0065] = &doMUUO,
+      [0066] = &doMUUO,
+      [0067] = &doMUUO,
+      [0070] = &doMUUO,
+      [0071] = &doMUUO,
+      [0072] = &doMUUO,
+      [0073] = &doMUUO,
+      [0074] = &doMUUO,
+      [0075] = &doMUUO,
+      [0076] = &doMUUO,
+      [0077] = &doMUUO,
 
-  ops[0201] = &KM10::doMOVEI;
-  ops[0202] = &KM10::doMOVEM;
-  ops[0203] = &KM10::doMOVES;
-  ops[0204] = &KM10::doMOVS;
-  ops[0205] = &KM10::doMOVSI;
-  ops[0206] = &KM10::doMOVSM;
-  ops[0207] = &KM10::doMOVSS;
-  ops[0210] = &KM10::doMOVN;
-  ops[0211] = &KM10::doMOVNI;
-  ops[0212] = &KM10::doMOVNM;
-  ops[0213] = &KM10::doMOVNS;
-  ops[0214] = &KM10::doMOVM;
-  ops[0215] = &KM10::doMOVMI;
-  ops[0216] = &KM10::doMOVMM;
-  ops[0217] = &KM10::doMOVMS;
-  ops[0220] = &KM10::doIMUL;
-  ops[0221] = &KM10::doIMULI;
-  ops[0222] = &KM10::doIMULM;
-  ops[0223] = &KM10::doIMULB;
-  ops[0224] = &KM10::doMUL;
-  ops[0225] = &KM10::doMULI;
-  ops[0226] = &KM10::doMULM;
-  ops[0227] = &KM10::doMULB;
-  ops[0230] = &KM10::doIDIV;
-  ops[0231] = &KM10::doIDIVI;
-  ops[0232] = &KM10::doIDIVM;
-  ops[0233] = &KM10::doIDIVB;
-  ops[0234] = &KM10::doDIV;
-  ops[0235] = &KM10::doDIVI;
-  ops[0236] = &KM10::doDIVM;
-  ops[0237] = &KM10::doDIVB;
-  ops[0240] = &KM10::doASH;
-  ops[0241] = &KM10::doROT;
-  ops[0242] = &KM10::doLSH;
-  ops[0243] = &KM10::doJFFO;
-  ops[0245] = &KM10::doROTC;
-  ops[0246] = &KM10::doLSHC;
-  ops[0250] = &KM10::doEXCH;
-  ops[0251] = &KM10::doBLT;
-  ops[0252] = &KM10::doAOBJP;
-  ops[0253] = &KM10::doAOBJN;
-  ops[0254] = &KM10::doJRST;
-  ops[0255] = &KM10::doJFCL;
-  ops[0256] = &KM10::doPXCT;
-  ops[0260] = &KM10::doPUSHJ;
-  ops[0261] = &KM10::doPUSH;
-  ops[0262] = &KM10::doPOP;
-  ops[0263] = &KM10::doPOPJ;
-  ops[0264] = &KM10::doJSR;
-  ops[0265] = &KM10::doJSP;
-  ops[0266] = &KM10::doJSA;
-  ops[0267] = &KM10::doJRA;
-  ops[0270] = &KM10::doADD;
-  ops[0271] = &KM10::doADDI;
-  ops[0272] = &KM10::doADDM;
-  ops[0273] = &KM10::doADDB;
-  ops[0274] = &KM10::doSUB;
-  ops[0275] = &KM10::doSUBI;
-  ops[0276] = &KM10::doSUBM;
-  ops[0277] = &KM10::doSUBB;
-  ops[0300] = &KM10::doCAI;
-  ops[0301] = &KM10::doCAIL;
-  ops[0302] = &KM10::doCAIE;
-  ops[0303] = &KM10::doCAILE;
-  ops[0304] = &KM10::doCAIA;
-  ops[0305] = &KM10::doCAIGE;
-  ops[0306] = &KM10::doCAIN;
-  ops[0307] = &KM10::doCAIG;
-  ops[0310] = &KM10::doCAM;
-  ops[0311] = &KM10::doCAML;
-  ops[0312] = &KM10::doCAME;
-  ops[0313] = &KM10::doCAMLE;
-  ops[0314] = &KM10::doCAMA;
-  ops[0315] = &KM10::doCAMGE;
-  ops[0316] = &KM10::doCAMN;
-  ops[0317] = &KM10::doCAMG;
-  ops[0320] = &KM10::doJUMP;
-  ops[0321] = &KM10::doJUMPL;
-  ops[0322] = &KM10::doJUMPE;
-  ops[0323] = &KM10::doJUMPLE;
-  ops[0324] = &KM10::doJUMPA;
-  ops[0325] = &KM10::doJUMPGE;
-  ops[0326] = &KM10::doJUMPN;
-  ops[0327] = &KM10::doJUMPG;
-  ops[0330] = &KM10::doSKIP;
-  ops[0331] = &KM10::doSKIPL;
-  ops[0332] = &KM10::doSKIPE;
-  ops[0333] = &KM10::doSKIPLE;
-  ops[0334] = &KM10::doSKIPA;
-  ops[0335] = &KM10::doSKIPGE;
-  ops[0336] = &KM10::doSKIPN;
-  ops[0337] = &KM10::doSKIPGT;
-  ops[0340] = &KM10::doAOJ;
-  ops[0341] = &KM10::doAOJL;
-  ops[0342] = &KM10::doAOJE;
-  ops[0343] = &KM10::doAOJLE;
-  ops[0344] = &KM10::doAOJA;
-  ops[0345] = &KM10::doAOJGE;
-  ops[0346] = &KM10::doAOJN;
-  ops[0347] = &KM10::doAOJG;
-  ops[0350] = &KM10::doAOS;
-  ops[0351] = &KM10::doAOSL;
-  ops[0352] = &KM10::doAOSE;
-  ops[0353] = &KM10::doAOSLE;
-  ops[0354] = &KM10::doAOSA;
-  ops[0355] = &KM10::doAOSGE;
-  ops[0356] = &KM10::doAOSN;
-  ops[0357] = &KM10::doAOSG;
-  ops[0360] = &KM10::doSOJ;
-  ops[0361] = &KM10::doSOJL;
-  ops[0362] = &KM10::doSOJE;
-  ops[0363] = &KM10::doSOJLE;
-  ops[0364] = &KM10::doSOJA;
-  ops[0365] = &KM10::doSOJGE;
-  ops[0366] = &KM10::doSOJN;
-  ops[0367] = &KM10::doSOJG;
-  ops[0370] = &KM10::doSOS;
-  ops[0371] = &KM10::doSOSL;
-  ops[0372] = &KM10::doSOSE;
-  ops[0373] = &KM10::doSOSLE;
-  ops[0374] = &KM10::doSOSA;
-  ops[0375] = &KM10::doSOSGE;
-  ops[0376] = &KM10::doSOSN;
-  ops[0377] = &KM10::doSOSG;
-  ops[0400] = &KM10::doSETZ;
-  ops[0401] = &KM10::doSETZI;
-  ops[0402] = &KM10::doSETZM;
-  ops[0403] = &KM10::doSETZB;
-  ops[0404] = &KM10::doAND;
-  ops[0405] = &KM10::doANDI;
-  ops[0406] = &KM10::doANDM;
-  ops[0407] = &KM10::doANDB;
-  ops[0410] = &KM10::doANDCA;
-  ops[0411] = &KM10::doANDCAI;
-  ops[0412] = &KM10::doANDCAM;
-  ops[0413] = &KM10::doANDCAB;
-  ops[0414] = &KM10::doSETM;
-  ops[0415] = &KM10::doSETMI;
-  ops[0416] = &KM10::doSETMM;
-  ops[0417] = &KM10::doSETMB;
-  ops[0420] = &KM10::doANDCM;
-  ops[0421] = &KM10::doANDCMI;
-  ops[0422] = &KM10::doANDCMM;
-  ops[0423] = &KM10::doANDCMB;
-  ops[0424] = &KM10::doSETA;
-  ops[0425] = &KM10::doSETAI;
-  ops[0426] = &KM10::doSETAM;
-  ops[0427] = &KM10::doSETAB;
-  ops[0430] = &KM10::doXOR;
-  ops[0431] = &KM10::doXORI;
-  ops[0432] = &KM10::doXORM;
-  ops[0433] = &KM10::doXORB;
-  ops[0434] = &KM10::doIOR;
-  ops[0435] = &KM10::doIORI;
-  ops[0436] = &KM10::doIORM;
-  ops[0437] = &KM10::doIORB;
-  ops[0440] = &KM10::doANDCBM;
-  ops[0441] = &KM10::doANDCBMI;
-  ops[0442] = &KM10::doANDCBMM;
-  ops[0443] = &KM10::doANDCBMB;
-  ops[0444] = &KM10::doEQV;
-  ops[0445] = &KM10::doEQVI;
-  ops[0446] = &KM10::doEQVM;
-  ops[0447] = &KM10::doEQVB;
-  ops[0450] = &KM10::doSETCA;
-  ops[0451] = &KM10::doSETCAI;
-  ops[0452] = &KM10::doSETCAM;
-  ops[0453] = &KM10::doSETCAB;
-  ops[0454] = &KM10::doORCA;
-  ops[0455] = &KM10::doORCAI;
-  ops[0456] = &KM10::doORCAM;
-  ops[0457] = &KM10::doORCAB;
-  ops[0460] = &KM10::doSETCM;
-  ops[0461] = &KM10::doSETCMI;
-  ops[0462] = &KM10::doSETCMM;
-  ops[0463] = &KM10::doSETCMB;
-  ops[0464] = &KM10::doORCM;
-  ops[0465] = &KM10::doORCMI;
-  ops[0466] = &KM10::doORCMM;
-  ops[0467] = &KM10::doORCMB;
-  ops[0470] = &KM10::doORCB;
-  ops[0471] = &KM10::doORCBI;
-  ops[0472] = &KM10::doORCBM;
-  ops[0473] = &KM10::doORCBB;
-  ops[0474] = &KM10::doSETO;
-  ops[0475] = &KM10::doSETOI;
-  ops[0476] = &KM10::doSETOM;
-  ops[0477] = &KM10::doSETOB;
-  ops[0500] = &KM10::doHLL;
-  ops[0501] = &KM10::doHLLI;
-  ops[0502] = &KM10::doHLLM;
-  ops[0503] = &KM10::doHLLS;
-  ops[0504] = &KM10::doHRL;
-  ops[0505] = &KM10::doHRLI;
-  ops[0506] = &KM10::doHRLM;
-  ops[0507] = &KM10::doHRLS;
-  ops[0510] = &KM10::doHLLZ;
-  ops[0511] = &KM10::doHLLZI;
-  ops[0512] = &KM10::doHLLZM;
-  ops[0513] = &KM10::doHLLZS;
-  ops[0514] = &KM10::doHRLZ;
-  ops[0515] = &KM10::doHRLZI;
-  ops[0516] = &KM10::doHRLZM;
-  ops[0517] = &KM10::doHRLZS;
-  ops[0520] = &KM10::doHLLO;
-  ops[0521] = &KM10::doHLLOI;
-  ops[0522] = &KM10::doHLLOM;
-  ops[0523] = &KM10::doHLLOS;
-  ops[0524] = &KM10::doHRLO;
-  ops[0525] = &KM10::doHRLOI;
-  ops[0526] = &KM10::doHRLOM;
-  ops[0527] = &KM10::doHRLOS;
-  ops[0530] = &KM10::doHLLE;
-  ops[0531] = &KM10::doHLLEI;
-  ops[0532] = &KM10::doHLLEM;
-  ops[0533] = &KM10::doHLLES;
-  ops[0534] = &KM10::doHRLE;
-  ops[0535] = &KM10::doHRLEI;
-  ops[0536] = &KM10::doHRLEM;
-  ops[0537] = &KM10::doHRLES;
-  ops[0540] = &KM10::doHRR;
-  ops[0541] = &KM10::doHRRI;
-  ops[0542] = &KM10::doHRRM;
-  ops[0543] = &KM10::doHRRS;
-  ops[0544] = &KM10::doHLR;
-  ops[0545] = &KM10::doHLRI;
-  ops[0546] = &KM10::doHLRM;
-  ops[0547] = &KM10::doHLRS;
-  ops[0550] = &KM10::doHRRZ;
-  ops[0551] = &KM10::doHRRZI;
-  ops[0552] = &KM10::doHRRZM;
-  ops[0553] = &KM10::doHRRZS;
-  ops[0554] = &KM10::doHLRZ;
-  ops[0555] = &KM10::doHLRZI;
-  ops[0556] = &KM10::doHLRZM;
-  ops[0557] = &KM10::doHLRZS;
-  ops[0560] = &KM10::doHRRO;
-  ops[0561] = &KM10::doHRROI;
-  ops[0562] = &KM10::doHRROM;
-  ops[0563] = &KM10::doHRROS;
-  ops[0564] = &KM10::doHLRO;
-  ops[0565] = &KM10::doHLROI;
-  ops[0566] = &KM10::doHLROM;
-  ops[0567] = &KM10::doHLROS;
-  ops[0570] = &KM10::doHRRE;
-  ops[0571] = &KM10::doHRREI;
-  ops[0572] = &KM10::doHRREM;
-  ops[0573] = &KM10::doHRRES;
-  ops[0574] = &KM10::doHLRE;
-  ops[0575] = &KM10::doHLREI;
-  ops[0576] = &KM10::doHLREM;
-  ops[0577] = &KM10::doHLRES;
-  ops[0600] = &KM10::doTRN;
-  ops[0601] = &KM10::doTLN;
-  ops[0602] = &KM10::doTRNE;
-  ops[0603] = &KM10::doTLNE;
-  ops[0604] = &KM10::doTRNA;
-  ops[0605] = &KM10::doTLNA;
-  ops[0606] = &KM10::doTRNN;
-  ops[0607] = &KM10::doTLNN;
-  ops[0620] = &KM10::doTRZ;
-  ops[0621] = &KM10::doTLZ;
-  ops[0622] = &KM10::doTRZE;
-  ops[0623] = &KM10::doTLZE;
-  ops[0624] = &KM10::doTRZA;
-  ops[0625] = &KM10::doTLZA;
-  ops[0626] = &KM10::doTRZN;
-  ops[0627] = &KM10::doTLZN;
-  ops[0640] = &KM10::doTRC;
-  ops[0641] = &KM10::doTLC;
-  ops[0642] = &KM10::doTRCE;
-  ops[0643] = &KM10::doTLCE;
-  ops[0644] = &KM10::doTRCA;
-  ops[0645] = &KM10::doTLCA;
-  ops[0646] = &KM10::doTRCN;
-  ops[0647] = &KM10::doTLCN;
-  ops[0660] = &KM10::doTRO;
-  ops[0661] = &KM10::doTLO;
-  ops[0662] = &KM10::doTROE;
-  ops[0663] = &KM10::doTLOE;
-  ops[0664] = &KM10::doTROA;
-  ops[0665] = &KM10::doTLOA;
-  ops[0666] = &KM10::doTRON;
-  ops[0667] = &KM10::doTLON;
-  ops[0610] = &KM10::doTDN;
-  ops[0611] = &KM10::doTSN;
-  ops[0612] = &KM10::doTDNE;
-  ops[0613] = &KM10::doTSNE;
-  ops[0614] = &KM10::doTDNA;
-  ops[0615] = &KM10::doTSNA;
-  ops[0616] = &KM10::doTDNN;
-  ops[0617] = &KM10::doTSNN;
-  ops[0630] = &KM10::doTDZ;
-  ops[0631] = &KM10::doTSZ;
-  ops[0632] = &KM10::doTDZE;
-  ops[0633] = &KM10::doTSZE;
-  ops[0634] = &KM10::doTDZA;
-  ops[0635] = &KM10::doTSZA;
-  ops[0636] = &KM10::doTDZN;
-  ops[0637] = &KM10::doTSZN;
-  ops[0650] = &KM10::doTDC;
-  ops[0651] = &KM10::doTSC;
-  ops[0652] = &KM10::doTDCE;
-  ops[0653] = &KM10::doTSCE;
-  ops[0654] = &KM10::doTDCA;
-  ops[0655] = &KM10::doTSCA;
-  ops[0656] = &KM10::doTDCN;
-  ops[0657] = &KM10::doTSZCN;
-  ops[0670] = &KM10::doTDO;
-  ops[0671] = &KM10::doTSO;
-  ops[0672] = &KM10::doTDOE;
-  ops[0673] = &KM10::doTSOE;
-  ops[0674] = &KM10::doTDOA;
-  ops[0675] = &KM10::doTSOA;
-  ops[0676] = &KM10::doTDON;
-  ops[0677] = &KM10::doTSON;
+      [0100] = &doMUUO,
+      [0101] = &doMUUO,
 
-  for (unsigned op=0700; op <= 0777; ++op) ops[op] = &KM10::doIO;
+      [0200] = &doMOVE,
+      [0201] = &doMOVEI,
+      [0202] = &doMOVEM,
+      [0203] = &doMOVES,
+      [0204] = &doMOVS,
+      [0205] = &doMOVSI,
+      [0206] = &doMOVSM,
+      [0207] = &doMOVSS,
+      [0210] = &doMOVN,
+      [0211] = &doMOVNI,
+      [0212] = &doMOVNM,
+      [0213] = &doMOVNS,
+      [0214] = &doMOVM,
+      [0215] = &doMOVMI,
+      [0216] = &doMOVMM,
+      [0217] = &doMOVMS,
+      [0220] = &doIMUL,
+      [0221] = &doIMULI,
+      [0222] = &doIMULM,
+      [0223] = &doIMULB,
+      [0224] = &doMUL,
+      [0225] = &doMULI,
+      [0226] = &doMULM,
+      [0227] = &doMULB,
+      [0230] = &doIDIV,
+      [0231] = &doIDIVI,
+      [0232] = &doIDIVM,
+      [0233] = &doIDIVB,
+      [0234] = &doDIV,
+      [0235] = &doDIVI,
+      [0236] = &doDIVM,
+      [0237] = &doDIVB,
+      [0240] = &doASH,
+      [0241] = &doROT,
+      [0242] = &doLSH,
+      [0243] = &doJFFO,
+      [0245] = &doROTC,
+      [0246] = &doLSHC,
+      [0250] = &doEXCH,
+      [0251] = &doBLT,
+      [0252] = &doAOBJP,
+      [0253] = &doAOBJN,
+      [0254] = &doJRST,
+      [0255] = &doJFCL,
+      [0256] = &doPXCT,
+      [0260] = &doPUSHJ,
+      [0261] = &doPUSH,
+      [0262] = &doPOP,
+      [0263] = &doPOPJ,
+      [0264] = &doJSR,
+      [0265] = &doJSP,
+      [0266] = &doJSA,
+      [0267] = &doJRA,
+      [0270] = &doADD,
+      [0271] = &doADDI,
+      [0272] = &doADDM,
+      [0273] = &doADDB,
+      [0274] = &doSUB,
+      [0275] = &doSUBI,
+      [0276] = &doSUBM,
+      [0277] = &doSUBB,
 
-  // Fill in all other opcodes as Not Yet Implemented for now.
-  for (unsigned op=0; op < 0777; ++op) {
+      [0300] = &doCAI,
+      [0301] = &doCAIL,
+      [0302] = &doCAIE,
+      [0303] = &doCAILE,
+      [0304] = &doCAIA,
+      [0305] = &doCAIGE,
+      [0306] = &doCAIN,
+      [0307] = &doCAIG,
+      [0310] = &doCAM,
+      [0311] = &doCAML,
+      [0312] = &doCAME,
+      [0313] = &doCAMLE,
+      [0314] = &doCAMA,
+      [0315] = &doCAMGE,
+      [0316] = &doCAMN,
+      [0317] = &doCAMG,
+      [0320] = &doJUMP,
+      [0321] = &doJUMPL,
+      [0322] = &doJUMPE,
+      [0323] = &doJUMPLE,
+      [0324] = &doJUMPA,
+      [0325] = &doJUMPGE,
+      [0326] = &doJUMPN,
+      [0327] = &doJUMPG,
+      [0330] = &doSKIP,
+      [0331] = &doSKIPL,
+      [0332] = &doSKIPE,
+      [0333] = &doSKIPLE,
+      [0334] = &doSKIPA,
+      [0335] = &doSKIPGE,
+      [0336] = &doSKIPN,
+      [0337] = &doSKIPGT,
+      [0340] = &doAOJ,
+      [0341] = &doAOJL,
+      [0342] = &doAOJE,
+      [0343] = &doAOJLE,
+      [0344] = &doAOJA,
+      [0345] = &doAOJGE,
+      [0346] = &doAOJN,
+      [0347] = &doAOJG,
+      [0350] = &doAOS,
+      [0351] = &doAOSL,
+      [0352] = &doAOSE,
+      [0353] = &doAOSLE,
+      [0354] = &doAOSA,
+      [0355] = &doAOSGE,
+      [0356] = &doAOSN,
+      [0357] = &doAOSG,
+      [0360] = &doSOJ,
+      [0361] = &doSOJL,
+      [0362] = &doSOJE,
+      [0363] = &doSOJLE,
+      [0364] = &doSOJA,
+      [0365] = &doSOJGE,
+      [0366] = &doSOJN,
+      [0367] = &doSOJG,
+      [0370] = &doSOS,
+      [0371] = &doSOSL,
+      [0372] = &doSOSE,
+      [0373] = &doSOSLE,
+      [0374] = &doSOSA,
+      [0375] = &doSOSGE,
+      [0376] = &doSOSN,
+      [0377] = &doSOSG,
 
-    if (ops[op] == nullptr) {
-      ops[op] = &KM10::nyi;
+      [0400] = &doSETZ,
+      [0401] = &doSETZI,
+      [0402] = &doSETZM,
+      [0403] = &doSETZB,
+      [0404] = &doAND,
+      [0405] = &doANDI,
+      [0406] = &doANDM,
+      [0407] = &doANDB,
+      [0410] = &doANDCA,
+      [0411] = &doANDCAI,
+      [0412] = &doANDCAM,
+      [0413] = &doANDCAB,
+      [0414] = &doSETM,
+      [0415] = &doSETMI,
+      [0416] = &doSETMM,
+      [0417] = &doSETMB,
+      [0420] = &doANDCM,
+      [0421] = &doANDCMI,
+      [0422] = &doANDCMM,
+      [0423] = &doANDCMB,
+      [0424] = &doSETA,
+      [0425] = &doSETAI,
+      [0426] = &doSETAM,
+      [0427] = &doSETAB,
+      [0430] = &doXOR,
+      [0431] = &doXORI,
+      [0432] = &doXORM,
+      [0433] = &doXORB,
+      [0434] = &doIOR,
+      [0435] = &doIORI,
+      [0436] = &doIORM,
+      [0437] = &doIORB,
+      [0440] = &doANDCBM,
+      [0441] = &doANDCBMI,
+      [0442] = &doANDCBMM,
+      [0443] = &doANDCBMB,
+      [0444] = &doEQV,
+      [0445] = &doEQVI,
+      [0446] = &doEQVM,
+      [0447] = &doEQVB,
+      [0450] = &doSETCA,
+      [0451] = &doSETCAI,
+      [0452] = &doSETCAM,
+      [0453] = &doSETCAB,
+      [0454] = &doORCA,
+      [0455] = &doORCAI,
+      [0456] = &doORCAM,
+      [0457] = &doORCAB,
+      [0460] = &doSETCM,
+      [0461] = &doSETCMI,
+      [0462] = &doSETCMM,
+      [0463] = &doSETCMB,
+      [0464] = &doORCM,
+      [0465] = &doORCMI,
+      [0466] = &doORCMM,
+      [0467] = &doORCMB,
+      [0470] = &doORCB,
+      [0471] = &doORCBI,
+      [0472] = &doORCBM,
+      [0473] = &doORCBB,
+      [0474] = &doSETO,
+      [0475] = &doSETOI,
+      [0476] = &doSETOM,
+      [0477] = &doSETOB,
+      [0500] = &doHLL,
+      [0501] = &doHLLI,
+      [0502] = &doHLLM,
+      [0503] = &doHLLS,
+      [0504] = &doHRL,
+      [0505] = &doHRLI,
+      [0506] = &doHRLM,
+      [0507] = &doHRLS,
+      [0510] = &doHLLZ,
+      [0511] = &doHLLZI,
+      [0512] = &doHLLZM,
+      [0513] = &doHLLZS,
+      [0514] = &doHRLZ,
+      [0515] = &doHRLZI,
+      [0516] = &doHRLZM,
+      [0517] = &doHRLZS,
+      [0520] = &doHLLO,
+      [0521] = &doHLLOI,
+      [0522] = &doHLLOM,
+      [0523] = &doHLLOS,
+      [0524] = &doHRLO,
+      [0525] = &doHRLOI,
+      [0526] = &doHRLOM,
+      [0527] = &doHRLOS,
+      [0530] = &doHLLE,
+      [0531] = &doHLLEI,
+      [0532] = &doHLLEM,
+      [0533] = &doHLLES,
+      [0534] = &doHRLE,
+      [0535] = &doHRLEI,
+      [0536] = &doHRLEM,
+      [0537] = &doHRLES,
+      [0540] = &doHRR,
+      [0541] = &doHRRI,
+      [0542] = &doHRRM,
+      [0543] = &doHRRS,
+      [0544] = &doHLR,
+      [0545] = &doHLRI,
+      [0546] = &doHLRM,
+      [0547] = &doHLRS,
+      [0550] = &doHRRZ,
+      [0551] = &doHRRZI,
+      [0552] = &doHRRZM,
+      [0553] = &doHRRZS,
+      [0554] = &doHLRZ,
+      [0555] = &doHLRZI,
+      [0556] = &doHLRZM,
+      [0557] = &doHLRZS,
+      [0560] = &doHRRO,
+      [0561] = &doHRROI,
+      [0562] = &doHRROM,
+      [0563] = &doHRROS,
+      [0564] = &doHLRO,
+      [0565] = &doHLROI,
+      [0566] = &doHLROM,
+      [0567] = &doHLROS,
+      [0570] = &doHRRE,
+      [0571] = &doHRREI,
+      [0572] = &doHRREM,
+      [0573] = &doHRRES,
+      [0574] = &doHLRE,
+      [0575] = &doHLREI,
+      [0576] = &doHLREM,
+      [0577] = &doHLRES,
+
+      [0600] = &doTRN,
+      [0601] = &doTLN,
+      [0602] = &doTRNE,
+      [0603] = &doTLNE,
+      [0604] = &doTRNA,
+      [0605] = &doTLNA,
+      [0606] = &doTRNN,
+      [0607] = &doTLNN,
+      [0620] = &doTRZ,
+      [0621] = &doTLZ,
+      [0622] = &doTRZE,
+      [0623] = &doTLZE,
+      [0624] = &doTRZA,
+      [0625] = &doTLZA,
+      [0626] = &doTRZN,
+      [0627] = &doTLZN,
+      [0640] = &doTRC,
+      [0641] = &doTLC,
+      [0642] = &doTRCE,
+      [0643] = &doTLCE,
+      [0644] = &doTRCA,
+      [0645] = &doTLCA,
+      [0646] = &doTRCN,
+      [0647] = &doTLCN,
+      [0660] = &doTRO,
+      [0661] = &doTLO,
+      [0662] = &doTROE,
+      [0663] = &doTLOE,
+      [0664] = &doTROA,
+      [0665] = &doTLOA,
+      [0666] = &doTRON,
+      [0667] = &doTLON,
+      [0610] = &doTDN,
+      [0611] = &doTSN,
+      [0612] = &doTDNE,
+      [0613] = &doTSNE,
+      [0614] = &doTDNA,
+      [0615] = &doTSNA,
+      [0616] = &doTDNN,
+      [0617] = &doTSNN,
+      [0630] = &doTDZ,
+      [0631] = &doTSZ,
+      [0632] = &doTDZE,
+      [0633] = &doTSZE,
+      [0634] = &doTDZA,
+      [0635] = &doTSZA,
+      [0636] = &doTDZN,
+      [0637] = &doTSZN,
+      [0650] = &doTDC,
+      [0651] = &doTSC,
+      [0652] = &doTDCE,
+      [0653] = &doTSCE,
+      [0654] = &doTDCA,
+      [0655] = &doTSCA,
+      [0656] = &doTDCN,
+      [0657] = &doTSZCN,
+      [0670] = &doTDO,
+      [0671] = &doTSO,
+      [0672] = &doTDOE,
+      [0673] = &doTSOE,
+      [0674] = &doTDOA,
+      [0675] = &doTSOA,
+      [0676] = &doTDON,
+      [0677] = &doTSON,
+
+      [0700] = &doIO,
+      [0701] = &doIO,
+      [0702] = &doIO,
+      [0703] = &doIO,
+      [0704] = &doIO,
+      [0705] = &doIO,
+      [0706] = &doIO,
+      [0707] = &doIO,
+      [0710] = &doIO,
+      [0711] = &doIO,
+      [0712] = &doIO,
+      [0713] = &doIO,
+      [0714] = &doIO,
+      [0715] = &doIO,
+      [0716] = &doIO,
+      [0717] = &doIO,
+      [0720] = &doIO,
+      [0721] = &doIO,
+      [0722] = &doIO,
+      [0723] = &doIO,
+      [0724] = &doIO,
+      [0725] = &doIO,
+      [0726] = &doIO,
+      [0727] = &doIO,
+      [0730] = &doIO,
+      [0731] = &doIO,
+      [0732] = &doIO,
+      [0733] = &doIO,
+      [0734] = &doIO,
+      [0735] = &doIO,
+      [0736] = &doIO,
+      [0737] = &doIO,
+      [0740] = &doIO,
+      [0741] = &doIO,
+      [0742] = &doIO,
+      [0743] = &doIO,
+      [0744] = &doIO,
+      [0745] = &doIO,
+      [0746] = &doIO,
+      [0747] = &doIO,
+      [0750] = &doIO,
+      [0751] = &doIO,
+      [0752] = &doIO,
+      [0753] = &doIO,
+      [0754] = &doIO,
+      [0755] = &doIO,
+      [0756] = &doIO,
+      [0757] = &doIO,
+      [0760] = &doIO,
+      [0761] = &doIO,
+      [0762] = &doIO,
+      [0763] = &doIO,
+      [0764] = &doIO,
+      [0765] = &doIO,
+      [0766] = &doIO,
+      [0767] = &doIO,
+      [0770] = &doIO,
+      [0771] = &doIO,
+      [0772] = &doIO,
+      [0773] = &doIO,
+      [0774] = &doIO,
+      [0775] = &doIO,
+      [0776] = &doIO,
+      [0777] = &doIO,
     }
-  }
+{
+  // Note this anonymous mmap() implicitly zeroes the virtual memory.
+  physicalP = (W36 *) mmap(nullptr,
+			   memorySize * sizeof(uint64_t),
+			   PROT_READ | PROT_WRITE,
+			   MAP_PRIVATE | MAP_ANONYMOUS,
+			   0, 0);
+  assert(physicalP != nullptr);
+
+  // Initially we have no virtual addressing, so virtual == physical.
+  memP = physicalP;
+  eptP = (ExecutiveProcessTable *) memP;
+
+  // Initially, we have no user mode mapping.
+  uptP = nullptr;
 }
 
 
+
 ////////////////////////////////////////////////////////////////
-KM10::InstructionResult KM10::nyi() {
+KM10::~KM10() {
+  if (physicalP) munmap(physicalP, memorySize * sizeof(uint64_t));
+}
+  
+
+////////////////////////////////////////////////////////////////
+InstructionResult KM10::doNYI() {
   cerr << "Not yet implemented: " << oct << iw.op << logger.endl << flush;
-  return normal;
+  return iNormal;
 }
 
 
 // XXX do we need to implement the skipping IO instructions somehow
 // here? I think so.
-KM10::InstructionResult KM10::doIO() {
+InstructionResult KM10::doIO() {
   if (logger.io) logger.s << "; ioDev=" << oct << iw.ioDev << " ioOp=" << oct << iw.ioOp;
-  Device::handleIO(iw, ea, state, state.nextPC);
-  return normal;
+  return Device::handleIO(iw, ea);
 }
 
 
-KM10::InstructionResult KM10::doLUUO() {
+InstructionResult KM10::doLUUO() {
 
-  if (state.pc.isSection0()) {
+  if (pc.isSection0()) {
     W36 uuoState;
     uuoState.op = iw.op;
     uuoState.ac = iw.ac;
@@ -399,26 +566,26 @@ KM10::InstructionResult KM10::doLUUO() {
     uuoState.y = ea.rhu;
 
     // XXX this should select executive virtual space first.
-    state.memPutN(040, uuoState);
-    cerr << "LUUO at " << state.pc.fmtVMA() << " uuoState=" << uuoState.fmt36()
+    memPutN(040, uuoState);
+    cerr << "LUUO at " << pc.fmtVMA() << " uuoState=" << uuoState.fmt36()
 	 << logger.endl << flush;
-    state.nextPC = 041;
-    state.exceptionPC = state.pc + 1;
-    state.inInterrupt = true;
-    return InstructionResult::trap;
+    nextPC = 041;
+    exceptionPC = pc + 1;
+    inInterrupt = true;
+    return iTrap;
   } else {
 
-    if (state.flags.usr) {
-      W36 uuoA(state.uptP->luuoAddr);
-      state.memPutN(W36(((uint64_t) state.flags.u << 23) |
+    if (flags.usr) {
+      W36 uuoA(uptP->luuoAddr);
+      memPutN(W36(((uint64_t) flags.u << 23) |
 			((uint64_t) iw.op << 15) |
 			((uint64_t) iw.ac << 5)), uuoA.u++);
-      state.memPutN(state.pc, uuoA.u++);
-      state.memPutN(ea.u, uuoA.u++);
-      state.nextPC = state.memGetN(uuoA);
-      state.exceptionPC = state.pc + 1;
-      state.inInterrupt = true;
-      return InstructionResult::trap;
+      memPutN(pc, uuoA.u++);
+      memPutN(ea.u, uuoA.u++);
+      nextPC = memGetN(uuoA);
+      exceptionPC = pc + 1;
+      inInterrupt = true;
+      return iTrap;
     } else {	       // Executive mode treats LUUOs as MUUOs
       return doMUUO();
     }
@@ -426,18 +593,18 @@ KM10::InstructionResult KM10::doLUUO() {
 }
 
 
-KM10::InstructionResult KM10::doMUUO() {
+InstructionResult KM10::doMUUO() {
   cerr << "MUUOs aren't implemented yet" << logger.endl << flush;
-  state.exceptionPC = state.pc + 1;
-  state.inInterrupt = true;
-  logger.nyi(state);
-  return muuo;
+  exceptionPC = pc + 1;
+  inInterrupt = true;
+  logger.nyi(this);
+  return iMUUO;
 }
 
 
-KM10::InstructionResult KM10::doDADD() {
-  auto a1 = W72{state.memGetN(ea.u+0), state.memGetN(ea.u+1)};
-  auto a2 = W72{state.acGetN(iw.ac+0), state.acGetN(iw.ac+1)};
+InstructionResult KM10::doDADD() {
+  auto a1 = W72{memGetN(ea.u+0), memGetN(ea.u+1)};
+  auto a2 = W72{acGetN(iw.ac+0), acGetN(iw.ac+1)};
 
   int128_t s1 = a1.toS70();
   int128_t s2 = a2.toS70();
@@ -446,32 +613,32 @@ KM10::InstructionResult KM10::doDADD() {
   auto isNeg1 = s1 < 0;
   auto isNeg2 = s2 < 0;
   int128_t sum128 = s1 + s2;
-  InstructionResult result = normal;
+  InstructionResult result = iNormal;
 
   if (sum128 >= W72::sBit1) {
-    state.flags.cy1 = state.flags.tr1 = state.flags.ov = 1;
-    result = trap;
+    flags.cy1 = flags.tr1 = flags.ov = 1;
+    result = iTrap;
   } else if (sum128 < -W72::sBit1) {
-    state.flags.cy0 = state.flags.tr1 = state.flags.ov = 1;
-    result = trap;
+    flags.cy0 = flags.tr1 = flags.ov = 1;
+    result = iTrap;
   } else if ((s1 < 0 && s2 < 0) ||
 	     (isNeg1 != isNeg2 &&
 	      (u1 == u2 || ((!isNeg1 && u1 > u2) || (!isNeg2 && u2 > u1)))))
     {
-      state.flags.cy0 = state.flags.cy1 = state.flags.tr1 = state.flags.ov = 1;
-      result = trap;
+      flags.cy0 = flags.cy1 = flags.tr1 = flags.ov = 1;
+      result = iTrap;
     }
 
   auto [hi36, lo36] = W72::toDW(sum128);
-  state.acPutN(hi36, iw.ac+0);
-  state.acPutN(lo36, iw.ac+1);
+  acPutN(hi36, iw.ac+0);
+  acPutN(lo36, iw.ac+1);
   return result;
 }
 
 
-KM10::InstructionResult KM10::doDSUB() {
-  auto a1 = W72{state.memGetN(ea.u+0), state.memGetN(ea.u+1)};
-  auto a2 = W72{state.acGetN(iw.ac+0), state.acGetN(iw.ac+1)};
+InstructionResult KM10::doDSUB() {
+  auto a1 = W72{memGetN(ea.u+0), memGetN(ea.u+1)};
+  auto a2 = W72{acGetN(iw.ac+0), acGetN(iw.ac+1)};
 
   int128_t s1 = a1.toS70();
   int128_t s2 = a2.toS70();
@@ -480,66 +647,66 @@ KM10::InstructionResult KM10::doDSUB() {
   auto isNeg1 = s1 < 0;
   auto isNeg2 = s2 < 0;
   int128_t diff128 = s1 - s2;
-  InstructionResult result = normal;
+  InstructionResult result = iNormal;
 
   if (diff128 >= W72::sBit1) {
-    state.flags.cy1 = state.flags.tr1 = state.flags.ov = 1;
-    result = trap;
+    flags.cy1 = flags.tr1 = flags.ov = 1;
+    result = iTrap;
   } else if (diff128 < -W72::sBit1) {
-    state.flags.cy0 = state.flags.tr1 = state.flags.ov = 1;
-    result = trap;
+    flags.cy0 = flags.tr1 = flags.ov = 1;
+    result = iTrap;
   } else if ((isNeg1 && isNeg2 && u2 >= u1) ||
 	     (isNeg1 != isNeg2 && s2 < 0))
     {
-      state.flags.cy0 = state.flags.cy1 = state.flags.tr1 = state.flags.ov = 1;
-      result = trap;
+      flags.cy0 = flags.cy1 = flags.tr1 = flags.ov = 1;
+      result = iTrap;
     }
 
   auto [hi36, lo36] = W72::toDW(diff128);
-  state.acPutN(hi36, iw.ac+0);
-  state.acPutN(lo36, iw.ac+1);
+  acPutN(hi36, iw.ac+0);
+  acPutN(lo36, iw.ac+1);
   return result;
 }
 
 
-KM10::InstructionResult KM10::doDMUL() {
-  auto a = W72{state.memGetN(ea.u+0), state.memGetN(ea.u+1)};
-  auto b = W72{state.acGetN(iw.ac+0), state.acGetN(iw.ac+1)};
+InstructionResult KM10::doDMUL() {
+  auto a = W72{memGetN(ea.u+0), memGetN(ea.u+1)};
+  auto b = W72{acGetN(iw.ac+0), acGetN(iw.ac+1)};
   const uint128_t a70 = a.toU70();
   const uint128_t b70 = b.toU70();
 
   if (a.isMaxNeg() && b.isMaxNeg()) {
     const W36 big1{0400000,0};
-    state.flags.tr1 = state.flags.ov = 1;
-    state.acPutN(big1, iw.ac+0);
-    state.acPutN(big1, iw.ac+1);
-    state.acPutN(big1, iw.ac+2);
-    state.acPutN(big1, iw.ac+3);
-    return trap;
+    flags.tr1 = flags.ov = 1;
+    acPutN(big1, iw.ac+0);
+    acPutN(big1, iw.ac+1);
+    acPutN(big1, iw.ac+2);
+    acPutN(big1, iw.ac+3);
+    return iTrap;
   }
 
   W144 prod{W144::product(a70, b70, (a.s < 0) ^ (b.s < 0))};
   auto [r0, r1, r2, r3] = prod.toQuadWord();
-  state.acPutN(r0, iw.ac+0);
-  state.acPutN(r1, iw.ac+1);
-  state.acPutN(r2, iw.ac+2);
-  state.acPutN(r3, iw.ac+3);
-  return normal;
+  acPutN(r0, iw.ac+0);
+  acPutN(r1, iw.ac+1);
+  acPutN(r2, iw.ac+2);
+  acPutN(r3, iw.ac+3);
+  return iNormal;
 }
 
 
-KM10::InstructionResult KM10::doDDIV() {
+InstructionResult KM10::doDDIV() {
   const W144 den{
-    state.acGetN(iw.ac+0),
-    state.acGetN(iw.ac+1),
-    state.acGetN(iw.ac+2),
-    state.acGetN(iw.ac+3)};
-  const W72 div72{state.memGetN(ea.u+0), state.memGetN(ea.u+1)};
+    acGetN(iw.ac+0),
+    acGetN(iw.ac+1),
+    acGetN(iw.ac+2),
+    acGetN(iw.ac+3)};
+  const W72 div72{memGetN(ea.u+0), memGetN(ea.u+1)};
   auto const div = div72.toU70();
 
   if (den >= div) {
-    state.flags.tr1 = state.flags.ov = state.flags.ndv = 1;
-    return trap;
+    flags.tr1 = flags.ov = flags.ndv = 1;
+    return iTrap;
   }
 
   int denNeg = den.sign;
@@ -567,223 +734,220 @@ KM10::InstructionResult KM10::doDDIV() {
   const auto quo72 = W72::fromMag(((uint128_t) n1 << 64) | n0, denNeg ^ divNeg);
   const auto rem72 = W72::fromMag(remainder, denNeg);
 
-  state.acPutN(quo72.hi, iw.ac+0);
-  state.acPutN(quo72.lo, iw.ac+1);
-  state.acPutN(rem72.hi, iw.ac+2);
-  state.acPutN(rem72.lo, iw.ac+3);
-  return normal;
+  acPutN(quo72.hi, iw.ac+0);
+  acPutN(quo72.lo, iw.ac+1);
+  acPutN(rem72.hi, iw.ac+2);
+  acPutN(rem72.lo, iw.ac+3);
+  return iNormal;
 }
 
 
-KM10::InstructionResult KM10::doIBP_ADJBP() {
-  BytePointer *bp = BytePointer::makeFrom(ea, state);
+InstructionResult KM10::doIBP_ADJBP() {
+  BytePointer *bp = BytePointer::makeFrom(ea, this);
 
   if (iw.ac == 0) {	// IBP
-    bp->inc(state);
+    bp->inc(this);
   } else {		// ADJBP
-    bp->adjust(iw.ac, state);
+    bp->adjust(iw.ac, this);
   }
 
-  return normal;
+  return iNormal;
 }
 
 
-KM10::InstructionResult KM10::doILBP() {
-  BytePointer *bp = BytePointer::makeFrom(ea, state);
-  bp->inc(state);
-  acPut(bp->getByte(state));
-  return normal;
+InstructionResult KM10::doILBP() {
+  BytePointer *bp = BytePointer::makeFrom(ea, this);
+  bp->inc(this);
+  acPut(bp->getByte(this));
+  return iNormal;
 }
 
 
-KM10::InstructionResult KM10::doLDB() {
-  BytePointer *bp = BytePointer::makeFrom(ea, state);
-  acPut(bp->getByte(state));
-  return normal;
+InstructionResult KM10::doLDB() {
+  BytePointer *bp = BytePointer::makeFrom(ea, this);
+  acPut(bp->getByte(this));
+  return iNormal;
 }
 
 
-KM10::InstructionResult KM10::doIDPB() {
-  BytePointer *bp = BytePointer::makeFrom(ea, state);
-  bp->inc(state);
-  bp->putByte(acGet(), state);
-  return normal;
+InstructionResult KM10::doIDPB() {
+  BytePointer *bp = BytePointer::makeFrom(ea, this);
+  bp->inc(this);
+  bp->putByte(acGet(), this);
+  return iNormal;
 }
 
 
-KM10::InstructionResult KM10::doDPB() {
-  BytePointer *bp = BytePointer::makeFrom(ea, state);
-  bp->putByte(acGet(), state);
-  return normal;
+InstructionResult KM10::doDPB() {
+  BytePointer *bp = BytePointer::makeFrom(ea, this);
+  bp->putByte(acGet(), this);
+  return iNormal;
 }
 
 
-KM10::InstructionResult KM10::doMOVE() {
+InstructionResult KM10::doMOVE() {
   doMOVXX(memGet, noMod1, acPut);
-  return normal;
+  return iNormal;
 }
 
 
-KM10::InstructionResult KM10::doMOVEI() {
+InstructionResult KM10::doMOVEI() {
   doMOVXX(immediate, noMod1, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doMOVEM() {
+InstructionResult KM10::doMOVEM() {
   doMOVXX(acGet, noMod1, memPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doMOVES() {
+InstructionResult KM10::doMOVES() {
   doMOVXX(memGet, noMod1, selfPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doMOVS() {
+InstructionResult KM10::doMOVS() {
   doMOVXX(memGet, swap, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doMOVSI() {
+InstructionResult KM10::doMOVSI() {
   doMOVXX(immediate, swap, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doMOVSM() {
+InstructionResult KM10::doMOVSM() {
   doMOVXX(acGet, swap, memPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doMOVSS() {
+InstructionResult KM10::doMOVSS() {
   doMOVXX(memGet, swap, selfPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doMOVN() {
+InstructionResult KM10::doMOVN() {
   doMOVXX(memGet, negate, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doMOVNI() {
+InstructionResult KM10::doMOVNI() {
   doMOVXX(immediate, negate, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doMOVNM() {
+InstructionResult KM10::doMOVNM() {
   doMOVXX(acGet, negate, memPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doMOVNS() {
+InstructionResult KM10::doMOVNS() {
   doMOVXX(memGet, negate, selfPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doMOVM() {
+InstructionResult KM10::doMOVM() {
   doMOVXX(memGet, magnitude, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doMOVMI() {
+InstructionResult KM10::doMOVMI() {
   doMOVXX(immediate, magnitude, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doMOVMM() {
+InstructionResult KM10::doMOVMM() {
   doMOVXX(acGet, magnitude, memPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doMOVMS() {
+InstructionResult KM10::doMOVMS() {
   doMOVXX(memGet, magnitude, selfPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doIMUL() {
+InstructionResult KM10::doIMUL() {
   doBinOp(acGet, memGet, imulWord, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doIMULI() {
+InstructionResult KM10::doIMULI() {
   doBinOp(acGet, immediate, imulWord, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doIMULM() {
+InstructionResult KM10::doIMULM() {
   doBinOp(acGet, memGet, imulWord, memPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doIMULB() {
+InstructionResult KM10::doIMULB() {
   doBinOp(acGet, memGet, imulWord, bothPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doMUL() {
+InstructionResult KM10::doMUL() {
   doBinOp(acGet, memGet, mulWord, acPut2);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doMULI() {
+InstructionResult KM10::doMULI() {
   doBinOp(acGet, immediate, mulWord, acPut2);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doMULM() {
+InstructionResult KM10::doMULM() {
   doBinOp(acGet, memGet, mulWord, memPutHi);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doMULB() {
+InstructionResult KM10::doMULB() {
   doBinOp(acGet, memGet, mulWord, bothPut2);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doIDIV() {
+InstructionResult KM10::doIDIV() {
   doBinOp(acGet, memGet, idivWord, acPut2);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doIDIVI() {
+InstructionResult KM10::doIDIVI() {
   doBinOp(acGet, immediate, idivWord, acPut2);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doIDIVM() {
+InstructionResult KM10::doIDIVM() {
   doBinOp(acGet, memGet, idivWord, memPutHi);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doIDIVB() {
+InstructionResult KM10::doIDIVB() {
   doBinOp(acGet, memGet, idivWord, bothPut2);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doDIV() {
+InstructionResult KM10::doDIV() {
   doBinOp(acGet2, memGet, divWord, acPut2);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doDIVI() {
+InstructionResult KM10::doDIVI() {
   doBinOp(acGet2, immediate, divWord, acPut2);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doDIVM() {
+InstructionResult KM10::doDIVM() {
   doBinOp(acGet2, memGet, divWord, memPutHi);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doDIVB() {
+InstructionResult KM10::doDIVB() {
   doBinOp(acGet2, memGet, divWord, bothPut2);
-  return normal;
+  return iNormal;
 }
 
 
-
-
-
-KM10::InstructionResult KM10::doASH() {
+InstructionResult KM10::doASH() {
   int n = ea.rhs % 36;
   W36 a(acGet());
   auto aSigned{a.ext64()};
@@ -802,15 +966,15 @@ KM10::InstructionResult KM10::doASH() {
   // Set flags. XXX not sure if these should be set for negative
   // shift count. 1982_ProcRefMan.pdf p.97 is not clear.
   if ((a.ext64() > 0 && lostBits.u != 0) || (a.ext64() < 0 && lostBits.u == 0))
-    state.flags.tr1 = state.flags.ov = 1;
+    flags.tr1 = flags.ov = 1;
 
   // Restore sign bit from before shift.
   a.u = (aSigned & W36::bit0) | (a.u & ~W36::bit0);
   acPut(a);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doROT() {
+InstructionResult KM10::doROT() {
   int n = ea.rhs % 36;
   W36 a(acGet());
   W36 prev(a);
@@ -825,10 +989,10 @@ KM10::InstructionResult KM10::doROT() {
   }
 
   acPut(a);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doLSH() {
+InstructionResult KM10::doLSH() {
   int n = ea.rhs % 36;
   W36 a(acGet());
 
@@ -838,10 +1002,10 @@ KM10::InstructionResult KM10::doLSH() {
     a.u >>= -n;
 
   acPut(a);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doJFFO() {
+InstructionResult KM10::doJFFO() {
   W36 tmp = acGet();
 
   if (tmp.ext64() != 0) {
@@ -855,13 +1019,13 @@ KM10::InstructionResult KM10::doJFFO() {
     tmp.u = count;
   }
 
-  state.acPutN(tmp, iw.ac+1);
-  return normal;
+  acPutN(tmp, iw.ac+1);
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doROTC() {
+InstructionResult KM10::doROTC() {
   int n = ea.rhs % 72;
-  uint128_t a = ((uint128_t) state.acGetN(iw.ac+0) << 36) | state.acGetN(iw.ac+1);
+  uint128_t a = ((uint128_t) acGetN(iw.ac+0) << 36) | acGetN(iw.ac+1);
 
   if (n > 0) {
     uint128_t newLSBs = a >> (72-n);
@@ -874,32 +1038,32 @@ KM10::InstructionResult KM10::doROTC() {
     a |= newMSBs;
   }
 
-  state.acPutN((a >> 36) & W36::all1s, iw.ac+0);
-  state.acPutN(a & W36::all1s, iw.ac+1);
-  return normal;
+  acPutN((a >> 36) & W36::all1s, iw.ac+0);
+  acPutN(a & W36::all1s, iw.ac+1);
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doLSHC() {
-  W72 a(acGet(), state.acGetN(iw.ac+1));
+InstructionResult KM10::doLSHC() {
+  W72 a(acGet(), acGetN(iw.ac+1));
 
   if (ea.rhs > 0)
     a.u <<= ea.rhs & 0377;
   else if (ea.rhs < 0)
     a.u >>= -(ea.rhs & 0377);
 
-  state.acPutN(a.hi, iw.ac+0);
-  state.acPutN(a.lo, iw.ac+1);
-  return normal;
+  acPutN(a.hi, iw.ac+0);
+  acPutN(a.lo, iw.ac+1);
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doEXCH() {
+InstructionResult KM10::doEXCH() {
   W36 tmp = acGet();
   acPut(memGet());
   memPut(tmp);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doBLT() {
+InstructionResult KM10::doBLT() {
   W36 ac(acGet());
   bool mem = logger.mem;
 
@@ -915,7 +1079,7 @@ KM10::InstructionResult KM10::doBLT() {
     // Note this isn't bug-for-bug compatible with KL10. See
     // footnote [2] in 1982_ProcRefMan.pdf p.58. We do
     // wraparound.
-    state.memPutN(state.memGetN(srcA), dstA);
+    memPutN(memGetN(srcA), dstA);
     ac = W36(ac.lhu + 1, ac.rhu + 1);
 
     // Put it back for traps or page faults.
@@ -924,1500 +1088,1792 @@ KM10::InstructionResult KM10::doBLT() {
 
   if (logger.mem) logger.s << prefix << "BLT at end ac=" << ac.fmt36();
   logger.mem = mem;
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doAOBJP() {
+InstructionResult KM10::doAOBJP() {
   W36 tmp = acGet();
   tmp = W36(tmp.lhu + 1, tmp.rhu + 1);
   acPut(tmp);
 
   if (tmp.ext64() >= 0) {
     logFlow("jump");
-    state.nextPC = ea;
+    nextPC = ea;
   }
 
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doAOBJN() {
+InstructionResult KM10::doAOBJN() {
   W36 tmp = acGet();
   tmp = W36(tmp.lhu + 1, tmp.rhu + 1);
   acPut(tmp);
 
   if (tmp.ext64() < 0) {
     logFlow("jump");
-    state.nextPC = ea;
+    nextPC = ea;
   }
 
-  return normal;
+  return iNormal;
 }
 
 
-KM10::InstructionResult KM10::doJRST() {
+InstructionResult KM10::doJRST() {
 
   switch (iw.ac) {
   case 000:					// JRST
-    state.nextPC.rhu = ea.rhu;
+    nextPC.rhu = ea.rhu;
     break;
 
   case 001:					// PORTAL
-    logger.nyi(state);
+    logger.nyi(this);
     break;
 
   case 002:					// JRSTF
-    state.restoreFlags(ea);
-    state.nextPC.rhu = ea.rhu;
+    restoreFlags(ea);
+    nextPC.rhu = ea.rhu;
     break;
 
   case 004:					// HALT
-    cerr << "[HALT at " << state.pc.fmtVMA() << "]" << logger.endl;
-    state.running = false;
-    state.nextPC.rhu = ea.rhu;		// HALT actually does change PC
-    return halt;
+    cerr << "[HALT at " << pc.fmtVMA() << "]" << logger.endl;
+    running = false;
+    nextPC.rhu = ea.rhu;		// HALT actually does change PC
+    return iHALT;
 
   case 005:					// XJRSTF
-    logger.nyi(state);
+    logger.nyi(this);
     break;
 
   case 006:					// XJEN
     pi.dismissInterrupt();
-    logger.nyi(state);
+    logger.nyi(this);
     break;
 
   case 007:					// XPCW
-    logger.nyi(state);
+    logger.nyi(this);
     break;
 
   case 010:					// 25440 - no mnemonic
-    state.restoreFlags(ea);
+    restoreFlags(ea);
     break;
 
   case 012:					// JEN
     cerr << ">>>>>> JEN ea=" << ea.fmtVMA() << logger.endl << flush;
     pi.dismissInterrupt();
-    state.restoreFlags(ea);
-    state.nextPC.rhu = ea.rhu;
+    restoreFlags(ea);
+    nextPC.rhu = ea.rhu;
     break;
 
   case 014:					// SFM
-    logger.nyi(state);
+    logger.nyi(this);
     break;
 
   default:
-    logger.nyi(state);
+    logger.nyi(this);
     break;
   }
 
-  return jump;
+  return iJump;
 }
 
 
 
-KM10::InstructionResult KM10::doJFCL() {
-  unsigned wasFlags = state.flags.u;
+InstructionResult KM10::doJFCL() {
+  unsigned wasFlags = flags.u;
   unsigned testFlags = (unsigned) iw.ac << 9; // Align with OV,CY0,CY1,FOV
-  state.flags.u &= ~testFlags;
-  if (wasFlags & testFlags) state.nextPC = ea;
-  return jump;
+  flags.u &= ~testFlags;
+  if (wasFlags & testFlags) nextPC = ea;
+  return iJump;
 }
 
 
-KM10::InstructionResult KM10::doPXCT() {
+InstructionResult KM10::doPXCT() {
 
-  if (state.userMode() || iw.ac == 0) {
-    state.pc = ea;
-    state.inXCT = true;
-    return xct;
+  if (userMode() || iw.ac == 0) {
+    pc = ea;
+    inXCT = true;
+    return iXCT;
   } else {					// PXCT
-    logger.nyi(state);
-    state.running = false;
-    return halt;		// XXX for now
+    logger.nyi(this);
+    running = false;
+    return iHALT;		// XXX for now
   }
 }
 
 
-KM10::InstructionResult KM10::doPUSHJ() {
+InstructionResult KM10::doPUSHJ() {
   // Note this sets the flags that are cleared by PUSHJ before
   // doPush() since doPush() can set flags.tr2.
-  state.flags.fpd = state.flags.afi = state.flags.tr1 = state.flags.tr2 = 0;
-  doPush(state.pc.isSection0() ? state.flagsWord(state.nextPC.rhu) : W36(state.nextPC.vma), iw.ac);
-  state.nextPC = ea;
-  if (state.inInterrupt) state.flags.usr = state.flags.pub = 0;
-  return jump;
+  flags.fpd = flags.afi = flags.tr1 = flags.tr2 = 0;
+  doPush(pc.isSection0() ? flagsWord(nextPC.rhu) : W36(nextPC.vma), iw.ac);
+  nextPC = ea;
+  if (inInterrupt) flags.usr = flags.pub = 0;
+  return iJump;
 }
 
 
-KM10::InstructionResult KM10::doPUSH() {
+InstructionResult KM10::doPUSH() {
   doPush(memGet(), iw.ac);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doPOP() {
+InstructionResult KM10::doPOP() {
   memPut(doPop(iw.ac));
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doPOPJ() {
-  state.nextPC.rhu = doPop(iw.ac).rhu;
-  return jump;
+InstructionResult KM10::doPOPJ() {
+  nextPC.rhu = doPop(iw.ac).rhu;
+  return iJump;
 }
 
-KM10::InstructionResult KM10::doJSR() {
-  W36 tmp = state.inInterrupt ? state.exceptionPC : state.nextPC;
-  tmp = state.pc.isSection0() ? state.flagsWord(tmp.rhu) : W36(tmp.vma);
+InstructionResult KM10::doJSR() {
+  W36 tmp = inInterrupt ? exceptionPC : nextPC;
+  tmp = pc.isSection0() ? flagsWord(tmp.rhu) : W36(tmp.vma);
   cerr << ">>>>>> JSR saved PC=" << tmp.fmt36() << "  ea=" << ea.fmt36()
-       << (state.inInterrupt ? "[inInterrupt]" : "[!inInterrupt]")
+       << (inInterrupt ? "[inInterrupt]" : "[!inInterrupt]")
        << logger.endl << flush;
   memPut(tmp);
-  state.nextPC.rhu = ea.rhu + 1;
-  state.flags.fpd = state.flags.afi = state.flags.tr2 = state.flags.tr1 = 0;
-  if (state.inInterrupt) state.flags.usr = state.flags.pub = 0;
-  return jump;
+  nextPC.rhu = ea.rhu + 1;
+  flags.fpd = flags.afi = flags.tr2 = flags.tr1 = 0;
+  if (inInterrupt) flags.usr = flags.pub = 0;
+  return iJump;
 }
 
-KM10::InstructionResult KM10::doJSP() {
-  W36 tmp = state.inInterrupt ? state.exceptionPC : state.nextPC;
-  tmp = state.pc.isSection0() ? state.flagsWord(tmp.rhu) : W36(tmp.vma);
+InstructionResult KM10::doJSP() {
+  W36 tmp = inInterrupt ? exceptionPC : nextPC;
+  tmp = pc.isSection0() ? flagsWord(tmp.rhu) : W36(tmp.vma);
   cerr << ">>>>>> JSP set ac=" << tmp.fmt36() << "  ea=" << ea.fmt36()
-       << (state.inInterrupt ? "[inInterrupt]" : "[!inInterrupt]")
+       << (inInterrupt ? "[inInterrupt]" : "[!inInterrupt]")
        << logger.endl << flush;
   acPut(tmp);
-  state.nextPC.rhu = ea.rhu;
-  state.flags.fpd = state.flags.afi = state.flags.tr2 = state.flags.tr1 = 0;
-  if (state.inInterrupt) state.flags.usr = state.flags.pub = 0;
-  return jump;
+  nextPC.rhu = ea.rhu;
+  flags.fpd = flags.afi = flags.tr2 = flags.tr1 = 0;
+  if (inInterrupt) flags.usr = flags.pub = 0;
+  return iJump;
 }
 
-KM10::InstructionResult KM10::doJSA() {
+InstructionResult KM10::doJSA() {
   memPut(acGet());
-  state.nextPC.rhu = ea.rhu + 1;
-  acPut(W36(ea.rhu, state.pc.rhu + 1));
-  if (state.inInterrupt) state.flags.usr = 0;
-  return jump;
+  nextPC.rhu = ea.rhu + 1;
+  acPut(W36(ea.rhu, pc.rhu + 1));
+  if (inInterrupt) flags.usr = 0;
+  return iJump;
 }
 
-KM10::InstructionResult KM10::doJRA() {
-  acPut(state.memGetN(acGet().lhu));
-  state.nextPC = ea;
-  return jump;
+InstructionResult KM10::doJRA() {
+  acPut(memGetN(acGet().lhu));
+  nextPC = ea;
+  return iJump;
 }
 
-KM10::InstructionResult KM10::doADD() {
+InstructionResult KM10::doADD() {
   doBinOp(acGet, memGet, addWord, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doADDI() {
+InstructionResult KM10::doADDI() {
   doBinOp(acGet, immediate, addWord, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doADDM() {
+InstructionResult KM10::doADDM() {
   doBinOp(acGet, memGet, addWord, memPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doADDB() {
+InstructionResult KM10::doADDB() {
   doBinOp(acGet, memGet, addWord, bothPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSUB() {
+InstructionResult KM10::doSUB() {
   doBinOp(acGet, memGet, subWord, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSUBI() {
+InstructionResult KM10::doSUBI() {
   doBinOp(acGet, immediate, subWord, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSUBM() {
+InstructionResult KM10::doSUBM() {
   doBinOp(acGet, memGet, subWord, memPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSUBB() {
+InstructionResult KM10::doSUBB() {
   doBinOp(acGet, memGet, subWord, bothPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doCAI() {
-  return normal;
+InstructionResult KM10::doCAI() {
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doCAIL() {
+InstructionResult KM10::doCAIL() {
   doCAXXX(acGet, immediate, isLT);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doCAIE() {
+InstructionResult KM10::doCAIE() {
   doCAXXX(acGet, immediate, isEQ);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doCAILE() {
+InstructionResult KM10::doCAILE() {
   doCAXXX(acGet, immediate, isLE);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doCAIA() {
+InstructionResult KM10::doCAIA() {
   doCAXXX(acGet, immediate, always2);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doCAIGE() {
+InstructionResult KM10::doCAIGE() {
   doCAXXX(acGet, immediate, isGE);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doCAIN() {
+InstructionResult KM10::doCAIN() {
   doCAXXX(acGet, immediate, isNE);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doCAIG() {
+InstructionResult KM10::doCAIG() {
   doCAXXX(acGet, immediate, isGT);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doCAM() {
-  return normal;
+InstructionResult KM10::doCAM() {
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doCAML() {
+InstructionResult KM10::doCAML() {
   doCAXXX(acGet, memGet, isLT);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doCAME() {
+InstructionResult KM10::doCAME() {
   doCAXXX(acGet, memGet, isEQ);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doCAMLE() {
+InstructionResult KM10::doCAMLE() {
   doCAXXX(acGet, memGet, isLE);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doCAMA() {
+InstructionResult KM10::doCAMA() {
   doCAXXX(acGet, memGet, always2);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doCAMGE() {
+InstructionResult KM10::doCAMGE() {
   doCAXXX(acGet, memGet, isGE);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doCAMN() {
+InstructionResult KM10::doCAMN() {
   doCAXXX(acGet, memGet, isNE);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doCAMG() {
+InstructionResult KM10::doCAMG() {
   doCAXXX(acGet, memGet, isGT);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doJUMP() {
+InstructionResult KM10::doJUMP() {
   doJUMP(never);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doJUMPL() {
+InstructionResult KM10::doJUMPL() {
   doJUMP(isLT0);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doJUMPE() {
+InstructionResult KM10::doJUMPE() {
   doJUMP(isEQ0);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doJUMPLE() {
+InstructionResult KM10::doJUMPLE() {
   doJUMP(isLE0);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doJUMPA() {
+InstructionResult KM10::doJUMPA() {
   doJUMP(always);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doJUMPGE() {
+InstructionResult KM10::doJUMPGE() {
   doJUMP(isGE0);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doJUMPN() {
+InstructionResult KM10::doJUMPN() {
   doJUMP(isNE0);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doJUMPG() {
+InstructionResult KM10::doJUMPG() {
   doJUMP(isGT0);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSKIP() {
+InstructionResult KM10::doSKIP() {
   doSKIP(never);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSKIPL() {
+InstructionResult KM10::doSKIPL() {
   doSKIP(isLT0);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSKIPE() {
+InstructionResult KM10::doSKIPE() {
   doSKIP(isEQ0);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSKIPLE() {
+InstructionResult KM10::doSKIPLE() {
   doSKIP(isLE0);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSKIPA() {
+InstructionResult KM10::doSKIPA() {
   doSKIP(always);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSKIPGE() {
+InstructionResult KM10::doSKIPGE() {
   doSKIP(isGE0);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSKIPN() {
+InstructionResult KM10::doSKIPN() {
   doSKIP(isNE0);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSKIPGT() {
+InstructionResult KM10::doSKIPGT() {
   doSKIP(isGT0);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doAOJ() {
+InstructionResult KM10::doAOJ() {
   doAOSXX(acGet, 1, acPut, never, jumpAction);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doAOJL() {
+InstructionResult KM10::doAOJL() {
   doAOSXX(acGet, 1, acPut, isLT0, jumpAction);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doAOJE() {
+InstructionResult KM10::doAOJE() {
   doAOSXX(acGet, 1, acPut, isEQ0, jumpAction);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doAOJLE() {
+InstructionResult KM10::doAOJLE() {
   doAOSXX(acGet, 1, acPut, isLE0, jumpAction);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doAOJA() {
+InstructionResult KM10::doAOJA() {
   doAOSXX(acGet, 1, acPut, always, jumpAction);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doAOJGE() {
+InstructionResult KM10::doAOJGE() {
   doAOSXX(acGet, 1, acPut, isGE0, jumpAction);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doAOJN() {
+InstructionResult KM10::doAOJN() {
   doAOSXX(acGet, 1, acPut, isNE0, jumpAction);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doAOJG() {
+InstructionResult KM10::doAOJG() {
   doAOSXX(acGet, 1, acPut, isGT0, jumpAction);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doAOS() {
+InstructionResult KM10::doAOS() {
   doAOSXX(memGet, 1, memPut, never, skipAction);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doAOSL() {
+InstructionResult KM10::doAOSL() {
   doAOSXX(memGet, 1, memPut, isLT0, skipAction);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doAOSE() {
+InstructionResult KM10::doAOSE() {
   doAOSXX(memGet, 1, memPut, isEQ0, skipAction);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doAOSLE() {
+InstructionResult KM10::doAOSLE() {
   doAOSXX(memGet, 1, memPut, isLE0, skipAction);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doAOSA() {
+InstructionResult KM10::doAOSA() {
   doAOSXX(memGet, 1, memPut, always, skipAction);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doAOSGE() {
+InstructionResult KM10::doAOSGE() {
   doAOSXX(memGet, 1, memPut, isGE0, skipAction);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doAOSN() {
+InstructionResult KM10::doAOSN() {
   doAOSXX(memGet, 1, memPut, isNE0, skipAction);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doAOSG() {
+InstructionResult KM10::doAOSG() {
   doAOSXX(memGet, 1, memPut, isGT0, skipAction);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSOJ() {
+InstructionResult KM10::doSOJ() {
   doAOSXX(acGet, -1, acPut, never, jumpAction);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSOJL() {
+InstructionResult KM10::doSOJL() {
   doAOSXX(acGet, -1, acPut, isLT0, jumpAction);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSOJE() {
+InstructionResult KM10::doSOJE() {
   doAOSXX(acGet, -1, acPut, isEQ0, jumpAction);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSOJLE() {
+InstructionResult KM10::doSOJLE() {
   doAOSXX(acGet, -1, acPut, isLE0, jumpAction);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSOJA() {
+InstructionResult KM10::doSOJA() {
   doAOSXX(acGet, -1, acPut, always, jumpAction);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSOJGE() {
+InstructionResult KM10::doSOJGE() {
   doAOSXX(acGet, -1, acPut, isGE0, jumpAction);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSOJN() {
+InstructionResult KM10::doSOJN() {
   doAOSXX(acGet, -1, acPut, isNE0, jumpAction);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSOJG() {
+InstructionResult KM10::doSOJG() {
   doAOSXX(acGet, -1, acPut, isGT0, jumpAction);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSOS() {
+InstructionResult KM10::doSOS() {
   doAOSXX(memGet, -1, memPut, never, skipAction);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSOSL() {
+InstructionResult KM10::doSOSL() {
   doAOSXX(memGet, -1, memPut, isLT0, skipAction);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSOSE() {
+InstructionResult KM10::doSOSE() {
   doAOSXX(memGet, -1, memPut, isEQ0, skipAction);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSOSLE() {
+InstructionResult KM10::doSOSLE() {
   doAOSXX(memGet, -1, memPut, isLE0, skipAction);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSOSA() {
+InstructionResult KM10::doSOSA() {
   doAOSXX(memGet, -1, memPut, always, skipAction);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSOSGE() {
+InstructionResult KM10::doSOSGE() {
   doAOSXX(memGet, -1, memPut, isGE0, skipAction);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSOSN() {
+InstructionResult KM10::doSOSN() {
   doAOSXX(memGet, -1, memPut, isNE0, skipAction);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSOSG() {
+InstructionResult KM10::doSOSG() {
   doAOSXX(memGet, -1, memPut, isGT0, skipAction);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSETZ() {
+InstructionResult KM10::doSETZ() {
   doSETXX(memGet, zeroWord, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSETZI() {
+InstructionResult KM10::doSETZI() {
   doSETXX(immediate, zeroWord, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSETZM() {
+InstructionResult KM10::doSETZM() {
   doSETXX(memGet, zeroWord, memPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSETZB() {
+InstructionResult KM10::doSETZB() {
   doSETXX(memGet, zeroWord, bothPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doAND() {
+InstructionResult KM10::doAND() {
   doBinOp(memGet, acGet, andWord, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doANDI() {
+InstructionResult KM10::doANDI() {
   doBinOp(immediate, acGet, andWord, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doANDM() {
+InstructionResult KM10::doANDM() {
   doBinOp(memGet, acGet, andWord, memPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doANDB() {
+InstructionResult KM10::doANDB() {
   doBinOp(memGet, acGet, andWord, bothPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doANDCA() {
+InstructionResult KM10::doANDCA() {
   doBinOp(memGet, acGet, andCWord, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doANDCAI() {
+InstructionResult KM10::doANDCAI() {
   doBinOp(immediate, acGet, andCWord, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doANDCAM() {
+InstructionResult KM10::doANDCAM() {
   doBinOp(memGet, acGet, andCWord, memPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doANDCAB() {
+InstructionResult KM10::doANDCAB() {
   doBinOp(memGet, acGet, andCWord, bothPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSETM() {
+InstructionResult KM10::doSETM() {
   doSETXX(memGet, noMod1, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSETMI() {
+InstructionResult KM10::doSETMI() {
   doSETXX(immediate, noMod1, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSETMM() {
+InstructionResult KM10::doSETMM() {
   doSETXX(memGet, noMod1, memPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSETMB() {
+InstructionResult KM10::doSETMB() {
   doSETXX(memGet, noMod1, bothPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doANDCM() {
+InstructionResult KM10::doANDCM() {
   doBinOp(acGet, memGet, andCWord, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doANDCMI() {
+InstructionResult KM10::doANDCMI() {
   doBinOp(acGet, immediate, andCWord, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doANDCMM() {
+InstructionResult KM10::doANDCMM() {
   doBinOp(acGet, memGet, andCWord, memPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doANDCMB() {
+InstructionResult KM10::doANDCMB() {
   doBinOp(acGet, memGet, andCWord, bothPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSETA() {
+InstructionResult KM10::doSETA() {
   doSETXX(acGet, noMod1, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSETAI() {
+InstructionResult KM10::doSETAI() {
   doSETXX(acGet, noMod1, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSETAM() {
+InstructionResult KM10::doSETAM() {
   doSETXX(acGet, noMod1, memPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSETAB() {
+InstructionResult KM10::doSETAB() {
   doSETXX(acGet, noMod1, bothPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doXOR() {
+InstructionResult KM10::doXOR() {
   doBinOp(memGet, acGet, xorWord, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doXORI() {
+InstructionResult KM10::doXORI() {
   doBinOp(immediate, acGet, xorWord, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doXORM() {
+InstructionResult KM10::doXORM() {
   doBinOp(memGet, acGet, xorWord, memPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doXORB() {
+InstructionResult KM10::doXORB() {
   doBinOp(memGet, acGet, xorWord, bothPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doIOR() {
+InstructionResult KM10::doIOR() {
   doBinOp(memGet, acGet, iorWord, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doIORI() {
+InstructionResult KM10::doIORI() {
   doBinOp(immediate, acGet, iorWord, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doIORM() {
+InstructionResult KM10::doIORM() {
   doBinOp(memGet, acGet, iorWord, memPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doIORB() {
+InstructionResult KM10::doIORB() {
   doBinOp(memGet, acGet, iorWord, bothPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doANDCBM() {
+InstructionResult KM10::doANDCBM() {
   doBinOp(memGet, acGet, andCBWord, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doANDCBMI() {
+InstructionResult KM10::doANDCBMI() {
   doBinOp(immediate, acGet, andCBWord, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doANDCBMM() {
+InstructionResult KM10::doANDCBMM() {
   doBinOp(memGet, acGet, andCBWord, memPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doANDCBMB() {
+InstructionResult KM10::doANDCBMB() {
   doBinOp(memGet, acGet, andCBWord, bothPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doEQV() {
+InstructionResult KM10::doEQV() {
   doBinOp(memGet, acGet, eqvWord, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doEQVI() {
+InstructionResult KM10::doEQVI() {
   doBinOp(immediate, acGet, eqvWord, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doEQVM() {
+InstructionResult KM10::doEQVM() {
   doBinOp(memGet, acGet, eqvWord, memPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doEQVB() {
+InstructionResult KM10::doEQVB() {
   doBinOp(memGet, acGet, eqvWord, bothPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSETCA() {
+InstructionResult KM10::doSETCA() {
   doSETXX(acGet, compWord, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSETCAI() {
+InstructionResult KM10::doSETCAI() {
   doSETXX(acGet, compWord, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSETCAM() {
+InstructionResult KM10::doSETCAM() {
   doSETXX(acGet, compWord, memPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSETCAB() {
+InstructionResult KM10::doSETCAB() {
   doSETXX(acGet, compWord, bothPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doORCA() {
+InstructionResult KM10::doORCA() {
   doBinOp(memGet, acGet, iorCWord, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doORCAI() {
+InstructionResult KM10::doORCAI() {
   doBinOp(immediate, acGet, iorCWord, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doORCAM() {
+InstructionResult KM10::doORCAM() {
   doBinOp(memGet, acGet, iorCWord, memPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doORCAB() {
+InstructionResult KM10::doORCAB() {
   doBinOp(memGet, acGet, iorCWord, bothPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSETCM() {
+InstructionResult KM10::doSETCM() {
   doSETXX(memGet, compWord, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSETCMI() {
+InstructionResult KM10::doSETCMI() {
   doSETXX(immediate, compWord, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSETCMM() {
+InstructionResult KM10::doSETCMM() {
   doSETXX(memGet, compWord, memPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSETCMB() {
+InstructionResult KM10::doSETCMB() {
   doSETXX(memGet, compWord, bothPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doORCM() {
+InstructionResult KM10::doORCM() {
   doBinOp(acGet, memGet, iorCWord, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doORCMI() {
+InstructionResult KM10::doORCMI() {
   doBinOp(acGet, immediate, iorCWord, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doORCMM() {
+InstructionResult KM10::doORCMM() {
   doBinOp(acGet, memGet, iorCWord, memPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doORCMB() {
+InstructionResult KM10::doORCMB() {
   doBinOp(acGet, memGet, iorCWord, bothPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doORCB() {
+InstructionResult KM10::doORCB() {
   doBinOp(memGet, acGet, iorCBWord, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doORCBI() {
+InstructionResult KM10::doORCBI() {
   doBinOp(immediate, acGet, iorCBWord, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doORCBM() {
+InstructionResult KM10::doORCBM() {
   doBinOp(memGet, acGet, iorCBWord, memPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doORCBB() {
+InstructionResult KM10::doORCBB() {
   doBinOp(memGet, acGet, iorCBWord, bothPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSETO() {
+InstructionResult KM10::doSETO() {
   doSETXX(acGet, onesWord, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSETOI() {
+InstructionResult KM10::doSETOI() {
   doSETXX(acGet, onesWord, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSETOM() {
+InstructionResult KM10::doSETOM() {
   doSETXX(memGet, onesWord, memPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doSETOB() {
+InstructionResult KM10::doSETOB() {
   doSETXX(memGet, onesWord, bothPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHLL() {
+InstructionResult KM10::doHLL() {
   doHXXXX(memGet, acGet, copyHLL, noMod1, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHLLI() {
+InstructionResult KM10::doHLLI() {
   doHXXXX(immediate, acGet, copyHLL, noMod1, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHLLM() {
+InstructionResult KM10::doHLLM() {
   doHXXXX(acGet, memGet, copyHLL, noMod1, memPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHLLS() {
+InstructionResult KM10::doHLLS() {
   doHXXXX(memGet, memGet, copyHLL, noMod1, selfPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHRL() {
+InstructionResult KM10::doHRL() {
   doHXXXX(memGet, acGet, copyHRL, noMod1, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHRLI() {
+InstructionResult KM10::doHRLI() {
   doHXXXX(immediate, acGet, copyHRL, noMod1, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHRLM() {
+InstructionResult KM10::doHRLM() {
   doHXXXX(acGet, memGet, copyHRL, noMod1, memPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHRLS() {
+InstructionResult KM10::doHRLS() {
   doHXXXX(memGet, memGet, copyHRL, noMod1, selfPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHLLZ() {
+InstructionResult KM10::doHLLZ() {
   doHXXXX(memGet, acGet, copyHLL, zeroR, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHLLZI() {
+InstructionResult KM10::doHLLZI() {
   doHXXXX(immediate, acGet, copyHLL, zeroR, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHLLZM() {
+InstructionResult KM10::doHLLZM() {
   doHXXXX(acGet, memGet, copyHLL, zeroR, memPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHLLZS() {
+InstructionResult KM10::doHLLZS() {
   doHXXXX(memGet, memGet, copyHLL, zeroR, selfPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHRLZ() {
+InstructionResult KM10::doHRLZ() {
   doHXXXX(memGet, acGet, copyHRL, zeroR, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHRLZI() {
+InstructionResult KM10::doHRLZI() {
   doHXXXX(immediate, acGet, copyHRL, zeroR, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHRLZM() {
+InstructionResult KM10::doHRLZM() {
   doHXXXX(acGet, memGet, copyHRL, zeroR, memPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHRLZS() {
+InstructionResult KM10::doHRLZS() {
   doHXXXX(memGet, memGet, copyHRL, zeroR, selfPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHLLO() {
+InstructionResult KM10::doHLLO() {
   doHXXXX(memGet, acGet, copyHLL, onesR, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHLLOI() {
+InstructionResult KM10::doHLLOI() {
   doHXXXX(immediate, acGet, copyHLL, onesR, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHLLOM() {
+InstructionResult KM10::doHLLOM() {
   doHXXXX(acGet, memGet, copyHLL, onesR, memPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHLLOS() {
+InstructionResult KM10::doHLLOS() {
   doHXXXX(memGet, memGet, copyHLL, onesR, selfPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHRLO() {
+InstructionResult KM10::doHRLO() {
   doHXXXX(memGet, acGet, copyHRL, onesR, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHRLOI() {
+InstructionResult KM10::doHRLOI() {
   doHXXXX(immediate, acGet, copyHRL, onesR, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHRLOM() {
+InstructionResult KM10::doHRLOM() {
   doHXXXX(acGet, memGet, copyHRL, onesR, memPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHRLOS() {
+InstructionResult KM10::doHRLOS() {
   doHXXXX(memGet, memGet, copyHRL, onesR, selfPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHLLE() {
+InstructionResult KM10::doHLLE() {
   doHXXXX(memGet, acGet, copyHLL, extnL, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHLLEI() {
+InstructionResult KM10::doHLLEI() {
   doHXXXX(immediate, acGet, copyHLL, extnL, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHLLEM() {
+InstructionResult KM10::doHLLEM() {
   doHXXXX(acGet, memGet, copyHLL, extnL, memPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHLLES() {
+InstructionResult KM10::doHLLES() {
   doHXXXX(memGet, memGet, copyHLL, extnL, selfPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHRLE() {
+InstructionResult KM10::doHRLE() {
   doHXXXX(memGet, acGet, copyHRL, extnL, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHRLEI() {
+InstructionResult KM10::doHRLEI() {
   doHXXXX(immediate, acGet, copyHRL, extnL, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHRLEM() {
+InstructionResult KM10::doHRLEM() {
   doHXXXX(acGet, memGet, copyHRL, extnL, memPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHRLES() {
+InstructionResult KM10::doHRLES() {
   doHXXXX(memGet, memGet, copyHRL, extnL, selfPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHRR() {
+InstructionResult KM10::doHRR() {
   doHXXXX(memGet, acGet, copyHRR, noMod1, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHRRI() {
+InstructionResult KM10::doHRRI() {
   doHXXXX(immediate, acGet, copyHRR, noMod1, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHRRM() {
+InstructionResult KM10::doHRRM() {
   doHXXXX(acGet, memGet, copyHRR, noMod1, memPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHRRS() {
+InstructionResult KM10::doHRRS() {
   doHXXXX(memGet, memGet, copyHRR, noMod1, selfPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHLR() {
+InstructionResult KM10::doHLR() {
   doHXXXX(memGet, acGet, copyHLR, noMod1, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHLRI() {
+InstructionResult KM10::doHLRI() {
   doHXXXX(immediate, acGet, copyHLR, noMod1, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHLRM() {
+InstructionResult KM10::doHLRM() {
   doHXXXX(acGet, memGet, copyHLR, noMod1, memPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHLRS() {
+InstructionResult KM10::doHLRS() {
   doHXXXX(memGet, memGet, copyHLR, noMod1, selfPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHRRZ() {
+InstructionResult KM10::doHRRZ() {
   doHXXXX(memGet, acGet, copyHRR, zeroL, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHRRZI() {
+InstructionResult KM10::doHRRZI() {
   doHXXXX(immediate, acGet, copyHRR, zeroL, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHRRZM() {
+InstructionResult KM10::doHRRZM() {
   doHXXXX(acGet, memGet, copyHRR, zeroL, memPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHRRZS() {
+InstructionResult KM10::doHRRZS() {
   doHXXXX(memGet, memGet, copyHRR, zeroL, selfPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHLRZ() {
+InstructionResult KM10::doHLRZ() {
   doHXXXX(memGet, acGet, copyHLR, zeroL, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHLRZI() {
+InstructionResult KM10::doHLRZI() {
   doHXXXX(immediate, acGet, copyHLR, zeroL, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHLRZM() {
+InstructionResult KM10::doHLRZM() {
   doHXXXX(acGet, memGet, copyHLR, zeroL, memPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHLRZS() {
+InstructionResult KM10::doHLRZS() {
   doHXXXX(memGet, memGet, copyHLR, zeroL, selfPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHRRO() {
+InstructionResult KM10::doHRRO() {
   doHXXXX(memGet, acGet, copyHRR, onesL, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHRROI() {
+InstructionResult KM10::doHRROI() {
   doHXXXX(immediate, acGet, copyHRR, onesL, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHRROM() {
+InstructionResult KM10::doHRROM() {
   doHXXXX(acGet, memGet, copyHRR, onesL, memPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHRROS() {
+InstructionResult KM10::doHRROS() {
   doHXXXX(memGet, memGet, copyHRR, onesL, selfPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHLRO() {
+InstructionResult KM10::doHLRO() {
   doHXXXX(memGet, acGet, copyHLR, onesL, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHLROI() {
+InstructionResult KM10::doHLROI() {
   doHXXXX(immediate, acGet, copyHLR, onesL, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHLROM() {
+InstructionResult KM10::doHLROM() {
   doHXXXX(acGet, memGet, copyHLR, onesL, memPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHLROS() {
+InstructionResult KM10::doHLROS() {
   doHXXXX(memGet, memGet, copyHLR, onesL, selfPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHRRE() {
+InstructionResult KM10::doHRRE() {
   doHXXXX(memGet, acGet, copyHRR, extnR, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHRREI() {
+InstructionResult KM10::doHRREI() {
   doHXXXX(immediate, acGet, copyHRR, extnR, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHRREM() {
+InstructionResult KM10::doHRREM() {
   doHXXXX(acGet, memGet, copyHRR, extnR, memPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHRRES() {
+InstructionResult KM10::doHRRES() {
   doHXXXX(memGet, memGet, copyHRR, extnR, selfPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHLRE() {
+InstructionResult KM10::doHLRE() {
   doHXXXX(memGet, acGet, copyHLR, extnR, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHLREI() {
+InstructionResult KM10::doHLREI() {
   doHXXXX(immediate, acGet, copyHLR, extnR, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHLREM() {
+InstructionResult KM10::doHLREM() {
   doHXXXX(acGet, memGet, copyHLR, extnR, memPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doHLRES() {
+InstructionResult KM10::doHLRES() {
   doHXXXX(memGet, memGet, copyHLR, extnR, selfPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTRN() {
-  return normal;
+InstructionResult KM10::doTRN() {
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTLN() {
-  return normal;
+InstructionResult KM10::doTLN() {
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTRNE() {
+InstructionResult KM10::doTRNE() {
   doTXXXX(acGetRH, getE, noMod2, isEQ0T, noStore);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTLNE() {
+InstructionResult KM10::doTLNE() {
   doTXXXX(acGetLH, getE, noMod2, isEQ0T, noStore);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTRNA() {
-  ++state.nextPC.rhu;
-  return normal;
+InstructionResult KM10::doTRNA() {
+  ++nextPC.rhu;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTLNA() {
-  ++state.nextPC.rhu;
-  return normal;
+InstructionResult KM10::doTLNA() {
+  ++nextPC.rhu;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTRNN() {
+InstructionResult KM10::doTRNN() {
   doTXXXX(acGetRH, getE, noMod2, isNE0T, noStore);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTLNN() {
+InstructionResult KM10::doTLNN() {
   doTXXXX(acGetLH, getE, noMod2, isNE0T, noStore);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTRZ() {
+InstructionResult KM10::doTRZ() {
   doTXXXX(acGetRH, getE, zeroMaskR, neverT, acPutRH);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTLZ() {
+InstructionResult KM10::doTLZ() {
   doTXXXX(acGetLH, getE, zeroMaskR, neverT, acPutLH);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTRZE() {
+InstructionResult KM10::doTRZE() {
   doTXXXX(acGetRH, getE, zeroMaskR, isEQ0T, acPutRH);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTLZE() {
+InstructionResult KM10::doTLZE() {
   doTXXXX(acGetLH, getE, zeroMaskR, isEQ0T, acPutLH);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTRZA() {
+InstructionResult KM10::doTRZA() {
   doTXXXX(acGetRH, getE, zeroMaskR, alwaysT, acPutRH);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTLZA() {
+InstructionResult KM10::doTLZA() {
   doTXXXX(acGetLH, getE, zeroMaskR, alwaysT, acPutLH);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTRZN() {
+InstructionResult KM10::doTRZN() {
   doTXXXX(acGetRH, getE, zeroMaskR, isNE0T, acPutRH);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTLZN() {
+InstructionResult KM10::doTLZN() {
   doTXXXX(acGetLH, getE, zeroMaskR, isNE0T, acPutLH);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTRC() {
+InstructionResult KM10::doTRC() {
   doTXXXX(acGetRH, getE, compMaskR, neverT, acPutRH);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTLC() {
+InstructionResult KM10::doTLC() {
   doTXXXX(acGetLH, getE, compMaskR, neverT, acPutLH);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTRCE() {
+InstructionResult KM10::doTRCE() {
   doTXXXX(acGetRH, getE, compMaskR, isEQ0T, acPutRH);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTLCE() {
+InstructionResult KM10::doTLCE() {
   doTXXXX(acGetLH, getE, compMaskR, isEQ0T, acPutLH);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTRCA() {
+InstructionResult KM10::doTRCA() {
   doTXXXX(acGetRH, getE, compMaskR, alwaysT, acPutRH);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTLCA() {
+InstructionResult KM10::doTLCA() {
   doTXXXX(acGetLH, getE, compMaskR, alwaysT, acPutLH);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTRCN() {
+InstructionResult KM10::doTRCN() {
   doTXXXX(acGetRH, getE, compMaskR, isNE0T, acPutRH);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTLCN() {
+InstructionResult KM10::doTLCN() {
   doTXXXX(acGetLH, getE, compMaskR, isNE0T, acPutLH);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTRO() {
+InstructionResult KM10::doTRO() {
   doTXXXX(acGetRH, getE, onesMaskR, neverT, acPutRH);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTLO() {
+InstructionResult KM10::doTLO() {
   doTXXXX(acGetLH, getE, onesMaskR, neverT, acPutLH);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTROE() {
+InstructionResult KM10::doTROE() {
   doTXXXX(acGetRH, getE, onesMaskR, isEQ0T, acPutRH);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTLOE() {
+InstructionResult KM10::doTLOE() {
   doTXXXX(acGetLH, getE, onesMaskR, isEQ0T, acPutLH);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTROA() {
+InstructionResult KM10::doTROA() {
   doTXXXX(acGetRH, getE, onesMaskR, alwaysT, acPutRH);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTLOA() {
+InstructionResult KM10::doTLOA() {
   doTXXXX(acGetLH, getE, onesMaskR, alwaysT, acPutLH);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTRON() {
+InstructionResult KM10::doTRON() {
   doTXXXX(acGetRH, getE, onesMaskR, isNE0T, acPutRH);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTLON() {
+InstructionResult KM10::doTLON() {
   doTXXXX(acGetLH, getE, onesMaskR, isNE0T, acPutLH);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTDN() {
-  return normal;
+InstructionResult KM10::doTDN() {
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTSN() {
-  return normal;
+InstructionResult KM10::doTSN() {
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTDNE() {
+InstructionResult KM10::doTDNE() {
   doTXXXX(acGet, memGet, noMod2, isEQ0T, noStore);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTSNE() {
+InstructionResult KM10::doTSNE() {
   doTXXXX(acGet, memGetSwapped, noMod2, isEQ0T, noStore);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTDNA() {
-  ++state.nextPC.rhu;
-  return normal;
+InstructionResult KM10::doTDNA() {
+  ++nextPC.rhu;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTSNA() {
-  ++state.nextPC.rhu;
-  return normal;
+InstructionResult KM10::doTSNA() {
+  ++nextPC.rhu;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTDNN() {
+InstructionResult KM10::doTDNN() {
   doTXXXX(acGet, memGet, noMod2, isNE0T, noStore);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTSNN() {
+InstructionResult KM10::doTSNN() {
   doTXXXX(acGet, memGetSwapped, noMod2, isNE0T, noStore);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTDZ() {
+InstructionResult KM10::doTDZ() {
   doTXXXX(acGet, memGet, zeroMask, neverT, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTSZ() {
+InstructionResult KM10::doTSZ() {
   doTXXXX(acGet, memGetSwapped, zeroMask, neverT, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTDZE() {
+InstructionResult KM10::doTDZE() {
   doTXXXX(acGet, memGet, zeroMask, isEQ0T, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTSZE() {
+InstructionResult KM10::doTSZE() {
   doTXXXX(acGet, memGetSwapped, zeroMask, isEQ0T, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTDZA() {
+InstructionResult KM10::doTDZA() {
   doTXXXX(acGet, memGet, zeroMask, alwaysT, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTSZA() {
+InstructionResult KM10::doTSZA() {
   doTXXXX(acGet, memGetSwapped, zeroMask, alwaysT, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTDZN() {
+InstructionResult KM10::doTDZN() {
   doTXXXX(acGet, memGet, zeroMask, isNE0T, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTSZN() {
+InstructionResult KM10::doTSZN() {
   doTXXXX(acGet, memGetSwapped, zeroMask, isNE0T, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTDC() {
+InstructionResult KM10::doTDC() {
   doTXXXX(acGet, memGet, compMask, neverT, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTSC() {
+InstructionResult KM10::doTSC() {
   doTXXXX(acGet, memGetSwapped, compMask, neverT, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTDCE() {
+InstructionResult KM10::doTDCE() {
   doTXXXX(acGet, memGet, compMask, isEQ0T, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTSCE() {
+InstructionResult KM10::doTSCE() {
   doTXXXX(acGet, memGetSwapped, compMask, isEQ0T, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTDCA() {
+InstructionResult KM10::doTDCA() {
   doTXXXX(acGet, memGet, compMask, alwaysT, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTSCA() {
+InstructionResult KM10::doTSCA() {
   doTXXXX(acGet, memGetSwapped, compMask, alwaysT, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTDCN() {
+InstructionResult KM10::doTDCN() {
   doTXXXX(acGet, memGet, compMask, isNE0T, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTSZCN() {
+InstructionResult KM10::doTSZCN() {
   doTXXXX(acGet, memGetSwapped, compMask, isNE0T, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTDO() {
+InstructionResult KM10::doTDO() {
   doTXXXX(acGet, memGet, onesMask, neverT, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTSO() {
+InstructionResult KM10::doTSO() {
   doTXXXX(acGet, memGetSwapped, onesMask, neverT, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTDOE() {
+InstructionResult KM10::doTDOE() {
   doTXXXX(acGet, memGet, onesMask, isEQ0T, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTSOE() {
+InstructionResult KM10::doTSOE() {
   doTXXXX(acGet, memGetSwapped, onesMask, isEQ0T, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTDOA() {
+InstructionResult KM10::doTDOA() {
   doTXXXX(acGet, memGet, onesMask, alwaysT, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTSOA() {
+InstructionResult KM10::doTSOA() {
   doTXXXX(acGet, memGetSwapped, onesMask, alwaysT, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTDON() {
+InstructionResult KM10::doTDON() {
   doTXXXX(acGet, memGet, onesMask, isNE0T, acPut);
-  return normal;
+  return iNormal;
 }
 
-KM10::InstructionResult KM10::doTSON() {
+InstructionResult KM10::doTSON() {
   doTXXXX(acGet, memGetSwapped, onesMask, isNE0T, acPut);
-  return normal;
+  return iNormal;
 }
 
 
+// Return the KM10 memory VIRTUAL address (EPT is in kernel virtual
+// space) for the specified pointer into the EPT.
+W36 KM10::eptAddressFor(const W36 *eptEntryP) {
+  return W36(eptEntryP - (W36 *) eptP);
+}
+
+
+W36 KM10::acGetN(unsigned n) {
+  assert(n < 16);
+  W36 value = AC[n];
+  if (logger.mem) logger.s << "; ac" << oct << n << ":" << value.fmt36();
+  return value;
+}
+
+
+W36 KM10::acGetEA(unsigned n) {
+  assert(n < 16);
+  W36 value = AC[n];
+  if (logger.mem) logger.s << "; ac" << oct << n << ":" << value.fmt36();
+  return value;
+}
+
+
+void KM10::acPutN(W36 value, unsigned n) {
+  assert(n < 16);
+  AC[n] = value;
+  if (logger.mem) logger.s << "; ac" << oct << n << "=" << value.fmt36();
+}
+
+W36 KM10::memGetN(W36 a) {
+  W36 value = a.rhu < 020 ? acGetEA(a.rhu) : memP[a.rhu];
+  if (logger.mem) logger.s << "; " << a.fmtVMA() << ":" << value.fmt36();
+  if (addressBPs.contains(a.vma)) running = false;
+  return value;
+}
+
+void KM10::memPutN(W36 value, W36 a) {
+
+  if (a.rhu < 020)
+    acPutN(value, a.rhu);
+  else 
+    memP[a.rhu] = value;
+
+  if (logger.mem) logger.s << "; " << a.fmtVMA() << "=" << value.fmt36();
+  if (addressBPs.contains(a.vma)) running = false;
+}
+
+
+// Effective address calculation
+uint64_t KM10::getEA(unsigned i, unsigned x, uint64_t y) {
+
+  // While we keep getting indirection, loop for new EA words.
+  // XXX this only works for non-extended addressing.
+  for (;;) {
+
+    // XXX there are some significant open questions about how much
+    // the address wraps and how much is included in these addition
+    // and indirection steps. For now, this can work for section 0
+    // or unextended code.
+
+    if (x != 0) {
+      if (logger.ea) logger.s << "EA (" << oct << x << ")=" << acGetN(x).fmt36() << logger.endl;
+      y += acGetN(x).u;
+    }
+
+    if (i != 0) {		// Indirection
+      W36 eaw(memGetN(y));
+      if (logger.ea) logger.s << "EA @" << W36(y).fmt36() << "=" << eaw.fmt36() << logger.endl;
+      y = eaw.y;
+      x = eaw.x;
+      i = eaw.i;
+    } else {			// No indexing or indirection
+      if (logger.ea) logger.s << "EA=" << W36(y).fmt36() << logger.endl;
+      return y;
+    }
+  }
+}
+
+
+// Accessors
+bool KM10::userMode() {return !!flags.usr;}
+
+W36 KM10::flagsWord(unsigned pc) {
+  W36 v(pc);
+  v.pcFlags = flags.u;
+  return v;
+}
+
+
+// Used by JRSTF and JEN
+void KM10::restoreFlags(W36 ea) {
+  ProgramFlags newFlags{(unsigned) ea.pcFlags};
+
+  // User mode cannot clear USR. User mode cannot set UIO.
+  if (flags.usr) {
+    newFlags.uio = 0;
+    newFlags.usr = 1;
+  }
+
+  // A program running in PUB mode cannot clear PUB mode.
+  if (flags.pub) newFlags.pub = 1;
+
+  flags.u = newFlags.u;
+}
+
+
+
+// Loaders
+/*
+  PDP-10 ASCIIZED FILE FORMAT
+  ---------------------------
+
+  PDP-10 ASCIIZED FILES ARE COMPOSED OF THREE TYPES OF
+  FILE LOAD LINES.  THEY ARE:
+
+  A.      CORE ZERO LINE
+
+  THIS LOAD FILE LINE SPECIFIES WHERE AND HOW MUCH PDP-10 CORE
+  TO BE ZEROED.  THIS IS NECESSARY AS THE PDP-10 FILES ARE
+  ZERO COMPRESSED WHICH MEANS THAT ZERO WORDS ARE NOT INCLUDED
+  IN THE LOAD FILE TO CONSERVE FILE SPACE.
+
+  CORE ZERO LINE
+
+  Z WC,ADR,COUNT,...,CKSUM
+
+  Z = PDP-10 CORE ZERO
+  WORD COUNT = 1 TO 4
+  ADR = ZERO START ADDRESS
+  DERIVED FROM C(JOBSA)
+  COUNT = ZERO COUNT, 64K MAX
+  DERIVED FROM C(JOBFF)
+
+  IF THE ADDRESSES ARE GREATER THAN 64K THE HI 2-BITS OF
+  THE 18 BIT PDP-10 ADDRESS ARE INCLUDED AS THE HI-BYTE OF
+  THE WORD COUNT.
+
+  B.      LOAD FILE LINES
+
+  AS MANY OF THESE TYPES OF LOAD FILE LINES ARE REQUIRED AS ARE
+  NECESSARY TO REPRESENT THE BINARY SAVE FILE.
+
+  LOAD FILE LINE
+
+  T WC,ADR,DATA 20-35,DATA 4-19,DATA 0-3, - - - ,CKSUM
+
+  T = PDP-10 TYPE FILE
+  WC = PDP-10 DATA WORD COUNT TIMES 3, 3 PDP-11 WORDS
+  PER PDP-10 WORD.
+  ADR = PDP-10 ADDRESS FOR THIS LOAD FILE LINE
+  LOW 16 BITS OF THE PDP-10 18 BIT ADDRESS, IF
+  THE ADDRESS IS GREATER THAN 64K, THE HI 2-BITS
+  OF THE ADDRESS ARE INCLUDED AS THE HI-BYTE OF
+  THE WORD COUNT.
+
+  UP TO 8 PDP-10 WORDS, OR UP TO 24 PDP-11 WORDS
+
+  DATA 20-35
+  DATA  4-19      ;PDP-10 EQUIV DATA WORD BITS
+  DATA  0-3
+
+  CKSUM = 16 BIT NEGATED CHECKSUM OF WC, ADR & DATA
+
+  C.      TRANSFER LINE
+
+  THIS LOAD FILE LINE CONTAINS THE FILE STARTING ADDRESS.
+
+  TRANSFER LINE
+
+  T 0,ADR,CKSUM
+
+  0 = WC = SIGNIFIES TRANSFER, EOF
+  ADR = PROGRAM START ADDRESS
+
+*/
+
+
+// This takes a "word" from the comma-delimited A10 format and
+// converts it from its ASCIIized form into an 16-bit integer value.
+// On entry, inS must be at the first character of a token. On exit,
+// inS is at the start of the next token or else the NUL at the end
+// of the string.
+//
+// Example:
+//     |<---- inS is at the 'A' on entry
+//     |   |<---- and at the 'E' four chars later at exit.
+// T ^,AEh,E,LF@,E,O?m,FC,E,Aru,Lj@,F,AEv,F@@,E,,AJB,L,AnT,F@@,E,Arz,Lk@,F,AEw,F@@,E,E,ND@,K,B,NJ@,E,B`K
+
+auto KM10::getWord(ifstream &inS, [[maybe_unused]] const char *whyP) -> uint16_t {
+  unsigned v = 0;
+
+  for (;;) {
+    char ch = inS.get();
+    if (logger.load) logger.s << "getWord[" << whyP << "] ch=" << oct << ch << logger.endl;
+    if (ch == EOF || ch == ',' || ch == '\n') break;
+    v = (v << 6) | (ch & 077);
+  }
+
+  if (logger.load) logger.s << "getWord[" << whyP << "] returns 0" << oct << v << logger.endl;
+  return v;
+}
+
+
+// Load the specified .A10 format file into memory.
+void KM10::loadA10(const char *fileNameP) {
+  ifstream inS(fileNameP);
+  unsigned addr = 0;
+  unsigned highestAddr = 0;
+  unsigned lowestAddr = 0777777;
+
+  for (;;) {
+    char recType = inS.get();
+
+    if (recType == EOF) break;
+
+    if (logger.load) logger.s << "recType=" << recType << logger.endl;
+
+    if (recType == ';') {
+      // Just ignore comment lines
+      inS.ignore(numeric_limits<streamsize>::max(), '\n');
+      continue;
+    }
+
+    // Skip the blank after the record type
+    inS.get();
+
+    // Count of words on this line.
+    uint16_t wc = getWord(inS, "wc");
+
+    addr = getWord(inS, "addr");
+    addr |= wc & 0xC000;
+    wc &= ~0xC000;
+
+    if (logger.load) logger.s << "addr=" << setw(6) << setfill('0') << oct << addr << logger.endl;
+    if (logger.load) logger.s << "wc=" << wc << logger.endl;
+
+    unsigned zeroCount;
+
+    switch (recType) {
+    case 'Z':
+      zeroCount = getWord(inS, "zeroCount");
+
+      if (zeroCount == 0) zeroCount = 64*1024;
+
+      if (logger.load) logger.s << "zeroCount=0" << oct << zeroCount << logger.endl;
+
+      inS.ignore(numeric_limits<streamsize>::max(), '\n');
+
+      for (unsigned offset = 0; offset < zeroCount; ++offset) {
+	unsigned a = addr + offset;
+
+	if (a > highestAddr) highestAddr = a;
+	if (a < lowestAddr) lowestAddr = a;
+	memP[a].u = 0;
+      }
+
+      break;
+
+    case 'T':
+      if (wc == 0) {pc.lhu = 0; pc.rhu = addr;}
+
+      for (unsigned offset = 0; offset < wc/3; ++offset) {
+	uint64_t w0 = getWord(inS, "w0");
+	uint64_t w1 = getWord(inS, "w1");
+	uint64_t w2 = getWord(inS, "w2");
+	uint64_t w = ((w2 & 0x0F) << 32) | (w1 << 16) | w0;
+	uint64_t a = addr + offset;
+	W36 w36(w);
+	W36 a36(a);
+
+	if (a > highestAddr) highestAddr = a;
+	if (a < lowestAddr) lowestAddr = a;
+
+	if (logger.load) {
+	  logger.s << "mem[" << a36.fmtVMA() << "]=" << w36.fmt36()
+		   << " " << w36.disasm(nullptr)
+		   << logger.endl;
+	}
+
+	memP[a].u = w;
+      }
+
+      inS.ignore(numeric_limits<streamsize>::max(), '\n');
+      break;
+      
+    default:
+      logger.s << "ERROR: Unknown record type '" << recType << "' in file '" << fileNameP << "'"
+	       << logger.endl;
+      break;      
+    }
+  }
+}
 
 
 ////////////////////////////////////////////////////////////////
@@ -2434,49 +2890,49 @@ void KM10::emulate(Debugger *debuggerP) {
     cca.handleSweep();
 
     // Handle execution (PC) breakpoints
-    if (state.executeBPs.contains(state.pc.vma)) state.running = false;
+    if (executeBPs.contains(pc.vma)) running = false;
 
     // Prepare to fetch next iw and remember if it's an interrupt or
     // trap.
-    if ((state.flags.tr1 || state.flags.tr2) && pag.pagerEnabled()) {
+    if ((flags.tr1 || flags.tr2) && pag.pagerEnabled()) {
       // We have a trap.
-      state.exceptionPC = state.pc;
-      state.pc = state.eptAddressFor(state.flags.tr1 ?
-				     &state.eptP->trap1Insn :
-				     &state.eptP->stackOverflowInsn);
-      state.inInterrupt = true;
-      cerr << ">>>>> trap cycle PC now=" << state.pc.fmtVMA()
-	   << "  exceptionPC=" << state.exceptionPC.fmtVMA()
+      exceptionPC = pc;
+      pc = eptAddressFor(flags.tr1 ?
+				     &eptP->trap1Insn :
+				     &eptP->stackOverflowInsn);
+      inInterrupt = true;
+      cerr << ">>>>> trap cycle PC now=" << pc.fmtVMA()
+	   << "  exceptionPC=" << exceptionPC.fmtVMA()
 	   << logger.endl << flush;
     } else if (W36 vector = pi.setUpInterruptCycleIfPending(); vector != W36(0)) {
       // We have an active interrupt.
-      state.exceptionPC = state.pc;
-      state.pc = vector;
-      state.inInterrupt = true;
-      cerr << ">>>>> interrupt cycle PC now=" << state.pc.fmtVMA()
-	   << "  exceptionPC=" << state.exceptionPC.fmtVMA()
+      exceptionPC = pc;
+      pc = vector;
+      inInterrupt = true;
+      cerr << ">>>>> interrupt cycle PC now=" << pc.fmtVMA()
+	   << "  exceptionPC=" << exceptionPC.fmtVMA()
 	   << logger.endl << flush;
     }
 
     // Now fetch the instruction at our normal, exception, or interrupt PC.
-    iw = state.memGetN(state.pc);
+    iw = memGetN(pc);
 
     // Capture next PC AFTER we possibly set up to handle an exception or interrupt.
-    if (!state.inXCT) {
-      state.nextPC.rhu = state.pc.rhu + 1;
-      state.nextPC.lhu = state.pc.lhu;
+    if (!inXCT) {
+      nextPC.rhu = pc.rhu + 1;
+      nextPC.lhu = pc.lhu;
     }
 
     // If we're debugging, this is where we pause to let the user
     // inspect and change things. The debugger tells us what our next
     // action should be based on its return value.
-    if (!state.running) {
+    if (!running) {
 
       switch (debuggerP->debug()) {
-      case Debugger::step:	// Debugger has set step count in state.nSteps.
+      case Debugger::step:	// Debugger has set step count in nSteps.
 	break;
 
-      case Debugger::run:	// Continue from current PC (state.nSteps set by debugger to 0).
+      case Debugger::run:	// Continue from current PC (nSteps set by debugger to 0).
 	break;
 
       case Debugger::quit:	// Quit from emulator.
@@ -2496,42 +2952,44 @@ void KM10::emulate(Debugger *debuggerP) {
 
     // Handle nSteps so we don't keep running if we run out of step
     // count. THIS instruction is our single remaining step. If
-    // state.nSteps is zero we just keep going "forever".
-    if (state.nSteps > 0) {
-      if (--state.nSteps <= 0) state.running = false;
+    // nSteps is zero we just keep going "forever".
+    if (nSteps > 0) {
+      if (--nSteps <= 0) running = false;
     }
 
     if (logger.loggingToFile && logger.pc) {
-      logger.s << state.pc.fmtVMA() << ": " << debuggerP->dump(iw, state.pc);
+      logger.s << pc.fmtVMA() << ": " << debuggerP->dump(iw, pc);
     }
 
     // Unless we encounter ANOTHER XCT we're not in one now.
-    state.inXCT = false;
+    inXCT = false;
 
     // Compute effective address
-    ea.u = state.getEA(iw.i, iw.x, iw.y);
+    ea.u = getEA(iw.i, iw.x, iw.y);
 
     // Execute the instruction in `iw`.
     InstructionResult result = (this->*(ops[iw.op]))();
 
     // XXX update PC, etc.
     switch (result) {
-    case normal:
-    case skip:
-    case jump:
-    case muuo:
-    case luuo:
-    case trap:
-    case halt:
-    case xct:
+    case iNormal:
+    case iSkip:
+    case iJump:
+    case iMUUO:
+    case iLUUO:
+    case iTrap:
+    case iHALT:
+    case iXCT:
+    case iNoSuchDevice:
+    case iNYI:
       break;
     }
 
     // If we're in a xUUO trap, only the first instruction we execute
-    // there is special, so clear state.inInterrupt.
-    if (state.inInterrupt) {
+    // there is special, so clear inInterrupt.
+    if (inInterrupt) {
       cerr << "[IN INTERRUPT and about to clear that state]" << logger.endl << flush;
-      state.inInterrupt = false;
+      inInterrupt = false;
     }
 
 
@@ -2549,39 +3007,37 @@ void KM10::emulate(Debugger *debuggerP) {
 // properly. Therefore this needs to clean up the state of the machine
 // before it returns. This is mostly done by auto destructors.
 static int loopedMain(int argc, char *argv[]) {
-  assert(sizeof(KMState::ExecutiveProcessTable) == 512 * 8);
-  assert(sizeof(KMState::UserProcessTable) == 512 * 8);
+  assert(sizeof(ExecutiveProcessTable) == 512 * 8);
+  assert(sizeof(UserProcessTable) == 512 * 8);
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-
-  KMState state(4 * 1024 * 1024, aBPs, eBPs);
 
   if (FLAGS_load != "none") {
 
     if (FLAGS_load.ends_with(".a10")) {
-      state.loadA10(FLAGS_load.c_str());
+      loadA10(FLAGS_load.c_str());
     } else if (FLAGS_load.ends_with(".sav")) {
       cerr << "ERROR: For now, '-load' option must name a .a10 file" << logger.endl;
       return -1;
-      //      state.loadSAV(FLAGS_load.c_str());
+      //      loadSAV(FLAGS_load.c_str());
     } else {
       cerr << "ERROR: '-load' option must name a .a10 or .sav file" << logger.endl;
       return -1;
     }
 
-    cerr << "[Loaded " << FLAGS_load << "  start=" << state.pc.fmtVMA() << "]" << logger.endl;
+    cerr << "[Loaded " << FLAGS_load << "  start=" << pc.fmtVMA() << "]" << logger.endl;
   }
 
-  KM10 km10(state);
-  Debugger debugger(km10, state);
+  KM10 km10(4 * 1024 * 1024, aBPs, eBPs);
+  Debugger debugger(km10);
 
   if (FLAGS_rel != "none") {
     debugger.loadREL(FLAGS_rel.c_str());
   }
 
-  state.running = !FLAGS_debug;
+  running = !FLAGS_debug;
   km10.emulate(&debugger);
 
-  return state.restart ? 1 : 0;
+  return restart ? 1 : 0;
 }
 
 
@@ -2594,17 +3050,4 @@ int main(int argc, char *argv[]) {
   }
 
   return st;
-}
-
-
-////////////////////////////////////////////////////////////////
-void Logger::nyi(KMState &state, const string &context) {
-  s << " [not yet implemented: " << context << "]";
-  cerr << "Not yet implemented at " << state.pc.fmtVMA() << endl;
-}
-
-
-void Logger::nsd(KMState &state, const string &context) {
-  s << " [no such device: " << context << "]";
-  cerr << "No such device at " << state.pc.fmtVMA() << endl;
 }

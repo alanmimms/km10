@@ -4,14 +4,12 @@ using namespace std;
 
 
 #include "km10.hpp"
-#include "kmstate.hpp"
 
 
 struct Debugger {
 
-  Debugger(KM10 &aKM10, KMState &aState)
+  Debugger(KM10 &aKM10)
     : km10(aKM10),
-      state(aState),
       prevLine("help"),
       lastAddr(0),
       globalSymbols{},
@@ -22,7 +20,6 @@ struct Debugger {
   {}
 
   KM10 &km10;
-  KMState &state;
   string prevLine;
   unsigned lastAddr;
 
@@ -39,7 +36,7 @@ struct Debugger {
     // Debugger NEVER returns `noop` to emulator - it's for internal
     // use only.
     noop,
-    step,			// Step state.nSteps instructions
+    step,			// Step nSteps instructions
     run,			// Just continue from current PC
     quit,			// Exit from the emulator entirely
     restart,			// Restart emulator as if reboot of PDP10

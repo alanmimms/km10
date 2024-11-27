@@ -18,13 +18,12 @@ using namespace std;
 #include "word.hpp"
 #include "device.hpp"
 #include "logger.hpp"
-#include "kmstate.hpp"
 #include "tsqueue.hpp"
 
 
 struct DTE20: Device {
 
-  DTE20(unsigned anAddr, KMState &aState);
+  DTE20(unsigned anAddr, KM10 *aCPU);
   ~DTE20();
 
   void connect();
@@ -83,8 +82,6 @@ struct DTE20: Device {
 
     MonitorCommand(unsigned v) : u(v) {}
   };
-
-  inline static KMState *stateP;
 
   thread consoleIOThread;
   bool consoleIOThreadDone;

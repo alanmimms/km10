@@ -8,8 +8,8 @@
 #include <vector>
 
 #include "word.hpp"
+#include "km10.hpp"
 #include "logger.hpp"
-#include "kmstate.hpp"
 
 using namespace std;
 
@@ -23,32 +23,32 @@ using namespace std;
 // type of bytepointer, using methods provided by each type and a
 // factory that creates instances based on the source data it finds.
 struct BytePointer {
-  static BytePointer *makeFrom(W36 bpa, KMState &state);
+  static BytePointer *makeFrom(W36 bpa, KM10 *cpuP);
 
   typedef tuple<unsigned, unsigned, unsigned> PSA;
 
-  virtual PSA getPSA(KMState &state) = 0;
+  virtual PSA getPSA(KM10 *cpuP) = 0;
 
   virtual bool isTwoWords() {
     return false;
   }
 
-  unsigned getByte(KMState &state) {
-    auto [p, s, a] = getPSA(state);
-    return (state.memGetN(a) >> p) & W36::rMask(s);
+  unsigned getByte(KM10 *cpuP) {
+    auto [p, s, a] = getPSA(cpuP);
+    return (cpuP->memGetN(a) >> p) & W36::rMask(s);
   }
 
-  void putByte(W36 v, KMState &state) {
-    auto [p, s, a] = getPSA(state);
-    W36 w(state.memGetN(a));
-    state.memPutN((w.u & ~W36::bMask(p, s)) | ((v & W36::rMask(p)) << p), a);
+  void putByte(W36 v, KM10 *cpuP) {
+    auto [p, s, a] = getPSA(cpuP);
+    W36 w(cpuP->memGetN(a));
+    cpuP->memPutN((w.u & ~W36::bMask(p, s)) | ((v & W36::rMask(p)) << p), a);
   }
 
 
-  virtual void inc(KMState &state) {
+  virtual void inc(KM10 *cpuP) {
   }
 
-  virtual bool adjust(unsigned ac, KMState &state) {
+  virtual bool adjust(unsigned ac, KM10 *cpuP) {
     return false;
   }
 };
@@ -77,14 +77,14 @@ struct BytePointerL1: BytePointer {
 
 
   // Accessors
-  virtual PSA getPSA(KMState &state) {
+  virtual PSA getPSA(KM10 *cpuP) {
     unsigned rp = p;
     unsigned rs = s;
-    return PSA(rp, rs, state.getEA(i, x, y));
+    return PSA(rp, rs, cpuP->getEA(i, x, y));
   }
 
 
-  virtual void inc(KMState &state) {
+  virtual void inc(KM10 *cpuP) {
 
     if (s > p) {		// Point to left-aligned byte in next word
       p = 36 - s;
@@ -148,10 +148,10 @@ struct BytePointerL1: BytePointer {
   // 
   // OWGs split off their separate way.
 
-  virtual bool adjust(unsigned ac, KMState &state) {
+  virtual bool adjust(unsigned ac, KM10 *cpuP) {
 
     if (s == 0) {
-      state.acPutN(u, ac);
+      cpuP->acPutN(u, ac);
       return false;
     } else if (s > 36 - p) {
       return true;
@@ -162,7 +162,7 @@ struct BytePointerL1: BytePointer {
     // byte itself) and the capacity to the right of the byte. If these
     // add up to zero, then the byte can't fit in a word, and we return
     // to the user with no divide set.
-    int delta = state.acGetN(ac);
+    int delta = cpuP->acGetN(ac);
     int bpwL = 0;
     int bpwR = 0;
 
@@ -198,7 +198,7 @@ struct BytePointerL1: BytePointer {
     // is negative, however, we must back up the quotient by one and
     // offset the remainder by the capacity if it is non zero.
 
-    state.acPutN(u, ac);
+    cpuP->acPutN(u, ac);
     return false;
   }
 };
@@ -231,15 +231,15 @@ struct BytePointerG1: BytePointer {
 
 
   // Accessors
-  virtual PSA getPSA(KMState &state) {
+  virtual PSA getPSA(KM10 *cpuP) {
     auto [p, s] = toPS[(u >> 30) - 37];
-    return PSA(p, s, state.getEA(0, 0, a));
+    return PSA(p, s, cpuP->getEA(0, 0, a));
   }
 
-  virtual void inc(KMState &state) {
+  virtual void inc(KM10 *cpuP) {
   }
 
-  virtual bool adjust(unsigned ac, KMState &state) {
+  virtual bool adjust(unsigned ac, KM10 *cpuP) {
     return false;
   }
 };
@@ -272,20 +272,20 @@ struct BytePointerG2: BytePointer {
   // Accessors
   operator uint64_t() {return u;}
 
-  virtual PSA getPSA(KMState &state) {
+  virtual PSA getPSA(KM10 *cpuP) {
     unsigned rp = p;
     unsigned rs = s;
-    return PSA{rp, rs, state.getEA(i, x, y)};
+    return PSA{rp, rs, cpuP->getEA(i, x, y)};
   }
 
   virtual bool isTwoWords() {
     return true;
   }
 
-  virtual void inc(KMState &state) {
+  virtual void inc(KM10 *cpuP) {
   }
 
-  virtual bool adjust(unsigned ac, KMState &state) {
+  virtual bool adjust(unsigned ac, KM10 *cpuP) {
     return false;
   }
 };

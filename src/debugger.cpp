@@ -25,14 +25,13 @@ using namespace std;
 #include "debugger.hpp"
 #include "word.hpp"
 #include "km10.hpp"
-#include "kmstate.hpp"
 
 
-static KMState *stateForHandlerP;
+static KM10 *cpuForHandlerP;
 
 static void sigintHandler(int signum) {
   cerr << "[SIGINT handler]" << logger.endl << flush;
-  stateForHandlerP->running = false;
+  cpuForHandlerP->running = false;
 }
 
 
@@ -52,7 +51,7 @@ Debugger::DebugAction Debugger::debug() {
   auto dumpAC = [&](int k) {
     cout << ">>>"
 	 << oct << setfill(' ') << setw(2) << k << ": "
-	 << dump(state.AC[k], W36(k), true) << logger.endl;
+	 << dump(km10.AC[k], W36(k), true) << logger.endl;
   };
 
 
@@ -93,7 +92,7 @@ Debugger::DebugAction Debugger::debug() {
 
   static bool firstTime{true};
   if (firstTime) {
-    stateForHandlerP = &state;
+    cpuForHandlerP = cpuP;
     signal(SIGINT, sigintHandler);
 
     cout << "[KM-10 debugger]" << logger.endl << flush;
@@ -110,8 +109,8 @@ Debugger::DebugAction Debugger::debug() {
 
   do {
     // Show next instruction to execute.
-    cout << state.pc.fmtVMA() << ": " << dump(km10.iw, state.pc);
-    if (state.inInterrupt) cout << " [EXC] ";
+    cout << km10.pc.fmtVMA() << ": " << dump(km10.iw, km10.pc);
+    if (km10.inInterrupt) cout << " [EXC] ";
 
     cout << prompt << flush;
     getline(cin, line);
@@ -131,12 +130,12 @@ Debugger::DebugAction Debugger::debug() {
     }
 
     COMMAND("quit", "q", [&]() {
-      state.running = false;
-      state.restart = false;
+      km10.running = false;
+      km10.restart = false;
       action = quit;
     });
 
-    COMMAND("abp", nullptr, [&]() {handleBPCommand(state.addressBPs);});
+    COMMAND("abp", nullptr, [&]() {handleBPCommand(km10.addressBPs);});
 
     COMMAND("ac", "acs", [&]() {
 
@@ -152,7 +151,7 @@ Debugger::DebugAction Debugger::debug() {
       }
     });
 
-    COMMAND("bp", "b", [&]() {handleBPCommand(state.executeBPs);});
+    COMMAND("bp", "b", [&]() {handleBPCommand(km10.executeBPs);});
 
     COMMAND("memory", "m", [&]() {
 
@@ -166,7 +165,7 @@ Debugger::DebugAction Debugger::debug() {
 	  for (auto& c: lo1) c = tolower(c);
 
 	  if (lo1 == "pc")
-	    a = state.pc;
+	    a = km10.pc;
 	  else
 	    a = stoll(words[1], 0, 8);
 	} else {
@@ -174,7 +173,7 @@ Debugger::DebugAction Debugger::debug() {
 	}
 
 	for (int k=0; k < n; ++k) {
-	  W36 w(state.memGetN(a));
+	  W36 w(km10.memGetN(a));
 	  cout << prefix << a.fmtVMA() << ": " << dump(w, a, true) << logger.endl << flush;
 	  a = a + 1;
 	}
@@ -186,25 +185,25 @@ Debugger::DebugAction Debugger::debug() {
     });
 
     COMMAND("restart", nullptr, [&]() {
-      state.restart = true;
-      state.running = false;
+      km10.restart = true;
+      km10.running = false;
       action = restart;
     });
 
     COMMAND("step", "s", [&]() {
 
       if (words.size() == 1) {
-	state.nSteps = 1;
+	km10.nSteps = 1;
       } else {
 
 	try {
-	  state.nSteps = words.size() > 1 ? stoi(words[1], 0, 8) : 1;
+	  km10.nSteps = words.size() > 1 ? stoi(words[1], 0, 8) : 1;
 	} catch (exception &e) {
-	  state.nSteps = 1;
+	  km10.nSteps = 1;
 	}
       }
 
-      state.running = true;
+      km10.running = true;
       action = step;
     });
 
@@ -219,7 +218,7 @@ Debugger::DebugAction Debugger::debug() {
 	} else if (words[1] == "pi") {
 	  cout << prefix << km10.pi.piState.toString() << logger.endl;
 	} else if (words[1] == "flags") {
-	  cout << prefix << state.flags.toString() << logger.endl;
+	  cout << prefix << km10.flags.toString() << logger.endl;
 	} else if (words[1] == "devs") {
 
 	  for (auto [ioDev, devP]: Device::devices) {
@@ -279,16 +278,16 @@ Debugger::DebugAction Debugger::debug() {
 
       if (words.size() == 1) {
 	cout << prefix
-	     << "Flags:  " << state.flags.toString() << logger.endl
-	     << "   PC: " << state.pc.fmtVMA() << logger.endl;
+	     << "Flags:  " << km10.flags.toString() << logger.endl
+	     << "   PC: " << km10.pc.fmtVMA() << logger.endl;
 
-	if (state.inXCT) {
+	if (km10.inXCT) {
 	  cout << " [XCT]" << logger.endl;
 	}
       } else {
 
 	try {
-	  state.pc.u = stoll(words[1], 0, 8);
+	  km10.pc.u = stoll(words[1], 0, 8);
 	} catch (exception &e) {
 	}
       }
@@ -298,13 +297,13 @@ Debugger::DebugAction Debugger::debug() {
     });
 
     COMMAND("continue", "c", [&]() {
-      state.nSteps = 0;
-      state.running = true;
+      km10.nSteps = 0;
+      km10.running = true;
       action = run;
     });
 
     COMMAND("stats", nullptr, [&]() {
-      cout << prefix << "Instructions: " << state.nInsns << logger.endl << flush;
+      cout << prefix << "Instructions: " << km10.nInsns << logger.endl << flush;
     });
 
     COMMAND("help", "?", [&]() {

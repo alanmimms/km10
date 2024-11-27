@@ -21,13 +21,13 @@ void TIMDevice::doCONO(W36 iw, W36 ea) {
 
 W36 TIMDevice::doCONI(W36 iw, W36 ea) {
   W36 conditions{(int64_t) timState.u};
-  state.memPutN(conditions, ea);
+  cpuP->memPutN(conditions, ea);
   return conditions;
 }
 
 // RDTIME
 W36 TIMDevice::doDATAI(W36 iw, W36 ea) {
-  state.memPutN(0, ea);
+  cpuP->memPutN(0, ea);
   return 0;
 }
   

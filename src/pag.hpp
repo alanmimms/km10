@@ -4,6 +4,8 @@
 #include "device.hpp"
 
 
+class KM10;
+
 struct PAGDevice: Device {
 
   // CONO PAG state bits
@@ -25,7 +27,7 @@ struct PAGDevice: Device {
 
 
   // Constructors
-  PAGDevice(KMState &aState);
+  PAGDevice(KM10 *aCPU);
 
 
   // Accessors

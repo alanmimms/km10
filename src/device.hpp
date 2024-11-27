@@ -6,14 +6,14 @@
 using namespace std;
 
 #include "word.hpp"
+#include "km10.hpp"
 #include "logger.hpp"
-#include "kmstate.hpp"
 
 
 struct Device {
   unsigned ioAddress;
   string name;
-  KMState &state;
+  KM10 *cpuP;			// The CPU we belong to.
   unsigned intLevel;
   bool intPending;
 
@@ -23,10 +23,10 @@ struct Device {
   static inline map<unsigned, Device *> devices{};
 
   // Constructors
-  Device(unsigned anAddr, string aName, KMState &aState, bool aCanIntLevel0 = false)
+  Device(unsigned anAddr, string aName, KM10 *aCPU, bool aCanIntLevel0 = false)
     : ioAddress(anAddr),
       name(aName),
-      state(aState),
+      cpuP(aCPU),
       intLevel(0),
       intPending(false),
       canIntLevel0(aCanIntLevel0)
@@ -53,7 +53,7 @@ struct Device {
 
   // Handle an I/O instruction by calling the appropriate device
   // driver's I/O instruction handler method.
-  static void handleIO(W36 iw, W36 ea, KMState &state, W36 &nextPC);
+  static void handleIO(W36 iw, W36 ea);
 
 
   // I/O instruction handlers

@@ -34,56 +34,44 @@ void Device::requestInterrupt()  {
 
 // Handle an I/O instruction by calling the appropriate device
 // driver's I/O instruction handler method.
-void Device::handleIO(W36 iw, W36 ea, KMState &state, W36 &nextPC) {
+InstructionResult Device::handleIO(W36 iw, W36 ea) {
   Device *devP;
 
-  try {
-    devP = devices.at((unsigned) iw.ioDev);
-  } catch (const exception &e) {
-    devP = devices[0777777ul];
+  if (auto it = devices.find((unsigned) iw.ioDev); it != devices.end()) {
+    devP = it.second;
+  } else {
+    devP = devices.at(0777777ul);
   }
 
   assert(devP != nullptr);
 
   switch (iw.ioOp) {
   case W36::BLKI:
-    devP->doBLKI(iw, ea, nextPC);
-    return;
+    return devP->doBLKI(iw, ea);
 
   case W36::DATAI:
-    devP->doDATAI(iw, ea);
-    return;
+    return devP->doDATAI(iw, ea);
 
   case W36::BLKO:
-    devP->doBLKO(iw, ea, nextPC);
-    return;
+    return devP->doBLKO(iw, ea);
 
   case W36::DATAO:
-    devP->doDATAO(iw, ea);
-    return;
+    return devP->doDATAO(iw, ea);
 
   case W36::CONO:
-    devP->doCONO(iw, ea);
-    return;
+    return devP->doCONO(iw, ea);
 
   case W36::CONI:
-    devP->doCONI(iw, ea);
-    return;
+    return devP->doCONI(iw, ea);
 
   case W36::CONSZ:
-    devP->doCONSZ(iw, ea, nextPC);
-    return;
+    return devP->doCONSZ(iw, ea);
 
   case W36::CONSO:
-    devP->doCONSO(iw, ea, nextPC);
-    return;
+    return devP->doCONSO(iw, ea);
 
-  default: {
-    stringstream ss;
-    ss << "???" << oct << iw.ioOp << "???";
-    logger.nyi(state, ss.str());
-    break;
-  }
+  default:
+    return InstructionResult::iNYI;
   }
 }
 
@@ -96,38 +84,52 @@ void Device::clearIO() {	// Default is to do mostly nothing
 
 
 W36 Device::doDATAI(W36 iw, W36 ea) {
-  state.memPutN(0, ea);
+  cpuP->memPutN(0, ea);
   return 0;
 }
   
-void Device::doBLKI(W36 iw, W36 ea, W36 &nextPC) {
-  W36 e{state.memGetN(ea)};
-  state.memPutN(W36{++e.lhu, ++e.rhu}, ea);
+InstructionResult Device::doBLKI(W36 iw, W36 ea, W36 &nextPC) {
+  W36 e{cpuP->memGetN(ea)};
+  cpuP->memPutN(W36{++e.lhu, ++e.rhu}, ea);
   doDATAI(iw, e.rhu);
-  if (e.lhu != 0) ++nextPC.rhu;
+
+  if (e.lhu != 0) {
+    return InstructionResult::iSkip;
+  } else {
+    return InstructionResult::iNormal;
+  }
 }
 
-void Device::doBLKO(W36 iw, W36 ea, W36 &nextPC) {
-  W36 e{state.memGetN(ea)};
-  state.memPutN(W36{++e.lhu, ++e.rhu}, ea);
+InstructionResult Device::doBLKO(W36 iw, W36 ea) {
+  W36 e{cpuP->memGetN(ea)};
+  cpuP->memPutN(W36{++e.lhu, ++e.rhu}, ea);
   doDATAO(iw, e.rhu);
-  if (e.lhu != 0) ++nextPC.rhu;
+
+  if (e.lhu != 0) {
+    return InstructionResult::iSkip;
+  } else {
+    return InstructionResult::iNormal;
+  }
 }
 
 
-void Device::doDATAO(W36 iw, W36 ea) {
-}
-
-void Device::doCONO(W36 iw, W36 ea) {
-}
-
-W36 Device::doCONI(W36 iw, W36 ea) {
-  state.memPutN(0, ea);
-  return 0;
+InstructionResult Device::doDATAO(W36 iw, W36 ea) {
+  return InstructionResult::iNoSuchDevice;
 }
 
 
-void Device::doCONSZ(W36 iw, W36 ea, W36 &nextPC) {
+InstructionResult Device::doCONO(W36 iw, W36 ea) {
+  return InstructionResult::iNoSuchDevice;
+}
+
+
+InstructionResult Device::doCONI(W36 iw, W36 ea) {
+  cpuP->memPutN(0, ea);
+  return InstructionResult::iNormal;
+}
+
+
+InstructionResult Device::doCONSZ(W36 iw, W36 ea, W36 &nextPC) {
   W36 conditions = doCONI(iw, ea);
   unsigned result = conditions.rhu & ea.rhu;
   bool skip = result == 0;
@@ -139,11 +141,19 @@ void Device::doCONSZ(W36 iw, W36 ea, W36 &nextPC) {
        << logger.endl << flush;
 
   if (skip) {
-    ++nextPC.rhu;
+    return InstructionResult::iSkip;
+  } else {
+    return InstructionResult::iNormal;
   }
 }
 
-void Device::doCONSO(W36 iw, W36 ea, W36 &nextPC) {
+
+InstructionResult Device::doCONSO(W36 iw, W36 ea, W36 &nextPC) {
   W36 conditions = doCONI(iw, ea);
-  if ((conditions.rhu & ea.rhu) != 0) ++nextPC.rhu;
+
+  if ((conditions.rhu & ea.rhu) != 0) {
+    return InstructionResult::iSkip;
+  } else {
+    return InstructionResult::iNormal;
+  }
 }

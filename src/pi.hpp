@@ -146,13 +146,13 @@ struct PIDevice: Device {
 
 
   // Constructors
-  PIDevice(KMState &aState);
+  PIDevice(KM10 *aCPU);
 
 
   // Formatters
   static string levelsToStr(unsigned levels);
 
-  // Configure `state.pc` to handle any pending interrupt by changing
+  // Configure `pc` to handle any pending interrupt by changing
   // the instruction word about to be executed by KM10, or by doing
   // nothing if there is no pending interrupt. Returns true if an
   // interrupt is to be handled.

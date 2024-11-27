@@ -16,23 +16,20 @@ using namespace std;
 #include "word.hpp"
 #include "device.hpp"
 #include "logger.hpp"
-#include "kmstate.hpp"
 #include "tsqueue.hpp"
 #include "dte20.hpp"
 
 
-DTE20::DTE20(unsigned anAddr, KMState &aState)
+DTE20::DTE20(unsigned anAddr, KM10 *aCPU)
   : Device(anAddr,
 	   string("DTE20.") + to_string(anAddr & 3),
-	   aState,
+	   aCPU,
 	   true),
     protocolMode(SECONDARY),
     isConnected(false),
     console("/dev/tty"),
     endl{"\n"}
 {
-  stateP = &aState;
-      
   ttyFD = open("/dev/tty", O_RDWR);
   if (ttyFD < 0) throw runtime_error("can't open /dev/tty");
 
@@ -95,26 +92,26 @@ void DTE20::doCONO(W36 iw, W36 ea) {
   if (req.to11Doorbell) {
     char buf;
 
-    MonitorCommand mc{stateP->eptP->DTEto11Arg.rhu};
+    MonitorCommand mc{cpuP->eptP->DTEto11Arg.rhu};
 
-    if (logger.dte) logger.s << " to11DoorBell arg=" << oct << stateP->eptP->DTEto11Arg.rhu;
+    if (logger.dte) logger.s << " to11DoorBell arg=" << oct << cpuP->eptP->DTEto11Arg.rhu;
 
     switch (mc.fn) {
     case ctyInput:
 
       if (ctyQ.isEmpty()) {
 	//	  cerr << "ctyIn [empty]" << endl << flush;
-	stateP->eptP->DTEto10Arg.rhu = 0;
+	cpuP->eptP->DTEto10Arg.rhu = 0;
       } else {
 	buf = ctyQ.dequeue() & 0177;
 	cerr << "ctyIn [got "
 	     << hex << setw(2) << setfill('0')
 	     << (int) buf << "]" << endl << flush;
-	stateP->eptP->DTEto10Arg.rhu = buf;
+	cpuP->eptP->DTEto10Arg.rhu = buf;
       }
 
       // Acknowledge the command. (rsxt20.l20:5980)
-      stateP->eptP->DTEMonitorOpComplete = W36(-2 & 0xFFFF);
+      cpuP->eptP->DTEMonitorOpComplete = W36(-2 & 0xFFFF);
       break;
 
     default:
@@ -124,7 +121,7 @@ void DTE20::doCONO(W36 iw, W36 ea) {
       write(1, &buf, 1);
 
       // Acknowledge the command. (rsxt20.l20:5924)
-      stateP->eptP->DTEMonitorOpComplete = W36(-2 & 0xFFFF);
+      cpuP->eptP->DTEMonitorOpComplete = W36(-2 & 0xFFFF);
 
       // XXX needs to set to-10 doorbell...?
       break;
@@ -140,7 +137,7 @@ void DTE20::doCONO(W36 iw, W36 ea) {
       break;
     }
   } else {
-    logger.nyi(state);
+    logger.nyi(cpuP);
   }
 }
 

@@ -51,7 +51,7 @@ void APRDevice::endSweep() {
 
 // I/O instruction handlers
 void APRDevice::doBLKI(W36 iw, W36 ea, W36 &nextPC) {	// APRID
-  state.memPutN(aprIDValue.u, ea);
+  cpuP->memPutN(aprIDValue.u, ea);
 }
 
 void APRDevice::doBLKO(W36 iw, W36 ea, W36 &nextPC) {	// WRFIL
@@ -59,7 +59,7 @@ void APRDevice::doBLKO(W36 iw, W36 ea, W36 &nextPC) {	// WRFIL
 }
 
 W36 APRDevice::doDATAI(W36 iw, W36 ea) {
-  state.memPutN(breakState.u, ea);
+  cpuP->memPutN(breakState.u, ea);
   return breakState.u;
 }
 
@@ -69,7 +69,7 @@ void APRDevice::doCONO(W36 iw, W36 ea) {		// WRAPR
 
   if (logger.mem) cerr << "; " << ea.fmt18();
 
-  cerr << state.pc.fmtVMA() << " WRAPR: intLevel=" << oct << func.intLevel;
+  cerr << cpuP->pc.fmtVMA() << " WRAPR: intLevel=" << oct << func.intLevel;
   intLevel = aprState.intLevel = func.intLevel;
 
   if (func.disable) {
@@ -109,10 +109,10 @@ void APRDevice::doCONO(W36 iw, W36 ea) {		// WRAPR
 W36 APRDevice::doCONI(W36 iw, W36 ea) {		// RDAPR
   aprState.intLevel = intLevel;	// Refresh our version of the interrupt level
   W36 conditions{(int64_t) aprState.u};
-  cerr << state.pc.fmtVMA() << " RDAPR aprState=" << conditions.fmt36()
+  cerr << cpuP->pc.fmtVMA() << " RDAPR aprState=" << conditions.fmt36()
        << " ea=" << ea.fmtVMA()
        << logger.endl;
-  state.memPutN(conditions, ea);
+  cpuP->memPutN(conditions, ea);
   return conditions;
 }
 

@@ -37,8 +37,8 @@ struct TIMDevice: Device {
 
 
   // Constructors
-  TIMDevice(KMState &aState):
-    Device(020, "TIM", aState),
+  TIMDevice(KM10 *aCPU):
+    Device(020, "TIM", aCPU),
     timState(0)
   { }
 

@@ -228,8 +228,8 @@ struct APRDevice: Device {
 
 
   // Constructors
-  APRDevice(KMState &aState)
-    : Device(0000, "APR", aState)
+  APRDevice(KM10 *cpuP)
+    : Device(0000, "APR", cpuP)
   { }
 
 

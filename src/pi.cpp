@@ -38,8 +38,8 @@
 
 
   // Constructors
-PIDevice::PIDevice(KMState &aState):
-    Device(001, "PI", aState)
+PIDevice::PIDevice(KM10 *aCPU):
+    Device(001, "PI", aCPU)
   {
     clearIO();
   }
@@ -60,7 +60,7 @@ PIDevice::PIDevice(KMState &aState):
   }
 
 
-  // Configure `state.pc` to handle any pending interrupt by changing
+  // Configure `pc` to handle any pending interrupt by changing
   // the instruction word about to be executed by KM10, or by doing
   // nothing if there is no pending interrupt. Returns true if an
   // interrupt is to be handled.
@@ -101,7 +101,7 @@ PIDevice::PIDevice(KMState &aState):
 
       if (logger.ints) {
 	logger.s << "<<<<INTERRUPT>>>> by " << highestDevP->name
-		 << ": pc=" << state.pc.fmtVMA()
+		 << ": pc=" << cpuP->pc.fmtVMA()
 		 << " level=" << level
 		 << " ifw=" << ifw.fmt36()
 		 << logger.endl << flush;
@@ -109,12 +109,12 @@ PIDevice::PIDevice(KMState &aState):
 
       // Function word is saved here by KL10 microcode. Does anyone
       // look at this? Who knows?
-      state.ACbanks[7][3] = ifw;
+      cpuP->ACbanks[7][3] = ifw;
 
       switch (ifw.intFunction) {
       case W36::zeroIF:
       case W36::standardIF:
-	return state.eptAddressFor(&state.eptP->pioInstructions[2*highestLevel]);
+	return cpuP->eptAddressFor(&cpuP->eptP->pioInstructions[2*highestLevel]);
 
       default:
 	cerr << "PI got IFW from '" << highestDevP->name << "' specifying function "
@@ -157,7 +157,7 @@ PIDevice::PIDevice(KMState &aState):
 
     if (logger.mem) logger.s << "; " << ea.fmt18();
 
-    cerr << state.pc.fmtVMA() << ": CONO PI,"
+    cerr << cpuP->pc.fmtVMA() << ": CONO PI,"
 	 << pif.toString() << " ea=" << ea.fmt18() << logger.endl;
 
     if (pif.clearPI) {
@@ -200,6 +200,6 @@ PIDevice::PIDevice(KMState &aState):
 
   W36 PIDevice::doCONI(W36 iw, W36 ea) {
     W36 conditions{(int64_t) piState.u};
-    state.memPutN(conditions, ea);
+    cpuP->memPutN(conditions, ea);
     return conditions;
   }

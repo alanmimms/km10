@@ -1,16 +1,16 @@
 add_executable(km10
-  km10.cpp
-  kmstate.cpp
-  debugger.cpp
-  word.cpp
   apr.cpp
   cca.cpp
+  debugger.cpp
   device.cpp
   dte20.cpp
+  km10.cpp
+  logger.cpp
   mtr.cpp
   pag.cpp
   pi.cpp
   tim.cpp
+  word.cpp
 )
 
 add_library(km10lib

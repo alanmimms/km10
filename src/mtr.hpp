@@ -3,6 +3,7 @@
 #include "word.hpp"
 #include "device.hpp"
 
+class KM10;
 
 struct MTRDevice: Device {
 
@@ -48,8 +49,8 @@ struct MTRDevice: Device {
 
 
   // Constructors
-  MTRDevice(KMState &aState):
-    Device(024, "MTR", aState),
+  MTRDevice(KM10 *aCPU):
+    Device(024, "MTR", aCPU),
     mtrState(0)
   { }
 

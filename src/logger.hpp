@@ -7,9 +7,7 @@
 
 using namespace std;
 
-
-class KMState;
-
+class KM10;
 
 
 struct Logger {
@@ -57,8 +55,8 @@ struct Logger {
     loggingToFile = false;
   }
 
-  void nyi(KMState &state, const string &context = "");
-  void nsd(KMState &state, const string &context = "");
+  void nyi(KM10 *cpuP, const string &context = "");
+  void nsd(KM10 *cpuP, const string &context = "");
 };
 
 

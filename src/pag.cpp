@@ -1,11 +1,12 @@
 #include "word.hpp"
 #include "device.hpp"
 #include "pag.hpp"
+#include "km10.hpp"
 
 
 // Constructors
-PAGDevice::PAGDevice(KMState &aState):
-  Device(003, "PAG", aState)
+PAGDevice::PAGDevice(KM10 *aCPU):
+  Device(003, "PAG", aCPU)
 {
   pagState.u = 0;
 }
@@ -24,8 +25,8 @@ void PAGDevice::doCONO(W36 iw, W36 ea) {
 }
 
 W36 PAGDevice::doCONI(W36 iw, W36 ea) {
-  W36 conditions{state.memGetN(ea).lhu, pagState.u};
-  state.memPutN(conditions, ea);
+  W36 conditions{cpuP->memGetN(ea).lhu, pagState.u};
+  cpuP->memPutN(conditions, ea);
   return conditions;
 }
 

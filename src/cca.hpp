@@ -14,8 +14,8 @@ struct CCADevice: Device {
   APRDevice &apr;
 
   // Constructors
-  CCADevice(KMState &aState, APRDevice &anAPR)
-    : Device(014, "CCA", aState),
+  CCADevice(KM10 *aCPU, APRDevice &anAPR)
+    : Device(014, "CCA", aCPU),
       sweepCountDown(0),
       apr(anAPR)
   { }
