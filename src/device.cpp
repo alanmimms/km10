@@ -85,13 +85,13 @@ void Device::clearIO() {	// Default is to do mostly nothing
 
 
 InstructionResult Device::doDATAI(W36 iw, W36 ea) {
-  km10.memPutN(0, ea);
+  km10.memPut(0);
   return InstructionResult::iNormal;
 }
   
 InstructionResult Device::doBLKI(W36 iw, W36 ea) {
   W36 e{km10.memGetN(ea)};
-  km10.memPutN(W36{++e.lhu, ++e.rhu}, ea);
+  km10.memPut(W36{++e.lhu, ++e.rhu});
   doDATAI(iw, e.rhu);
 
   if (e.lhu != 0) {
@@ -103,7 +103,7 @@ InstructionResult Device::doBLKI(W36 iw, W36 ea) {
 
 InstructionResult Device::doBLKO(W36 iw, W36 ea) {
   W36 e{km10.memGetN(ea)};
-  km10.memPutN(W36{++e.lhu, ++e.rhu}, ea);
+  km10.memPut(W36{++e.lhu, ++e.rhu});
   doDATAO(iw, e.rhu);
 
   if (e.lhu != 0) {
@@ -125,7 +125,7 @@ InstructionResult Device::doCONO(W36 iw, W36 ea) {
 
 
 InstructionResult Device::doCONI(W36 iw, W36 ea) {
-  km10.memPutN(0, ea);
+  km10.memPut(0);
   return InstructionResult::iNormal;
 }
 

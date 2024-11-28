@@ -1,7 +1,8 @@
 #include "word.hpp"
 #include "device.hpp"
 #include "tim.hpp"
-
+#include "km10.hpp"
+#include "instruction-result.hpp"
 
 // Accessors
 
@@ -13,22 +14,23 @@ void TIMDevice::updateCounts() {
 
 
 // I/O instruction handlers
-void TIMDevice::doCONO(W36 iw, W36 ea) {
+InstructionResult TIMDevice::doCONO(W36 iw, W36 ea) {
   if (logger.mem) logger.s << "; " << ea.fmt18();
   timState.u = iw.y;
+  return iNormal;
 }
 
 
-W36 TIMDevice::doCONI(W36 iw, W36 ea) {
+InstructionResult TIMDevice::doCONI(W36 iw, W36 ea) {
   W36 conditions{(int64_t) timState.u};
-  km10.memPutN(conditions, ea);
-  return conditions;
+  km10.memPut(conditions);
+  return iNormal;
 }
 
 // RDTIME
-W36 TIMDevice::doDATAI(W36 iw, W36 ea) {
-  km10.memPutN(0, ea);
-  return 0;
+InstructionResult TIMDevice::doDATAI(W36 iw, W36 ea) {
+  km10.memPut(0);
+  return iNormal;
 }
   
 

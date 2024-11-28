@@ -352,135 +352,109 @@ public:
   void loadA10(const char *fileNameP);
 
 
-  W36 acGet();
-  W36 acGetRH();
-
-  // This retrieves LH into the RH of the return value, which is
-  // required for things like TLNN to work properly since they use
-  // the EA as a mask.
-  W36 acGetLH();
-  void acPut(W36 w);
-  void acPutRH(W36 w);
-
-  // This is used to store back in, e.g., TLZE. But the LH of AC is
-  // in the RH of the word we're passed because of how the testing
-  // logic of these instructions must work. So we put the RH of the
-  // value into the LH of the AC, keeping the AC's RH intact.
-  void acPutLH(W36 w);
-  W72 acGet2();
-  void acPut2(W72 d);
-  W36 memGet();
-  void memPut(W36 w);
-  void selfPut(W36 w);
-  void bothPut(W36 w);
-  void bothPut2(W72 d);
-  W36 swap(W36 w);
-
-  W36 negate(W36 w);
-  W36 magnitude(W36 w);
-  W36 memGetSwapped();
-  void memPutHi(W72 d);
-  W36 immediate();
-
+  // Helper methods as lambdas.
+  function<W36()> acGet;
+  function<W36()> acGetRH;
+  function<W36()> acGetLH;
+  function<void(W36)> acPut;
+  function<void(W36)> acPutRH;
+  function<void(W36)> acPutLH;
+  function<W72()> acGet2;
+  function<void(W72)> acPut2;
+  function<W36()> memGet;
+  function<void(W36)> memPut;
+  function<void(W36)> selfPut;
+  function<void(W36)> bothPut;
+  function<void(W72)> bothPut2;
+  function<W36(W36)> swap;
+  function<W36(W36)> negate;
+  function<W36(W36)> magnitude;
+  function<W36()> memGetSwapped;
+  function<void(W72)> memPutHi;
+  function<W36()> immediate;
 
   // Condition testing predicates
-  bool isLT0(W36 w);
-  bool isLE0(W36 w);
-  bool isGT0(W36 w);
-  bool isGE0(W36 w);
-  bool isNE0(W36 w);
-  bool isEQ0(W36 w);
-  bool always(W36 w);
-  bool never(W36 w);
+  function<bool(W36)> isLT0;
+  function<bool(W36)> isLE0;
+  function<bool(W36)> isGT0;
+  function<bool(W36)> isGE0;
+  function<bool(W36)> isNE0;
+  function<bool(W36)> isEQ0;
+  function<bool(W36)> always;
+  function<bool(W36)> never;
 
-  bool isNE0T(W36 a, W36 b);
-  bool isEQ0T(W36 a, W36 b);
-  bool alwaysT(W36 a, W36 b);
-  bool neverT(W36 a, W36 b);
+  function<bool(W36, W36)> isNE0T;
+  function<bool(W36, W36)> isEQ0T;
+  function<bool(W36, W36)> alwaysT;
+  function<bool(W36, W36)> neverT;
 
+  function<W36()> getE;
+  function<W36(W36)> noMod1;
+  function<W36(W36, W36)> noMod2;
 
-  W36 getE();
-  W36 noMod1(W36 w);
-  W36 noMod2(W36 a, W36 b);
+  // Masking functions
+  function<W36(W36, W36)> zeroMaskR;
+  function<W36(W36, W36)> zeroMask;
+  function<W36(W36, W36)> onesMaskR;
+  function<W36(W36, W36)> onesMask;
+  function<W36(W36, W36)> compMaskR;
+  function<W36(W36, W36)> compMask;
+  function<W36(W36)> zeroWord;
+  function<W36(W36)> onesWord;
+  function<W36(W36)> compWord;
 
+  function<void(W36)> noStore;
 
-  // There is no `zeroMaskL`, `compMaskR`, `onesMaskL` because,
-  // e.g., TLZE operates on the LH of the AC while it's in the RH of
-  // the value so the testing/masking work properly.
-  W36 zeroMaskR(W36 a, W36 b);
-  W36 zeroMask(W36 a, W36 b);
-
-  W36 onesMaskR(W36 a, W36 b);
-  W36 onesMask(W36 a, W36 b);
-
-  W36 compMaskR(W36 a, W36 b);
-  W36 compMask(W36 a, W36 b);
-
-  W36 zeroWord(W36 a);
-  W36 onesWord(W36 a);
-  W36 compWord(W36 a);
-
-  void noStore(W36 w);
-
-
-  // For a given low halfword, this computes an upper halfword by
-  // extending the low halfword's sign.
-  unsigned extnOf(const unsigned);
-
+  // Sign extension function
+  function<unsigned(const unsigned)> extnOf;
 
   // doCopyF functions
-  W36 copyHRR(W36 a, W36 b);
-  W36 copyHRL(W36 a, W36 b);
-  W36 copyHLL(W36 a, W36 b);
-  W36 copyHLR(W36 a, W36 b);
-
+  function<W36(W36, W36)> copyHRR;
+  function<W36(W36, W36)> copyHRL;
+  function<W36(W36, W36)> copyHLL;
+  function<W36(W36, W36)> copyHLR;
 
   // doModifyF functions
-  W36 zeroR(W36 a);
-  W36 onesR(W36 a);
-  W36 extnR(W36 a);
-  W36 zeroL(W36 a);
-  W36 onesL(W36 a);
-  W36 extnL(W36 a);
+  function<W36(W36)> zeroR;
+  function<W36(W36)> onesR;
+  function<W36(W36)> extnR;
+  function<W36(W36)> zeroL;
+  function<W36(W36)> onesL;
+  function<W36(W36)> extnL;
 
+  // Binary doModifyF functions
+  function<W36(W36, W36)> andWord;
+  function<W36(W36, W36)> andCWord;
+  function<W36(W36, W36)> andCBWord;
+  function<W36(W36, W36)> iorWord;
+  function<W36(W36, W36)> iorCWord;
+  function<W36(W36, W36)> iorCBWord;
+  function<W36(W36, W36)> xorWord;
+  function<W36(W36, W36)> xorCWord;
+  function<W36(W36, W36)> xorCBWord;
+  function<W36(W36, W36)> eqvWord;
+  function<W36(W36, W36)> eqvCWord;
+  function<W36(W36, W36)> eqvCBWord;
 
-  // binary doModifyF functions
-  W36 andWord(W36 a, W36 b);
-  W36 andCWord(W36 a, W36 b);
-  W36 andCBWord(W36 a, W36 b);
-  W36 iorWord(W36 a, W36 b);
-  W36 iorCWord(W36 a, W36 b);
-  W36 iorCBWord(W36 a, W36 b);
-  W36 xorWord(W36 a, W36 b);
-  W36 xorCWord(W36 a, W36 b);
-  W36 xorCBWord(W36 a, W36 b);
-  W36 eqvWord(W36 a, W36 b);
-  W36 eqvCWord(W36 a, W36 b);
-  W36 eqvCBWord(W36 a, W36 b);
+  function<W36(W36, W36)> addWord;
+  function<W36(W36, W36)> subWord;
+  function<W72(W36, W36)> mulWord;
+  function<W36(W36, W36)> imulWord;
+  function<W72(W36, W36)> idivWord;
+  function<W72(W72, W36)> divWord;
 
+  // Binary comparison predicates
+  function<bool(W36, W36)> isLT;
+  function<bool(W36, W36)> isLE;
+  function<bool(W36, W36)> isGT;
+  function<bool(W36, W36)> isGE;
+  function<bool(W36, W36)> isNE;
+  function<bool(W36, W36)> isEQ;
+  function<bool(W36, W36)> always2;
+  function<bool(W36, W36)> never2;
 
-  W36 addWord(W36 a, W36 b);
-  W36 subWord(W36 a, W36 b);
-  W72 mulWord(W36 a, W36 b);
-  W36 imulWord(W36 a, W36 b);
-  W72 idivWord(W36 a, W36 b);
-  W72 divWord(W72 a, W36 b);
-
-    
-  // Binary comparison predicates.
-  bool isLT(W36 a, W36 b);
-  bool isLE(W36 a, W36 b);
-  bool isGT(W36 a, W36 b);
-  bool isGE(W36 a, W36 b);
-  bool isNE(W36 a, W36 b);
-  bool isEQ(W36 a, W36 b);
-  bool always2(W36 a, W36 b);
-  bool never2(W36 a, W36 b);
-
-
-  void skipAction();
-  void jumpAction();
-
+  function<void()> skipAction;
+  function<void()> jumpAction;
 
   // Genericized instruction class implementations.
   void doBinOp(auto getSrc1F, auto getSrc2F, auto modifyF, auto putDstF);

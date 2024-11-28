@@ -26,7 +26,7 @@ void APRDevice::endSweep() {
 
 // I/O instruction handlers
 InstructionResult APRDevice::doBLKI(W36 iw, W36 ea) {	// APRID
-  km10.memPutN(aprIDValue.u, ea);
+  km10.memPut(aprIDValue.u);
   return InstructionResult::iNormal;
 }
 
@@ -36,7 +36,7 @@ InstructionResult APRDevice::doBLKO(W36 iw, W36 ea) {	// WRFIL
 }
 
 InstructionResult APRDevice::doDATAI(W36 iw, W36 ea) {
-  km10.memPutN(breakState.u, ea);
+  km10.memPut(breakState.u);
   return InstructionResult::iNormal;
 }
 
@@ -90,7 +90,7 @@ InstructionResult APRDevice::doCONI(W36 iw, W36 ea) {		// RDAPR
   cerr << km10.pc.fmtVMA() << " RDAPR aprState=" << conditions.fmt36()
        << " ea=" << ea.fmtVMA()
        << logger.endl;
-  km10.memPutN(conditions, ea);
+  km10.memPut(conditions);
   return InstructionResult::iNormal;
 }
 

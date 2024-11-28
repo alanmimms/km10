@@ -2,6 +2,7 @@
 #include "device.hpp"
 #include "pag.hpp"
 #include "km10.hpp"
+#include "instruction-result.hpp"
 
 
 // Constructors
@@ -19,15 +20,16 @@ bool PAGDevice::pagerEnabled() {
 
 
 // I/O instruction handlers
-void PAGDevice::doCONO(W36 iw, W36 ea) {
+InstructionResult PAGDevice::doCONO(W36 iw, W36 ea) {
   if (logger.mem) logger.s << "; " << ea.fmt18();
   pagState.u = iw.y;
+  return iNormal;
 }
 
-W36 PAGDevice::doCONI(W36 iw, W36 ea) {
+InstructionResult PAGDevice::doCONI(W36 iw, W36 ea) {
   W36 conditions{km10.memGetN(ea).lhu, pagState.u};
-  km10.memPutN(conditions, ea);
-  return conditions;
+  km10.memPut(conditions);
+  return iNormal;
 }
 
 void PAGDevice::clearIO() {

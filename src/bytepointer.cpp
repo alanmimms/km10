@@ -206,7 +206,7 @@ bool BytePointerG2::isTwoWords() {
 }
 
 
-void inc(KM10 &km10) {
+void BytePointerG2::inc(KM10 &km10) {
 }
 
 bool BytePointerG2::adjust(unsigned ac, KM10 &km10) {

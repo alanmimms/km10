@@ -424,6 +424,306 @@ KM10::KM10(unsigned nMemoryWords, KM10::BreakpointTable &aBPs, KM10::BreakpointT
 
   // Initially, we have no user mode mapping.
   uptP = nullptr;
+
+  // Helper lambdas that have to refer to this and other state.
+  acGet = [&]() {
+    return acGetN(iw.ac);
+  };
+
+  acGetRH = [&]() {
+    W36 value{0, acGet().rhu};
+    if (logger.mem) logger.s << "; acRH" << oct << iw.ac << ": " << value.fmt18();
+    return value;
+  };
+
+  // This retrieves LH into the RH of the return value, which is
+  // required for things like TLNN to work properly since they use
+  // the EA as a mask.
+  acGetLH = [&]() {
+    W36 value{0, acGet().lhu};
+    if (logger.mem) logger.s << "; acLH" << oct << iw.ac << ": " << value.fmt18();
+    return value;
+  };
+
+
+  acPut = [&](W36 value) {
+    acPutN(value, iw.ac);
+  };
+
+
+  acPutRH = [&](W36 value) {
+    acPut(W36(acGet().lhu, value.rhu));
+  };
+
+
+  // This is used to store back in, e.g., TLZE. But the LH of AC is
+  // in the RH of the word we're passed because of how the testing
+  // logic of these instructions must work. So we put the RH of the
+  // value into the LH of the AC, keeping the AC's RH intact.
+  acPutLH = [&](W36 value) {
+    acPut(W36(value.rhu, acGet().rhu));
+  };
+
+
+  acGet2 = [&]() {
+    W72 ret{acGetN(iw.ac+0), acGetN(iw.ac+1)};
+    return ret;
+  };
+
+
+  acPut2 = [&](W72 v) {
+    acPutN(v.hi, iw.ac+0);
+    acPutN(v.lo, iw.ac+1);
+  };
+
+
+  memGet = [&]() {
+    return memGetN(ea);
+  };
+
+
+  memPut = [&](W36 value) {
+    memPutN(value, ea);
+  };
+
+
+  selfPut = [&](W36 value) {
+    memPut(value);
+    if (iw.ac != 0) acPut(value);
+  };
+
+
+  bothPut = [&](W36 value) {
+    acPut(value);
+    memPut(value);
+  };
+
+
+  bothPut2 = [&](W72 v) {
+    acPutN(v.hi, iw.ac+0);
+    acPutN(v.lo, iw.ac+1);
+    memPut(v.hi);
+  };
+
+
+  swap = [&](W36 src) {return W36{src.rhu, src.lhu};};
+
+
+  negate = [&](W36 src) {
+    W36 v(-src.s);
+    if (src.u == W36::bit0) flags.tr1 = flags.ov = flags.cy1 = 1;
+    if (src.u == 0) flags.cy0 = flags.cy1 = 1;
+    return v;
+  };
+
+
+  magnitude = [&](W36 src) {
+    W36 v(src.s < 0 ? -src.s : src.s);
+    if (src.u == W36::bit0) flags.tr1 = flags.ov = flags.cy1 = 1;
+    return v;
+  };
+
+
+  memGetSwapped = [&]() {return swap(memGet());};
+
+
+  memPutHi = [&](W72 v) {
+    memPut(v.hi);
+  };
+
+
+  immediate = [&]() {return W36(pc.isSection0() ? 0 : ea.lhu, ea.rhu);};
+
+
+  // Condition testing predicates
+  isLT0 = [&] (W36 v) {return v.s  < 0;};
+  isLE0 = [&] (W36 v) {return v.s <= 0;};
+  isGT0 = [&] (W36 v) {return v.s  > 0;};
+  isGE0 = [&] (W36 v) {return v.s >= 0;};
+  isNE0 = [&] (W36 v) {return v.s != 0;};
+  isEQ0 = [&] (W36 v) {return v.s == 0;};
+  always = [&](W36 v) {return  true;};
+  never = [&] (W36 v) {return false;};
+
+  isNE0T = [&] (W36 a, W36 b) {return (a.u & b.u) != 0;};
+  isEQ0T = [&] (W36 a, W36 b) {return (a.u & b.u) == 0;};
+  alwaysT = [&](W36 a, W36 b) {return  true;};
+  neverT = [&] (W36 a, W36 b) {return false;};
+
+
+  getE = [&]() {return ea;};
+  noMod1 = [&](W36 a) {return a;};
+  noMod2 = [&](W36 a, W36 b) {return a;};
+
+
+  // There is no `zeroMaskL`, `compMaskR`, `onesMaskL` because,
+  // e.g., TLZE operates on the LH of the AC while it's in the RH of
+  // the value so the testing/masking work properly.
+  zeroMaskR = [&](W36 a, W36 b) {return a.u & ~(uint64_t) b.rhu;};
+  zeroMask = [&] (W36 a, W36 b) {return a.u & ~b.u;};
+
+  onesMaskR = [&](W36 a, W36 b) {return a.u | b.rhu;};
+  onesMask = [&] (W36 a, W36 b) {return a.u | b.u;};
+
+  compMaskR = [&](W36 a, W36 b) {return a.u ^ b.rhu;};
+  compMask = [&] (W36 a, W36 b) {return a.u ^ b.u;};
+
+  zeroWord = [&](W36 a) {return 0;};
+  onesWord = [&](W36 a) {return W36::all1s;};
+  compWord = [&](W36 a) {return ~a.u;};
+
+  noStore = [&](W36 toSrc) {};
+
+
+  // For a given low halfword, this computes an upper halfword by
+  // extending the low halfword's sign.
+  extnOf = [&](const unsigned v) {
+    return (v & 0400'000) ? W36::halfOnes : 0u;
+  };
+
+
+  // doCopyF functions
+  copyHRR = [&](W36 src, W36 dst) {return W36(dst.lhu, src.rhu);};
+  copyHRL = [&](W36 src, W36 dst) {return W36(src.rhu, dst.rhu);};
+  copyHLL = [&](W36 src, W36 dst) {return W36(src.lhu, dst.rhu);};
+  copyHLR = [&](W36 src, W36 dst) {return W36(dst.lhu, src.lhu);};
+
+
+  // doModifyF functions
+  zeroR = [&](W36 v) {return W36(v.lhu, 0);};
+  onesR = [&](W36 v) {return W36(v.lhu, W36::halfOnes);};
+  extnR = [&](W36 v) {return W36(extnOf(v.rhu), v.rhu);};
+  zeroL = [&](W36 v) {return W36(0, v.rhu);};
+  onesL = [&](W36 v) {return W36(W36::halfOnes, v.rhu);};
+  extnL = [&](W36 v) {return W36(v.lhu, extnOf(v.lhu));};
+
+
+  // binary doModifyF functions
+  andWord = [&]  (W36 s1, W36 s2) {return s1.u & s2.u;};
+  andCWord = [&] (W36 s1, W36 s2) {return s1.u & ~s2.u;};
+  andCBWord = [&](W36 s1, W36 s2) {return ~s1.u & ~s2.u;};
+  iorWord = [&]  (W36 s1, W36 s2) {return s1.u | s2.u;};
+  iorCWord = [&] (W36 s1, W36 s2) {return s1.u | ~s2.u;};
+  iorCBWord = [&](W36 s1, W36 s2) {return ~s1.u | ~s2.u;};
+  xorWord = [&]  (W36 s1, W36 s2) {return s1.u ^ s2.u;};
+  xorCWord = [&] (W36 s1, W36 s2) {return s1.u ^ ~s2.u;};
+  xorCBWord = [&](W36 s1, W36 s2) {return ~s1.u ^ ~s2.u;};
+  eqvWord = [&]  (W36 s1, W36 s2) {return ~(s1.u ^ s2.u);};
+  eqvCWord = [&] (W36 s1, W36 s2) {return ~(s1.u ^ ~s2.u);};
+  eqvCBWord = [&](W36 s1, W36 s2) {return ~(~s1.u ^ ~s2.u);};
+
+
+  addWord = [&](W36 s1, W36 s2) {
+    int64_t sum = s1.ext64() + s2.ext64();
+
+    if (sum < -(int64_t) W36::bit0) {
+      flags.tr1 = flags.ov = flags.cy0 = 1;
+    } else if ((uint64_t) sum >= W36::bit0) {
+      flags.tr1 = flags.ov = flags.cy1 = 1;
+    } else {
+
+      if (s1.s < 0 && s2.s < 0) {
+	flags.cy0 = flags.cy1 = 1;
+      } else if ((s1.s < 0) != (s2.s < 0)) {
+	const uint64_t mag1 = abs(s1.s);
+	const uint64_t mag2 = abs(s2.s);
+
+	if ((s1.s >= 0 && mag1 >= mag2) ||
+	    (s2.s >= 0 && mag2 >= mag1)) {
+	  flags.cy0 = flags.cy1 = 1;
+	}
+      }
+    }
+
+    return sum;
+  };
+    
+
+  subWord = [&](W36 s1, W36 s2) {
+    int64_t diff = s1.ext64() - s2.ext64();
+
+    if (diff < -(int64_t) W36::bit0) {
+      flags.tr1 = flags.ov = flags.cy0 = 1;
+    } else if ((uint64_t) diff >= W36::bit0) {
+      flags.tr1 = flags.ov = flags.cy1 = 1;
+    }
+
+    return diff;
+  };
+    
+    
+  mulWord = [&](W36 s1, W36 s2) {
+    int128_t prod128 = (int128_t) s1.ext64() * s2.ext64();
+    W72 prod = W72::fromMag((uint128_t) (prod128 < 0 ? -prod128 : prod128), prod128 < 0);
+
+    if (s1.u == W36::bit0 && s2.u == W36::bit0) {
+      flags.tr1 = flags.ov = 1;
+      return W72{W36{1ull << 34}, W36{0}};
+    }
+
+    return prod;
+  };
+    
+
+  imulWord = [&](W36 s1, W36 s2) {
+    int128_t prod128 = (int128_t) s1.ext64() * s2.ext64();
+    W72 prod = W72::fromMag((uint128_t) (prod128 < 0 ? -prod128 : prod128), prod128 < 0);
+
+    if (s1.u == W36::bit0 && s2.u == W36::bit0) {
+      flags.tr1 = flags.ov = 1;
+    }
+
+
+    return W36((prod.s < 0 ? W36::bit0 : 0) | ((W36::all1s >> 1) & prod.u));
+  };
+
+    
+  idivWord = [&](W36 s1, W36 s2) {
+
+    if ((s1.u == W36::bit0 && s2.s == -1ll) || s2.u == 0ull) {
+      flags.ndv = flags.tr1 = flags.ov = 1;
+      return W72{s1, s2};
+    } else {
+      int64_t quo = s1.s / s2.s;
+      int64_t rem = abs(s1.s % s2.s);
+      if (quo < 0) rem = -rem;
+      return W72{W36{quo}, W36{abs(rem)}};
+    }
+  };
+
+    
+  divWord = [&](W72 s1, W36 s2) {
+    uint128_t den70 = ((uint128_t) s1.hi35 << 35) | s1.lo35;
+    auto dor = s2.mag;
+    auto signBit = s1.s < 0 ? 1ull << 35 : 0ull;
+
+    if (s1.hi35 >= s2.mag || s2.u == 0) {
+      flags.ndv = flags.tr1 = flags.ov = 1;
+      return s1;
+    } else {
+      int64_t quo = den70 / dor;
+      int64_t rem = den70 % dor;
+      W72 ret{
+	W36{(int64_t) ((quo & W36::magMask) | signBit)},
+	W36{(int64_t) ((rem & W36::magMask) | signBit)}};
+      return ret;
+    }
+  };
+
+    
+  // Binary comparison predicates.
+  isLT = [&]   (W36 v1, W36 v2) {return v1.ext64() <  v2.ext64();};
+  isLE = [&]   (W36 v1, W36 v2) {return v1.ext64() <= v2.ext64();};
+  isGT = [&]   (W36 v1, W36 v2) {return v1.ext64() >  v2.ext64();};
+  isGE = [&]   (W36 v1, W36 v2) {return v1.ext64() >= v2.ext64();};
+  isNE = [&]   (W36 v1, W36 v2) {return v1.ext64() != v2.ext64();};
+  isEQ = [&]   (W36 v1, W36 v2) {return v1.ext64() == v2.ext64();};
+  always2 = [&](W36 v1, W36 v2) {return true;};
+  never2 = [&] (W36 v1, W36 v2) {return false;};
+
+
+  skipAction = [&]() {++nextPC.rhu;};
+  jumpAction = [&]() {nextPC.rhu = ea.rhu;};
 }
 
 
@@ -432,308 +732,6 @@ KM10::KM10(unsigned nMemoryWords, KM10::BreakpointTable &aBPs, KM10::BreakpointT
 KM10::~KM10() {
   if (physicalP) munmap(physicalP, memorySize * sizeof(uint64_t));
 }
-
-
-////////////////////////////////////////////////////////////////
-W36 KM10::acGet() {
-  return acGetN(iw.ac);
-};
-
-
-W36 KM10::acGetRH() {
-  W36 value{0, acGet().rhu};
-  if (logger.mem) logger.s << "; acRH" << oct << iw.ac << ": " << value.fmt18();
-  return value;
-};
-
-// This retrieves LH into the RH of the return value, which is
-// required for things like TLNN to work properly since they use
-// the EA as a mask.
-W36 KM10::acGetLH() {
-  W36 value{0, acGet().lhu};
-  if (logger.mem) logger.s << "; acLH" << oct << iw.ac << ": " << value.fmt18();
-  return value;
-};
-
-
-void KM10::acPut(W36 value) {
-  acPutN(value, iw.ac);
-};
-
-
-void KM10::acPutRH(W36 value) {
-  acPut(W36(acGet().lhu, value.rhu));
-};
-
-
-// This is used to store back in, e.g., TLZE. But the LH of AC is
-// in the RH of the word we're passed because of how the testing
-// logic of these instructions must work. So we put the RH of the
-// value into the LH of the AC, keeping the AC's RH intact.
-void KM10::acPutLH(W36 value) {
-  acPut(W36(value.rhu, acGet().rhu));
-};
-
-
-W72 KM10::acGet2() {
-  W72 ret{acGetN(iw.ac+0), acGetN(iw.ac+1)};
-  return ret;
-};
-
-
-void KM10::acPut2(W72 v) {
-  acPutN(v.hi, iw.ac+0);
-  acPutN(v.lo, iw.ac+1);
-};
-
-
-W36 KM10::memGet() {
-  return memGetN(ea);
-};
-
-
-void KM10::memPut(W36 value) {
-  memPutN(value, ea);
-};
-
-
-void KM10::selfPut(W36 value) {
-  memPut(value);
-  if (iw.ac != 0) acPut(value);
-};
-
-
-void KM10::bothPut(W36 value) {
-  acPut(value);
-  memPut(value);
-};
-
-
-void KM10::bothPut2(W72 v) {
-  acPutN(v.hi, iw.ac+0);
-  acPutN(v.lo, iw.ac+1);
-  memPut(v.hi);
-};
-
-
-W36 KM10::swap(W36 src) {return W36{src.rhu, src.lhu};};
-
-
-W36 KM10::negate(W36 src) {
-  W36 v(-src.s);
-  if (src.u == W36::bit0) flags.tr1 = flags.ov = flags.cy1 = 1;
-  if (src.u == 0) flags.cy0 = flags.cy1 = 1;
-  return v;
-};
-
-
-W36 KM10::magnitude(W36 src) {
-  W36 v(src.s < 0 ? -src.s : src.s);
-  if (src.u == W36::bit0) flags.tr1 = flags.ov = flags.cy1 = 1;
-  return v;
-};
-
-
-W36 KM10::memGetSwapped() {return swap(memGet());};
-
-
-void KM10::memPutHi(W72 v) {
-  memPut(v.hi);
-};
-
-
-W36 KM10::immediate() {return W36(pc.isSection0() ? 0 : ea.lhu, ea.rhu);};
-
-
-// Condition testing predicates
-bool KM10::isLT0 (W36 v) {return v.s  < 0;};
-bool KM10::isLE0 (W36 v) {return v.s <= 0;};
-bool KM10::isGT0 (W36 v) {return v.s  > 0;};
-bool KM10::isGE0 (W36 v) {return v.s >= 0;};
-bool KM10::isNE0 (W36 v) {return v.s != 0;};
-bool KM10::isEQ0 (W36 v) {return v.s == 0;};
-bool KM10::always(W36 v) {return  true;};
-bool KM10::never (W36 v) {return false;};
-
-bool KM10::isNE0T (W36 a, W36 b) {return (a.u & b.u) != 0;};
-bool KM10::isEQ0T (W36 a, W36 b) {return (a.u & b.u) == 0;};
-bool KM10::alwaysT(W36 a, W36 b) {return  true;};
-bool KM10::neverT (W36 a, W36 b) {return false;};
-
-
-W36 KM10::getE() {return ea;};
-W36 KM10::noMod1(W36 a) {return a;};
-W36 KM10::noMod2(W36 a, W36 b) {return a;};
-
-
-// There is no `zeroMaskL`, `compMaskR`, `onesMaskL` because,
-// e.g., TLZE operates on the LH of the AC while it's in the RH of
-// the value so the testing/masking work properly.
-W36 KM10::zeroMaskR(W36 a, W36 b) {return a.u & ~(uint64_t) b.rhu;};
-W36 KM10::zeroMask (W36 a, W36 b) {return a.u & ~b.u;};
-
-W36 KM10::onesMaskR(W36 a, W36 b) {return a.u | b.rhu;};
-W36 KM10::onesMask (W36 a, W36 b) {return a.u | b.u;};
-
-W36 KM10::compMaskR(W36 a, W36 b) {return a.u ^ b.rhu;};
-W36 KM10::compMask (W36 a, W36 b) {return a.u ^ b.u;};
-
-W36 KM10::zeroWord(W36 a) {return 0;};
-W36 KM10::onesWord(W36 a) {return W36::all1s;};
-W36 KM10::compWord(W36 a) {return ~a.u;};
-
-void KM10::noStore(W36 toSrc) {};
-
-
-// For a given low halfword, this computes an upper halfword by
-// extending the low halfword's sign.
-unsigned KM10::extnOf(const unsigned v) {
-  return (v & 0400'000) ? W36::halfOnes : 0u;
-};
-
-
-// doCopyF functions
-W36 KM10::copyHRR(W36 src, W36 dst) {return W36(dst.lhu, src.rhu);};
-W36 KM10::copyHRL(W36 src, W36 dst) {return W36(src.rhu, dst.rhu);};
-W36 KM10::copyHLL(W36 src, W36 dst) {return W36(src.lhu, dst.rhu);};
-W36 KM10::copyHLR(W36 src, W36 dst) {return W36(dst.lhu, src.lhu);};
-
-
-// doModifyF functions
-W36 KM10::zeroR(W36 v) {return W36(v.lhu, 0);};
-W36 KM10::onesR(W36 v) {return W36(v.lhu, W36::halfOnes);};
-W36 KM10::extnR(W36 v) {return W36(extnOf(v.rhu), v.rhu);};
-W36 KM10::zeroL(W36 v) {return W36(0, v.rhu);};
-W36 KM10::onesL(W36 v) {return W36(W36::halfOnes, v.rhu);};
-W36 KM10::extnL(W36 v) {return W36(v.lhu, extnOf(v.lhu));};
-
-
-// binary doModifyF functions
-W36 KM10::andWord  (W36 s1, W36 s2) {return s1.u & s2.u;};
-W36 KM10::andCWord (W36 s1, W36 s2) {return s1.u & ~s2.u;};
-W36 KM10::andCBWord(W36 s1, W36 s2) {return ~s1.u & ~s2.u;};
-W36 KM10::iorWord  (W36 s1, W36 s2) {return s1.u | s2.u;};
-W36 KM10::iorCWord (W36 s1, W36 s2) {return s1.u | ~s2.u;};
-W36 KM10::iorCBWord(W36 s1, W36 s2) {return ~s1.u | ~s2.u;};
-W36 KM10::xorWord  (W36 s1, W36 s2) {return s1.u ^ s2.u;};
-W36 KM10::xorCWord (W36 s1, W36 s2) {return s1.u ^ ~s2.u;};
-W36 KM10::xorCBWord(W36 s1, W36 s2) {return ~s1.u ^ ~s2.u;};
-W36 KM10::eqvWord  (W36 s1, W36 s2) {return ~(s1.u ^ s2.u);};
-W36 KM10::eqvCWord (W36 s1, W36 s2) {return ~(s1.u ^ ~s2.u);};
-W36 KM10::eqvCBWord(W36 s1, W36 s2) {return ~(~s1.u ^ ~s2.u);};
-
-
-W36 KM10::addWord(W36 s1, W36 s2) {
-  int64_t sum = s1.ext64() + s2.ext64();
-
-  if (sum < -(int64_t) W36::bit0) {
-    flags.tr1 = flags.ov = flags.cy0 = 1;
-  } else if ((uint64_t) sum >= W36::bit0) {
-    flags.tr1 = flags.ov = flags.cy1 = 1;
-  } else {
-
-    if (s1.s < 0 && s2.s < 0) {
-      flags.cy0 = flags.cy1 = 1;
-    } else if ((s1.s < 0) != (s2.s < 0)) {
-      const uint64_t mag1 = abs(s1.s);
-      const uint64_t mag2 = abs(s2.s);
-
-      if ((s1.s >= 0 && mag1 >= mag2) ||
-	  (s2.s >= 0 && mag2 >= mag1)) {
-	flags.cy0 = flags.cy1 = 1;
-      }
-    }
-  }
-
-  return sum;
-};
-    
-
-W36 KM10::subWord(W36 s1, W36 s2) {
-  int64_t diff = s1.ext64() - s2.ext64();
-
-  if (diff < -(int64_t) W36::bit0) {
-    flags.tr1 = flags.ov = flags.cy0 = 1;
-  } else if ((uint64_t) diff >= W36::bit0) {
-    flags.tr1 = flags.ov = flags.cy1 = 1;
-  }
-
-  return diff;
-};
-    
-    
-W72 KM10::mulWord(W36 s1, W36 s2) {
-  int128_t prod128 = (int128_t) s1.ext64() * s2.ext64();
-  W72 prod = W72::fromMag((uint128_t) (prod128 < 0 ? -prod128 : prod128), prod128 < 0);
-
-  if (s1.u == W36::bit0 && s2.u == W36::bit0) {
-    flags.tr1 = flags.ov = 1;
-    return W72{W36{1ull << 34}, W36{0}};
-  }
-
-  return prod;
-};
-    
-
-W36 KM10::imulWord(W36 s1, W36 s2) {
-  int128_t prod128 = (int128_t) s1.ext64() * s2.ext64();
-  W72 prod = W72::fromMag((uint128_t) (prod128 < 0 ? -prod128 : prod128), prod128 < 0);
-
-  if (s1.u == W36::bit0 && s2.u == W36::bit0) {
-    flags.tr1 = flags.ov = 1;
-  }
-
-
-  return W36((prod.s < 0 ? W36::bit0 : 0) | ((W36::all1s >> 1) & prod.u));
-};
-
-    
-W72 KM10::idivWord(W36 s1, W36 s2) {
-
-  if ((s1.u == W36::bit0 && s2.s == -1ll) || s2.u == 0ull) {
-    flags.ndv = flags.tr1 = flags.ov = 1;
-    return W72{s1, s2};
-  } else {
-    int64_t quo = s1.s / s2.s;
-    int64_t rem = abs(s1.s % s2.s);
-    if (quo < 0) rem = -rem;
-    return W72{W36{quo}, W36{abs(rem)}};
-  }
-};
-
-    
-W72 KM10::divWord(W72 s1, W36 s2) {
-  uint128_t den70 = ((uint128_t) s1.hi35 << 35) | s1.lo35;
-  auto dor = s2.mag;
-  auto signBit = s1.s < 0 ? 1ull << 35 : 0ull;
-
-  if (s1.hi35 >= s2.mag || s2.u == 0) {
-    flags.ndv = flags.tr1 = flags.ov = 1;
-    return s1;
-  } else {
-    int64_t quo = den70 / dor;
-    int64_t rem = den70 % dor;
-    W72 ret{
-      W36{(int64_t) ((quo & W36::magMask) | signBit)},
-      W36{(int64_t) ((rem & W36::magMask) | signBit)}};
-    return ret;
-  }
-};
-
-    
-// Binary comparison predicates.
-bool KM10::isLT   (W36 v1, W36 v2) {return v1.ext64() <  v2.ext64();};
-bool KM10::isLE   (W36 v1, W36 v2) {return v1.ext64() <= v2.ext64();};
-bool KM10::isGT   (W36 v1, W36 v2) {return v1.ext64() >  v2.ext64();};
-bool KM10::isGE   (W36 v1, W36 v2) {return v1.ext64() >= v2.ext64();};
-bool KM10::isNE   (W36 v1, W36 v2) {return v1.ext64() != v2.ext64();};
-bool KM10::isEQ   (W36 v1, W36 v2) {return v1.ext64() == v2.ext64();};
-bool KM10::always2(W36 v1, W36 v2) {return true;};
-bool KM10::never2 (W36 v1, W36 v2) {return false;};
-
-
-void KM10::skipAction() {++nextPC.rhu;};
-void KM10::jumpAction() {nextPC.rhu = ea.rhu;};
 
 
 ////////////////////////////////////////////////////////////////
@@ -2941,12 +2939,14 @@ void KM10::acPutN(W36 value, unsigned n) {
   if (logger.mem) logger.s << "; ac" << oct << n << "=" << value.fmt36();
 }
 
+
 W36 KM10::memGetN(W36 a) {
   W36 value = a.rhu < 020 ? acGetEA(a.rhu) : memP[a.rhu];
   if (logger.mem) logger.s << "; " << a.fmtVMA() << ":" << value.fmt36();
   if (addressBPs.contains(a.vma)) running = false;
   return value;
 }
+
 
 void KM10::memPutN(W36 value, W36 a) {
 
@@ -3337,14 +3337,16 @@ void KM10::emulate() {
 // properly. Therefore this needs to clean up the state of the machine
 // before it returns. This is mostly done by auto destructors.
 static int loopedMain(int argc, char *argv[]) {
-  assert(sizeof(ExecutiveProcessTable) == 512 * 8);
-  assert(sizeof(UserProcessTable) == 512 * 8);
   gflags::ParseCommandLineFlags(&argc, &argv, true);
+
+  KM10 km10(4 * 1024 * 1024, aBPs, eBPs);
+  assert(sizeof(*km10.eptP) == 512 * 8);
+  assert(sizeof(*km10.uptP) == 512 * 8);
 
   if (FLAGS_load != "none") {
 
     if (FLAGS_load.ends_with(".a10")) {
-      loadA10(FLAGS_load.c_str());
+      km10.loadA10(FLAGS_load.c_str());
     } else if (FLAGS_load.ends_with(".sav")) {
       cerr << "ERROR: For now, '-load' option must name a .a10 file" << logger.endl;
       return -1;
@@ -3354,19 +3356,17 @@ static int loopedMain(int argc, char *argv[]) {
       return -1;
     }
 
-    cerr << "[Loaded " << FLAGS_load << "  start=" << pc.fmtVMA() << "]" << logger.endl;
+    cerr << "[Loaded " << FLAGS_load << "  start=" << km10.pc.fmtVMA() << "]" << logger.endl;
   }
-
-  KM10 km10(4 * 1024 * 1024, aBPs, eBPs);
 
   if (FLAGS_rel != "none") {
-    debugger.loadREL(FLAGS_rel.c_str());
+    km10.debugger.loadREL(FLAGS_rel.c_str());
   }
 
-  running = !FLAGS_debug;
+  km10.running = !FLAGS_debug;
   km10.emulate();
 
-  return restart ? 1 : 0;
+  return km10.restart ? 1 : 0;
 }
 
 
