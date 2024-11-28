@@ -1,7 +1,6 @@
 #include <iostream>
 #include <assert.h>
-#include <atomic>
-#include <unordered_set>
+#include <unordered_map>
 #include <sys/mman.h>
 #include <assert.h>
 
@@ -9,21 +8,22 @@ using namespace std;
 
 #include <gflags/gflags.h>
 
-#include "word.hpp"
 #include "km10.hpp"
-#include "debugger.hpp"
-
 #include "logger.hpp"
+#include "instruction-result.hpp"
+#include "bytepointer.hpp"
 
-using InstructionResult = KM10::InstructionResult;
+using InstructionF = KM10::InstructionF;
+
 
 
 Logger logger{};
 
+
 // We keep these breakpoint sets outside of the looped main so they
 // stick across restart.
-static unordered_set<unsigned> aBPs;
-static unordered_set<unsigned> eBPs;
+static KM10::BreakpointTable aBPs;
+static KM10::BreakpointTable eBPs;
 
 
 // Definitions for our command line options
@@ -32,18 +32,368 @@ DEFINE_string(rel, "../images/klad/dfkaa.rel", ".REL file to load symbols from")
 DEFINE_bool(debug, false, "run the built-in debugger instead of starting execution");
 
 
+InstructionF KM10::ops[512];
+
+
+// This is the constructor to populate the ops table entries. It
+// certainly would have been useful if C++20 provided range based
+// initializer designators.
+KM10::OpsInitializer::OpsInitializer() {
+
+  static unordered_map<unsigned, KM10::InstructionF> opsInitMap = {
+    {0200, &KM10::doMOVE},
+    {0201, &KM10::doMOVEI},
+    {0202, &KM10::doMOVEM},
+    {0203, &KM10::doMOVES},
+    {0204, &KM10::doMOVS},
+    {0205, &KM10::doMOVSI},
+    {0206, &KM10::doMOVSM},
+    {0207, &KM10::doMOVSS},
+    {0210, &KM10::doMOVN},
+    {0211, &KM10::doMOVNI},
+    {0212, &KM10::doMOVNM},
+    {0213, &KM10::doMOVNS},
+    {0214, &KM10::doMOVM},
+    {0215, &KM10::doMOVMI},
+    {0216, &KM10::doMOVMM},
+    {0217, &KM10::doMOVMS},
+    {0220, &KM10::doIMUL},
+    {0221, &KM10::doIMULI},
+    {0222, &KM10::doIMULM},
+    {0223, &KM10::doIMULB},
+    {0224, &KM10::doMUL},
+    {0225, &KM10::doMULI},
+    {0226, &KM10::doMULM},
+    {0227, &KM10::doMULB},
+    {0230, &KM10::doIDIV},
+    {0231, &KM10::doIDIVI},
+    {0232, &KM10::doIDIVM},
+    {0233, &KM10::doIDIVB},
+    {0234, &KM10::doDIV},
+    {0235, &KM10::doDIVI},
+    {0236, &KM10::doDIVM},
+    {0237, &KM10::doDIVB},
+    {0240, &KM10::doASH},
+    {0241, &KM10::doROT},
+    {0242, &KM10::doLSH},
+    {0243, &KM10::doJFFO},
+    {0245, &KM10::doROTC},
+    {0246, &KM10::doLSHC},
+    {0250, &KM10::doEXCH},
+    {0251, &KM10::doBLT},
+    {0252, &KM10::doAOBJP},
+    {0253, &KM10::doAOBJN},
+    {0254, &KM10::doJRST},
+    {0255, &KM10::doJFCL},
+    {0256, &KM10::doPXCT},
+    {0260, &KM10::doPUSHJ},
+    {0261, &KM10::doPUSH},
+    {0262, &KM10::doPOP},
+    {0263, &KM10::doPOPJ},
+    {0264, &KM10::doJSR},
+    {0265, &KM10::doJSP},
+    {0266, &KM10::doJSA},
+    {0267, &KM10::doJRA},
+    {0270, &KM10::doADD},
+    {0271, &KM10::doADDI},
+    {0272, &KM10::doADDM},
+    {0273, &KM10::doADDB},
+    {0274, &KM10::doSUB},
+    {0275, &KM10::doSUBI},
+    {0276, &KM10::doSUBM},
+    {0277, &KM10::doSUBB},
+
+    {0300, &KM10::doCAI},
+    {0301, &KM10::doCAIL},
+    {0302, &KM10::doCAIE},
+    {0303, &KM10::doCAILE},
+    {0304, &KM10::doCAIA},
+    {0305, &KM10::doCAIGE},
+    {0306, &KM10::doCAIN},
+    {0307, &KM10::doCAIG},
+    {0310, &KM10::doCAM},
+    {0311, &KM10::doCAML},
+    {0312, &KM10::doCAME},
+    {0313, &KM10::doCAMLE},
+    {0314, &KM10::doCAMA},
+    {0315, &KM10::doCAMGE},
+    {0316, &KM10::doCAMN},
+    {0317, &KM10::doCAMG},
+    {0320, &KM10::doJUMP},
+    {0321, &KM10::doJUMPL},
+    {0322, &KM10::doJUMPE},
+    {0323, &KM10::doJUMPLE},
+    {0324, &KM10::doJUMPA},
+    {0325, &KM10::doJUMPGE},
+    {0326, &KM10::doJUMPN},
+    {0327, &KM10::doJUMPG},
+    {0330, &KM10::doSKIP},
+    {0331, &KM10::doSKIPL},
+    {0332, &KM10::doSKIPE},
+    {0333, &KM10::doSKIPLE},
+    {0334, &KM10::doSKIPA},
+    {0335, &KM10::doSKIPGE},
+    {0336, &KM10::doSKIPN},
+    {0337, &KM10::doSKIPGT},
+    {0340, &KM10::doAOJ},
+    {0341, &KM10::doAOJL},
+    {0342, &KM10::doAOJE},
+    {0343, &KM10::doAOJLE},
+    {0344, &KM10::doAOJA},
+    {0345, &KM10::doAOJGE},
+    {0346, &KM10::doAOJN},
+    {0347, &KM10::doAOJG},
+    {0350, &KM10::doAOS},
+    {0351, &KM10::doAOSL},
+    {0352, &KM10::doAOSE},
+    {0353, &KM10::doAOSLE},
+    {0354, &KM10::doAOSA},
+    {0355, &KM10::doAOSGE},
+    {0356, &KM10::doAOSN},
+    {0357, &KM10::doAOSG},
+    {0360, &KM10::doSOJ},
+    {0361, &KM10::doSOJL},
+    {0362, &KM10::doSOJE},
+    {0363, &KM10::doSOJLE},
+    {0364, &KM10::doSOJA},
+    {0365, &KM10::doSOJGE},
+    {0366, &KM10::doSOJN},
+    {0367, &KM10::doSOJG},
+    {0370, &KM10::doSOS},
+    {0371, &KM10::doSOSL},
+    {0372, &KM10::doSOSE},
+    {0373, &KM10::doSOSLE},
+    {0374, &KM10::doSOSA},
+    {0375, &KM10::doSOSGE},
+    {0376, &KM10::doSOSN},
+    {0377, &KM10::doSOSG},
+
+    {0400, &KM10::doSETZ},
+    {0401, &KM10::doSETZI},
+    {0402, &KM10::doSETZM},
+    {0403, &KM10::doSETZB},
+    {0404, &KM10::doAND},
+    {0405, &KM10::doANDI},
+    {0406, &KM10::doANDM},
+    {0407, &KM10::doANDB},
+    {0410, &KM10::doANDCA},
+    {0411, &KM10::doANDCAI},
+    {0412, &KM10::doANDCAM},
+    {0413, &KM10::doANDCAB},
+    {0414, &KM10::doSETM},
+    {0415, &KM10::doSETMI},
+    {0416, &KM10::doSETMM},
+    {0417, &KM10::doSETMB},
+    {0420, &KM10::doANDCM},
+    {0421, &KM10::doANDCMI},
+    {0422, &KM10::doANDCMM},
+    {0423, &KM10::doANDCMB},
+    {0424, &KM10::doSETA},
+    {0425, &KM10::doSETAI},
+    {0426, &KM10::doSETAM},
+    {0427, &KM10::doSETAB},
+    {0430, &KM10::doXOR},
+    {0431, &KM10::doXORI},
+    {0432, &KM10::doXORM},
+    {0433, &KM10::doXORB},
+    {0434, &KM10::doIOR},
+    {0435, &KM10::doIORI},
+    {0436, &KM10::doIORM},
+    {0437, &KM10::doIORB},
+    {0440, &KM10::doANDCBM},
+    {0441, &KM10::doANDCBMI},
+    {0442, &KM10::doANDCBMM},
+    {0443, &KM10::doANDCBMB},
+    {0444, &KM10::doEQV},
+    {0445, &KM10::doEQVI},
+    {0446, &KM10::doEQVM},
+    {0447, &KM10::doEQVB},
+    {0450, &KM10::doSETCA},
+    {0451, &KM10::doSETCAI},
+    {0452, &KM10::doSETCAM},
+    {0453, &KM10::doSETCAB},
+    {0454, &KM10::doORCA},
+    {0455, &KM10::doORCAI},
+    {0456, &KM10::doORCAM},
+    {0457, &KM10::doORCAB},
+    {0460, &KM10::doSETCM},
+    {0461, &KM10::doSETCMI},
+    {0462, &KM10::doSETCMM},
+    {0463, &KM10::doSETCMB},
+    {0464, &KM10::doORCM},
+    {0465, &KM10::doORCMI},
+    {0466, &KM10::doORCMM},
+    {0467, &KM10::doORCMB},
+    {0470, &KM10::doORCB},
+    {0471, &KM10::doORCBI},
+    {0472, &KM10::doORCBM},
+    {0473, &KM10::doORCBB},
+    {0474, &KM10::doSETO},
+    {0475, &KM10::doSETOI},
+    {0476, &KM10::doSETOM},
+    {0477, &KM10::doSETOB},
+
+    {0500, &KM10::doHLL},
+    {0501, &KM10::doHLLI},
+    {0502, &KM10::doHLLM},
+    {0503, &KM10::doHLLS},
+    {0504, &KM10::doHRL},
+    {0505, &KM10::doHRLI},
+    {0506, &KM10::doHRLM},
+    {0507, &KM10::doHRLS},
+    {0510, &KM10::doHLLZ},
+    {0511, &KM10::doHLLZI},
+    {0512, &KM10::doHLLZM},
+    {0513, &KM10::doHLLZS},
+    {0514, &KM10::doHRLZ},
+    {0515, &KM10::doHRLZI},
+    {0516, &KM10::doHRLZM},
+    {0517, &KM10::doHRLZS},
+    {0520, &KM10::doHLLO},
+    {0521, &KM10::doHLLOI},
+    {0522, &KM10::doHLLOM},
+    {0523, &KM10::doHLLOS},
+    {0524, &KM10::doHRLO},
+    {0525, &KM10::doHRLOI},
+    {0526, &KM10::doHRLOM},
+    {0527, &KM10::doHRLOS},
+    {0530, &KM10::doHLLE},
+    {0531, &KM10::doHLLEI},
+    {0532, &KM10::doHLLEM},
+    {0533, &KM10::doHLLES},
+    {0534, &KM10::doHRLE},
+    {0535, &KM10::doHRLEI},
+    {0536, &KM10::doHRLEM},
+    {0537, &KM10::doHRLES},
+    {0540, &KM10::doHRR},
+    {0541, &KM10::doHRRI},
+    {0542, &KM10::doHRRM},
+    {0543, &KM10::doHRRS},
+    {0544, &KM10::doHLR},
+    {0545, &KM10::doHLRI},
+    {0546, &KM10::doHLRM},
+    {0547, &KM10::doHLRS},
+    {0550, &KM10::doHRRZ},
+    {0551, &KM10::doHRRZI},
+    {0552, &KM10::doHRRZM},
+    {0553, &KM10::doHRRZS},
+    {0554, &KM10::doHLRZ},
+    {0555, &KM10::doHLRZI},
+    {0556, &KM10::doHLRZM},
+    {0557, &KM10::doHLRZS},
+    {0560, &KM10::doHRRO},
+    {0561, &KM10::doHRROI},
+    {0562, &KM10::doHRROM},
+    {0563, &KM10::doHRROS},
+    {0564, &KM10::doHLRO},
+    {0565, &KM10::doHLROI},
+    {0566, &KM10::doHLROM},
+    {0567, &KM10::doHLROS},
+    {0570, &KM10::doHRRE},
+    {0571, &KM10::doHRREI},
+    {0572, &KM10::doHRREM},
+    {0573, &KM10::doHRRES},
+    {0574, &KM10::doHLRE},
+    {0575, &KM10::doHLREI},
+    {0576, &KM10::doHLREM},
+    {0577, &KM10::doHLRES},
+
+    {0600, &KM10::doTRN},
+    {0601, &KM10::doTLN},
+    {0602, &KM10::doTRNE},
+    {0603, &KM10::doTLNE},
+    {0604, &KM10::doTRNA},
+    {0605, &KM10::doTLNA},
+    {0606, &KM10::doTRNN},
+    {0607, &KM10::doTLNN},
+    {0610, &KM10::doTDN},
+    {0611, &KM10::doTSN},
+    {0612, &KM10::doTDNE},
+    {0613, &KM10::doTSNE},
+    {0614, &KM10::doTDNA},
+    {0615, &KM10::doTSNA},
+    {0616, &KM10::doTDNN},
+    {0617, &KM10::doTSNN},
+    {0620, &KM10::doTRZ},
+    {0621, &KM10::doTLZ},
+    {0622, &KM10::doTRZE},
+    {0623, &KM10::doTLZE},
+    {0624, &KM10::doTRZA},
+    {0625, &KM10::doTLZA},
+    {0626, &KM10::doTRZN},
+    {0627, &KM10::doTLZN},
+    {0630, &KM10::doTDZ},
+    {0631, &KM10::doTSZ},
+    {0632, &KM10::doTDZE},
+    {0633, &KM10::doTSZE},
+    {0634, &KM10::doTDZA},
+    {0635, &KM10::doTSZA},
+    {0636, &KM10::doTDZN},
+    {0637, &KM10::doTSZN},
+    {0640, &KM10::doTRC},
+    {0641, &KM10::doTLC},
+    {0642, &KM10::doTRCE},
+    {0643, &KM10::doTLCE},
+    {0644, &KM10::doTRCA},
+    {0645, &KM10::doTLCA},
+    {0646, &KM10::doTRCN},
+    {0647, &KM10::doTLCN},
+    {0650, &KM10::doTDC},
+    {0651, &KM10::doTSC},
+    {0652, &KM10::doTDCE},
+    {0653, &KM10::doTSCE},
+    {0654, &KM10::doTDCA},
+    {0655, &KM10::doTSCA},
+    {0656, &KM10::doTDCN},
+    {0657, &KM10::doTSZCN},
+    {0660, &KM10::doTRO},
+    {0661, &KM10::doTLO},
+    {0662, &KM10::doTROE},
+    {0663, &KM10::doTLOE},
+    {0664, &KM10::doTROA},
+    {0665, &KM10::doTLOA},
+    {0666, &KM10::doTRON},
+    {0667, &KM10::doTLON},
+    {0670, &KM10::doTDO},
+    {0671, &KM10::doTSO},
+    {0672, &KM10::doTDOE},
+    {0673, &KM10::doTSOE},
+    {0674, &KM10::doTDOA},
+    {0675, &KM10::doTSOA},
+    {0676, &KM10::doTDON},
+    {0677, &KM10::doTSON},
+  };
+
+  // Copy map into KM10's static array.
+  for (const auto &[op, f]: opsInitMap) KM10::ops[op] = f;
+
+  for (unsigned op=0000; op<=0037; ++op) KM10::ops[op] = &KM10::doLUUO;
+  for (unsigned op=0040; op<=0101; ++op) KM10::ops[op] = &KM10::doMUUO;
+  for (unsigned op=0700; op<=0777; ++op) KM10::ops[op] = &KM10::doIO;
+
+  // Set all remaining undefined ops to "not yet implemented".
+  for (unsigned op=0000; op<=0777; ++op) {
+    if (KM10::ops[op] == nullptr) KM10::ops[op] = &KM10::doNYI;
+  }
+}
+
+
+// Finally, define the static member into existence.
+KM10::OpsInitializer KM10::opsInitializer;
+
+
 ////////////////////////////////////////////////////////////////
 // Constructor
-KM10::KM10()
-  : apr(this),
-    cca(this, apr),
-    mtr(this),
-    pi(this),
-    pag(this),
-    tim(this),
-    dte(040, this),
-    noDevice(0777777ul, "?NoDevice?", this),
-    debuggerP(nullptr),
+KM10::KM10(unsigned nMemoryWords, KM10::BreakpointTable &aBPs, KM10::BreakpointTable &eBPs)
+  : apr{*this},
+    cca{*this, apr},
+    mtr{*this},
+    pag{*this},
+    pi{*this},
+    tim{*this},
+    dte{040, *this},
+    noDevice{0777777ul, "?NoDevice?", *this},
+    debugger{*this},
     running(false),
     restart(false),
     nextPC(0),
@@ -54,467 +404,11 @@ KM10::KM10()
     inInterrupt(false),
     era(0u),
     AC(ACbanks[0]),
-    memorySize(nWords),
+    memorySize(nMemoryWords),
     nSteps(0),
     inXCT(false),
     addressBPs(aBPs),
-    executeBPs(eBPs),    
-    ops{
-      [0000 .... 0777] = &doNYI, // All unspecified instruction entries are doNYI
-      [0000] = &doMUUO,
-      [0001] = &doLUUO,
-      [0002] = &doLUUO,
-      [0003] = &doLUUO,
-      [0004] = &doLUUO,
-      [0005] = &doLUUO,
-      [0006] = &doLUUO,
-      [0007] = &doLUUO,
-      [0010] = &doLUUO,
-      [0011] = &doLUUO,
-      [0012] = &doLUUO,
-      [0013] = &doLUUO,
-      [0014] = &doLUUO,
-      [0015] = &doLUUO,
-      [0016] = &doLUUO,
-      [0017] = &doLUUO,
-      [0020] = &doLUUO,
-      [0021] = &doLUUO,
-      [0022] = &doLUUO,
-      [0023] = &doLUUO,
-      [0024] = &doLUUO,
-      [0025] = &doLUUO,
-      [0026] = &doLUUO,
-      [0027] = &doLUUO,
-      [0030] = &doLUUO,
-      [0031] = &doLUUO,
-      [0032] = &doLUUO,
-      [0033] = &doLUUO,
-      [0034] = &doLUUO,
-      [0035] = &doLUUO,
-      [0036] = &doLUUO,
-      [0037] = &doLUUO,
-      [0040] = &doMUUO,
-      [0041] = &doMUUO,
-      [0042] = &doMUUO,
-      [0043] = &doMUUO,
-      [0044] = &doMUUO,
-      [0045] = &doMUUO,
-      [0046] = &doMUUO,
-      [0047] = &doMUUO,
-      [0050] = &doMUUO,
-      [0051] = &doMUUO,
-      [0052] = &doMUUO,
-      [0053] = &doMUUO,
-      [0054] = &doMUUO,
-      [0055] = &doMUUO,
-      [0056] = &doMUUO,
-      [0057] = &doMUUO,
-      [0060] = &doMUUO,
-      [0061] = &doMUUO,
-      [0062] = &doMUUO,
-      [0063] = &doMUUO,
-      [0064] = &doMUUO,
-      [0065] = &doMUUO,
-      [0066] = &doMUUO,
-      [0067] = &doMUUO,
-      [0070] = &doMUUO,
-      [0071] = &doMUUO,
-      [0072] = &doMUUO,
-      [0073] = &doMUUO,
-      [0074] = &doMUUO,
-      [0075] = &doMUUO,
-      [0076] = &doMUUO,
-      [0077] = &doMUUO,
-
-      [0100] = &doMUUO,
-      [0101] = &doMUUO,
-
-      [0200] = &doMOVE,
-      [0201] = &doMOVEI,
-      [0202] = &doMOVEM,
-      [0203] = &doMOVES,
-      [0204] = &doMOVS,
-      [0205] = &doMOVSI,
-      [0206] = &doMOVSM,
-      [0207] = &doMOVSS,
-      [0210] = &doMOVN,
-      [0211] = &doMOVNI,
-      [0212] = &doMOVNM,
-      [0213] = &doMOVNS,
-      [0214] = &doMOVM,
-      [0215] = &doMOVMI,
-      [0216] = &doMOVMM,
-      [0217] = &doMOVMS,
-      [0220] = &doIMUL,
-      [0221] = &doIMULI,
-      [0222] = &doIMULM,
-      [0223] = &doIMULB,
-      [0224] = &doMUL,
-      [0225] = &doMULI,
-      [0226] = &doMULM,
-      [0227] = &doMULB,
-      [0230] = &doIDIV,
-      [0231] = &doIDIVI,
-      [0232] = &doIDIVM,
-      [0233] = &doIDIVB,
-      [0234] = &doDIV,
-      [0235] = &doDIVI,
-      [0236] = &doDIVM,
-      [0237] = &doDIVB,
-      [0240] = &doASH,
-      [0241] = &doROT,
-      [0242] = &doLSH,
-      [0243] = &doJFFO,
-      [0245] = &doROTC,
-      [0246] = &doLSHC,
-      [0250] = &doEXCH,
-      [0251] = &doBLT,
-      [0252] = &doAOBJP,
-      [0253] = &doAOBJN,
-      [0254] = &doJRST,
-      [0255] = &doJFCL,
-      [0256] = &doPXCT,
-      [0260] = &doPUSHJ,
-      [0261] = &doPUSH,
-      [0262] = &doPOP,
-      [0263] = &doPOPJ,
-      [0264] = &doJSR,
-      [0265] = &doJSP,
-      [0266] = &doJSA,
-      [0267] = &doJRA,
-      [0270] = &doADD,
-      [0271] = &doADDI,
-      [0272] = &doADDM,
-      [0273] = &doADDB,
-      [0274] = &doSUB,
-      [0275] = &doSUBI,
-      [0276] = &doSUBM,
-      [0277] = &doSUBB,
-
-      [0300] = &doCAI,
-      [0301] = &doCAIL,
-      [0302] = &doCAIE,
-      [0303] = &doCAILE,
-      [0304] = &doCAIA,
-      [0305] = &doCAIGE,
-      [0306] = &doCAIN,
-      [0307] = &doCAIG,
-      [0310] = &doCAM,
-      [0311] = &doCAML,
-      [0312] = &doCAME,
-      [0313] = &doCAMLE,
-      [0314] = &doCAMA,
-      [0315] = &doCAMGE,
-      [0316] = &doCAMN,
-      [0317] = &doCAMG,
-      [0320] = &doJUMP,
-      [0321] = &doJUMPL,
-      [0322] = &doJUMPE,
-      [0323] = &doJUMPLE,
-      [0324] = &doJUMPA,
-      [0325] = &doJUMPGE,
-      [0326] = &doJUMPN,
-      [0327] = &doJUMPG,
-      [0330] = &doSKIP,
-      [0331] = &doSKIPL,
-      [0332] = &doSKIPE,
-      [0333] = &doSKIPLE,
-      [0334] = &doSKIPA,
-      [0335] = &doSKIPGE,
-      [0336] = &doSKIPN,
-      [0337] = &doSKIPGT,
-      [0340] = &doAOJ,
-      [0341] = &doAOJL,
-      [0342] = &doAOJE,
-      [0343] = &doAOJLE,
-      [0344] = &doAOJA,
-      [0345] = &doAOJGE,
-      [0346] = &doAOJN,
-      [0347] = &doAOJG,
-      [0350] = &doAOS,
-      [0351] = &doAOSL,
-      [0352] = &doAOSE,
-      [0353] = &doAOSLE,
-      [0354] = &doAOSA,
-      [0355] = &doAOSGE,
-      [0356] = &doAOSN,
-      [0357] = &doAOSG,
-      [0360] = &doSOJ,
-      [0361] = &doSOJL,
-      [0362] = &doSOJE,
-      [0363] = &doSOJLE,
-      [0364] = &doSOJA,
-      [0365] = &doSOJGE,
-      [0366] = &doSOJN,
-      [0367] = &doSOJG,
-      [0370] = &doSOS,
-      [0371] = &doSOSL,
-      [0372] = &doSOSE,
-      [0373] = &doSOSLE,
-      [0374] = &doSOSA,
-      [0375] = &doSOSGE,
-      [0376] = &doSOSN,
-      [0377] = &doSOSG,
-
-      [0400] = &doSETZ,
-      [0401] = &doSETZI,
-      [0402] = &doSETZM,
-      [0403] = &doSETZB,
-      [0404] = &doAND,
-      [0405] = &doANDI,
-      [0406] = &doANDM,
-      [0407] = &doANDB,
-      [0410] = &doANDCA,
-      [0411] = &doANDCAI,
-      [0412] = &doANDCAM,
-      [0413] = &doANDCAB,
-      [0414] = &doSETM,
-      [0415] = &doSETMI,
-      [0416] = &doSETMM,
-      [0417] = &doSETMB,
-      [0420] = &doANDCM,
-      [0421] = &doANDCMI,
-      [0422] = &doANDCMM,
-      [0423] = &doANDCMB,
-      [0424] = &doSETA,
-      [0425] = &doSETAI,
-      [0426] = &doSETAM,
-      [0427] = &doSETAB,
-      [0430] = &doXOR,
-      [0431] = &doXORI,
-      [0432] = &doXORM,
-      [0433] = &doXORB,
-      [0434] = &doIOR,
-      [0435] = &doIORI,
-      [0436] = &doIORM,
-      [0437] = &doIORB,
-      [0440] = &doANDCBM,
-      [0441] = &doANDCBMI,
-      [0442] = &doANDCBMM,
-      [0443] = &doANDCBMB,
-      [0444] = &doEQV,
-      [0445] = &doEQVI,
-      [0446] = &doEQVM,
-      [0447] = &doEQVB,
-      [0450] = &doSETCA,
-      [0451] = &doSETCAI,
-      [0452] = &doSETCAM,
-      [0453] = &doSETCAB,
-      [0454] = &doORCA,
-      [0455] = &doORCAI,
-      [0456] = &doORCAM,
-      [0457] = &doORCAB,
-      [0460] = &doSETCM,
-      [0461] = &doSETCMI,
-      [0462] = &doSETCMM,
-      [0463] = &doSETCMB,
-      [0464] = &doORCM,
-      [0465] = &doORCMI,
-      [0466] = &doORCMM,
-      [0467] = &doORCMB,
-      [0470] = &doORCB,
-      [0471] = &doORCBI,
-      [0472] = &doORCBM,
-      [0473] = &doORCBB,
-      [0474] = &doSETO,
-      [0475] = &doSETOI,
-      [0476] = &doSETOM,
-      [0477] = &doSETOB,
-      [0500] = &doHLL,
-      [0501] = &doHLLI,
-      [0502] = &doHLLM,
-      [0503] = &doHLLS,
-      [0504] = &doHRL,
-      [0505] = &doHRLI,
-      [0506] = &doHRLM,
-      [0507] = &doHRLS,
-      [0510] = &doHLLZ,
-      [0511] = &doHLLZI,
-      [0512] = &doHLLZM,
-      [0513] = &doHLLZS,
-      [0514] = &doHRLZ,
-      [0515] = &doHRLZI,
-      [0516] = &doHRLZM,
-      [0517] = &doHRLZS,
-      [0520] = &doHLLO,
-      [0521] = &doHLLOI,
-      [0522] = &doHLLOM,
-      [0523] = &doHLLOS,
-      [0524] = &doHRLO,
-      [0525] = &doHRLOI,
-      [0526] = &doHRLOM,
-      [0527] = &doHRLOS,
-      [0530] = &doHLLE,
-      [0531] = &doHLLEI,
-      [0532] = &doHLLEM,
-      [0533] = &doHLLES,
-      [0534] = &doHRLE,
-      [0535] = &doHRLEI,
-      [0536] = &doHRLEM,
-      [0537] = &doHRLES,
-      [0540] = &doHRR,
-      [0541] = &doHRRI,
-      [0542] = &doHRRM,
-      [0543] = &doHRRS,
-      [0544] = &doHLR,
-      [0545] = &doHLRI,
-      [0546] = &doHLRM,
-      [0547] = &doHLRS,
-      [0550] = &doHRRZ,
-      [0551] = &doHRRZI,
-      [0552] = &doHRRZM,
-      [0553] = &doHRRZS,
-      [0554] = &doHLRZ,
-      [0555] = &doHLRZI,
-      [0556] = &doHLRZM,
-      [0557] = &doHLRZS,
-      [0560] = &doHRRO,
-      [0561] = &doHRROI,
-      [0562] = &doHRROM,
-      [0563] = &doHRROS,
-      [0564] = &doHLRO,
-      [0565] = &doHLROI,
-      [0566] = &doHLROM,
-      [0567] = &doHLROS,
-      [0570] = &doHRRE,
-      [0571] = &doHRREI,
-      [0572] = &doHRREM,
-      [0573] = &doHRRES,
-      [0574] = &doHLRE,
-      [0575] = &doHLREI,
-      [0576] = &doHLREM,
-      [0577] = &doHLRES,
-
-      [0600] = &doTRN,
-      [0601] = &doTLN,
-      [0602] = &doTRNE,
-      [0603] = &doTLNE,
-      [0604] = &doTRNA,
-      [0605] = &doTLNA,
-      [0606] = &doTRNN,
-      [0607] = &doTLNN,
-      [0620] = &doTRZ,
-      [0621] = &doTLZ,
-      [0622] = &doTRZE,
-      [0623] = &doTLZE,
-      [0624] = &doTRZA,
-      [0625] = &doTLZA,
-      [0626] = &doTRZN,
-      [0627] = &doTLZN,
-      [0640] = &doTRC,
-      [0641] = &doTLC,
-      [0642] = &doTRCE,
-      [0643] = &doTLCE,
-      [0644] = &doTRCA,
-      [0645] = &doTLCA,
-      [0646] = &doTRCN,
-      [0647] = &doTLCN,
-      [0660] = &doTRO,
-      [0661] = &doTLO,
-      [0662] = &doTROE,
-      [0663] = &doTLOE,
-      [0664] = &doTROA,
-      [0665] = &doTLOA,
-      [0666] = &doTRON,
-      [0667] = &doTLON,
-      [0610] = &doTDN,
-      [0611] = &doTSN,
-      [0612] = &doTDNE,
-      [0613] = &doTSNE,
-      [0614] = &doTDNA,
-      [0615] = &doTSNA,
-      [0616] = &doTDNN,
-      [0617] = &doTSNN,
-      [0630] = &doTDZ,
-      [0631] = &doTSZ,
-      [0632] = &doTDZE,
-      [0633] = &doTSZE,
-      [0634] = &doTDZA,
-      [0635] = &doTSZA,
-      [0636] = &doTDZN,
-      [0637] = &doTSZN,
-      [0650] = &doTDC,
-      [0651] = &doTSC,
-      [0652] = &doTDCE,
-      [0653] = &doTSCE,
-      [0654] = &doTDCA,
-      [0655] = &doTSCA,
-      [0656] = &doTDCN,
-      [0657] = &doTSZCN,
-      [0670] = &doTDO,
-      [0671] = &doTSO,
-      [0672] = &doTDOE,
-      [0673] = &doTSOE,
-      [0674] = &doTDOA,
-      [0675] = &doTSOA,
-      [0676] = &doTDON,
-      [0677] = &doTSON,
-
-      [0700] = &doIO,
-      [0701] = &doIO,
-      [0702] = &doIO,
-      [0703] = &doIO,
-      [0704] = &doIO,
-      [0705] = &doIO,
-      [0706] = &doIO,
-      [0707] = &doIO,
-      [0710] = &doIO,
-      [0711] = &doIO,
-      [0712] = &doIO,
-      [0713] = &doIO,
-      [0714] = &doIO,
-      [0715] = &doIO,
-      [0716] = &doIO,
-      [0717] = &doIO,
-      [0720] = &doIO,
-      [0721] = &doIO,
-      [0722] = &doIO,
-      [0723] = &doIO,
-      [0724] = &doIO,
-      [0725] = &doIO,
-      [0726] = &doIO,
-      [0727] = &doIO,
-      [0730] = &doIO,
-      [0731] = &doIO,
-      [0732] = &doIO,
-      [0733] = &doIO,
-      [0734] = &doIO,
-      [0735] = &doIO,
-      [0736] = &doIO,
-      [0737] = &doIO,
-      [0740] = &doIO,
-      [0741] = &doIO,
-      [0742] = &doIO,
-      [0743] = &doIO,
-      [0744] = &doIO,
-      [0745] = &doIO,
-      [0746] = &doIO,
-      [0747] = &doIO,
-      [0750] = &doIO,
-      [0751] = &doIO,
-      [0752] = &doIO,
-      [0753] = &doIO,
-      [0754] = &doIO,
-      [0755] = &doIO,
-      [0756] = &doIO,
-      [0757] = &doIO,
-      [0760] = &doIO,
-      [0761] = &doIO,
-      [0762] = &doIO,
-      [0763] = &doIO,
-      [0764] = &doIO,
-      [0765] = &doIO,
-      [0766] = &doIO,
-      [0767] = &doIO,
-      [0770] = &doIO,
-      [0771] = &doIO,
-      [0772] = &doIO,
-      [0773] = &doIO,
-      [0774] = &doIO,
-      [0775] = &doIO,
-      [0776] = &doIO,
-      [0777] = &doIO,
-    }
+    executeBPs(eBPs)
 {
   // Note this anonymous mmap() implicitly zeroes the virtual memory.
   physicalP = (W36 *) mmap(nullptr,
@@ -538,7 +432,309 @@ KM10::KM10()
 KM10::~KM10() {
   if (physicalP) munmap(physicalP, memorySize * sizeof(uint64_t));
 }
-  
+
+
+////////////////////////////////////////////////////////////////
+W36 KM10::acGet() {
+  return acGetN(iw.ac);
+};
+
+
+W36 KM10::acGetRH() {
+  W36 value{0, acGet().rhu};
+  if (logger.mem) logger.s << "; acRH" << oct << iw.ac << ": " << value.fmt18();
+  return value;
+};
+
+// This retrieves LH into the RH of the return value, which is
+// required for things like TLNN to work properly since they use
+// the EA as a mask.
+W36 KM10::acGetLH() {
+  W36 value{0, acGet().lhu};
+  if (logger.mem) logger.s << "; acLH" << oct << iw.ac << ": " << value.fmt18();
+  return value;
+};
+
+
+void KM10::acPut(W36 value) {
+  acPutN(value, iw.ac);
+};
+
+
+void KM10::acPutRH(W36 value) {
+  acPut(W36(acGet().lhu, value.rhu));
+};
+
+
+// This is used to store back in, e.g., TLZE. But the LH of AC is
+// in the RH of the word we're passed because of how the testing
+// logic of these instructions must work. So we put the RH of the
+// value into the LH of the AC, keeping the AC's RH intact.
+void KM10::acPutLH(W36 value) {
+  acPut(W36(value.rhu, acGet().rhu));
+};
+
+
+W72 KM10::acGet2() {
+  W72 ret{acGetN(iw.ac+0), acGetN(iw.ac+1)};
+  return ret;
+};
+
+
+void KM10::acPut2(W72 v) {
+  acPutN(v.hi, iw.ac+0);
+  acPutN(v.lo, iw.ac+1);
+};
+
+
+W36 KM10::memGet() {
+  return memGetN(ea);
+};
+
+
+void KM10::memPut(W36 value) {
+  memPutN(value, ea);
+};
+
+
+void KM10::selfPut(W36 value) {
+  memPut(value);
+  if (iw.ac != 0) acPut(value);
+};
+
+
+void KM10::bothPut(W36 value) {
+  acPut(value);
+  memPut(value);
+};
+
+
+void KM10::bothPut2(W72 v) {
+  acPutN(v.hi, iw.ac+0);
+  acPutN(v.lo, iw.ac+1);
+  memPut(v.hi);
+};
+
+
+W36 KM10::swap(W36 src) {return W36{src.rhu, src.lhu};};
+
+
+W36 KM10::negate(W36 src) {
+  W36 v(-src.s);
+  if (src.u == W36::bit0) flags.tr1 = flags.ov = flags.cy1 = 1;
+  if (src.u == 0) flags.cy0 = flags.cy1 = 1;
+  return v;
+};
+
+
+W36 KM10::magnitude(W36 src) {
+  W36 v(src.s < 0 ? -src.s : src.s);
+  if (src.u == W36::bit0) flags.tr1 = flags.ov = flags.cy1 = 1;
+  return v;
+};
+
+
+W36 KM10::memGetSwapped() {return swap(memGet());};
+
+
+void KM10::memPutHi(W72 v) {
+  memPut(v.hi);
+};
+
+
+W36 KM10::immediate() {return W36(pc.isSection0() ? 0 : ea.lhu, ea.rhu);};
+
+
+// Condition testing predicates
+bool KM10::isLT0 (W36 v) {return v.s  < 0;};
+bool KM10::isLE0 (W36 v) {return v.s <= 0;};
+bool KM10::isGT0 (W36 v) {return v.s  > 0;};
+bool KM10::isGE0 (W36 v) {return v.s >= 0;};
+bool KM10::isNE0 (W36 v) {return v.s != 0;};
+bool KM10::isEQ0 (W36 v) {return v.s == 0;};
+bool KM10::always(W36 v) {return  true;};
+bool KM10::never (W36 v) {return false;};
+
+bool KM10::isNE0T (W36 a, W36 b) {return (a.u & b.u) != 0;};
+bool KM10::isEQ0T (W36 a, W36 b) {return (a.u & b.u) == 0;};
+bool KM10::alwaysT(W36 a, W36 b) {return  true;};
+bool KM10::neverT (W36 a, W36 b) {return false;};
+
+
+W36 KM10::getE() {return ea;};
+W36 KM10::noMod1(W36 a) {return a;};
+W36 KM10::noMod2(W36 a, W36 b) {return a;};
+
+
+// There is no `zeroMaskL`, `compMaskR`, `onesMaskL` because,
+// e.g., TLZE operates on the LH of the AC while it's in the RH of
+// the value so the testing/masking work properly.
+W36 KM10::zeroMaskR(W36 a, W36 b) {return a.u & ~(uint64_t) b.rhu;};
+W36 KM10::zeroMask (W36 a, W36 b) {return a.u & ~b.u;};
+
+W36 KM10::onesMaskR(W36 a, W36 b) {return a.u | b.rhu;};
+W36 KM10::onesMask (W36 a, W36 b) {return a.u | b.u;};
+
+W36 KM10::compMaskR(W36 a, W36 b) {return a.u ^ b.rhu;};
+W36 KM10::compMask (W36 a, W36 b) {return a.u ^ b.u;};
+
+W36 KM10::zeroWord(W36 a) {return 0;};
+W36 KM10::onesWord(W36 a) {return W36::all1s;};
+W36 KM10::compWord(W36 a) {return ~a.u;};
+
+void KM10::noStore(W36 toSrc) {};
+
+
+// For a given low halfword, this computes an upper halfword by
+// extending the low halfword's sign.
+unsigned KM10::extnOf(const unsigned v) {
+  return (v & 0400'000) ? W36::halfOnes : 0u;
+};
+
+
+// doCopyF functions
+W36 KM10::copyHRR(W36 src, W36 dst) {return W36(dst.lhu, src.rhu);};
+W36 KM10::copyHRL(W36 src, W36 dst) {return W36(src.rhu, dst.rhu);};
+W36 KM10::copyHLL(W36 src, W36 dst) {return W36(src.lhu, dst.rhu);};
+W36 KM10::copyHLR(W36 src, W36 dst) {return W36(dst.lhu, src.lhu);};
+
+
+// doModifyF functions
+W36 KM10::zeroR(W36 v) {return W36(v.lhu, 0);};
+W36 KM10::onesR(W36 v) {return W36(v.lhu, W36::halfOnes);};
+W36 KM10::extnR(W36 v) {return W36(extnOf(v.rhu), v.rhu);};
+W36 KM10::zeroL(W36 v) {return W36(0, v.rhu);};
+W36 KM10::onesL(W36 v) {return W36(W36::halfOnes, v.rhu);};
+W36 KM10::extnL(W36 v) {return W36(v.lhu, extnOf(v.lhu));};
+
+
+// binary doModifyF functions
+W36 KM10::andWord  (W36 s1, W36 s2) {return s1.u & s2.u;};
+W36 KM10::andCWord (W36 s1, W36 s2) {return s1.u & ~s2.u;};
+W36 KM10::andCBWord(W36 s1, W36 s2) {return ~s1.u & ~s2.u;};
+W36 KM10::iorWord  (W36 s1, W36 s2) {return s1.u | s2.u;};
+W36 KM10::iorCWord (W36 s1, W36 s2) {return s1.u | ~s2.u;};
+W36 KM10::iorCBWord(W36 s1, W36 s2) {return ~s1.u | ~s2.u;};
+W36 KM10::xorWord  (W36 s1, W36 s2) {return s1.u ^ s2.u;};
+W36 KM10::xorCWord (W36 s1, W36 s2) {return s1.u ^ ~s2.u;};
+W36 KM10::xorCBWord(W36 s1, W36 s2) {return ~s1.u ^ ~s2.u;};
+W36 KM10::eqvWord  (W36 s1, W36 s2) {return ~(s1.u ^ s2.u);};
+W36 KM10::eqvCWord (W36 s1, W36 s2) {return ~(s1.u ^ ~s2.u);};
+W36 KM10::eqvCBWord(W36 s1, W36 s2) {return ~(~s1.u ^ ~s2.u);};
+
+
+W36 KM10::addWord(W36 s1, W36 s2) {
+  int64_t sum = s1.ext64() + s2.ext64();
+
+  if (sum < -(int64_t) W36::bit0) {
+    flags.tr1 = flags.ov = flags.cy0 = 1;
+  } else if ((uint64_t) sum >= W36::bit0) {
+    flags.tr1 = flags.ov = flags.cy1 = 1;
+  } else {
+
+    if (s1.s < 0 && s2.s < 0) {
+      flags.cy0 = flags.cy1 = 1;
+    } else if ((s1.s < 0) != (s2.s < 0)) {
+      const uint64_t mag1 = abs(s1.s);
+      const uint64_t mag2 = abs(s2.s);
+
+      if ((s1.s >= 0 && mag1 >= mag2) ||
+	  (s2.s >= 0 && mag2 >= mag1)) {
+	flags.cy0 = flags.cy1 = 1;
+      }
+    }
+  }
+
+  return sum;
+};
+    
+
+W36 KM10::subWord(W36 s1, W36 s2) {
+  int64_t diff = s1.ext64() - s2.ext64();
+
+  if (diff < -(int64_t) W36::bit0) {
+    flags.tr1 = flags.ov = flags.cy0 = 1;
+  } else if ((uint64_t) diff >= W36::bit0) {
+    flags.tr1 = flags.ov = flags.cy1 = 1;
+  }
+
+  return diff;
+};
+    
+    
+W72 KM10::mulWord(W36 s1, W36 s2) {
+  int128_t prod128 = (int128_t) s1.ext64() * s2.ext64();
+  W72 prod = W72::fromMag((uint128_t) (prod128 < 0 ? -prod128 : prod128), prod128 < 0);
+
+  if (s1.u == W36::bit0 && s2.u == W36::bit0) {
+    flags.tr1 = flags.ov = 1;
+    return W72{W36{1ull << 34}, W36{0}};
+  }
+
+  return prod;
+};
+    
+
+W36 KM10::imulWord(W36 s1, W36 s2) {
+  int128_t prod128 = (int128_t) s1.ext64() * s2.ext64();
+  W72 prod = W72::fromMag((uint128_t) (prod128 < 0 ? -prod128 : prod128), prod128 < 0);
+
+  if (s1.u == W36::bit0 && s2.u == W36::bit0) {
+    flags.tr1 = flags.ov = 1;
+  }
+
+
+  return W36((prod.s < 0 ? W36::bit0 : 0) | ((W36::all1s >> 1) & prod.u));
+};
+
+    
+W72 KM10::idivWord(W36 s1, W36 s2) {
+
+  if ((s1.u == W36::bit0 && s2.s == -1ll) || s2.u == 0ull) {
+    flags.ndv = flags.tr1 = flags.ov = 1;
+    return W72{s1, s2};
+  } else {
+    int64_t quo = s1.s / s2.s;
+    int64_t rem = abs(s1.s % s2.s);
+    if (quo < 0) rem = -rem;
+    return W72{W36{quo}, W36{abs(rem)}};
+  }
+};
+
+    
+W72 KM10::divWord(W72 s1, W36 s2) {
+  uint128_t den70 = ((uint128_t) s1.hi35 << 35) | s1.lo35;
+  auto dor = s2.mag;
+  auto signBit = s1.s < 0 ? 1ull << 35 : 0ull;
+
+  if (s1.hi35 >= s2.mag || s2.u == 0) {
+    flags.ndv = flags.tr1 = flags.ov = 1;
+    return s1;
+  } else {
+    int64_t quo = den70 / dor;
+    int64_t rem = den70 % dor;
+    W72 ret{
+      W36{(int64_t) ((quo & W36::magMask) | signBit)},
+      W36{(int64_t) ((rem & W36::magMask) | signBit)}};
+    return ret;
+  }
+};
+
+    
+// Binary comparison predicates.
+bool KM10::isLT   (W36 v1, W36 v2) {return v1.ext64() <  v2.ext64();};
+bool KM10::isLE   (W36 v1, W36 v2) {return v1.ext64() <= v2.ext64();};
+bool KM10::isGT   (W36 v1, W36 v2) {return v1.ext64() >  v2.ext64();};
+bool KM10::isGE   (W36 v1, W36 v2) {return v1.ext64() >= v2.ext64();};
+bool KM10::isNE   (W36 v1, W36 v2) {return v1.ext64() != v2.ext64();};
+bool KM10::isEQ   (W36 v1, W36 v2) {return v1.ext64() == v2.ext64();};
+bool KM10::always2(W36 v1, W36 v2) {return true;};
+bool KM10::never2 (W36 v1, W36 v2) {return false;};
+
+
+void KM10::skipAction() {++nextPC.rhu;};
+void KM10::jumpAction() {nextPC.rhu = ea.rhu;};
+
 
 ////////////////////////////////////////////////////////////////
 InstructionResult KM10::doNYI() {
@@ -578,8 +774,8 @@ InstructionResult KM10::doLUUO() {
     if (flags.usr) {
       W36 uuoA(uptP->luuoAddr);
       memPutN(W36(((uint64_t) flags.u << 23) |
-			((uint64_t) iw.op << 15) |
-			((uint64_t) iw.ac << 5)), uuoA.u++);
+		  ((uint64_t) iw.op << 15) |
+		  ((uint64_t) iw.ac << 5)), uuoA.u++);
       memPutN(pc, uuoA.u++);
       memPutN(ea.u, uuoA.u++);
       nextPC = memGetN(uuoA);
@@ -597,7 +793,7 @@ InstructionResult KM10::doMUUO() {
   cerr << "MUUOs aren't implemented yet" << logger.endl << flush;
   exceptionPC = pc + 1;
   inInterrupt = true;
-  logger.nyi(this);
+  logger.nyi(*this);
   return iMUUO;
 }
 
@@ -742,13 +938,147 @@ InstructionResult KM10::doDDIV() {
 }
 
 
+// Instruction class implementations.
+void KM10::doBinOp(auto getSrc1F, auto getSrc2F, auto modifyF, auto putDstF) {
+  auto result = modifyF(getSrc1F(), getSrc2F());
+  if (!flags.ndv) putDstF(result);
+}
+
+
+void KM10::doTXXXX(auto get1F, auto get2F, auto modifyF, auto condF, auto storeF) {
+  W36 a1 = get1F();
+  W36 a2 = get2F();
+
+  if (condF(a1, a2)) {
+    logFlow("skip");
+    ++nextPC.rhu;
+  }
+      
+  storeF(modifyF(a1, a2));
+}
+
+
+void KM10::doHXXXX(auto getSrcF, auto getDstF, auto copyF, auto modifyF, auto putDstF) {
+  putDstF(modifyF(copyF(getSrcF(), getDstF())));
+}
+
+
+template<typename S, typename M, typename D>
+void KM10::doMOVXX(S getSrcF, M modifyF, D putDstF) {
+  putDstF(modifyF(getSrcF()));
+}
+
+
+void KM10::doSETXX(auto getSrcF, auto modifyF, auto putDstF) {
+  putDstF(modifyF(getSrcF()));
+}
+
+void KM10::doCAXXX(auto getSrc1F, auto getSrc2F, auto condF) {
+
+  if (condF(getSrc1F().ext64(), getSrc2F().ext64())) {
+    logFlow("skip");
+    ++nextPC.rhu;
+  }
+}
+
+void KM10::doJUMP(auto condF) {
+
+  if (condF(acGet())) {
+    logFlow("jump");
+    nextPC.rhu = ea.rhu;
+  }
+}
+
+
+void KM10::doSKIP(auto condF) {
+  W36 eaw = memGet();
+
+  if (condF(eaw)) {
+    logFlow("skip");
+    ++nextPC.rhu;
+  }
+      
+  if (iw.ac != 0) acPut(eaw);
+}
+
+
+void KM10::doAOSXX(auto getF, const signed delta, auto putF, auto condF, auto actionF) {
+  W36 v = getF();
+
+  if (delta > 0) {		// Increment
+
+    if (v.u == W36::all1s >> 1) {
+      flags.tr1 = flags.ov = flags.cy1 = 1;
+    } else if (v.ext64() == -1) {
+      flags.cy0 = flags.cy1 = 1;
+    }
+  } else {			// Decrement
+
+    if (v.u == W36::bit0) {
+      flags.tr1 = flags.ov = flags.cy0 = 1;
+    } else if (v.u != 0) {
+      flags.cy0 = flags.cy1 = 1;
+    }
+  }
+
+  v.s += delta;
+
+  if (iw.ac != 0) acPut(v);
+  putF(v);
+
+  if (condF(v)) actionF();
+}
+
+
+void KM10::doPush(W36 v, W36 acN) {
+  W36 ac = acGetN(acN);
+
+  if (pc.isSection0() || ac.lhs < 0 || (ac.lhu & 0007777) == 0) {
+    ac = W36(ac.lhu + 1, ac.rhu + 1);
+
+    if (ac.lhu == 0)
+      flags.tr2 = 1;
+    else			// Correct? Don't access memory for full stack?
+      memPutN(v, ac.rhu);
+  } else {
+    ac = ac + 1;
+    memPutN(ac.vma, v);
+  }
+
+  acPutN(ac, acN);
+}
+
+
+W36 KM10::doPop(unsigned acN) {
+  W36 ac = acGetN(acN);
+  W36 poppedWord;
+
+  if (pc.isSection0() || ac.lhs < 0 || (ac.lhu & 0007777) == 0) {
+    poppedWord = memGetN(ac.rhu);
+    ac = W36(ac.lhu - 1, ac.rhu - 1);
+    if (ac.lhs == -1) flags.tr2 = 1;
+  } else {
+    poppedWord = memGetN(ac.vma);
+    ac = ac - 1;
+  }
+
+  acPutN(ac, acN);
+  return poppedWord;
+}
+
+
+void KM10::logFlow(const char *msg) {
+  if (logger.pc) logger.s << " [" << msg << "]";
+}
+
+
 InstructionResult KM10::doIBP_ADJBP() {
-  BytePointer *bp = BytePointer::makeFrom(ea, this);
+  BytePointer *bp = BytePointer::makeFrom(ea, *this);
 
   if (iw.ac == 0) {	// IBP
-    bp->inc(this);
+    bp->inc(*this);
   } else {		// ADJBP
-    bp->adjust(iw.ac, this);
+    bp->adjust(iw.ac, *this);
   }
 
   return iNormal;
@@ -756,31 +1086,31 @@ InstructionResult KM10::doIBP_ADJBP() {
 
 
 InstructionResult KM10::doILBP() {
-  BytePointer *bp = BytePointer::makeFrom(ea, this);
-  bp->inc(this);
-  acPut(bp->getByte(this));
+  BytePointer *bp = BytePointer::makeFrom(ea, *this);
+  bp->inc(*this);
+  acPut(bp->getByte(*this));
   return iNormal;
 }
 
 
 InstructionResult KM10::doLDB() {
-  BytePointer *bp = BytePointer::makeFrom(ea, this);
-  acPut(bp->getByte(this));
+  BytePointer *bp = BytePointer::makeFrom(ea, *this);
+  acPut(bp->getByte(*this));
   return iNormal;
 }
 
 
 InstructionResult KM10::doIDPB() {
-  BytePointer *bp = BytePointer::makeFrom(ea, this);
-  bp->inc(this);
-  bp->putByte(acGet(), this);
+  BytePointer *bp = BytePointer::makeFrom(ea, *this);
+  bp->inc(*this);
+  bp->putByte(acGet(), *this);
   return iNormal;
 }
 
 
 InstructionResult KM10::doDPB() {
-  BytePointer *bp = BytePointer::makeFrom(ea, this);
-  bp->putByte(acGet(), this);
+  BytePointer *bp = BytePointer::makeFrom(ea, *this);
+  bp->putByte(acGet(), *this);
   return iNormal;
 }
 
@@ -1126,7 +1456,7 @@ InstructionResult KM10::doJRST() {
     break;
 
   case 001:					// PORTAL
-    logger.nyi(this);
+    logger.nyi(*this);
     break;
 
   case 002:					// JRSTF
@@ -1141,16 +1471,16 @@ InstructionResult KM10::doJRST() {
     return iHALT;
 
   case 005:					// XJRSTF
-    logger.nyi(this);
+    logger.nyi(*this);
     break;
 
   case 006:					// XJEN
     pi.dismissInterrupt();
-    logger.nyi(this);
+    logger.nyi(*this);
     break;
 
   case 007:					// XPCW
-    logger.nyi(this);
+    logger.nyi(*this);
     break;
 
   case 010:					// 25440 - no mnemonic
@@ -1165,11 +1495,11 @@ InstructionResult KM10::doJRST() {
     break;
 
   case 014:					// SFM
-    logger.nyi(this);
+    logger.nyi(*this);
     break;
 
   default:
-    logger.nyi(this);
+    logger.nyi(*this);
     break;
   }
 
@@ -1194,7 +1524,7 @@ InstructionResult KM10::doPXCT() {
     inXCT = true;
     return iXCT;
   } else {					// PXCT
-    logger.nyi(this);
+    logger.nyi(*this);
     running = false;
     return iHALT;		// XXX for now
   }
@@ -1202,7 +1532,7 @@ InstructionResult KM10::doPXCT() {
 
 
 InstructionResult KM10::doPUSHJ() {
-  // Note this sets the flags that are cleared by PUSHJ before
+  // Note *this sets the flags that are cleared by PUSHJ before
   // doPush() since doPush() can set flags.tr2.
   flags.fpd = flags.afi = flags.tr1 = flags.tr2 = 0;
   doPush(pc.isSection0() ? flagsWord(nextPC.rhu) : W36(nextPC.vma), iw.ac);
@@ -2770,7 +3100,7 @@ void KM10::restoreFlags(W36 ea) {
 //     |   |<---- and at the 'E' four chars later at exit.
 // T ^,AEh,E,LF@,E,O?m,FC,E,Aru,Lj@,F,AEv,F@@,E,,AJB,L,AnT,F@@,E,Arz,Lk@,F,AEw,F@@,E,E,ND@,K,B,NJ@,E,B`K
 
-auto KM10::getWord(ifstream &inS, [[maybe_unused]] const char *whyP) -> uint16_t {
+static uint16_t getWord(ifstream &inS, [[maybe_unused]] const char *whyP) {
   unsigned v = 0;
 
   for (;;) {
@@ -2877,7 +3207,7 @@ void KM10::loadA10(const char *fileNameP) {
 
 
 ////////////////////////////////////////////////////////////////
-void KM10::emulate(Debugger *debuggerP) {
+void KM10::emulate() {
   W36 exceptionPC{0};
 
   ////////////////////////////////////////////////////////////////
@@ -2898,8 +3228,8 @@ void KM10::emulate(Debugger *debuggerP) {
       // We have a trap.
       exceptionPC = pc;
       pc = eptAddressFor(flags.tr1 ?
-				     &eptP->trap1Insn :
-				     &eptP->stackOverflowInsn);
+			 &eptP->trap1Insn :
+			 &eptP->stackOverflowInsn);
       inInterrupt = true;
       cerr << ">>>>> trap cycle PC now=" << pc.fmtVMA()
 	   << "  exceptionPC=" << exceptionPC.fmtVMA()
@@ -2928,7 +3258,7 @@ void KM10::emulate(Debugger *debuggerP) {
     // action should be based on its return value.
     if (!running) {
 
-      switch (debuggerP->debug()) {
+      switch (debugger.debug()) {
       case Debugger::step:	// Debugger has set step count in nSteps.
 	break;
 
@@ -2958,7 +3288,7 @@ void KM10::emulate(Debugger *debuggerP) {
     }
 
     if (logger.loggingToFile && logger.pc) {
-      logger.s << pc.fmtVMA() << ": " << debuggerP->dump(iw, pc);
+      logger.s << pc.fmtVMA() << ": " << debugger.dump(iw, pc);
     }
 
     // Unless we encounter ANOTHER XCT we're not in one now.
@@ -3028,14 +3358,13 @@ static int loopedMain(int argc, char *argv[]) {
   }
 
   KM10 km10(4 * 1024 * 1024, aBPs, eBPs);
-  Debugger debugger(km10);
 
   if (FLAGS_rel != "none") {
     debugger.loadREL(FLAGS_rel.c_str());
   }
 
   running = !FLAGS_debug;
-  km10.emulate(&debugger);
+  km10.emulate();
 
   return restart ? 1 : 0;
 }

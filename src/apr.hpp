@@ -2,9 +2,11 @@
 
 #include <iostream>
 
-#include "logger.hpp"
 #include "word.hpp"
 #include "device.hpp"
+
+
+class KM10;
 
 #define GCC_BUG 1
 
@@ -32,6 +34,7 @@
 #else
 #define APRFLAGS(FIELDNAME)	APRFlags FIELDNAME
 #endif
+
 
 struct APRDevice: Device {
 
@@ -228,8 +231,8 @@ struct APRDevice: Device {
 
 
   // Constructors
-  APRDevice(KM10 *cpuP)
-    : Device(0000, "APR", cpuP)
+  APRDevice(KM10 &cpu)
+    : Device(0000, "APR", cpu)
   { }
 
 
@@ -241,10 +244,14 @@ struct APRDevice: Device {
   void endSweep();
 
   // I/O instruction handlers
-  virtual void doBLKI(W36 iw, W36 ea, W36 &nextPC) override;  // APRID
-  virtual void doBLKO(W36 iw, W36 ea, W36 &nextPC) override;  // WRFIL
-  virtual W36 doDATAI(W36 iw, W36 ea) override;
-  virtual void doCONO(W36 iw, W36 ea) override;		      // WRAPR
-  virtual W36 doCONI(W36 iw, W36 ea) override;		      // RDAPR
+  virtual InstructionResult doDATAI(W36 iw, W36 ea) override;
+  virtual InstructionResult doBLKI(W36 iw, W36 ea) override; // APRID
+  virtual InstructionResult doBLKO(W36 iw, W36 ea) override; // WRFIL
+  virtual InstructionResult doCONO(W36 iw, W36 ea) override; // WRAPR
+  virtual InstructionResult doCONI(W36 iw, W36 ea) override; // RDAPR
+
   virtual void clearIO() override;
 };
+
+#undef APRFLAG
+#undef APRFLAGS

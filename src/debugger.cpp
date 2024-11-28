@@ -5,26 +5,29 @@
 #include <string>
 #include <iostream>
 #include <string_view>
-#include <set>
-
-#include <signal.h>
-
-#include <iostream>
 #include <cstdint>
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <unistd.h>
 #include <cstring>
 #include <stdexcept>
+#include <set>
+#include <map>
 #include <vector>
+
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
+#include <fcntl.h>
+#include <signal.h>
 
 using namespace std;
 
 
-#include "debugger.hpp"
 #include "word.hpp"
+#include "debugger.hpp"
 #include "km10.hpp"
+#include "dte20.hpp"
+#include "pi.hpp"
+#include "device.hpp"
+#include "apr.hpp"
 
 
 static KM10 *cpuForHandlerP;
@@ -91,8 +94,9 @@ Debugger::DebugAction Debugger::debug() {
   km10.dte.disconnect();
 
   static bool firstTime{true};
+
   if (firstTime) {
-    cpuForHandlerP = cpuP;
+    cpuForHandlerP = &km10;
     signal(SIGINT, sigintHandler);
 
     cout << "[KM-10 debugger]" << logger.endl << flush;

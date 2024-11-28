@@ -15,7 +15,6 @@ typedef signed __int128 int128_t;
 class Debugger;
 
 
-// This is used in km10.hpp as well
 #define ATTRPACKED    __attribute__((packed))
 
 struct W36 {

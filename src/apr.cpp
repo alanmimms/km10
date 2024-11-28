@@ -1,36 +1,11 @@
 #include <iostream>
 
-#include "logger.hpp"
-#include "word.hpp"
-#include "device.hpp"
+#include "km10.hpp"
+#include "instruction-result.hpp"
 #include "apr.hpp"
+#include "device.hpp"
+#include "logger.hpp"
 
-#define GCC_BUG 1
-
-// TODO: File this as a bug report.
-//
-// This is necessitated by an apparent bug in G++ 11.4.0 for embedded
-// structs in side packed unions - they have an alignment gap.
-// Harrumph.
-//
-// Instead of using the APRFlags union inside other unions/structs, we
-// use this hack of declaring `prefix_field` for each field and use
-// the accessor functions to get and set the value of the entire
-// APRFlags bitfield.
-#if GCC_BUG
-#define APRFLAGS(PREFIX)			\
-  APRFLAG(PREFIX,sweepDone);			\
-  APRFLAG(PREFIX,powerFailure);			\
-  APRFLAG(PREFIX,addrParity);			\
-  APRFLAG(PREFIX,cacheDirParity);		\
-  APRFLAG(PREFIX,mbParity);			\
-  APRFLAG(PREFIX,ioPageFail);			\
-  APRFLAG(PREFIX,noMemory);			\
-  APRFLAG(PREFIX,sbusError)
-#define APRFLAG(PREFIX,FLAG)	unsigned PREFIX ## _ ## FLAG : 1
-#else
-#define APRFLAGS(FIELDNAME)	APRFlags FIELDNAME
-#endif
 
 // Interrupt handling
 void APRDevice::requestInterrupt() {
@@ -50,26 +25,28 @@ void APRDevice::endSweep() {
 }
 
 // I/O instruction handlers
-void APRDevice::doBLKI(W36 iw, W36 ea, W36 &nextPC) {	// APRID
-  cpuP->memPutN(aprIDValue.u, ea);
+InstructionResult APRDevice::doBLKI(W36 iw, W36 ea) {	// APRID
+  km10.memPutN(aprIDValue.u, ea);
+  return InstructionResult::iNormal;
 }
 
-void APRDevice::doBLKO(W36 iw, W36 ea, W36 &nextPC) {	// WRFIL
+InstructionResult APRDevice::doBLKO(W36 iw, W36 ea) {	// WRFIL
   // This is essentially a no-op.
+  return InstructionResult::iNormal;
 }
 
-W36 APRDevice::doDATAI(W36 iw, W36 ea) {
-  cpuP->memPutN(breakState.u, ea);
-  return breakState.u;
+InstructionResult APRDevice::doDATAI(W36 iw, W36 ea) {
+  km10.memPutN(breakState.u, ea);
+  return InstructionResult::iNormal;
 }
 
-void APRDevice::doCONO(W36 iw, W36 ea) {		// WRAPR
+InstructionResult APRDevice::doCONO(W36 iw, W36 ea) {		// WRAPR
   APRFunctions func{ea.rhu};
   unsigned select = func.getSelect().u;
 
   if (logger.mem) cerr << "; " << ea.fmt18();
 
-  cerr << cpuP->pc.fmtVMA() << " WRAPR: intLevel=" << oct << func.intLevel;
+  cerr << km10.pc.fmtVMA() << " WRAPR: intLevel=" << oct << func.intLevel;
   intLevel = aprState.intLevel = func.intLevel;
 
   if (func.disable) {
@@ -104,16 +81,17 @@ void APRDevice::doCONO(W36 iw, W36 ea) {		// WRAPR
   }
 
   cerr << logger.endl;
+  return InstructionResult::iNormal;
 }
 
-W36 APRDevice::doCONI(W36 iw, W36 ea) {		// RDAPR
+InstructionResult APRDevice::doCONI(W36 iw, W36 ea) {		// RDAPR
   aprState.intLevel = intLevel;	// Refresh our version of the interrupt level
   W36 conditions{(int64_t) aprState.u};
-  cerr << cpuP->pc.fmtVMA() << " RDAPR aprState=" << conditions.fmt36()
+  cerr << km10.pc.fmtVMA() << " RDAPR aprState=" << conditions.fmt36()
        << " ea=" << ea.fmtVMA()
        << logger.endl;
-  cpuP->memPutN(conditions, ea);
-  return conditions;
+  km10.memPutN(conditions, ea);
+  return InstructionResult::iNormal;
 }
 
 void APRDevice::clearIO() {

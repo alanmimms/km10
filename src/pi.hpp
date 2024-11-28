@@ -36,6 +36,7 @@
 
 #include "word.hpp"
 #include "device.hpp"
+#include "instruction-result.hpp"
 
 
 struct PIDevice: Device {
@@ -146,7 +147,7 @@ struct PIDevice: Device {
 
 
   // Constructors
-  PIDevice(KM10 *aCPU);
+  PIDevice(KM10 &cpu);
 
 
   // Formatters
@@ -163,6 +164,6 @@ struct PIDevice: Device {
 
   // I/O instruction handlers
   virtual void clearIO() override;
-  virtual void doCONO(W36 iw, W36 ea) override;
-  virtual W36 doCONI(W36 iw, W36 ea) override;
+  virtual InstructionResult doCONO(W36 iw, W36 ea) override;
+  virtual InstructionResult doCONI(W36 iw, W36 ea) override;
 };

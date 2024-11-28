@@ -6,14 +6,16 @@
 using namespace std;
 
 #include "word.hpp"
-#include "km10.hpp"
 #include "logger.hpp"
+#include "instruction-result.hpp"
 
+
+class KM10;
 
 struct Device {
   unsigned ioAddress;
   string name;
-  KM10 *cpuP;			// The CPU we belong to.
+  KM10 &km10;			// The CPU we belong to.
   unsigned intLevel;
   bool intPending;
 
@@ -23,10 +25,10 @@ struct Device {
   static inline map<unsigned, Device *> devices{};
 
   // Constructors
-  Device(unsigned anAddr, string aName, KM10 *aCPU, bool aCanIntLevel0 = false)
+  Device(unsigned anAddr, string aName, KM10 &cpu, bool aCanIntLevel0 = false)
     : ioAddress(anAddr),
       name(aName),
-      cpuP(aCPU),
+      km10(cpu),
       intLevel(0),
       intPending(false),
       canIntLevel0(aCanIntLevel0)
@@ -53,18 +55,18 @@ struct Device {
 
   // Handle an I/O instruction by calling the appropriate device
   // driver's I/O instruction handler method.
-  static void handleIO(W36 iw, W36 ea);
+  static InstructionResult handleIO(W36 iw, W36 ea);
 
 
   // I/O instruction handlers
   virtual void clearIO();
 
-  virtual W36 doDATAI(W36 iw, W36 ea);
-  virtual void doBLKI(W36 iw, W36 ea, W36 &nextPC);
-  virtual void doBLKO(W36 iw, W36 ea, W36 &nextPC);
-  virtual void doDATAO(W36 iw, W36 ea);
-  virtual void doCONO(W36 iw, W36 ea);
-  virtual W36 doCONI(W36 iw, W36 ea);
-  virtual void doCONSZ(W36 iw, W36 ea, W36 &nextPC);
-  virtual void doCONSO(W36 iw, W36 ea, W36 &nextPC);
+  virtual InstructionResult doDATAI(W36 iw, W36 ea);
+  virtual InstructionResult doDATAO(W36 iw, W36 ea);
+  virtual InstructionResult doBLKI(W36 iw, W36 ea);
+  virtual InstructionResult doBLKO(W36 iw, W36 ea);
+  virtual InstructionResult doCONO(W36 iw, W36 ea);
+  virtual InstructionResult doCONI(W36 iw, W36 ea);
+  virtual InstructionResult doCONSZ(W36 iw, W36 ea);
+  virtual InstructionResult doCONSO(W36 iw, W36 ea);
 };

@@ -38,8 +38,8 @@
 
 
   // Constructors
-PIDevice::PIDevice(KM10 *aCPU):
-    Device(001, "PI", aCPU)
+PIDevice::PIDevice(KM10 &cpu):
+    Device(001, "PI", cpu)
   {
     clearIO();
   }
@@ -101,7 +101,7 @@ PIDevice::PIDevice(KM10 *aCPU):
 
       if (logger.ints) {
 	logger.s << "<<<<INTERRUPT>>>> by " << highestDevP->name
-		 << ": pc=" << cpuP->pc.fmtVMA()
+		 << ": pc=" << km10.pc.fmtVMA()
 		 << " level=" << level
 		 << " ifw=" << ifw.fmt36()
 		 << logger.endl << flush;
@@ -109,12 +109,12 @@ PIDevice::PIDevice(KM10 *aCPU):
 
       // Function word is saved here by KL10 microcode. Does anyone
       // look at this? Who knows?
-      cpuP->ACbanks[7][3] = ifw;
+      km10.ACbanks[7][3] = ifw;
 
       switch (ifw.intFunction) {
       case W36::zeroIF:
       case W36::standardIF:
-	return cpuP->eptAddressFor(&cpuP->eptP->pioInstructions[2*highestLevel]);
+	return km10.eptAddressFor(&km10.eptP->pioInstructions[2*highestLevel]);
 
       default:
 	cerr << "PI got IFW from '" << highestDevP->name << "' specifying function "
@@ -157,7 +157,7 @@ PIDevice::PIDevice(KM10 *aCPU):
 
     if (logger.mem) logger.s << "; " << ea.fmt18();
 
-    cerr << cpuP->pc.fmtVMA() << ": CONO PI,"
+    cerr << km10.pc.fmtVMA() << ": CONO PI,"
 	 << pif.toString() << " ea=" << ea.fmt18() << logger.endl;
 
     if (pif.clearPI) {
@@ -200,6 +200,6 @@ PIDevice::PIDevice(KM10 *aCPU):
 
   W36 PIDevice::doCONI(W36 iw, W36 ea) {
     W36 conditions{(int64_t) piState.u};
-    cpuP->memPutN(conditions, ea);
+    km10.memPutN(conditions, ea);
     return conditions;
   }

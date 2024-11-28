@@ -14,8 +14,8 @@ struct CCADevice: Device {
   APRDevice &apr;
 
   // Constructors
-  CCADevice(KM10 *aCPU, APRDevice &anAPR)
-    : Device(014, "CCA", aCPU),
+  CCADevice(KM10 &cpu, APRDevice &anAPR)
+    : Device(014, "CCA", cpu),
       sweepCountDown(0),
       apr(anAPR)
   { }
@@ -33,14 +33,13 @@ struct CCADevice: Device {
 
 
   // I/O instruction handlers
-  virtual void doCONO(W36 iw, W36 ea) override;
-
-  virtual W36 doDATAI(W36 iw, W36 ea);		      // SWPIA
-  virtual void doBLKO(W36 iw, W36 ea, W36 &nextPC);   // SWPVA
-  virtual void doDATAO(W36 iw, W36 ea);		      // SWPUA
-  virtual W36 doCONI(W36 iw, W36 ea);		      // SWPIO
-  virtual void doCONSZ(W36 iw, W36 ea, W36 &nextPC);  // SWPVO
-  virtual void doCONSO(W36 iw, W36 ea, W36 &nextPC);  // SWPUO
+  virtual InstructionResult doCONO(W36 iw, W36 ea) override;
+  virtual InstructionResult doDATAI(W36 iw, W36 ea); // SWPIA
+  virtual InstructionResult doBLKO(W36 iw, W36 ea);  // SWPVA
+  virtual InstructionResult doDATAO(W36 iw, W36 ea); // SWPUA
+  virtual InstructionResult doCONI(W36 iw, W36 ea);  // SWPIO
+  virtual InstructionResult doCONSZ(W36 iw, W36 ea); // SWPVO
+  virtual InstructionResult doCONSO(W36 iw, W36 ea); // SWPUO
 
   virtual void clearIO();
 };

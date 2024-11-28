@@ -23,7 +23,7 @@ using namespace std;
 
 struct DTE20: Device {
 
-  DTE20(unsigned anAddr, KM10 *aCPU);
+  DTE20(unsigned anAddr, KM10 &cpu);
   ~DTE20();
 
   void connect();
@@ -101,8 +101,8 @@ struct DTE20: Device {
 
   // I/O instruction handlers
   virtual void clearIO() override;
-  virtual void doCONO(W36 iw, W36 ea) override;
-  virtual W36 doCONI(W36 iw, W36 ea) override;
+  virtual InstructionResult doCONO(W36 iw, W36 ea) override;
+  virtual InstructionResult doCONI(W36 iw, W36 ea) override;
 
   // TTY handlers and stuff
   static void consoleIOLoop();

@@ -55,8 +55,8 @@ struct Logger {
     loggingToFile = false;
   }
 
-  void nyi(KM10 *cpuP, const string &context = "");
-  void nsd(KM10 *cpuP, const string &context = "");
+  void nyi(KM10 &cpu, const string &context = "");
+  void nsd(KM10 &cpu, const string &context = "");
 };
 
 

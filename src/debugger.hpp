@@ -1,9 +1,11 @@
 #pragma once
+#include <map>
+#include <string>
 
 using namespace std;
 
-
-#include "km10.hpp"
+#include "word.hpp"
+#include "logger.hpp"
 
 
 struct Debugger {

@@ -1,10 +1,11 @@
 #include <sstream>
 #include <functional>
 
-#include "device.hpp"
 #include "word.hpp"
 #include "logger.hpp"
-
+#include "device.hpp"
+#include "km10.hpp"
+#include "instruction-result.hpp"
 
 using namespace std;
 
@@ -38,7 +39,7 @@ InstructionResult Device::handleIO(W36 iw, W36 ea) {
   Device *devP;
 
   if (auto it = devices.find((unsigned) iw.ioDev); it != devices.end()) {
-    devP = it.second;
+    devP = it->second;
   } else {
     devP = devices.at(0777777ul);
   }
@@ -83,14 +84,14 @@ void Device::clearIO() {	// Default is to do mostly nothing
 }
 
 
-W36 Device::doDATAI(W36 iw, W36 ea) {
-  cpuP->memPutN(0, ea);
-  return 0;
+InstructionResult Device::doDATAI(W36 iw, W36 ea) {
+  km10.memPutN(0, ea);
+  return InstructionResult::iNormal;
 }
   
-InstructionResult Device::doBLKI(W36 iw, W36 ea, W36 &nextPC) {
-  W36 e{cpuP->memGetN(ea)};
-  cpuP->memPutN(W36{++e.lhu, ++e.rhu}, ea);
+InstructionResult Device::doBLKI(W36 iw, W36 ea) {
+  W36 e{km10.memGetN(ea)};
+  km10.memPutN(W36{++e.lhu, ++e.rhu}, ea);
   doDATAI(iw, e.rhu);
 
   if (e.lhu != 0) {
@@ -101,8 +102,8 @@ InstructionResult Device::doBLKI(W36 iw, W36 ea, W36 &nextPC) {
 }
 
 InstructionResult Device::doBLKO(W36 iw, W36 ea) {
-  W36 e{cpuP->memGetN(ea)};
-  cpuP->memPutN(W36{++e.lhu, ++e.rhu}, ea);
+  W36 e{km10.memGetN(ea)};
+  km10.memPutN(W36{++e.lhu, ++e.rhu}, ea);
   doDATAO(iw, e.rhu);
 
   if (e.lhu != 0) {
@@ -124,12 +125,12 @@ InstructionResult Device::doCONO(W36 iw, W36 ea) {
 
 
 InstructionResult Device::doCONI(W36 iw, W36 ea) {
-  cpuP->memPutN(0, ea);
+  km10.memPutN(0, ea);
   return InstructionResult::iNormal;
 }
 
 
-InstructionResult Device::doCONSZ(W36 iw, W36 ea, W36 &nextPC) {
+InstructionResult Device::doCONSZ(W36 iw, W36 ea) {
   W36 conditions = doCONI(iw, ea);
   unsigned result = conditions.rhu & ea.rhu;
   bool skip = result == 0;
@@ -148,7 +149,7 @@ InstructionResult Device::doCONSZ(W36 iw, W36 ea, W36 &nextPC) {
 }
 
 
-InstructionResult Device::doCONSO(W36 iw, W36 ea, W36 &nextPC) {
+InstructionResult Device::doCONSO(W36 iw, W36 ea) {
   W36 conditions = doCONI(iw, ea);
 
   if ((conditions.rhu & ea.rhu) != 0) {

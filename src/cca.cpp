@@ -2,6 +2,7 @@
 #include "device.hpp"
 #include "cca.hpp"
 #include "apr.hpp"
+#include "instruction-result.hpp"
 
 
 // Set a "sweep" going, waiting this many instruction cycles before
@@ -26,42 +27,47 @@ void CCADevice::handleSweep() {
 
 
 // I/O instruction handlers
-void CCADevice::doCONO(W36 iw, W36 ea) {
+InstructionResult CCADevice::doCONO(W36 iw, W36 ea) {
   startSweep();
+  return InstructionResult::iNormal;
 }
 
 // SWPIA
-W36 CCADevice::doDATAI(W36 iw, W36 ea) {
+InstructionResult CCADevice::doDATAI(W36 iw, W36 ea) {
   startSweep();
-  return 0;
+  return InstructionResult::iNormal;
 }
 
 // SWPVA
-void CCADevice::doBLKO(W36 iw, W36 ea, W36 &nextPC) {
+InstructionResult CCADevice::doBLKO(W36 iw, W36 ea) {
   startSweep();
+  return InstructionResult::iNormal;
 }
 
 
 // SWPUA
-void CCADevice::doDATAO(W36 iw, W36 ea) {
+InstructionResult CCADevice::doDATAO(W36 iw, W36 ea) {
   startSweep();
+  return InstructionResult::iNormal;
 }
 
 
 // SWPIO
-W36 CCADevice::doCONI(W36 iw, W36 ea) {
+InstructionResult CCADevice::doCONI(W36 iw, W36 ea) {
   startSweep();
-  return 0;
+  return InstructionResult::iNormal;
 }
 
 // SWPVO
-void CCADevice::doCONSZ(W36 iw, W36 ea, W36 &nextPC) {
+InstructionResult CCADevice::doCONSZ(W36 iw, W36 ea) {
   startSweep();
+  return InstructionResult::iNormal; // XXX
 }
 
 // SWPUO
-void CCADevice::doCONSO(W36 iw, W36 ea, W36 &nextPC) {
+InstructionResult CCADevice::doCONSO(W36 iw, W36 ea) {
   startSweep();
+  return InstructionResult::iNormal; // XXX
 }
 
 void CCADevice::clearIO() {

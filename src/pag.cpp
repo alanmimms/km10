@@ -5,8 +5,8 @@
 
 
 // Constructors
-PAGDevice::PAGDevice(KM10 *aCPU):
-  Device(003, "PAG", aCPU)
+PAGDevice::PAGDevice(KM10 &cpu):
+  Device(003, "PAG", cpu)
 {
   pagState.u = 0;
 }
@@ -25,8 +25,8 @@ void PAGDevice::doCONO(W36 iw, W36 ea) {
 }
 
 W36 PAGDevice::doCONI(W36 iw, W36 ea) {
-  W36 conditions{cpuP->memGetN(ea).lhu, pagState.u};
-  cpuP->memPutN(conditions, ea);
+  W36 conditions{km10.memGetN(ea).lhu, pagState.u};
+  km10.memPutN(conditions, ea);
   return conditions;
 }
 

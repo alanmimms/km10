@@ -6,7 +6,7 @@
 // I/O instruction handlers
 // WRTIME
 void MTRDevice::doCONO(W36 iw, W36 ea) {
-  W36 conditions{cpuP->memGetN(ea).rhu};
+  W36 conditions{km10.memGetN(ea).rhu};
   if (logger.mem) logger.s << "; " << ea.fmt18();
   mtrState.u = iw.y;
 
@@ -16,7 +16,7 @@ void MTRDevice::doCONO(W36 iw, W36 ea) {
 }
 
 W36 MTRDevice::doCONI(W36 iw, W36 ea) {
-  cpuP->memPutN(mtrState.u, ea);
+  km10.memPutN(mtrState.u, ea);
   return mtrState.u;
 }
 
@@ -26,7 +26,7 @@ W36 MTRDevice::doDATAI(W36 iw, W36 ea) {
 }
   
 // RDMACT
-void MTRDevice::doBLKI(W36 iw, W36 ea, W36 &nextPC) {
+void MTRDevice::doBLKI(W36 iw, W36 ea) {
 }
 
 void MTRDevice::clearIO() {

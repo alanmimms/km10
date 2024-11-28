@@ -15,15 +15,17 @@ using namespace std;
 
 #include "word.hpp"
 #include "device.hpp"
+#include "km10.hpp"
 #include "logger.hpp"
 #include "tsqueue.hpp"
 #include "dte20.hpp"
+#include "instruction-result.hpp"
 
 
-DTE20::DTE20(unsigned anAddr, KM10 *aCPU)
+DTE20::DTE20(unsigned anAddr, KM10 &cpu)
   : Device(anAddr,
 	   string("DTE20.") + to_string(anAddr & 3),
-	   aCPU,
+	   cpu,
 	   true),
     protocolMode(SECONDARY),
     isConnected(false),
@@ -85,33 +87,33 @@ void DTE20::clearIO() {
 }
 
 
-void DTE20::doCONO(W36 iw, W36 ea) {
+InstructionResult DTE20::doCONO(W36 iw, W36 ea) {
   CONOMask req(ea);
   if (logger.dte) logger.s << "; DTE CONO " << oct << ea;
 
   if (req.to11Doorbell) {
     char buf;
 
-    MonitorCommand mc{cpuP->eptP->DTEto11Arg.rhu};
+    MonitorCommand mc{km10.eptP->DTEto11Arg.rhu};
 
-    if (logger.dte) logger.s << " to11DoorBell arg=" << oct << cpuP->eptP->DTEto11Arg.rhu;
+    if (logger.dte) logger.s << " to11DoorBell arg=" << oct << km10.eptP->DTEto11Arg.rhu;
 
     switch (mc.fn) {
     case ctyInput:
 
       if (ctyQ.isEmpty()) {
 	//	  cerr << "ctyIn [empty]" << endl << flush;
-	cpuP->eptP->DTEto10Arg.rhu = 0;
+	km10.eptP->DTEto10Arg.rhu = 0;
       } else {
 	buf = ctyQ.dequeue() & 0177;
 	cerr << "ctyIn [got "
 	     << hex << setw(2) << setfill('0')
 	     << (int) buf << "]" << endl << flush;
-	cpuP->eptP->DTEto10Arg.rhu = buf;
+	km10.eptP->DTEto10Arg.rhu = buf;
       }
 
       // Acknowledge the command. (rsxt20.l20:5980)
-      cpuP->eptP->DTEMonitorOpComplete = W36(-2 & 0xFFFF);
+      km10.eptP->DTEMonitorOpComplete = W36(-2 & 0xFFFF);
       break;
 
     default:
@@ -121,7 +123,7 @@ void DTE20::doCONO(W36 iw, W36 ea) {
       write(1, &buf, 1);
 
       // Acknowledge the command. (rsxt20.l20:5924)
-      cpuP->eptP->DTEMonitorOpComplete = W36(-2 & 0xFFFF);
+      km10.eptP->DTEMonitorOpComplete = W36(-2 & 0xFFFF);
 
       // XXX needs to set to-10 doorbell...?
       break;
@@ -137,14 +139,16 @@ void DTE20::doCONO(W36 iw, W36 ea) {
       break;
     }
   } else {
-    logger.nyi(cpuP);
+    logger.nyi(km10);
   }
+
+  return InstructionResult::iNormal;
 }
 
 
-W36 DTE20::doCONI(W36 iw, W36 ea) {
+InstructionResult DTE20::doCONI(W36 iw, W36 ea) {
   if (logger.dte) logger.s << "; DTE CONI";
-  return 0;
+  return InstructionResult::iNormal;
 }
 
 

@@ -64,25 +64,22 @@
 #include <functional>
 #include <assert.h>
 #include <unordered_set>
+#include <atomic>
 
 using namespace std;
 using namespace fmt;
 
-
+#include "word.hpp"
 #include "apr.hpp"
-#include "bytepointer.hpp"
 #include "cca.hpp"
-#include "device.hpp"
-#include "dte20.hpp"
-#include "logger.hpp"
 #include "mtr.hpp"
 #include "pag.hpp"
 #include "pi.hpp"
 #include "tim.hpp"
-#include "word.hpp"
-
-
-class Debugger;
+#include "dte20.hpp"
+#include "device.hpp"
+#include "debugger.hpp"
+#include "instruction-result.hpp"
 
 
 class KM10 {
@@ -90,29 +87,15 @@ public:
   APRDevice apr;
   CCADevice cca;
   MTRDevice mtr;
-  PIDevice pi;
   PAGDevice pag;
+  PIDevice pi;
   TIMDevice tim;
   DTE20 dte;
   Device noDevice;
-  Debugger *debuggerP;
+  Debugger debugger;
 
 
-  // Each instruction method returns this to indicate what type of
-  // instruction it was. This affects how PC is updated, whether a
-  // trap is to be executed, etc.
-  enum InstructionResult {
-    iNormal,			// Normal execution with no PC modification or traps.
-    iSkip,			// Instruction caused a skip condition.
-    iJump,			// Instruction changed the PC.
-    iMUUO,			// Instruction is a MUUO.
-    iLUUO,			// Instruction is a LUUO.
-    iTrap,			// Instruction caused a trap condition.
-    iHALT,			// Instruction halted the CPU.
-    iXCT,			// Instruction is an XCT.
-    iNoSuchDevice,		// Instruction is I/O operation on a non-existent device.
-    iNYI,			// Instruction is not yet implemented.
-  };
+  using BreakpointTable = unordered_set<unsigned>;
 
 
   // Type for the function that implements an opcode.
@@ -124,26 +107,12 @@ public:
   // initializer. I make it static and bind the instance "this" at
   // time of call with ".*" since the elements point to instance
   // methods.
-  const InstructionF ops[512];
+  static InstructionF ops[512];
 
 
-  // I find these a lot less ugly...
-  using WFunc = function<W36()>;
-  using DFunc = function<W72()>;
-  using FuncW = function<void(W36)>;
-  using WFuncW = function<W36(W36)>;
-  using FuncWW = function<void(W36,W36)>;
-  using FuncD = function<void(W72)>;
-  using WFuncWW = function<W36(W36,W36)>;
-  using DFuncWW = function<W72(W36,W36)>;
-  using DFuncDW = function<W72(W72,W36)>;
-  using BoolPredW = function<bool(W36)>;
-  using BoolPredWW = function<bool(W36,W36)>;
-  using VoidFunc = function<void()>;
-
-
-  // Constructor
-  KM10();
+  // Constructor and destructor
+  KM10(unsigned nMemoryWords, BreakpointTable &aBPs, BreakpointTable &eBPs);
+  ~KM10();
 
 
   W36 iw;
@@ -383,442 +352,151 @@ public:
   void loadA10(const char *fileNameP);
 
 
-  WFunc acGet = [&]() {
-    return acGetN(iw.ac);
-  };
+  W36 acGet();
+  W36 acGetRH();
 
-
-  WFunc acGetRH = [&]() {
-    W36 value{0, acGet().rhu};
-    if (logger.mem) logger.s << "; acRH" << oct << iw.ac << ": " << value.fmt18();
-    return value;
-  };
-
-    // This retrieves LH into the RH of the return value, which is
-    // required for things like TLNN to work properly since they use
-    // the EA as a mask.
-  WFunc acGetLH = [&]() {
-    W36 value{0, acGet().lhu};
-    if (logger.mem) logger.s << "; acLH" << oct << iw.ac << ": " << value.fmt18();
-    return value;
-  };
-
-
-  FuncW acPut = [&](W36 value) {
-    acPutN(value, iw.ac);
-  };
-
-
-  FuncW acPutRH = [&](W36 value) {
-    acPut(W36(acGet().lhu, value.rhu));
-  };
-
+  // This retrieves LH into the RH of the return value, which is
+  // required for things like TLNN to work properly since they use
+  // the EA as a mask.
+  W36 acGetLH();
+  void acPut(W36 w);
+  void acPutRH(W36 w);
 
   // This is used to store back in, e.g., TLZE. But the LH of AC is
   // in the RH of the word we're passed because of how the testing
   // logic of these instructions must work. So we put the RH of the
   // value into the LH of the AC, keeping the AC's RH intact.
-  FuncW acPutLH = [&](W36 value) {
-    acPut(W36(value.rhu, acGet().rhu));
-  };
+  void acPutLH(W36 w);
+  W72 acGet2();
+  void acPut2(W72 d);
+  W36 memGet();
+  void memPut(W36 w);
+  void selfPut(W36 w);
+  void bothPut(W36 w);
+  void bothPut2(W72 d);
+  W36 swap(W36 w);
 
-
-  DFunc acGet2 = [&]() {
-    W72 ret{acGetN(iw.ac+0), acGetN(iw.ac+1)};
-    return ret;
-  };
-
-
-  FuncD acPut2 = [&](W72 v) {
-    acPutN(v.hi, iw.ac+0);
-    acPutN(v.lo, iw.ac+1);
-  };
-
-
-  WFunc memGet = [&]() {
-    return memGetN(ea);
-  };
-
-
-  FuncW memPut = [&](W36 value) {
-    memPutN(value, ea);
-  };
-
-
-  FuncW selfPut = [&](W36 value) {
-    memPut(value);
-    if (iw.ac != 0) acPut(value);
-  };
-
-
-  FuncW bothPut = [&](W36 value) {
-    acPut(value);
-    memPut(value);
-  };
-
-
-  FuncD bothPut2 = [&](W72 v) {
-    acPutN(v.hi, iw.ac+0);
-    acPutN(v.lo, iw.ac+1);
-    memPut(v.hi);
-  };
-
-
-  WFuncW swap = [&](W36 src) {return W36{src.rhu, src.lhu};};
-
-
-  WFuncW negate = [&](W36 src) {
-    W36 v(-src.s);
-    if (src.u == W36::bit0) flags.tr1 = flags.ov = flags.cy1 = 1;
-    if (src.u == 0) flags.cy0 = flags.cy1 = 1;
-    return v;
-  };
-
-
-  WFuncW magnitude = [&](W36 src) {
-    W36 v(src.s < 0 ? -src.s : src.s);
-    if (src.u == W36::bit0) flags.tr1 = flags.ov = flags.cy1 = 1;
-    return v;
-  };
-
-
-  WFunc memGetSwapped = [&]() {return swap(memGet());};
-
-
-  FuncD memPutHi = [&](W72 v) {
-    memPut(v.hi);
-  };
-
-
-  WFunc immediate = [&]() {return W36(pc.isSection0() ? 0 : ea.lhu, ea.rhu);};
+  W36 negate(W36 w);
+  W36 magnitude(W36 w);
+  W36 memGetSwapped();
+  void memPutHi(W72 d);
+  W36 immediate();
 
 
   // Condition testing predicates
-  BoolPredW isLT0  = [&](W36 v) {return v.s  < 0;};
-  BoolPredW isLE0  = [&](W36 v) {return v.s <= 0;};
-  BoolPredW isGT0  = [&](W36 v) {return v.s  > 0;};
-  BoolPredW isGE0  = [&](W36 v) {return v.s >= 0;};
-  BoolPredW isNE0  = [&](W36 v) {return v.s != 0;};
-  BoolPredW isEQ0  = [&](W36 v) {return v.s == 0;};
-  BoolPredW always = [&](W36 v) {return  true;};
-  BoolPredW never  = [&](W36 v) {return false;};
+  bool isLT0(W36 w);
+  bool isLE0(W36 w);
+  bool isGT0(W36 w);
+  bool isGE0(W36 w);
+  bool isNE0(W36 w);
+  bool isEQ0(W36 w);
+  bool always(W36 w);
+  bool never(W36 w);
 
-  BoolPredWW isNE0T  = [&](W36 a, W36 b) {return (a.u & b.u) != 0;};
-  BoolPredWW isEQ0T  = [&](W36 a, W36 b) {return (a.u & b.u) == 0;};
-  BoolPredWW alwaysT = [&](W36 a, W36 b) {return  true;};
-  BoolPredWW neverT  = [&](W36 a, W36 b) {return false;};
+  bool isNE0T(W36 a, W36 b);
+  bool isEQ0T(W36 a, W36 b);
+  bool alwaysT(W36 a, W36 b);
+  bool neverT(W36 a, W36 b);
 
 
-  WFunc getE = [&]() -> W36 {return ea;};
-  WFuncW  noMod1 = [&](W36 a) {return a;};
-  WFuncWW noMod2 = [&](W36 a, W36 b) {return a;};
+  W36 getE();
+  W36 noMod1(W36 w);
+  W36 noMod2(W36 a, W36 b);
 
 
   // There is no `zeroMaskL`, `compMaskR`, `onesMaskL` because,
   // e.g., TLZE operates on the LH of the AC while it's in the RH of
   // the value so the testing/masking work properly.
-  WFuncWW zeroMaskR = [&](W36 a, W36 b) {return a.u & ~(uint64_t) b.rhu;};
-  WFuncWW zeroMask  = [&](W36 a, W36 b) {return a.u & ~b.u;};
+  W36 zeroMaskR(W36 a, W36 b);
+  W36 zeroMask(W36 a, W36 b);
 
-  WFuncWW onesMaskR = [&](W36 a, W36 b) {return a.u | b.rhu;};
-  WFuncWW onesMask  = [&](W36 a, W36 b) {return a.u | b.u;};
+  W36 onesMaskR(W36 a, W36 b);
+  W36 onesMask(W36 a, W36 b);
 
-  WFuncWW compMaskR = [&](W36 a, W36 b) {return a.u ^ b.rhu;};
-  WFuncWW compMask  = [&](W36 a, W36 b) {return a.u ^ b.u;};
+  W36 compMaskR(W36 a, W36 b);
+  W36 compMask(W36 a, W36 b);
 
-  WFuncW zeroWord = [&](W36 a) {return 0;};
-  WFuncW onesWord = [&](W36 a) {return W36::all1s;};
-  WFuncW compWord = [&](W36 a) {return ~a.u;};
+  W36 zeroWord(W36 a);
+  W36 onesWord(W36 a);
+  W36 compWord(W36 a);
 
-  FuncW noStore = [](W36 toSrc) {};
+  void noStore(W36 w);
 
 
   // For a given low halfword, this computes an upper halfword by
   // extending the low halfword's sign.
-  function<unsigned(const unsigned)> extnOf = [&](const unsigned v) {
-    return (v & 0400'000) ? W36::halfOnes : 0u;
-  };
+  unsigned extnOf(const unsigned);
 
 
   // doCopyF functions
-  WFuncWW copyHRR = [&](W36 src, W36 dst) {return W36(dst.lhu, src.rhu);};
-  WFuncWW copyHRL = [&](W36 src, W36 dst) {return W36(src.rhu, dst.rhu);};
-  WFuncWW copyHLL = [&](W36 src, W36 dst) {return W36(src.lhu, dst.rhu);};
-  WFuncWW copyHLR = [&](W36 src, W36 dst) {return W36(dst.lhu, src.lhu);};
+  W36 copyHRR(W36 a, W36 b);
+  W36 copyHRL(W36 a, W36 b);
+  W36 copyHLL(W36 a, W36 b);
+  W36 copyHLR(W36 a, W36 b);
 
 
   // doModifyF functions
-  WFuncW zeroR = [&](W36 v) {return W36(v.lhu, 0);};
-  WFuncW onesR = [&](W36 v) {return W36(v.lhu, W36::halfOnes);};
-  WFuncW extnR = [&](W36 v) {return W36(extnOf(v.rhu), v.rhu);};
-  WFuncW zeroL = [&](W36 v) {return W36(0, v.rhu);};
-  WFuncW onesL = [&](W36 v) {return W36(W36::halfOnes, v.rhu);};
-  WFuncW extnL = [&](W36 v) {return W36(v.lhu, extnOf(v.lhu));};
+  W36 zeroR(W36 a);
+  W36 onesR(W36 a);
+  W36 extnR(W36 a);
+  W36 zeroL(W36 a);
+  W36 onesL(W36 a);
+  W36 extnL(W36 a);
 
 
   // binary doModifyF functions
-  WFuncWW andWord =   [&](W36 s1, W36 s2) {return s1.u & s2.u;};
-  WFuncWW andCWord =  [&](W36 s1, W36 s2) {return s1.u & ~s2.u;};
-  WFuncWW andCBWord = [&](W36 s1, W36 s2) {return ~s1.u & ~s2.u;};
-  WFuncWW iorWord =   [&](W36 s1, W36 s2) {return s1.u | s2.u;};
-  WFuncWW iorCWord =  [&](W36 s1, W36 s2) {return s1.u | ~s2.u;};
-  WFuncWW iorCBWord = [&](W36 s1, W36 s2) {return ~s1.u | ~s2.u;};
-  WFuncWW xorWord =   [&](W36 s1, W36 s2) {return s1.u ^ s2.u;};
-  WFuncWW xorCWord =  [&](W36 s1, W36 s2) {return s1.u ^ ~s2.u;};
-  WFuncWW xorCBWord = [&](W36 s1, W36 s2) {return ~s1.u ^ ~s2.u;};
-  WFuncWW eqvWord =   [&](W36 s1, W36 s2) {return ~(s1.u ^ s2.u);};
-  WFuncWW eqvCWord =  [&](W36 s1, W36 s2) {return ~(s1.u ^ ~s2.u);};
-  WFuncWW eqvCBWord = [&](W36 s1, W36 s2) {return ~(~s1.u ^ ~s2.u);};
+  W36 andWord(W36 a, W36 b);
+  W36 andCWord(W36 a, W36 b);
+  W36 andCBWord(W36 a, W36 b);
+  W36 iorWord(W36 a, W36 b);
+  W36 iorCWord(W36 a, W36 b);
+  W36 iorCBWord(W36 a, W36 b);
+  W36 xorWord(W36 a, W36 b);
+  W36 xorCWord(W36 a, W36 b);
+  W36 xorCBWord(W36 a, W36 b);
+  W36 eqvWord(W36 a, W36 b);
+  W36 eqvCWord(W36 a, W36 b);
+  W36 eqvCBWord(W36 a, W36 b);
 
 
-  WFuncWW addWord = [&](W36 s1, W36 s2) {
-    int64_t sum = s1.ext64() + s2.ext64();
-
-    if (sum < -(int64_t) W36::bit0) {
-      flags.tr1 = flags.ov = flags.cy0 = 1;
-    } else if ((uint64_t) sum >= W36::bit0) {
-      flags.tr1 = flags.ov = flags.cy1 = 1;
-    } else {
-
-      if (s1.s < 0 && s2.s < 0) {
-	flags.cy0 = flags.cy1 = 1;
-      } else if ((s1.s < 0) != (s2.s < 0)) {
-	const uint64_t mag1 = abs(s1.s);
-	const uint64_t mag2 = abs(s2.s);
-
-	if ((s1.s >= 0 && mag1 >= mag2) ||
-	    (s2.s >= 0 && mag2 >= mag1)) {
-	  flags.cy0 = flags.cy1 = 1;
-	}
-      }
-    }
-
-    return sum;
-  };
-    
-
-  WFuncWW subWord = [&](W36 s1, W36 s2) {
-    int64_t diff = s1.ext64() - s2.ext64();
-
-    if (diff < -(int64_t) W36::bit0) {
-      flags.tr1 = flags.ov = flags.cy0 = 1;
-    } else if ((uint64_t) diff >= W36::bit0) {
-      flags.tr1 = flags.ov = flags.cy1 = 1;
-    }
-
-    return diff;
-  };
-    
-    
-  DFuncWW mulWord = [&](W36 s1, W36 s2) {
-    int128_t prod128 = (int128_t) s1.ext64() * s2.ext64();
-    W72 prod = W72::fromMag((uint128_t) (prod128 < 0 ? -prod128 : prod128), prod128 < 0);
-
-    if (s1.u == W36::bit0 && s2.u == W36::bit0) {
-      flags.tr1 = flags.ov = 1;
-      return W72{W36{1ull << 34}, W36{0}};
-    }
-
-    return prod;
-  };
-    
-
-  WFuncWW imulWord = [&](W36 s1, W36 s2) {
-    int128_t prod128 = (int128_t) s1.ext64() * s2.ext64();
-    W72 prod = W72::fromMag((uint128_t) (prod128 < 0 ? -prod128 : prod128), prod128 < 0);
-
-    if (s1.u == W36::bit0 && s2.u == W36::bit0) {
-      flags.tr1 = flags.ov = 1;
-    }
-
-
-    return W36((prod.s < 0 ? W36::bit0 : 0) | ((W36::all1s >> 1) & prod.u));
-  };
-
-    
-  DFuncWW idivWord = [&](W36 s1, W36 s2) {
-
-    if ((s1.u == W36::bit0 && s2.s == -1ll) || s2.u == 0ull) {
-      flags.ndv = flags.tr1 = flags.ov = 1;
-      return W72{s1, s2};
-    } else {
-      int64_t quo = s1.s / s2.s;
-      int64_t rem = abs(s1.s % s2.s);
-      if (quo < 0) rem = -rem;
-      return W72{W36{quo}, W36{abs(rem)}};
-    }
-  };
-
-    
-  DFuncDW divWord = [&](W72 s1, W36 s2) {
-    uint128_t den70 = ((uint128_t) s1.hi35 << 35) | s1.lo35;
-    auto dor = s2.mag;
-    auto signBit = s1.s < 0 ? 1ull << 35 : 0ull;
-
-    if (s1.hi35 >= s2.mag || s2.u == 0) {
-      flags.ndv = flags.tr1 = flags.ov = 1;
-      return s1;
-    } else {
-      int64_t quo = den70 / dor;
-      int64_t rem = den70 % dor;
-      W72 ret{
-	W36{(int64_t) ((quo & W36::magMask) | signBit)},
-	W36{(int64_t) ((rem & W36::magMask) | signBit)}};
-      return ret;
-    }
-  };
+  W36 addWord(W36 a, W36 b);
+  W36 subWord(W36 a, W36 b);
+  W72 mulWord(W36 a, W36 b);
+  W36 imulWord(W36 a, W36 b);
+  W72 idivWord(W36 a, W36 b);
+  W72 divWord(W72 a, W36 b);
 
     
   // Binary comparison predicates.
-  BoolPredWW isLT    = [&](W36 v1, W36 v2) {return v1.ext64() <  v2.ext64();};
-  BoolPredWW isLE    = [&](W36 v1, W36 v2) {return v1.ext64() <= v2.ext64();};
-  BoolPredWW isGT    = [&](W36 v1, W36 v2) {return v1.ext64() >  v2.ext64();};
-  BoolPredWW isGE    = [&](W36 v1, W36 v2) {return v1.ext64() >= v2.ext64();};
-  BoolPredWW isNE    = [&](W36 v1, W36 v2) {return v1.ext64() != v2.ext64();};
-  BoolPredWW isEQ    = [&](W36 v1, W36 v2) {return v1.ext64() == v2.ext64();};
-  BoolPredWW always2 = [&](W36 v1, W36 v2) {return true;};
-  BoolPredWW never2  = [&](W36 v1, W36 v2) {return false;};
+  bool isLT(W36 a, W36 b);
+  bool isLE(W36 a, W36 b);
+  bool isGT(W36 a, W36 b);
+  bool isGE(W36 a, W36 b);
+  bool isNE(W36 a, W36 b);
+  bool isEQ(W36 a, W36 b);
+  bool always2(W36 a, W36 b);
+  bool never2(W36 a, W36 b);
 
 
-  VoidFunc skipAction = [&] {++nextPC.rhu;};
-  VoidFunc jumpAction = [&] {nextPC.rhu = ea.rhu;};
+  void skipAction();
+  void jumpAction();
 
 
-  // Instruction class implementations.
-  void doBinOp(auto getSrc1F, auto getSrc2F, auto modifyF, auto putDstF) {
-    auto result = modifyF(getSrc1F(), getSrc2F());
-    if (!flags.ndv) putDstF(result);
-  }
+  // Genericized instruction class implementations.
+  void doBinOp(auto getSrc1F, auto getSrc2F, auto modifyF, auto putDstF);
+  void doTXXXX(auto get1F, auto get2F, auto modifyF, auto condF, auto storeF);
+  void doHXXXX(auto getSrcF, auto getDstF, auto copyF, auto modifyF, auto putDstF);
+  void doMOVXX(auto getSrcF, auto modifyF, auto putDstF);
+  void doSETXX(auto getSrcF, auto modifyF, auto putDstF);
+  void doCAXXX(auto getSrc1F, auto getSrc2F, auto condF);
 
+  void doJUMP(auto condF);
+  void doSKIP(auto condF);
+  void doAOSXX(auto getF, const signed delta, auto putF, auto condF, auto actionF);
 
-  void doTXXXX(auto get1F, auto get2F, auto modifyF, auto condF, auto storeF) {
-    W36 a1 = get1F();
-    W36 a2 = get2F();
-
-    if (condF(a1, a2)) {
-      logFlow("skip");
-      ++nextPC.rhu;
-    }
-      
-    storeF(modifyF(a1, a2));
-  }
-
-
-  void doHXXXX(auto getSrcF, auto getDstF, auto copyF, auto modifyF, auto putDstF) {
-    putDstF(modifyF(copyF(getSrcF(), getDstF())));
-  }
-
-
-  void doMOVXX(auto getSrcF, auto modifyF, auto putDstF) {
-    putDstF(modifyF(getSrcF()));
-  }
-
-
-  void doSETXX(auto getSrcF, auto modifyF, auto putDstF) {
-    putDstF(modifyF(getSrcF()));
-  }
-
-  void doCAXXX(auto getSrc1F, auto getSrc2F, auto condF) {
-
-    if (condF(getSrc1F().ext64(), getSrc2F().ext64())) {
-      logFlow("skip");
-      ++nextPC.rhu;
-    }
-  }
-
-  void doJUMP(auto condF) {
-
-    if (condF(acGet())) {
-      logFlow("jump");
-      nextPC.rhu = ea.rhu;
-    }
-  }
-
-
-  void doSKIP(auto condF) {
-    W36 eaw = memGet();
-
-    if (condF(eaw)) {
-      logFlow("skip");
-      ++nextPC.rhu;
-    }
-      
-    if (iw.ac != 0) acPut(eaw);
-  }
-
-
-  void doAOSXX(auto getF, const signed delta, auto putF, auto condF, auto actionF) {
-    W36 v = getF();
-
-    if (delta > 0) {		// Increment
-
-      if (v.u == W36::all1s >> 1) {
-	flags.tr1 = flags.ov = flags.cy1 = 1;
-      } else if (v.ext64() == -1) {
-	flags.cy0 = flags.cy1 = 1;
-      }
-    } else {			// Decrement
-
-      if (v.u == W36::bit0) {
-	flags.tr1 = flags.ov = flags.cy0 = 1;
-      } else if (v.u != 0) {
-	flags.cy0 = flags.cy1 = 1;
-      }
-    }
-
-    v.s += delta;
-
-    if (iw.ac != 0) acPut(v);
-    putF(v);
-
-    if (condF(v)) actionF();
-  }
-
-
-  void doPush(W36 v, W36 acN) {
-    W36 ac = acGetN(acN);
-
-    if (pc.isSection0() || ac.lhs < 0 || (ac.lhu & 0007777) == 0) {
-      ac = W36(ac.lhu + 1, ac.rhu + 1);
-
-      if (ac.lhu == 0)
-	flags.tr2 = 1;
-      else			// Correct? Don't access memory for full stack?
-	memPutN(v, ac.rhu);
-    } else {
-      ac = ac + 1;
-      memPutN(ac.vma, v);
-    }
-
-    acPutN(ac, acN);
-  }
-
-
-  W36 doPop(unsigned acN) {
-    W36 ac = acGetN(acN);
-    W36 poppedWord;
-
-    if (pc.isSection0() || ac.lhs < 0 || (ac.lhu & 0007777) == 0) {
-      poppedWord = memGetN(ac.rhu);
-      ac = W36(ac.lhu - 1, ac.rhu - 1);
-      if (ac.lhs == -1) flags.tr2 = 1;
-    } else {
-      poppedWord = memGetN(ac.vma);
-      ac = ac - 1;
-    }
-
-    acPutN(ac, acN);
-    return poppedWord;
-  }
-
-
-  void logFlow(const char *msg) {
-    if (logger.pc) logger.s << " [" << msg << "]";
-  }
-
-
-  void setDebugger(Debugger *p) { debuggerP = p; }
-
+  void doPush(W36 v, W36 acN);
+  W36 doPop(unsigned acN);
+  void logFlow(const char *msg);
 
   InstructionResult doNYI();
   InstructionResult doIO();
@@ -1156,8 +834,13 @@ public:
   ////////////////////////////////////////////////////////////////////////////////
   // The instruction emulator. Call this to start, step, or continue
   // running.
-  void emulate(Debugger *debugger);
+  void emulate();
 
-protected:
-  uint16_t getWord(ifstream &inS, [[maybe_unused]] const char *whyP);
+
+  // static singleton with constructor to populate the ops[] static table.
+  struct OpsInitializer {
+    OpsInitializer();
+  };
+
+  static OpsInitializer opsInitializer;
 };

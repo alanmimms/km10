@@ -2,6 +2,7 @@
 
 #include "word.hpp"
 #include "device.hpp"
+#include "instruction-result.hpp"
 
 
 struct TIMDevice: Device {
@@ -37,8 +38,8 @@ struct TIMDevice: Device {
 
 
   // Constructors
-  TIMDevice(KM10 *aCPU):
-    Device(020, "TIM", aCPU),
+  TIMDevice(KM10 &cpu):
+    Device(020, "TIM", cpu),
     timState(0)
   { }
 
@@ -51,8 +52,8 @@ struct TIMDevice: Device {
   void updateCounts();
 
   // I/O instruction handlers
-  virtual void doCONO(W36 iw, W36 ea) override;
-  virtual W36 doCONI(W36 iw, W36 ea) override;
-  virtual W36 doDATAI(W36 iw, W36 ea);
+  virtual InstructionResult doCONO(W36 iw, W36 ea) override;
+  virtual InstructionResult doCONI(W36 iw, W36 ea) override;
+  virtual InstructionResult doDATAI(W36 iw, W36 ea);
   virtual void clearIO();
 };

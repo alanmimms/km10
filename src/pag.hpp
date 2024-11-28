@@ -2,6 +2,7 @@
 
 #include "word.hpp"
 #include "device.hpp"
+#include "instruction-result.hpp"
 
 
 class KM10;
@@ -27,7 +28,7 @@ struct PAGDevice: Device {
 
 
   // Constructors
-  PAGDevice(KM10 *aCPU);
+  PAGDevice(KM10 &cpu);
 
 
   // Accessors
@@ -35,7 +36,7 @@ struct PAGDevice: Device {
 
 
   // I/O instruction handlers
-  virtual void doCONO(W36 iw, W36 ea) override;
-  virtual W36 doCONI(W36 iw, W36 ea) override;
+  virtual InstructionResult doCONO(W36 iw, W36 ea) override;
+  virtual InstructionResult doCONI(W36 iw, W36 ea) override;
   virtual void clearIO();
 };

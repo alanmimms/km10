@@ -8,49 +8,32 @@
 #include <vector>
 
 #include "word.hpp"
-#include "km10.hpp"
 #include "logger.hpp"
 
 using namespace std;
 
 
-//class BytePointerL1;
-//class BytePointerG1;
-//class BytePointerG2;
+class KM10;
 
 
 // Abstract superclass with behaviors that work the same regardless of
 // type of bytepointer, using methods provided by each type and a
 // factory that creates instances based on the source data it finds.
 struct BytePointer {
-  static BytePointer *makeFrom(W36 bpa, KM10 *cpuP);
+  static BytePointer *makeFrom(W36 bpa, KM10 &cpu);
 
   typedef tuple<unsigned, unsigned, unsigned> PSA;
 
-  virtual PSA getPSA(KM10 *cpuP) = 0;
+  virtual PSA getPSA(KM10 &cpu) = 0;
 
   virtual bool isTwoWords() {
     return false;
   }
 
-  unsigned getByte(KM10 *cpuP) {
-    auto [p, s, a] = getPSA(cpuP);
-    return (cpuP->memGetN(a) >> p) & W36::rMask(s);
-  }
-
-  void putByte(W36 v, KM10 *cpuP) {
-    auto [p, s, a] = getPSA(cpuP);
-    W36 w(cpuP->memGetN(a));
-    cpuP->memPutN((w.u & ~W36::bMask(p, s)) | ((v & W36::rMask(p)) << p), a);
-  }
-
-
-  virtual void inc(KM10 *cpuP) {
-  }
-
-  virtual bool adjust(unsigned ac, KM10 *cpuP) {
-    return false;
-  }
+  unsigned getByte(KM10 &cpu);
+  void putByte(W36 v, KM10 &cpu);
+  virtual void inc(KM10 &cpu);
+  virtual bool adjust(unsigned ac, KM10 &cpu);
 };
 
 
@@ -77,23 +60,8 @@ struct BytePointerL1: BytePointer {
 
 
   // Accessors
-  virtual PSA getPSA(KM10 *cpuP) {
-    unsigned rp = p;
-    unsigned rs = s;
-    return PSA(rp, rs, cpuP->getEA(i, x, y));
-  }
-
-
-  virtual void inc(KM10 *cpuP) {
-
-    if (s > p) {		// Point to left-aligned byte in next word
-      p = 36 - s;
-      ++y;
-      y &= W36::halfOnes;
-    } else {			// Move further down into the same word
-      p -= s;
-    }
-  }
+  virtual PSA getPSA(KM10 &cpu);
+  virtual void inc(KM10 &cpu);
 
   // Returns true if trap1, overflow, and no-divide flags should be set.
 
@@ -147,60 +115,7 @@ struct BytePointerL1: BytePointer {
   // when it finished). That's about it.
   // 
   // OWGs split off their separate way.
-
-  virtual bool adjust(unsigned ac, KM10 *cpuP) {
-
-    if (s == 0) {
-      cpuP->acPutN(u, ac);
-      return false;
-    } else if (s > 36 - p) {
-      return true;
-    }
-    
-    // Step 1: figure out the byte capacity of a word. This is broken
-    // into the capacity to the left of the current byte (including the
-    // byte itself) and the capacity to the right of the byte. If these
-    // add up to zero, then the byte can't fit in a word, and we return
-    // to the user with no divide set.
-    int delta = cpuP->acGetN(ac);
-    int bpwL = 0;
-    int bpwR = 0;
-
-    // Count bytes to left of and including current byte.
-    for (int ip=p; ip > 0; ip -= s) ++bpwL;
-
-    // Count bytes to right of current byte.
-    for (int ip=p; ip < 36; ip += s) ++bpwR;
-
-    int bpw = bpwL + bpwR;
-
-    // No bytes fit in a word, so return error.
-    if (bpw == 0) return true;
-
-    // Compute number of words forward or backward from current
-    // implied by the byte count delta. This is done by counting from
-    // the leftmost byte in the current word as KL microcode does it.
-    int deltaW = (delta - bpwL) / bpw;
-
-    y += deltaW;
-
-    // Compute the number of bytes from the leftmost in the new word
-    // to advance or retreat by.
-    int deltaB = delta % bpw;
-
-    p += s * deltaB;
-
-    // Step 2: generate a modified adjustment count and compute the
-    // number of words to move and the relative byte position within
-    // the word. All adjustments are done relative to the first byte
-    // in the word, so that the resulting quotient is the actual
-    // number of words to add to the base address. If the adjustment
-    // is negative, however, we must back up the quotient by one and
-    // offset the remainder by the capacity if it is non zero.
-
-    cpuP->acPutN(u, ac);
-    return false;
-  }
+  virtual bool adjust(unsigned ac, KM10 &cpu);
 };
 
 
@@ -217,13 +132,7 @@ struct BytePointerG1: BytePointer {
   };
 
 
-  inline const static vector<tuple<unsigned, unsigned>> toPS{
-    {36, 6}, {30, 6}, {24, 6}, {28, 6}, {12, 6}, { 6, 6}, { 0, 6},
-    {36, 8}, {28, 8}, {20, 8}, {12, 8}, { 4, 8},
-    {36, 7}, {29, 7}, {22, 7}, {15, 7}, { 8, 7}, { 1, 7},
-    {36, 9}, {27, 9}, {18, 9}, { 9, 9}, { 0, 9},
-    {36, 18}, {18, 18}, {0, 18}
-  };
+  const static vector<tuple<unsigned, unsigned>> toPS;
 
 
   // Constructors
@@ -231,17 +140,9 @@ struct BytePointerG1: BytePointer {
 
 
   // Accessors
-  virtual PSA getPSA(KM10 *cpuP) {
-    auto [p, s] = toPS[(u >> 30) - 37];
-    return PSA(p, s, cpuP->getEA(0, 0, a));
-  }
-
-  virtual void inc(KM10 *cpuP) {
-  }
-
-  virtual bool adjust(unsigned ac, KM10 *cpuP) {
-    return false;
-  }
+  virtual PSA getPSA(KM10 &cpu);
+  virtual void inc(KM10 &cpu);
+  virtual bool adjust(unsigned ac, KM10 &cpu);
 };
 
 
@@ -272,20 +173,8 @@ struct BytePointerG2: BytePointer {
   // Accessors
   operator uint64_t() {return u;}
 
-  virtual PSA getPSA(KM10 *cpuP) {
-    unsigned rp = p;
-    unsigned rs = s;
-    return PSA{rp, rs, cpuP->getEA(i, x, y)};
-  }
-
-  virtual bool isTwoWords() {
-    return true;
-  }
-
-  virtual void inc(KM10 *cpuP) {
-  }
-
-  virtual bool adjust(unsigned ac, KM10 *cpuP) {
-    return false;
-  }
+  virtual PSA getPSA(KM10 &cpu);
+  virtual bool isTwoWords() override;
+  virtual void inc(KM10 &cpu);
+  virtual bool adjust(unsigned ac, KM10 &cpu);
 };
