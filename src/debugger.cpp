@@ -1,5 +1,5 @@
 // TODO:
-// * Add command capability to change ACs, memory, PC, flags.
+// * Add command capability to change memory, flags.
 // * Add display of APR state and program flags
 // * Add history ring buffer for PC and a way to dump it.
 #include <string>
@@ -74,7 +74,7 @@ Debugger::DebugAction Debugger::debug() {
       } else {
 
 	try {
-	  long a = stol(words[1], 0, 8);
+	  long a = stol(words[1], nullptr, 8);
 
 	  if (a < 0) {
 	    s.erase((unsigned) -a);
@@ -141,13 +141,19 @@ Debugger::DebugAction Debugger::debug() {
 
     COMMAND("abp", nullptr, [&]() {handleBPCommand(km10.addressBPs);});
 
-    COMMAND("ac", "acs", [&]() {
+    COMMAND("ac", nullptr, [&]() {
 
       if (words.size() > 1) {
 
 	try {
-	  int k = stoi(words[1], 0, 8);
-	  dumpAC(k);
+	  int n = stoi(words[1], nullptr, 8);
+
+	  if (words.size() > 2) {
+	    W36 v{stoll(words[2], nullptr, 8)};
+	    km10.acPutN(v, n);
+	  } else {
+	    dumpAC(n);
+	  }
 	} catch (exception &e) {
 	}
       } else {
@@ -157,23 +163,18 @@ Debugger::DebugAction Debugger::debug() {
 
     COMMAND("bp", "b", [&]() {handleBPCommand(km10.executeBPs);});
 
-    COMMAND("memory", "m", [&]() {
+    COMMAND("mem", "m", [&]() {
 
       try {
 	W36 a;
-	int n = words.size() > 2 ? stoi(words[2], 0, 8) : 1;
+	int n = words.size() > 2 ? stoi(words[2], nullptr, 8) : 1;
 
 	if (words.size() > 1) {
-	  string lo1(words[1]);
-
-	  for (auto& c: lo1) c = tolower(c);
-
-	  if (lo1 == "pc")
-	    a = km10.pc;
-	  else
-	    a = stoll(words[1], 0, 8);
+	  string lowered(words[1]);
+	  for (auto& c: lowered) c = tolower(c);
+	  a = (lowered == "pc") ? km10.pc.u : stoll(words[1], nullptr, 8);
 	} else {
-	  a.u = lastAddr;
+	  a = lastAddr;
 	}
 
 	for (int k=0; k < n; ++k) {
@@ -182,8 +183,24 @@ Debugger::DebugAction Debugger::debug() {
 	  a = a + 1;
 	}
 
-	lastAddr = a.u;
+	lastAddr = a;
 	prevLine = "m";
+      } catch (exception &e) {
+      }
+    });
+
+    COMMAND("mset", nullptr, [&]() {
+
+      if (words.size() <= 2) {
+	cout << "Must specify both memory address and value to set it to." << logger.endl << flush;
+	return;
+      }
+
+      try {
+	W36 a = words[1] == "pc" ? km10.pc.s : stoll(words[1], nullptr, 8);
+	W36 v = stoll(words[2], nullptr, 8);
+	km10.memPutN(v, a);
+	lastAddr = a;
       } catch (exception &e) {
       }
     });
@@ -201,7 +218,7 @@ Debugger::DebugAction Debugger::debug() {
       } else {
 
 	try {
-	  km10.nSteps = words.size() > 1 ? stoi(words[1], 0, 8) : 1;
+	  km10.nSteps = words.size() > 1 ? stoi(words[1], nullptr, 8) : 1;
 	} catch (exception &e) {
 	  km10.nSteps = 1;
 	}
@@ -214,7 +231,7 @@ Debugger::DebugAction Debugger::debug() {
     COMMAND("show", nullptr, [&]() {
 
       if (words.size() == 1) {
-	cout << "Must specify apr or flags" << logger.endl;
+	cout << "Must specify apr or flags" << logger.endl << flush;
       } else if (words.size() == 2) {
 
 	if (words[1] == "apr") {
@@ -284,14 +301,10 @@ Debugger::DebugAction Debugger::debug() {
 	cout << prefix
 	     << "Flags:  " << km10.flags.toString() << logger.endl
 	     << "   PC: " << km10.pc.fmtVMA() << logger.endl;
-
-	if (km10.inXCT) {
-	  cout << " [XCT]" << logger.endl;
-	}
       } else {
 
 	try {
-	  km10.pc.u = stoll(words[1], 0, 8);
+	  km10.pc = stoll(words[1], nullptr, 8);
 	} catch (exception &e) {
 	}
       }
@@ -314,7 +327,7 @@ Debugger::DebugAction Debugger::debug() {
       cout << R"(
   abp [A]       Set address breakpoint after any access to address A or list breakpoints.
                 Use -A to remove an existing address breakpoint or 'clear' to clear all.
-  ac,acs [N]    Dump a single AC N (octal) or all of them.
+  ac [N [V]]    Dump all ACs or, if N specified, a single AC; if V is specified set AC's value.
   b,bp [A]      Set breakpoint before execution of address A or display list of breakpoints.
                 Use -A to remove existing breakpoint or 'clear' to clear all breakpoints.
   c,continue    Continue execution at current PC.
@@ -324,7 +337,8 @@ Debugger::DebugAction Debugger::debug() {
   l,log file [FILENAME]
                 Log to FILENAME or 'km10.log' if not specified (overwriting).
   l,log tty     Log to console.
-  m,memory A N  Dump N (octal) words of memory starting at A (octal). A can be 'pc'.
+  m,mem A [N]   Dump N (octal) words of memory starting at A (octal). A can be 'pc'.
+  mset A V      Set memory address A to value V. A can be 'pc'.
   pc [N]        Dump PC and flags, or if N is specified set PC to N (octal).
   restart       Reset and reload as if started from scratch again.
   s,step N      Step N (octal) instructions at current PC.

@@ -23,7 +23,7 @@ struct Debugger {
 
   KM10 &km10;
   string prevLine;
-  unsigned lastAddr;
+  W36 lastAddr;
 
   map<string, W36> globalSymbols;
   map<string, W36> localSymbols;

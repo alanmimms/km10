@@ -322,7 +322,6 @@ public:
   W36 *AC;
   unsigned memorySize;
   uint64_t nSteps;
-  bool inXCT;
   uint64_t nInsns;
   unordered_set<unsigned> &addressBPs;
   unordered_set<unsigned> &executeBPs;

@@ -406,7 +406,6 @@ KM10::KM10(unsigned nMemoryWords, KM10::BreakpointTable &aBPs, KM10::BreakpointT
     AC(ACbanks[0]),
     memorySize(nMemoryWords),
     nSteps(0),
-    inXCT(false),
     addressBPs(aBPs),
     executeBPs(eBPs)
 {
@@ -1519,7 +1518,6 @@ InstructionResult KM10::doPXCT() {
 
   if (userMode() || iw.ac == 0) {
     pc = ea;
-    inXCT = true;
     return iXCT;
   } else {					// PXCT
     logger.nyi(*this);
@@ -3248,10 +3246,8 @@ void KM10::emulate() {
     iw = memGetN(pc);
 
     // Capture next PC AFTER we possibly set up to handle an exception or interrupt.
-    if (!inXCT) {
-      nextPC.rhu = pc.rhu + 1;
-      nextPC.lhu = pc.lhu;
-    }
+    nextPC.rhu = pc.rhu + 1;
+    nextPC.lhu = pc.lhu;
 
     // If we're debugging, this is where we pause to let the user
     // inspect and change things. The debugger tells us what our next
@@ -3290,9 +3286,6 @@ void KM10::emulate() {
     if (logger.loggingToFile && logger.pc) {
       logger.s << pc.fmtVMA() << ": " << debugger.dump(iw, pc);
     }
-
-    // Unless we encounter ANOTHER XCT we're not in one now.
-    inXCT = false;
 
     // Compute effective address
     ea.u = getEA(iw.i, iw.x, iw.y);
