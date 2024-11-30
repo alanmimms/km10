@@ -2,6 +2,8 @@
 //
 // KL10/KI10 interrupt terminology (in modern terms):
 //
+// * "Requested" means the IRQ for a level is asserted.
+//
 // * "Active" means the interrupt is enabled.
 //
 // * "Held" means the interrupt handler is executing.
@@ -30,6 +32,11 @@
 // condition is satisfied a return to the interrupted program takes
 // place. If the skip is not satisfied, the instruction in 41 + 2n is
 // executed instead of the return.
+
+// Interrupts are often handled by two-word interrupt vectors where
+// the first instruction might be a skip instruction. If the
+// instruction skips, the interrupt is dismissed and the interrupted
+// program continues.
 
 
 #pragma once

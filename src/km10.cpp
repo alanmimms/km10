@@ -397,7 +397,6 @@ KM10::KM10(unsigned nMemoryWords, KM10::BreakpointTable &aBPs, KM10::BreakpointT
     running(false),
     restart(false),
     nextPC(0),
-    exceptionPC(0),
     pc(0),
     ACbanks{},
     flags(0u),
@@ -3206,14 +3205,20 @@ void KM10::loadA10(const char *fileNameP) {
 
 ////////////////////////////////////////////////////////////////
 void KM10::emulate() {
-  W36 exceptionPC{0};
-
   ////////////////////////////////////////////////////////////////
   // Connect our DTE20 (put console into raw mode)
   dte.connect();
 
   // The instruction loop
   for (;;) {
+
+    // XXX Need a fetched VMA pointer to the instruction that was
+    // fetched for interrupt/trap/XCT-chain handling, debugging, and
+    // breakpoint check since PC doesn't point to executing
+    // instruction in these cases. Maybe this can reuse `ea` (which
+    // works for XCT anyway)?
+
+    
     // Keep the cache sweep timer ticking until it goes DING.
     cca.handleSweep();
 

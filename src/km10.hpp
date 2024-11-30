@@ -11,19 +11,22 @@
     * XCT next instruction in chain.
     * Normal code flow instruction.
 
-  * INVARIANT: `pc` always points to instruction that is about
-    to execute or is executing.
+  * `pc` always points to instruction that is about to execute in
+    normal non-trap/non-interrupt/non-XCT-chain case. PC is
+    incremented so that if instruction saves the PC it saves the
+    incremented value.
 
-    * Therefore, in exception/interrupt handling, `pc` points to
-      interrupt instruction.
+  * In XCT chain, PC points to instruction after the chain's
+    initiating XCT no matter how long the chain is. So for
 
-  * INVARIANT: `nextPC` always points to next instruction to fetch
-    after current one completes.
+    FOO:   XCT -> XCT -> ... -> JSP
 
-    * Instructions like JSP/JSR save the initial value of `nextPC` as
-      their "return address" and modify it to point to the jump
-      destination the same way in both normal and in
-      interrupt/exception contexts.
+    the JSP will save FOO+1 as its return address.
+
+  * When handling an interrupt, PC points to the instruction that
+    didn't execute so the interrupt handler could be invoked instead.
+    When handling a trap/page fault/xUUO, PC points to the instruction
+    that caused the trap.
 */
 
 /*
@@ -31,7 +34,8 @@
 
   * Globally use U32,S32, U64,S64, U128,S128 typedefs instead of
     verbose <cstdint> names.
-  * Fix the logging stuff. It's seriously broken.
+
+  * Fix the logging stuff. It's seriously broken/redundant/wrong.
 */
 
 /*
@@ -136,12 +140,6 @@ public:
 
   // The "REBOOT flop"
   bool restart;
-
-  // PC of instruction to execute AFTER current one.
-  W36 nextPC;
-
-  // PC of instruction that was interrupted or caused a trap.
-  W36 exceptionPC;
 
   // The processor's program counter.
   W36 pc;
