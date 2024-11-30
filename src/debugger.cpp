@@ -1,6 +1,5 @@
 // TODO:
-// * Add command capability to change memory, flags.
-// * Add display of APR state and program flags
+// * Add command capability to change flags.
 // * Add history ring buffer for PC and a way to dump it.
 #include <string>
 #include <iostream>
@@ -66,7 +65,6 @@ Debugger::DebugAction Debugger::debug() {
 	cout << ">>>" << W36(bp).fmtVMA() << logger.endl;
       }
 
-      cout << flush;
     } else if (words.size() > 1) {
 
       if (words[1] == "clear") {
@@ -74,6 +72,8 @@ Debugger::DebugAction Debugger::debug() {
       } else {
 
 	try {
+	  // Convert as a signed value since negative numbers are
+	  // addresses of breakpoints to be cleared.
 	  long a = stol(words[1], nullptr, 8);
 
 	  if (a < 0) {
@@ -83,6 +83,7 @@ Debugger::DebugAction Debugger::debug() {
 	  }
 
 	} catch (exception &e) {
+	  cout << "[No such breakpoint was found]" << logger.endl;
 	}
       }
     }
