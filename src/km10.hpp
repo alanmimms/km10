@@ -46,7 +46,7 @@
 
   * Normal
   * Skip
-  * MUUO/LUUO
+  * MUUO/LUUO/JSYS
   * Trap
   * HALT
   * XCT
@@ -119,9 +119,15 @@ public:
   ~KM10();
 
 
-  W36 iw;
-  W36 ea;
+  W36 pc;	      // PC of instr we fetched before trap,int,XCT-chain.
+  W36 iw;	      // Instruction word we're executing
+  W36 ea;	      // Effective address (always calculated)
+  W36 fetchPC;	      // Address cur instr came from. Also jump target for iJump.
 
+  // Offset to add to PC at end of instruction: zero for JUMPs, two
+  // for SKIPs, one for normal. For traps, the trap vector address is
+  // placed here.
+  unsigned pcOffset;
 
   // Pointer to physical memory.
   W36 *physicalP;
@@ -140,9 +146,6 @@ public:
 
   // The "REBOOT flop"
   bool restart;
-
-  // The processor's program counter.
-  W36 pc;
 
   // KL10 has 8 banks of 16 ACs.
   W36 ACbanks[8][16];
@@ -319,7 +322,7 @@ public:
 
   W36 *AC;
   unsigned memorySize;
-  uint64_t nSteps;
+  int64_t nSteps;
   uint64_t nInsns;
   unordered_set<unsigned> &addressBPs;
   unordered_set<unsigned> &executeBPs;
@@ -472,7 +475,9 @@ public:
   InstructionResult doNYI();
   InstructionResult doIO();
 
+  InstructionResult doILLEGAL();
   InstructionResult doLUUO();
+  InstructionResult doJSYS();
   InstructionResult doMUUO();
   InstructionResult doDADD();
   InstructionResult doDSUB();

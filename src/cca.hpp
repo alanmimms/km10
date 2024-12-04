@@ -2,7 +2,6 @@
 
 #include "word.hpp"
 #include "device.hpp"
-#include "apr.hpp"
 
 
 struct CCADevice: Device {
@@ -10,14 +9,10 @@ struct CCADevice: Device {
   // sweep is done.
   int sweepCountDown;
 
-  // We need this to call APR for start and end of sweep.
-  APRDevice &apr;
-
   // Constructors
-  CCADevice(KM10 &cpu, APRDevice &anAPR)
+  CCADevice(KM10 &cpu)
     : Device(014, "CCA", cpu),
-      sweepCountDown(0),
-      apr(anAPR)
+      sweepCountDown(0)
   { }
 
 

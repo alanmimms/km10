@@ -2,6 +2,7 @@
 #include "device.hpp"
 #include "cca.hpp"
 #include "apr.hpp"
+#include "km10.hpp"
 #include "instruction-result.hpp"
 
 
@@ -11,7 +12,7 @@
 void CCADevice::startSweep() {
   cerr << "CCA: startSweep" << logger.endl;
   sweepCountDown = 10;
-  apr.startSweep();
+  km10.apr.startSweep();
 }
 
 
@@ -21,7 +22,7 @@ void CCADevice::handleSweep() {
 
   if (sweepCountDown && --sweepCountDown == 0) {
     cerr << "CCA: apr.endSweep" << logger.endl << flush;
-    apr.endSweep();
+    km10.apr.endSweep();
   }
 }
 
@@ -71,6 +72,6 @@ InstructionResult CCADevice::doCONSO(W36 iw, W36 ea) {
 }
 
 void CCADevice::clearIO() {
-  if (sweepCountDown) apr.endSweep();
+  if (sweepCountDown) km10.apr.endSweep();
   sweepCountDown = 0;
 }

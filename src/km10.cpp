@@ -40,7 +40,12 @@ InstructionF KM10::ops[512];
 // initializer designators.
 KM10::OpsInitializer::OpsInitializer() {
 
+  // UUOs and other reserved ranges are handled below in loops.
   static unordered_map<unsigned, KM10::InstructionF> opsInitMap = {
+    {0000, &KM10::doILLEGAL},
+
+    {0104, &KM10::doJSYS},
+
     {0200, &KM10::doMOVE},
     {0201, &KM10::doMOVEI},
     {0202, &KM10::doMOVEM},
@@ -367,7 +372,7 @@ KM10::OpsInitializer::OpsInitializer() {
   // Copy map into KM10's static array.
   for (const auto &[op, f]: opsInitMap) KM10::ops[op] = f;
 
-  for (unsigned op=0000; op<=0037; ++op) KM10::ops[op] = &KM10::doLUUO;
+  for (unsigned op=0001; op<=0037; ++op) KM10::ops[op] = &KM10::doLUUO;
   for (unsigned op=0040; op<=0101; ++op) KM10::ops[op] = &KM10::doMUUO;
   for (unsigned op=0700; op<=0777; ++op) KM10::ops[op] = &KM10::doIO;
 
@@ -389,18 +394,20 @@ KM10::KM10(unsigned nMemoryWords, KM10::BreakpointTable &aBPs, KM10::BreakpointT
     cca{*this, apr},
     mtr{*this},
     pag{*this},
-    pi{*this},
+    pi {*this},
     tim{*this},
     dte{040, *this},
     noDevice{0777777ul, "?NoDevice?", *this},
     debugger{*this},
+    pc(0),
+    iw(0),
+    ea(0),
+    fetchPC(0),
+    pcOffset(0),
     running(false),
     restart(false),
-    nextPC(0),
-    pc(0),
     ACbanks{},
     flags(0u),
-    inInterrupt(false),
     era(0u),
     AC(ACbanks[0]),
     memorySize(nMemoryWords),
@@ -720,8 +727,8 @@ KM10::KM10(unsigned nMemoryWords, KM10::BreakpointTable &aBPs, KM10::BreakpointT
   never2 = [&] (W36 v1, W36 v2) {return false;};
 
 
-  skipAction = [&]() {++nextPC.rhu;};
-  jumpAction = [&]() {nextPC.rhu = ea.rhu;};
+  skipAction = [&]() {skipToNext = true;};
+  jumpAction = [&]() {pc.rhu = ea.rhu;};
 }
 
 
@@ -761,7 +768,7 @@ InstructionResult KM10::doLUUO() {
     memPutN(040, uuoState);
     cerr << "LUUO at " << pc.fmtVMA() << " uuoState=" << uuoState.fmt36()
 	 << logger.endl << flush;
-    nextPC = 041;
+    pcOffset = 041;
     exceptionPC = pc + 1;
     inInterrupt = true;
     return iTrap;
@@ -774,7 +781,7 @@ InstructionResult KM10::doLUUO() {
 		  ((uint64_t) iw.ac << 5)), uuoA.u++);
       memPutN(pc, uuoA.u++);
       memPutN(ea.u, uuoA.u++);
-      nextPC = memGetN(uuoA);
+      pcOffset = memGetN(uuoA);
       exceptionPC = pc + 1;
       inInterrupt = true;
       return iTrap;
@@ -782,6 +789,24 @@ InstructionResult KM10::doLUUO() {
       return doMUUO();
     }
   }
+}
+
+
+InstructionResult KM10::doILLEGAL() {
+  cerr << "ILLEGAL isn't implemented yet" << logger.endl << flush;
+  pcOffset = 
+  inInterrupt = true;
+  logger.nyi(*this);
+  return iMUUO;
+}
+
+
+InstructionResult KM10::doJSYS() {
+  cerr << "JSYS isn't implemented yet" << logger.endl << flush;
+  exceptionPC = pc + 1;
+  inInterrupt = true;
+  logger.nyi(*this);
+  return iMUUO;
 }
 
 
@@ -947,7 +972,7 @@ void KM10::doTXXXX(auto get1F, auto get2F, auto modifyF, auto condF, auto storeF
 
   if (condF(a1, a2)) {
     logFlow("skip");
-    ++nextPC.rhu;
+    ++pcOffset;
   }
       
   storeF(modifyF(a1, a2));
@@ -973,7 +998,7 @@ void KM10::doCAXXX(auto getSrc1F, auto getSrc2F, auto condF) {
 
   if (condF(getSrc1F().ext64(), getSrc2F().ext64())) {
     logFlow("skip");
-    ++nextPC.rhu;
+    ++pcOffset;
   }
 }
 
@@ -981,7 +1006,6 @@ void KM10::doJUMP(auto condF) {
 
   if (condF(acGet())) {
     logFlow("jump");
-    nextPC.rhu = ea.rhu;
   }
 }
 
@@ -991,7 +1015,7 @@ void KM10::doSKIP(auto condF) {
 
   if (condF(eaw)) {
     logFlow("skip");
-    ++nextPC.rhu;
+    ++pcOffset;
   }
       
   if (iw.ac != 0) acPut(eaw);
@@ -1424,7 +1448,7 @@ InstructionResult KM10::doAOBJP() {
 
   if (tmp.ext64() >= 0) {
     logFlow("jump");
-    nextPC = ea;
+    return iJump;
   }
 
   return iNormal;
@@ -1437,7 +1461,7 @@ InstructionResult KM10::doAOBJN() {
 
   if (tmp.ext64() < 0) {
     logFlow("jump");
-    nextPC = ea;
+    return iJump;
   }
 
   return iNormal;
@@ -1448,8 +1472,7 @@ InstructionResult KM10::doJRST() {
 
   switch (iw.ac) {
   case 000:					// JRST
-    nextPC.rhu = ea.rhu;
-    break;
+    return iJump;
 
   case 001:					// PORTAL
     logger.nyi(*this);
@@ -1457,13 +1480,11 @@ InstructionResult KM10::doJRST() {
 
   case 002:					// JRSTF
     restoreFlags(ea);
-    nextPC.rhu = ea.rhu;
-    break;
+    return iJump;
 
   case 004:					// HALT
     cerr << "[HALT at " << pc.fmtVMA() << "]" << logger.endl;
     running = false;
-    nextPC.rhu = ea.rhu;		// HALT actually does change PC
     return iHALT;
 
   case 005:					// XJRSTF
@@ -1487,8 +1508,7 @@ InstructionResult KM10::doJRST() {
     cerr << ">>>>>> JEN ea=" << ea.fmtVMA() << logger.endl << flush;
     pi.dismissInterrupt();
     restoreFlags(ea);
-    nextPC.rhu = ea.rhu;
-    break;
+    return iJump;
 
   case 014:					// SFM
     logger.nyi(*this);
@@ -1508,15 +1528,14 @@ InstructionResult KM10::doJFCL() {
   unsigned wasFlags = flags.u;
   unsigned testFlags = (unsigned) iw.ac << 9; // Align with OV,CY0,CY1,FOV
   flags.u &= ~testFlags;
-  if (wasFlags & testFlags) nextPC = ea;
-  return iJump;
+  if (wasFlags & testFlags) return iJump;	// JUMP
+  return iNormal;				// NO JUMP
 }
 
 
 InstructionResult KM10::doPXCT() {
 
   if (userMode() || iw.ac == 0) {
-    pc = ea;
     return iXCT;
   } else {					// PXCT
     logger.nyi(*this);
@@ -1530,8 +1549,7 @@ InstructionResult KM10::doPUSHJ() {
   // Note *this sets the flags that are cleared by PUSHJ before
   // doPush() since doPush() can set flags.tr2.
   flags.fpd = flags.afi = flags.tr1 = flags.tr2 = 0;
-  doPush(pc.isSection0() ? flagsWord(nextPC.rhu) : W36(nextPC.vma), iw.ac);
-  nextPC = ea;
+  doPush(pc.isSection0() ? flagsWord(ea.rhu) : W36(ea.vma), iw.ac);
   if (inInterrupt) flags.usr = flags.pub = 0;
   return iJump;
 }
@@ -1548,31 +1566,26 @@ InstructionResult KM10::doPOP() {
 }
 
 InstructionResult KM10::doPOPJ() {
-  nextPC.rhu = doPop(iw.ac).rhu;
+  ea.rhu = doPop(iw.ac).rhu;
   return iJump;
 }
 
 InstructionResult KM10::doJSR() {
-  W36 tmp = inInterrupt ? exceptionPC : nextPC;
-  tmp = pc.isSection0() ? flagsWord(tmp.rhu) : W36(tmp.vma);
+  W36 tmp.vma = {ea.isSection0() ? flagsWord(ea.rhu) : W36(ea.vma);
   cerr << ">>>>>> JSR saved PC=" << tmp.fmt36() << "  ea=" << ea.fmt36()
-       << (inInterrupt ? "[inInterrupt]" : "[!inInterrupt]")
        << logger.endl << flush;
   memPut(tmp);
-  nextPC.rhu = ea.rhu + 1;
+  ea.vma = ea.rhu + 1;
   flags.fpd = flags.afi = flags.tr2 = flags.tr1 = 0;
   if (inInterrupt) flags.usr = flags.pub = 0;
   return iJump;
 }
 
 InstructionResult KM10::doJSP() {
-  W36 tmp = inInterrupt ? exceptionPC : nextPC;
-  tmp = pc.isSection0() ? flagsWord(tmp.rhu) : W36(tmp.vma);
+  W36 tmp = ea.isSection0() ? flagsWord(tmp.rhu) : W36(tmp.vma);
   cerr << ">>>>>> JSP set ac=" << tmp.fmt36() << "  ea=" << ea.fmt36()
-       << (inInterrupt ? "[inInterrupt]" : "[!inInterrupt]")
        << logger.endl << flush;
   acPut(tmp);
-  nextPC.rhu = ea.rhu;
   flags.fpd = flags.afi = flags.tr2 = flags.tr1 = 0;
   if (inInterrupt) flags.usr = flags.pub = 0;
   return iJump;
@@ -1580,8 +1593,8 @@ InstructionResult KM10::doJSP() {
 
 InstructionResult KM10::doJSA() {
   memPut(acGet());
-  nextPC.rhu = ea.rhu + 1;
   acPut(W36(ea.rhu, pc.rhu + 1));
+  ++ea.rhu;
   if (inInterrupt) flags.usr = 0;
   return iJump;
 }
@@ -3209,50 +3222,28 @@ void KM10::emulate() {
   // Connect our DTE20 (put console into raw mode)
   dte.connect();
 
-  // The instruction loop
+  // The instruction loop. We start this with `ea` set to the address
+  // to fetch the next instruction from. This is done to facilitate
+  // XCT, UUOs, interrupts, and traps, which need the PC to stay as it
+  // is but need to execute one or more instructions NOT fetched from
+  // the address in PC. We set `ea` to `pc` here to start out.
+  ea = pc;
+
   for (;;) {
 
-    // XXX Need a fetched VMA pointer to the instruction that was
-    // fetched for interrupt/trap/XCT-chain handling, debugging, and
-    // breakpoint check since PC doesn't point to executing
-    // instruction in these cases. Maybe this can reuse `ea` (which
-    // works for XCT anyway)?
-
-    
     // Keep the cache sweep timer ticking until it goes DING.
     cca.handleSweep();
 
-    // Handle execution (PC) breakpoints
-    if (executeBPs.contains(pc.vma)) running = false;
+    // Handle execution breakpoints.
+    if (executeBPs.contains(ea.vma)) running = false;
 
-    // Prepare to fetch next iw and remember if it's an interrupt or
-    // trap.
-    if ((flags.tr1 || flags.tr2) && pag.pagerEnabled()) {
-      // We have a trap.
-      exceptionPC = pc;
-      pc = eptAddressFor(flags.tr1 ?
-			 &eptP->trap1Insn :
-			 &eptP->stackOverflowInsn);
-      inInterrupt = true;
-      cerr << ">>>>> trap cycle PC now=" << pc.fmtVMA()
-	   << "  exceptionPC=" << exceptionPC.fmtVMA()
-	   << logger.endl << flush;
-    } else if (W36 vector = pi.setUpInterruptCycleIfPending(); vector != W36(0)) {
-      // We have an active interrupt.
-      exceptionPC = pc;
-      pc = vector;
-      inInterrupt = true;
-      cerr << ">>>>> interrupt cycle PC now=" << pc.fmtVMA()
-	   << "  exceptionPC=" << exceptionPC.fmtVMA()
-	   << logger.endl << flush;
-    }
+    // XXX do we handle traps and interrupts here? Or some other place?
 
-    // Now fetch the instruction at our normal, exception, or interrupt PC.
-    iw = memGetN(pc);
+    // Fetch the instruction.
+    iw = memGetN(ea);
 
-    // Capture next PC AFTER we possibly set up to handle an exception or interrupt.
-    nextPC.rhu = pc.rhu + 1;
-    nextPC.lhu = pc.lhu;
+    // Assume the default, that we just move to next instruction.
+    pcOffset = 1;
 
     // If we're debugging, this is where we pause to let the user
     // inspect and change things. The debugger tells us what our next
@@ -3269,10 +3260,11 @@ void KM10::emulate() {
       case Debugger::quit:	// Quit from emulator.
 	return;
 
-      case Debugger::restart:	// Restart emulator like a PDP10 reboot
+      case Debugger::restart:	// Restart emulator - total reboot
 	return;
 
       case Debugger::pcChanged:	// PC changed by debugger - go fetch again
+	ea = pc;
 	continue;
 
       default:			// This should never happen...
@@ -3289,10 +3281,12 @@ void KM10::emulate() {
     }
 
     if (logger.loggingToFile && logger.pc) {
-      logger.s << pc.fmtVMA() << ": " << debugger.dump(iw, pc);
+      logger.s << ea.fmtVMA() << ": " << debugger.dump(iw, ea);
     }
 
-    // Compute effective address
+    // Compute effective address. Note this wipes out `ea` so we no
+    // longer know what location the instruction we're running was
+    // fetched from.
     ea.u = getEA(iw.i, iw.x, iw.y);
 
     // Execute the instruction in `iw`.
@@ -3301,28 +3295,40 @@ void KM10::emulate() {
     // XXX update PC, etc.
     switch (result) {
     case iNormal:
+      break;
+
     case iSkip:
+      // Any skip instruction that skips.
+      pcOffset = 2;
+      break;
+
     case iJump:
+      // In this case, the jump instruction returns its destination in
+      // `ea` for "free".
+      continue;
+
     case iMUUO:
     case iLUUO:
     case iTrap:
-    case iHALT:
     case iXCT:
+      // All of these cases require that we fetch the next instruction
+      // from a specified location (contained in `ea` and already set)
+      // and loop back to execute that instruction WITHOUT changing
+      // PC.
+      continue;
+
+    case iHALT:
     case iNoSuchDevice:
     case iNYI:
       break;
     }
 
-    // If we're in a xUUO trap, only the first instruction we execute
-    // there is special, so clear inInterrupt.
-    if (inInterrupt) {
-      cerr << "[IN INTERRUPT and about to clear that state]" << logger.endl << flush;
-      inInterrupt = false;
-    }
-
-
     if (logger.pc || logger.mem || logger.ac || logger.io || logger.dte)
       logger.s << logger.endl << flush;
+
+    // If we get here we just offset the PC by `pcOffset` and loop to
+    // fetch next instruction.
+    ea.vma = pc.vma + pcOffset;
   }
 
   // Restore console to normal
