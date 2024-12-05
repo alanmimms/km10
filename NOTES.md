@@ -1,3 +1,17 @@
+# Test Cases
+* XCT chain that ends in
+  * A jump instruction.
+  * A trap instruction.
+  * A HALT.
+  * A MUUO.
+  * A LUUO.
+* Interrupt in middle of
+  * A trap handler.
+  * An interrupt handler.
+  * A MUUO handler.
+  * A LUUO handler.
+  * An XCT chain?
+
 # Interrupt/Exception Requirements:
   * *INVARIANT:* Debugger always shows next instruction to execute in
     its prompt.

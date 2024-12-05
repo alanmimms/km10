@@ -6,7 +6,7 @@
 
 using namespace std;
 
-#include <gflags/gflags.h>
+#include <CLI/CLI.hpp>
 
 #include "km10.hpp"
 #include "logger.hpp"
@@ -20,17 +20,10 @@ using InstructionF = KM10::InstructionF;
 Logger logger{};
 
 
-// We keep these breakpoint sets outside of the looped main so they
-// stick across restart.
+// We keep these breakpoint sets outside of the looped main and not
+// part of KM10 or Debugger object so they stick across restart.
 static KM10::BreakpointTable aBPs;
 static KM10::BreakpointTable eBPs;
-
-
-// Definitions for our command line options
-DEFINE_string(load, "../images/klad/dfkaa.a10", ".A10 or .SAV file to load");
-DEFINE_string(rel, "../images/klad/dfkaa.rel", ".REL file to load symbols from");
-DEFINE_bool(debug, false, "run the built-in debugger instead of starting execution");
-
 
 InstructionF KM10::ops[512];
 
@@ -3222,12 +3215,8 @@ void KM10::emulate() {
   // Connect our DTE20 (put console into raw mode)
   dte.connect();
 
-  // The instruction loop. We start this with `ea` set to the address
-  // to fetch the next instruction from. This is done to facilitate
-  // XCT, UUOs, interrupts, and traps, which need the PC to stay as it
-  // is but need to execute one or more instructions NOT fetched from
-  // the address in PC. We set `ea` to `pc` here to start out.
-  ea = pc;
+  // The instruction loop.
+  fetchPC = pc;
 
   for (;;) {
 
@@ -3240,10 +3229,7 @@ void KM10::emulate() {
     // XXX do we handle traps and interrupts here? Or some other place?
 
     // Fetch the instruction.
-    iw = memGetN(ea);
-
-    // Assume the default, that we just move to next instruction.
-    pcOffset = 1;
+    iw = memGetN(fetchPC);
 
     // If we're debugging, this is where we pause to let the user
     // inspect and change things. The debugger tells us what our next
@@ -3292,9 +3278,12 @@ void KM10::emulate() {
     // Execute the instruction in `iw`.
     InstructionResult result = (this->*(ops[iw.op]))();
 
-    // XXX update PC, etc.
+    // If we "continue" we have to set up `fetchPC` to point to the
+    // instruction to fetch and execute next. If we "break" (from the
+    // switch case) we use `fetchPC` + pcOffset.
     switch (result) {
     case iNormal:
+      pcOffset = 1;
       break;
 
     case iSkip:
@@ -3303,8 +3292,9 @@ void KM10::emulate() {
       break;
 
     case iJump:
-      // In this case, the jump instruction returns its destination in
-      // `ea` for "free".
+      // In this case, jump instructions put destination in `ea` for
+      // "free".
+      pc = ea;
       continue;
 
     case iMUUO:
@@ -3312,14 +3302,18 @@ void KM10::emulate() {
     case iTrap:
     case iXCT:
       // All of these cases require that we fetch the next instruction
-      // from a specified location (contained in `ea` and already set)
-      // and loop back to execute that instruction WITHOUT changing
-      // PC.
+      // from a specified location (contained in `fetchPC` and already
+      // set) and loop back to execute that instruction WITHOUT
+      // changing PC.
       continue;
 
     case iHALT:
+      pcOffset = 0;		// Leave PC at HALT instruction.
+      break;
+
     case iNoSuchDevice:
     case iNYI:
+      pcOffset = 1;		// Should treat like iNormal?
       break;
     }
 
@@ -3328,7 +3322,7 @@ void KM10::emulate() {
 
     // If we get here we just offset the PC by `pcOffset` and loop to
     // fetch next instruction.
-    ea.vma = pc.vma + pcOffset;
+    pc.vma = fetchPC.vma = fetchPC.vma + pcOffset;
   }
 
   // Restore console to normal
@@ -3341,33 +3335,60 @@ void KM10::emulate() {
 // properly. Therefore this needs to clean up the state of the machine
 // before it returns. This is mostly done by auto destructors.
 static int loopedMain(int argc, char *argv[]) {
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  CLI::App app;
 
-  KM10 km10(4 * 1024 * 1024, aBPs, eBPs);
+  // Definitions for our command line options
+  app.option_defaults()->always_capture_default();
+
+  bool dVal{true};
+  app.add_option("-d,--debug", dVal, "run the built-in debugger instead of starting execution");
+
+  unsigned mVal{4096};
+  auto mOpt = app.add_option("-m", mVal, "Size (in Kwords) of KM10 main memory");
+  mOpt->check([](const string &str) {
+    unsigned size = strtoul(str);
+
+    if (size < 256 || size > 4096 || (size & 0xFF) != 0) {
+      cerr << "[FATAL: the '-m' size in Kwords must be a multiple of 256 from 256K to 4096K words.]"
+	   << endl << flush;
+      exit(-1);
+    }
+  });
+  
+  string lVal{"../images/klad/dfkaa.a10"};
+  auto lOpt = app.add_option("-l,-load", lVal, ".A10 or .SAV file to load");
+  lOpt->check(CLI::ExistingFile);
+
+  string relFileToLoad{"../images/klad/dfkaa.rel"};
+  auto rOpt = app.add_option("-r,--rel", relFileToLoad, ".REL file to load symbols from");
+  rOpt->check(CLI::ExistingFile);
+
+  CLI11_PARSE(&app, argc, argv);
+
+  KM10 km10(mVal*1024, aBPs, eBPs);
   assert(sizeof(*km10.eptP) == 512 * 8);
   assert(sizeof(*km10.uptP) == 512 * 8);
 
-  if (FLAGS_load != "none") {
+  if (lOpt != nullptr) {
 
-    if (FLAGS_load.ends_with(".a10")) {
-      km10.loadA10(FLAGS_load.c_str());
-    } else if (FLAGS_load.ends_with(".sav")) {
+    if (lVal.ends_with(".a10")) {
+      km10.loadA10(lVal.c_str());
+    } else if (lVal.ends_with(".sav")) {
       cerr << "ERROR: For now, '-load' option must name a .a10 file" << logger.endl;
       return -1;
-      //      loadSAV(FLAGS_load.c_str());
     } else {
-      cerr << "ERROR: '-load' option must name a .a10 or .sav file" << logger.endl;
+      cerr << "ERROR: '-load' option must name a .a10 file" << logger.endl;
       return -1;
     }
 
-    cerr << "[Loaded " << FLAGS_load << "  start=" << km10.pc.fmtVMA() << "]" << logger.endl;
+    cerr << "[Loaded " << lVal << "  start=" << km10.pc.fmtVMA() << "]" << logger.endl;
   }
 
-  if (FLAGS_rel != "none") {
-    km10.debugger.loadREL(FLAGS_rel.c_str());
+  if (rVal != "none") {
+    km10.debugger.loadREL(rVal.c_str());
   }
 
-  km10.running = !FLAGS_debug;
+  km10.running = !dVal;
   km10.emulate();
 
   return km10.restart ? 1 : 0;

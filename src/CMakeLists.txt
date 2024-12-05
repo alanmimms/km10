@@ -17,4 +17,4 @@ add_library(km10lib
   bytepointer.cpp
 )
 
-target_link_libraries(${PROJECT_NAME} PUBLIC km10lib PRIVATE gflags::gflags fmt::fmt)
+target_link_libraries(${PROJECT_NAME} PUBLIC km10lib PRIVATE CLI11::CLI11 fmt::fmt)

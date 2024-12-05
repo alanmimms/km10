@@ -6,7 +6,6 @@ using namespace std;
 #include <gtest/gtest.h>
 
 #include "word.hpp"
-#include "kmstate.hpp"
 #include "km10.hpp"
 #include "km10-test.hpp"
 
@@ -163,22 +162,22 @@ public:
   }
 
   void checkI72(W72 result72) {
-    EXPECT_EQ(state.AC[acLoc+0], W36(result72.hi));
-    EXPECT_EQ(state.AC[acLoc+1], W36(result72.lo));
+    EXPECT_EQ(km10.AC[acLoc+0], W36(result72.hi));
+    EXPECT_EQ(km10.AC[acLoc+1], W36(result72.lo));
   }
 
   void checkM72(W72 result72) {
-    EXPECT_EQ(state.memP[opnLoc], W36(result72.hi));
+    EXPECT_EQ(km10.memP[opnLoc], W36(result72.hi));
   }
 
   void checkB72(W72 result72) {
-    EXPECT_EQ(state.AC[acLoc+0], W36(result72.hi));
-    EXPECT_EQ(state.memP[opnLoc], W36(result72.hi));
+    EXPECT_EQ(km10.AC[acLoc+0], W36(result72.hi));
+    EXPECT_EQ(km10.memP[opnLoc], W36(result72.hi));
   }
 
   void check72(W72 result72) {
     checkI72(result72);
-    EXPECT_EQ(state.memP[opnLoc], expectMem);
+    EXPECT_EQ(km10.memP[opnLoc], expectMem);
   }
 };
 
@@ -274,9 +273,9 @@ public:
   };
 
   virtual void setupMachine() override {
-    state.AC[acLoc+0] = a.hi;
-    state.AC[acLoc+1] = a.lo;
-    state.memP[opnLoc] = b;
+    km10.AC[acLoc+0] = a.hi;
+    km10.AC[acLoc+1] = a.lo;
+    km10.memP[opnLoc] = b;
   }
 
   virtual void test(VW36 insns,
@@ -291,47 +290,47 @@ public:
 
 
   virtual void checkUnmodifiedFlags() override {
-    EXPECT_EQ(state.flags.tr2 | state.flags.fuf, 0);
-    EXPECT_EQ(state.flags.afi | state.flags.pub, 0);
-    EXPECT_EQ(state.flags.uio | state.flags.usr, 0);
-    EXPECT_EQ(state.flags.fpd | state.flags.fov, 0);
-    EXPECT_EQ(state.flags.cy0 | state.flags.cy1, 0);
+    EXPECT_EQ(km10.flags.tr2 | km10.flags.fuf, 0);
+    EXPECT_EQ(km10.flags.afi | km10.flags.pub, 0);
+    EXPECT_EQ(km10.flags.uio | km10.flags.usr, 0);
+    EXPECT_EQ(km10.flags.fpd | km10.flags.fov, 0);
+    EXPECT_EQ(km10.flags.cy0 | km10.flags.cy1, 0);
   }
 
   virtual void checkFlagsNC() override {
-    EXPECT_EQ(state.flags.tr1, 0);
-    EXPECT_EQ(state.flags.ndv, 0);
-    EXPECT_EQ(state.flags.ov, 0);
+    EXPECT_EQ(km10.flags.tr1, 0);
+    EXPECT_EQ(km10.flags.ndv, 0);
+    EXPECT_EQ(km10.flags.ov, 0);
   }
 
   virtual void checkFlagsT1() override {
-    EXPECT_EQ(state.flags.tr1, 1);
-    EXPECT_EQ(state.flags.ndv, 1);
-    EXPECT_EQ(state.flags.ov, 1);
+    EXPECT_EQ(km10.flags.tr1, 1);
+    EXPECT_EQ(km10.flags.ndv, 1);
+    EXPECT_EQ(km10.flags.ov, 1);
   }
 
 
   virtual void checkI72(W72 result72) {
-    EXPECT_EQ(state.AC[acLoc+0], W36(result72.hi));
-    EXPECT_EQ(state.AC[acLoc+1], W36(result72.lo));
+    EXPECT_EQ(km10.AC[acLoc+0], W36(result72.hi));
+    EXPECT_EQ(km10.AC[acLoc+1], W36(result72.lo));
   }
 
   virtual void checkM72(W72 result72) {
-    EXPECT_EQ(state.memP[opnLoc], W36(result72.hi));
+    EXPECT_EQ(km10.memP[opnLoc], W36(result72.hi));
   }
 
   virtual void checkB72(W72 result72) {
-    EXPECT_EQ(state.AC[acLoc+0], W36(result72.hi));
-    EXPECT_EQ(state.memP[opnLoc], W36(result72.hi));
+    EXPECT_EQ(km10.AC[acLoc+0], W36(result72.hi));
+    EXPECT_EQ(km10.memP[opnLoc], W36(result72.hi));
   }
 
   virtual void check72(W72 result72) {
     checkI72(result72);
-    EXPECT_EQ(state.memP[opnLoc], expectMem);
+    EXPECT_EQ(km10.memP[opnLoc], expectMem);
   }
 
   virtual void check72unchanged(W72 result72) {
-    EXPECT_EQ(state.memP[opnLoc], expectMem);
+    EXPECT_EQ(km10.memP[opnLoc], expectMem);
   }
 };
 
@@ -439,47 +438,47 @@ public:
 
 
   virtual void checkUnmodifiedFlags() override {
-    EXPECT_EQ(state.flags.tr2 | state.flags.fuf, 0);
-    EXPECT_EQ(state.flags.afi | state.flags.pub, 0);
-    EXPECT_EQ(state.flags.uio | state.flags.usr, 0);
-    EXPECT_EQ(state.flags.fpd | state.flags.fov, 0);
-    EXPECT_EQ(state.flags.cy0 | state.flags.cy1, 0);
+    EXPECT_EQ(km10.flags.tr2 | km10.flags.fuf, 0);
+    EXPECT_EQ(km10.flags.afi | km10.flags.pub, 0);
+    EXPECT_EQ(km10.flags.uio | km10.flags.usr, 0);
+    EXPECT_EQ(km10.flags.fpd | km10.flags.fov, 0);
+    EXPECT_EQ(km10.flags.cy0 | km10.flags.cy1, 0);
   }
 
   virtual void checkFlagsNC() override {
-    EXPECT_EQ(state.flags.tr1, 0);
-    EXPECT_EQ(state.flags.ndv, 0);
-    EXPECT_EQ(state.flags.ov, 0);
+    EXPECT_EQ(km10.flags.tr1, 0);
+    EXPECT_EQ(km10.flags.ndv, 0);
+    EXPECT_EQ(km10.flags.ov, 0);
   }
 
   virtual void checkFlagsT1() override {
-    EXPECT_EQ(state.flags.tr1, 1);
-    EXPECT_EQ(state.flags.ndv, 1);
-    EXPECT_EQ(state.flags.ov, 1);
+    EXPECT_EQ(km10.flags.tr1, 1);
+    EXPECT_EQ(km10.flags.ndv, 1);
+    EXPECT_EQ(km10.flags.ov, 1);
   }
 
 
   virtual void checkI72(W72 result72) {
-    EXPECT_EQ(state.AC[acLoc+0], W36(result72.hi));
-    EXPECT_EQ(state.AC[acLoc+1], W36(result72.lo));
+    EXPECT_EQ(km10.AC[acLoc+0], W36(result72.hi));
+    EXPECT_EQ(km10.AC[acLoc+1], W36(result72.lo));
   }
 
   virtual void checkM72(W72 result72) {
-    EXPECT_EQ(state.memP[opnLoc], W36(result72.hi));
+    EXPECT_EQ(km10.memP[opnLoc], W36(result72.hi));
   }
 
   virtual void checkB72(W72 result72) {
-    EXPECT_EQ(state.AC[acLoc+0], W36(result72.hi));
-    EXPECT_EQ(state.memP[opnLoc], W36(result72.hi));
+    EXPECT_EQ(km10.AC[acLoc+0], W36(result72.hi));
+    EXPECT_EQ(km10.memP[opnLoc], W36(result72.hi));
   }
 
   virtual void check72(W72 result72) {
     checkI72(result72);
-    EXPECT_EQ(state.memP[opnLoc], expectMem);
+    EXPECT_EQ(km10.memP[opnLoc], expectMem);
   }
 
   virtual void check72unchanged(W72 result72) {
-    EXPECT_EQ(state.memP[opnLoc], expectMem);
+    EXPECT_EQ(km10.memP[opnLoc], expectMem);
   }
 };
 
@@ -582,10 +581,10 @@ public:
   };
 
   virtual void setupMachine() override {
-    state.AC[acLoc+0] = a.hi;
-    state.AC[acLoc+1] = a.lo;
-    state.memP[opnLoc+0] = b.hi;
-    state.memP[opnLoc+1] = b.lo;
+    km10.AC[acLoc+0] = a.hi;
+    km10.AC[acLoc+1] = a.lo;
+    km10.memP[opnLoc+0] = b.hi;
+    km10.memP[opnLoc+1] = b.lo;
   }
 
   virtual void test(VW36 insns,
@@ -600,35 +599,35 @@ public:
 
 
   virtual void checkUnmodifiedFlags() override {
-    EXPECT_EQ(state.flags.tr2 | state.flags.fuf, 0);
-    EXPECT_EQ(state.flags.afi | state.flags.pub, 0);
-    EXPECT_EQ(state.flags.uio | state.flags.usr, 0);
-    EXPECT_EQ(state.flags.fpd | state.flags.fov, 0);
+    EXPECT_EQ(km10.flags.tr2 | km10.flags.fuf, 0);
+    EXPECT_EQ(km10.flags.afi | km10.flags.pub, 0);
+    EXPECT_EQ(km10.flags.uio | km10.flags.usr, 0);
+    EXPECT_EQ(km10.flags.fpd | km10.flags.fov, 0);
   }
 
   virtual void checkFlagsNC() override {
-    EXPECT_EQ(state.flags.tr1, 0);
-    EXPECT_EQ(state.flags.ov, 0);
-    EXPECT_EQ(state.flags.cy0, 0);
-    EXPECT_EQ(state.flags.cy1, 0);
+    EXPECT_EQ(km10.flags.tr1, 0);
+    EXPECT_EQ(km10.flags.ov, 0);
+    EXPECT_EQ(km10.flags.cy0, 0);
+    EXPECT_EQ(km10.flags.cy1, 0);
   }
 
   virtual void checkFlagsC0() override {
-    EXPECT_EQ(state.flags.tr1, 1);
-    EXPECT_EQ(state.flags.ov, 1);
-    EXPECT_EQ(state.flags.cy0, 1);
+    EXPECT_EQ(km10.flags.tr1, 1);
+    EXPECT_EQ(km10.flags.ov, 1);
+    EXPECT_EQ(km10.flags.cy0, 1);
   }
 
   virtual void checkFlagsC1() override {
-    EXPECT_EQ(state.flags.tr1, 1);
-    EXPECT_EQ(state.flags.ov, 1);
-    EXPECT_EQ(state.flags.cy1, 1);
+    EXPECT_EQ(km10.flags.tr1, 1);
+    EXPECT_EQ(km10.flags.ov, 1);
+    EXPECT_EQ(km10.flags.cy1, 1);
   }
 
 
   virtual void check72(W72 result72) {
-    EXPECT_EQ(state.AC[acLoc+0], W36(result72.hi));
-    EXPECT_EQ(state.AC[acLoc+1], W36(result72.lo));
+    EXPECT_EQ(km10.AC[acLoc+0], W36(result72.hi));
+    EXPECT_EQ(km10.AC[acLoc+1], W36(result72.lo));
   }
 };
 
@@ -707,10 +706,10 @@ public:
   };
 
   virtual void setupMachine() override {
-    state.memP[opnLoc+0] = a.hi;
-    state.memP[opnLoc+1] = a.lo;
-    state.AC[acLoc+0] = b.hi;
-    state.AC[acLoc+1] = b.lo;
+    km10.memP[opnLoc+0] = a.hi;
+    km10.memP[opnLoc+1] = a.lo;
+    km10.AC[acLoc+0] = b.hi;
+    km10.AC[acLoc+1] = b.lo;
   }
 
   virtual void test(VW36 insns,
@@ -725,35 +724,35 @@ public:
 
 
   virtual void checkUnmodifiedFlags() override {
-    EXPECT_EQ(state.flags.tr2 | state.flags.fuf, 0);
-    EXPECT_EQ(state.flags.afi | state.flags.pub, 0);
-    EXPECT_EQ(state.flags.uio | state.flags.usr, 0);
-    EXPECT_EQ(state.flags.fpd | state.flags.fov, 0);
+    EXPECT_EQ(km10.flags.tr2 | km10.flags.fuf, 0);
+    EXPECT_EQ(km10.flags.afi | km10.flags.pub, 0);
+    EXPECT_EQ(km10.flags.uio | km10.flags.usr, 0);
+    EXPECT_EQ(km10.flags.fpd | km10.flags.fov, 0);
   }
 
   virtual void checkFlagsNC() override {
-    EXPECT_EQ(state.flags.tr1, 0);
-    EXPECT_EQ(state.flags.ov, 0);
-    EXPECT_EQ(state.flags.cy0, 0);
-    EXPECT_EQ(state.flags.cy1, 0);
+    EXPECT_EQ(km10.flags.tr1, 0);
+    EXPECT_EQ(km10.flags.ov, 0);
+    EXPECT_EQ(km10.flags.cy0, 0);
+    EXPECT_EQ(km10.flags.cy1, 0);
   }
 
   virtual void checkFlagsC0() override {
-    EXPECT_EQ(state.flags.tr1, 1);
-    EXPECT_EQ(state.flags.ov, 1);
-    EXPECT_EQ(state.flags.cy0, 1);
+    EXPECT_EQ(km10.flags.tr1, 1);
+    EXPECT_EQ(km10.flags.ov, 1);
+    EXPECT_EQ(km10.flags.cy0, 1);
   }
 
   virtual void checkFlagsC1() override {
-    EXPECT_EQ(state.flags.tr1, 1);
-    EXPECT_EQ(state.flags.ov, 1);
-    EXPECT_EQ(state.flags.cy1, 1);
+    EXPECT_EQ(km10.flags.tr1, 1);
+    EXPECT_EQ(km10.flags.ov, 1);
+    EXPECT_EQ(km10.flags.cy1, 1);
   }
 
 
   virtual void check72(W72 result72) {
-    EXPECT_EQ(state.AC[acLoc+0], W36(result72.hi));
-    EXPECT_EQ(state.AC[acLoc+1], W36(result72.lo));
+    EXPECT_EQ(km10.AC[acLoc+0], W36(result72.hi));
+    EXPECT_EQ(km10.AC[acLoc+1], W36(result72.lo));
   }
 };
 
@@ -829,10 +828,10 @@ public:
   };
 
   virtual void setupMachine() override {
-    state.AC[acLoc+0] = a.hi;
-    state.AC[acLoc+1] = a.lo;
-    state.memP[opnLoc+0] = b.hi;
-    state.memP[opnLoc+1] = b.lo;
+    km10.AC[acLoc+0] = a.hi;
+    km10.AC[acLoc+1] = a.lo;
+    km10.memP[opnLoc+0] = b.hi;
+    km10.memP[opnLoc+1] = b.lo;
   }
 
   virtual void test(VW36 insns,
@@ -847,40 +846,40 @@ public:
 
 
   virtual void checkUnmodifiedFlags() override {
-    EXPECT_EQ(state.flags.tr2 | state.flags.fuf, 0);
-    EXPECT_EQ(state.flags.afi | state.flags.pub, 0);
-    EXPECT_EQ(state.flags.uio | state.flags.usr, 0);
-    EXPECT_EQ(state.flags.fpd | state.flags.fov, 0);
-    EXPECT_EQ(state.flags.cy0, 0);
-    EXPECT_EQ(state.flags.cy1, 0);
+    EXPECT_EQ(km10.flags.tr2 | km10.flags.fuf, 0);
+    EXPECT_EQ(km10.flags.afi | km10.flags.pub, 0);
+    EXPECT_EQ(km10.flags.uio | km10.flags.usr, 0);
+    EXPECT_EQ(km10.flags.fpd | km10.flags.fov, 0);
+    EXPECT_EQ(km10.flags.cy0, 0);
+    EXPECT_EQ(km10.flags.cy1, 0);
   }
 
   virtual void checkFlagsNC() override {
-    EXPECT_EQ(state.flags.tr1, 0);
-    EXPECT_EQ(state.flags.ov, 0);
+    EXPECT_EQ(km10.flags.tr1, 0);
+    EXPECT_EQ(km10.flags.ov, 0);
   }
 
   virtual void checkFlagsT1() override {
-    EXPECT_EQ(state.flags.tr1, 1);
-    EXPECT_EQ(state.flags.ov, 1);
+    EXPECT_EQ(km10.flags.tr1, 1);
+    EXPECT_EQ(km10.flags.ov, 1);
   }
 
 
   virtual void check140(W144 result140) {
     auto const [a0, a1, a2, a3] = result140.toQuadWord();
-    EXPECT_EQ(state.AC[acLoc+0], a0);
-    EXPECT_EQ(state.AC[acLoc+1], a1);
-    EXPECT_EQ(state.AC[acLoc+2], a2);
-    EXPECT_EQ(state.AC[acLoc+3], a3);
+    EXPECT_EQ(km10.AC[acLoc+0], a0);
+    EXPECT_EQ(km10.AC[acLoc+1], a1);
+    EXPECT_EQ(km10.AC[acLoc+2], a2);
+    EXPECT_EQ(km10.AC[acLoc+3], a3);
   }
 
 
   virtual void check140T1(W144 result140) {
     const W36 big1{0400000,0};
-    EXPECT_EQ(state.AC[acLoc+0], big1);
-    EXPECT_EQ(state.AC[acLoc+1], big1);
-    EXPECT_EQ(state.AC[acLoc+2], big1);
-    EXPECT_EQ(state.AC[acLoc+3], big1);
+    EXPECT_EQ(km10.AC[acLoc+0], big1);
+    EXPECT_EQ(km10.AC[acLoc+1], big1);
+    EXPECT_EQ(km10.AC[acLoc+2], big1);
+    EXPECT_EQ(km10.AC[acLoc+3], big1);
   }
 };
 

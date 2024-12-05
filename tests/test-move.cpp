@@ -6,7 +6,6 @@ using namespace std;
 #include <gtest/gtest.h>
 
 #include "word.hpp"
-#include "kmstate.hpp"
 #include "km10.hpp"
 #include "km10-test.hpp"
 
@@ -136,10 +135,10 @@ TEST_F(InstructionMOVS, MOVSS0AC) {
 class InstructionMOVN: public KM10Test {
 public:
   virtual void checkFlagsC01() {
-    EXPECT_EQ(state.flags.tr1, 0);
-    EXPECT_EQ(state.flags.cy1, 1);
-    EXPECT_EQ(state.flags.cy0, 1);
-    EXPECT_EQ(state.flags.ov, 0);
+    EXPECT_EQ(km10.flags.tr1, 0);
+    EXPECT_EQ(km10.flags.cy1, 1);
+    EXPECT_EQ(km10.flags.cy0, 1);
+    EXPECT_EQ(km10.flags.ov, 0);
   }
 };
 

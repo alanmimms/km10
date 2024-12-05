@@ -6,7 +6,6 @@ using namespace std;
 #include <gtest/gtest.h>
 
 #include "word.hpp"
-#include "kmstate.hpp"
 #include "km10.hpp"
 #include "km10-test.hpp"
 
@@ -22,15 +21,15 @@ int main(int argc, char *argv[]) {
 }
 
 
-void Logger::nyi(KMState& state, const string &context) {
+void Logger::nyi(KM10 &km10, const string &context) {
   s << " [not yet implemented: " << context << "]";
-  cerr << "Not yet implemented at " << state.pc.fmtVMA() << endl;
+  cerr << "Not yet implemented at " << km10.pc.fmtVMA() << endl;
   ADD_FAILURE();
 }
 
 
-void Logger::nsd(KMState& state, const string &context) {
+void Logger::nsd(KM10 &km10, const string &context) {
   s << " [no such device]: " << context << "]";
-  cerr << "No such device at " << state.pc.fmtVMA() << endl;
+  cerr << "No such device at " << km10.pc.fmtVMA() << endl;
   ADD_FAILURE();
 }

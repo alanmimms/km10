@@ -9,14 +9,15 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include(FetchContent)
 
-FetchContent_Declare(gflags
-    GIT_REPOSITORY "https://github.com/gflags/gflags.git"
-    GIT_TAG "origin/master"
+FetchContent_Declare(CLI
+    QUIET
+    GIT_REPOSITORY "https://github.com/CLIUtils/CLI11"
+    GIT_TAG "v2.4.2"
 )
 
 FetchContent_Declare(googletest
     GIT_REPOSITORY "https://github.com/google/googletest.git"
-    GIT_TAG "origin/main"
+    GIT_TAG "v1.15.2"
 )
 
 include(GoogleTest)
@@ -24,10 +25,10 @@ enable_testing()
 
 FetchContent_Declare(fmt
     GIT_REPOSITORY "https://github.com/fmtlib/fmt.git"
-    GIT_TAG "10.2.1"
+    GIT_TAG "11.0.2"
 )
 
-FetchContent_MakeAvailable(gflags googletest fmt)
+FetchContent_MakeAvailable(CLI googletest fmt)
 
 add_subdirectory(src)
 add_subdirectory(tests)

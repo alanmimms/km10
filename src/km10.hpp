@@ -120,9 +120,9 @@ public:
 
 
   W36 pc;	      // PC of instr we fetched before trap,int,XCT-chain.
-  W36 iw;	      // Instruction word we're executing
-  W36 ea;	      // Effective address (always calculated)
-  W36 fetchPC;	      // Address cur instr came from. Also jump target for iJump.
+  W36 iw;	      // Instruction word we're executing.
+  W36 ea;	      // Effective address (always calculated whether used or not).
+  W36 fetchPC;	      // Addr cur instr came from, target for skip/jump/XCT/xUUO/trap.
 
   // Offset to add to PC at end of instruction: zero for JUMPs, two
   // for SKIPs, one for normal. For traps, the trap vector address is
