@@ -39,22 +39,6 @@ KM10::OpsInitializer::OpsInitializer() {
 
     {0104, &KM10::doJSYS},
 
-    {0200, &KM10::doMOVE},
-    {0201, &KM10::doMOVEI},
-    {0202, &KM10::doMOVEM},
-    {0203, &KM10::doMOVES},
-    {0204, &KM10::doMOVS},
-    {0205, &KM10::doMOVSI},
-    {0206, &KM10::doMOVSM},
-    {0207, &KM10::doMOVSS},
-    {0210, &KM10::doMOVN},
-    {0211, &KM10::doMOVNI},
-    {0212, &KM10::doMOVNM},
-    {0213, &KM10::doMOVNS},
-    {0214, &KM10::doMOVM},
-    {0215, &KM10::doMOVMI},
-    {0216, &KM10::doMOVMM},
-    {0217, &KM10::doMOVMS},
     {0220, &KM10::doIMUL},
     {0221, &KM10::doIMULI},
     {0222, &KM10::doIMULM},
@@ -384,7 +368,7 @@ KM10::OpsInitializer KM10::opsInitializer;
 // Constructor
 KM10::KM10(unsigned nMemoryWords, KM10::BreakpointTable &aBPs, KM10::BreakpointTable &eBPs)
   : apr{*this},
-    cca{*this, apr},
+    cca{*this},
     mtr{*this},
     pag{*this},
     pi {*this},
@@ -720,8 +704,12 @@ KM10::KM10(unsigned nMemoryWords, KM10::BreakpointTable &aBPs, KM10::BreakpointT
   never2 = [&] (W36 v1, W36 v2) {return false;};
 
 
-  skipAction = [&]() {skipToNext = true;};
-  jumpAction = [&]() {pc.rhu = ea.rhu;};
+  skipAction = [&]() {return iSkip;};
+
+  jumpAction = [&]() {
+    pc.rhu = ea.rhu;
+    return iJump;
+  };
 }
 
 
@@ -959,16 +947,12 @@ void KM10::doBinOp(auto getSrc1F, auto getSrc2F, auto modifyF, auto putDstF) {
 }
 
 
-void KM10::doTXXXX(auto get1F, auto get2F, auto modifyF, auto condF, auto storeF) {
+InstructionResult KM10::doTXXXX(auto get1F, auto get2F, auto modifyF, auto condF, auto storeF) {
   W36 a1 = get1F();
   W36 a2 = get2F();
-
-  if (condF(a1, a2)) {
-    logFlow("skip");
-    ++pcOffset;
-  }
-      
+  const bool doSkip = condF(a1, a2);
   storeF(modifyF(a1, a2));
+  return doSkip = iSkip : iNormal;
 }
 
 
@@ -987,31 +971,20 @@ void KM10::doSETXX(auto getSrcF, auto modifyF, auto putDstF) {
   putDstF(modifyF(getSrcF()));
 }
 
-void KM10::doCAXXX(auto getSrc1F, auto getSrc2F, auto condF) {
-
-  if (condF(getSrc1F().ext64(), getSrc2F().ext64())) {
-    logFlow("skip");
-    ++pcOffset;
-  }
+InstructionResult KM10::doCAXXX(auto getSrc1F, auto getSrc2F, auto condF) {
+  return condF(getSrc1F().ext64(), getSrc2F().ext64()) ? iSkip : iNormal;
 }
 
-void KM10::doJUMP(auto condF) {
-
-  if (condF(acGet())) {
-    logFlow("jump");
-  }
+InstructionREsult KM10::doJUMP(auto condF) {
+  return condF(acGet()) ? iJump : iNormal;
 }
 
 
-void KM10::doSKIP(auto condF) {
+InstructionResult KM10::doSKIPXX(auto condF) {
   W36 eaw = memGet();
-
-  if (condF(eaw)) {
-    logFlow("skip");
-    ++pcOffset;
-  }
-      
+  const bool doSkip = condF(eaw);
   if (iw.ac != 0) acPut(eaw);
+  return doSkip ? iSkip : iNormal;
 }
 
 
@@ -1039,7 +1012,7 @@ void KM10::doAOSXX(auto getF, const signed delta, auto putF, auto condF, auto ac
   if (iw.ac != 0) acPut(v);
   putF(v);
 
-  if (condF(v)) actionF();
+  return condF(v) ? actionF() : iNormal;
 }
 
 
@@ -1643,38 +1616,31 @@ InstructionResult KM10::doCAI() {
 }
 
 InstructionResult KM10::doCAIL() {
-  doCAXXX(acGet, immediate, isLT);
-  return iNormal;
+  return doCAXXX(acGet, immediate, isLT);
 }
 
 InstructionResult KM10::doCAIE() {
-  doCAXXX(acGet, immediate, isEQ);
-  return iNormal;
+  return doCAXXX(acGet, immediate, isEQ);
 }
 
 InstructionResult KM10::doCAILE() {
-  doCAXXX(acGet, immediate, isLE);
-  return iNormal;
+  return doCAXXX(acGet, immediate, isLE);
 }
 
 InstructionResult KM10::doCAIA() {
-  doCAXXX(acGet, immediate, always2);
-  return iNormal;
+  return doCAXXX(acGet, immediate, always2);
 }
 
 InstructionResult KM10::doCAIGE() {
-  doCAXXX(acGet, immediate, isGE);
-  return iNormal;
+  return doCAXXX(acGet, immediate, isGE);
 }
 
 InstructionResult KM10::doCAIN() {
-  doCAXXX(acGet, immediate, isNE);
-  return iNormal;
+  return doCAXXX(acGet, immediate, isNE);
 }
 
 InstructionResult KM10::doCAIG() {
-  doCAXXX(acGet, immediate, isGT);
-  return iNormal;
+  return doCAXXX(acGet, immediate, isGT);
 }
 
 InstructionResult KM10::doCAM() {
@@ -1682,278 +1648,223 @@ InstructionResult KM10::doCAM() {
 }
 
 InstructionResult KM10::doCAML() {
-  doCAXXX(acGet, memGet, isLT);
-  return iNormal;
+  return doCAXXX(acGet, memGet, isLT);
 }
 
 InstructionResult KM10::doCAME() {
-  doCAXXX(acGet, memGet, isEQ);
-  return iNormal;
+  return doCAXXX(acGet, memGet, isEQ);
 }
 
 InstructionResult KM10::doCAMLE() {
-  doCAXXX(acGet, memGet, isLE);
-  return iNormal;
+  return doCAXXX(acGet, memGet, isLE);
 }
 
 InstructionResult KM10::doCAMA() {
-  doCAXXX(acGet, memGet, always2);
-  return iNormal;
+  return doCAXXX(acGet, memGet, always2);
 }
 
 InstructionResult KM10::doCAMGE() {
-  doCAXXX(acGet, memGet, isGE);
-  return iNormal;
+  return doCAXXX(acGet, memGet, isGE);
 }
 
 InstructionResult KM10::doCAMN() {
-  doCAXXX(acGet, memGet, isNE);
-  return iNormal;
+  return doCAXXX(acGet, memGet, isNE);
 }
 
 InstructionResult KM10::doCAMG() {
-  doCAXXX(acGet, memGet, isGT);
-  return iNormal;
+  return doCAXXX(acGet, memGet, isGT);
 }
 
 InstructionResult KM10::doJUMP() {
-  doJUMP(never);
-  return iNormal;
+  return doJUMP(never);
 }
 
 InstructionResult KM10::doJUMPL() {
-  doJUMP(isLT0);
-  return iNormal;
+  return doJUMP(isLT0);
 }
 
 InstructionResult KM10::doJUMPE() {
-  doJUMP(isEQ0);
-  return iNormal;
+  return doJUMP(isEQ0);
 }
 
 InstructionResult KM10::doJUMPLE() {
-  doJUMP(isLE0);
-  return iNormal;
+  return doJUMP(isLE0);
 }
 
 InstructionResult KM10::doJUMPA() {
-  doJUMP(always);
-  return iNormal;
+  return doJUMP(always);
 }
 
 InstructionResult KM10::doJUMPGE() {
-  doJUMP(isGE0);
-  return iNormal;
+  return doJUMP(isGE0);
 }
 
 InstructionResult KM10::doJUMPN() {
-  doJUMP(isNE0);
-  return iNormal;
+  return doJUMP(isNE0);
 }
 
 InstructionResult KM10::doJUMPG() {
-  doJUMP(isGT0);
-  return iNormal;
+  return doJUMP(isGT0);
 }
 
 InstructionResult KM10::doSKIP() {
-  doSKIP(never);
-  return iNormal;
+  return doSKIP(never);
 }
 
 InstructionResult KM10::doSKIPL() {
-  doSKIP(isLT0);
-  return iNormal;
+  return doSKIP(isLT0);
 }
 
 InstructionResult KM10::doSKIPE() {
-  doSKIP(isEQ0);
-  return iNormal;
+  return doSKIP(isEQ0);
 }
 
 InstructionResult KM10::doSKIPLE() {
-  doSKIP(isLE0);
-  return iNormal;
+  return doSKIP(isLE0);
 }
 
 InstructionResult KM10::doSKIPA() {
-  doSKIP(always);
-  return iNormal;
+  return doSKIP(always);
 }
 
 InstructionResult KM10::doSKIPGE() {
-  doSKIP(isGE0);
-  return iNormal;
+  return doSKIP(isGE0);
 }
 
 InstructionResult KM10::doSKIPN() {
-  doSKIP(isNE0);
-  return iNormal;
+  return doSKIP(isNE0);
 }
 
 InstructionResult KM10::doSKIPGT() {
-  doSKIP(isGT0);
-  return iNormal;
+  return doSKIP(isGT0);
 }
 
 InstructionResult KM10::doAOJ() {
-  doAOSXX(acGet, 1, acPut, never, jumpAction);
-  return iNormal;
+  return doAOSXX(acGet, 1, acPut, never, jumpAction);
 }
 
 InstructionResult KM10::doAOJL() {
-  doAOSXX(acGet, 1, acPut, isLT0, jumpAction);
-  return iNormal;
+  return doAOSXX(acGet, 1, acPut, isLT0, jumpAction);
 }
 
 InstructionResult KM10::doAOJE() {
-  doAOSXX(acGet, 1, acPut, isEQ0, jumpAction);
-  return iNormal;
+  return doAOSXX(acGet, 1, acPut, isEQ0, jumpAction);
 }
 
 InstructionResult KM10::doAOJLE() {
-  doAOSXX(acGet, 1, acPut, isLE0, jumpAction);
-  return iNormal;
+  return doAOSXX(acGet, 1, acPut, isLE0, jumpAction);
 }
 
 InstructionResult KM10::doAOJA() {
-  doAOSXX(acGet, 1, acPut, always, jumpAction);
-  return iNormal;
+  return doAOSXX(acGet, 1, acPut, always, jumpAction);
 }
 
 InstructionResult KM10::doAOJGE() {
-  doAOSXX(acGet, 1, acPut, isGE0, jumpAction);
-  return iNormal;
+  return doAOSXX(acGet, 1, acPut, isGE0, jumpAction);
 }
 
 InstructionResult KM10::doAOJN() {
-  doAOSXX(acGet, 1, acPut, isNE0, jumpAction);
-  return iNormal;
+  return doAOSXX(acGet, 1, acPut, isNE0, jumpAction);
 }
 
 InstructionResult KM10::doAOJG() {
-  doAOSXX(acGet, 1, acPut, isGT0, jumpAction);
-  return iNormal;
+  return doAOSXX(acGet, 1, acPut, isGT0, jumpAction);
 }
 
 InstructionResult KM10::doAOS() {
-  doAOSXX(memGet, 1, memPut, never, skipAction);
-  return iNormal;
+  return doAOSXX(memGet, 1, memPut, never, skipAction);
 }
 
 InstructionResult KM10::doAOSL() {
-  doAOSXX(memGet, 1, memPut, isLT0, skipAction);
-  return iNormal;
+  return doAOSXX(memGet, 1, memPut, isLT0, skipAction);
 }
 
 InstructionResult KM10::doAOSE() {
-  doAOSXX(memGet, 1, memPut, isEQ0, skipAction);
-  return iNormal;
+  return doAOSXX(memGet, 1, memPut, isEQ0, skipAction);
 }
 
 InstructionResult KM10::doAOSLE() {
-  doAOSXX(memGet, 1, memPut, isLE0, skipAction);
-  return iNormal;
+  return doAOSXX(memGet, 1, memPut, isLE0, skipAction);
 }
 
 InstructionResult KM10::doAOSA() {
-  doAOSXX(memGet, 1, memPut, always, skipAction);
-  return iNormal;
+  return doAOSXX(memGet, 1, memPut, always, skipAction);
 }
 
 InstructionResult KM10::doAOSGE() {
-  doAOSXX(memGet, 1, memPut, isGE0, skipAction);
-  return iNormal;
+  return doAOSXX(memGet, 1, memPut, isGE0, skipAction);
 }
 
 InstructionResult KM10::doAOSN() {
-  doAOSXX(memGet, 1, memPut, isNE0, skipAction);
-  return iNormal;
+  return doAOSXX(memGet, 1, memPut, isNE0, skipAction);
 }
 
 InstructionResult KM10::doAOSG() {
-  doAOSXX(memGet, 1, memPut, isGT0, skipAction);
-  return iNormal;
+  return doAOSXX(memGet, 1, memPut, isGT0, skipAction);
 }
 
 InstructionResult KM10::doSOJ() {
-  doAOSXX(acGet, -1, acPut, never, jumpAction);
-  return iNormal;
+  return doAOSXX(acGet, -1, acPut, never, jumpAction);
 }
 
 InstructionResult KM10::doSOJL() {
-  doAOSXX(acGet, -1, acPut, isLT0, jumpAction);
-  return iNormal;
+  return doAOSXX(acGet, -1, acPut, isLT0, jumpAction);
 }
 
 InstructionResult KM10::doSOJE() {
-  doAOSXX(acGet, -1, acPut, isEQ0, jumpAction);
-  return iNormal;
+  return doAOSXX(acGet, -1, acPut, isEQ0, jumpAction);
 }
 
 InstructionResult KM10::doSOJLE() {
-  doAOSXX(acGet, -1, acPut, isLE0, jumpAction);
-  return iNormal;
+  return doAOSXX(acGet, -1, acPut, isLE0, jumpAction);
 }
 
 InstructionResult KM10::doSOJA() {
-  doAOSXX(acGet, -1, acPut, always, jumpAction);
-  return iNormal;
+  return doAOSXX(acGet, -1, acPut, always, jumpAction);
 }
 
 InstructionResult KM10::doSOJGE() {
-  doAOSXX(acGet, -1, acPut, isGE0, jumpAction);
-  return iNormal;
+  return doAOSXX(acGet, -1, acPut, isGE0, jumpAction);
 }
 
 InstructionResult KM10::doSOJN() {
-  doAOSXX(acGet, -1, acPut, isNE0, jumpAction);
-  return iNormal;
+  return doAOSXX(acGet, -1, acPut, isNE0, jumpAction);
 }
 
 InstructionResult KM10::doSOJG() {
-  doAOSXX(acGet, -1, acPut, isGT0, jumpAction);
-  return iNormal;
+  return doAOSXX(acGet, -1, acPut, isGT0, jumpAction);
 }
 
 InstructionResult KM10::doSOS() {
-  doAOSXX(memGet, -1, memPut, never, skipAction);
-  return iNormal;
+  return doAOSXX(memGet, -1, memPut, never, skipAction);
 }
 
 InstructionResult KM10::doSOSL() {
-  doAOSXX(memGet, -1, memPut, isLT0, skipAction);
-  return iNormal;
+  return doAOSXX(memGet, -1, memPut, isLT0, skipAction);
 }
 
 InstructionResult KM10::doSOSE() {
-  doAOSXX(memGet, -1, memPut, isEQ0, skipAction);
-  return iNormal;
+  return doAOSXX(memGet, -1, memPut, isEQ0, skipAction);
 }
 
 InstructionResult KM10::doSOSLE() {
-  doAOSXX(memGet, -1, memPut, isLE0, skipAction);
-  return iNormal;
+  return doAOSXX(memGet, -1, memPut, isLE0, skipAction);
 }
 
 InstructionResult KM10::doSOSA() {
-  doAOSXX(memGet, -1, memPut, always, skipAction);
-  return iNormal;
+  return doAOSXX(memGet, -1, memPut, always, skipAction);
 }
 
 InstructionResult KM10::doSOSGE() {
-  doAOSXX(memGet, -1, memPut, isGE0, skipAction);
-  return iNormal;
+  return doAOSXX(memGet, -1, memPut, isGE0, skipAction);
 }
 
 InstructionResult KM10::doSOSN() {
-  doAOSXX(memGet, -1, memPut, isNE0, skipAction);
-  return iNormal;
+  return doAOSXX(memGet, -1, memPut, isNE0, skipAction);
 }
 
 InstructionResult KM10::doSOSG() {
-  doAOSXX(memGet, -1, memPut, isGT0, skipAction);
-  return iNormal;
+  return doAOSXX(memGet, -1, memPut, isGT0, skipAction);
 }
 
 InstructionResult KM10::doSETZ() {
