@@ -65,6 +65,7 @@
 #include <ostream>
 #include <fmt/core.h>
 #include <limits>
+#include <array>
 #include <functional>
 #include <assert.h>
 #include <unordered_set>
@@ -85,6 +86,8 @@ using namespace fmt;
 #include "debugger.hpp"
 #include "instruction-result.hpp"
 
+//#include "i-move.hpp"
+
 
 class KM10 {
 public:
@@ -102,8 +105,8 @@ public:
   using BreakpointTable = unordered_set<unsigned>;
 
 
-  // Type for the function that implements an opcode.
-  using InstructionF = InstructionResult (KM10::*)();
+  // This is an implementation of an opcode to be saved in the ops[].
+  using OpcodeMethod = function<InstructionResult()>;
 
 
   // This is indexed by opcode, giving the method to call for that
@@ -111,11 +114,12 @@ public:
   // initializer. I make it static and bind the instance "this" at
   // time of call with ".*" since the elements point to instance
   // methods.
-  static InstructionF ops[512];
+  static array<OpcodeMethod, 512> ops;
 
 
   // Constructor and destructor
   KM10(unsigned nMemoryWords, BreakpointTable &aBPs, BreakpointTable &eBPs);
+
   ~KM10();
 
 
@@ -350,6 +354,17 @@ public:
   void restoreFlags(W36 ea);
 
   void loadA10(const char *fileNameP);
+
+
+  ////////////////////////////////////////////////////////////////
+  struct MoveGroup {
+    MoveGroup(KM10 &cpu);
+  } moveGroup;
+
+
+  inline void defOp(unsigned op, const char *mneP, function<InstructionResult()> impl) {
+    ops[op] = impl;
+  }
 
 
   // Helper methods as lambdas.
