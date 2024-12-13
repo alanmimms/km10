@@ -405,6 +405,7 @@ KM10::~KM10() {
 
 
 ////////////////////////////////////////////////////////////////
+#if 0
 InstructionResult KM10::doNYI() {
   cerr << "Not yet implemented: " << oct << iw.op << logger.endl << flush;
   return iNormal;
@@ -2506,6 +2507,7 @@ InstructionResult KM10::doTSON() {
   doTXXXX(acGet, memGetSwapped, onesMask, isNE0T, acPut);
   return iNormal;
 }
+#endif
 
 
 // Return the KM10 memory VIRTUAL address (EPT is in kernel virtual
@@ -2871,7 +2873,7 @@ void KM10::emulate() {
     ea.u = getEA(iw.i, iw.x, iw.y);
 
     // Execute the instruction in `iw`.
-    InstructionResult result = (this->*(ops[iw.op]))();
+    InstructionResult result = ops[iw.op]();
 
     // If we "continue" we have to set up `fetchPC` to point to the
     // instruction to fetch and execute next. If we "break" (from the
@@ -2939,45 +2941,42 @@ static int loopedMain(int argc, char *argv[]) {
   app.add_option("-d,--debug", dVal, "run the built-in debugger instead of starting execution");
 
   unsigned mVal{4096};
-  auto mOpt = app.add_option("-m", mVal, "Size (in Kwords) of KM10 main memory");
-  mOpt->check([](const string &str) {
-    unsigned size = strtoul(str);
+  app.add_option("-m", mVal, "Size (in Kwords) of KM10 main memory")
+    ->check([](const string &str) {
+      unsigned size = atol(str.c_str());
 
-    if (size < 256 || size > 4096 || (size & 0xFF) != 0) {
-      cerr << "[FATAL: the '-m' size in Kwords must be a multiple of 256 from 256K to 4096K words.]"
-	   << endl << flush;
-      exit(-1);
-    }
-  });
+      if (size >= 256 && size <= 4096 && (size & 0xFF) == 0) {
+	return string{};	// Good value!
+      } else {
+	return string{"The '-m' size in Kwords must be a multiple of 256 from 256K to 4096K words."};
+      }
+    });
   
   string lVal{"../images/klad/dfkaa.a10"};
-  auto lOpt = app.add_option("-l,-load", lVal, ".A10 or .SAV file to load");
-  lOpt->check(CLI::ExistingFile);
+  app.add_option("-l,-load", lVal, ".A10 or .SAV file to load")
+    ->check(CLI::ExistingFile);
 
-  string relFileToLoad{"../images/klad/dfkaa.rel"};
-  auto rOpt = app.add_option("-r,--rel", relFileToLoad, ".REL file to load symbols from");
-  rOpt->check(CLI::ExistingFile);
+  string rVal{"../images/klad/dfkaa.rel"};
+  app.add_option("-r,--rel", rVal, ".REL file to load symbols from")
+    ->check(CLI::ExistingFile);
 
-  CLI11_PARSE(&app, argc, argv);
+  app.parse(argc, argv);
 
   KM10 km10(mVal*1024, aBPs, eBPs);
   assert(sizeof(*km10.eptP) == 512 * 8);
   assert(sizeof(*km10.uptP) == 512 * 8);
 
-  if (lOpt != nullptr) {
-
-    if (lVal.ends_with(".a10")) {
-      km10.loadA10(lVal.c_str());
-    } else if (lVal.ends_with(".sav")) {
-      cerr << "ERROR: For now, '-load' option must name a .a10 file" << logger.endl;
-      return -1;
-    } else {
-      cerr << "ERROR: '-load' option must name a .a10 file" << logger.endl;
-      return -1;
-    }
-
-    cerr << "[Loaded " << lVal << "  start=" << km10.pc.fmtVMA() << "]" << logger.endl;
+  if (lVal.ends_with(".a10")) {
+    km10.loadA10(lVal.c_str());
+  } else if (lVal.ends_with(".sav")) {
+    cerr << "ERROR: For now, '-load' option must name a .a10 file" << logger.endl;
+    return -1;
+  } else {
+    cerr << "ERROR: '-load' option must name a .a10 file" << logger.endl;
+    return -1;
   }
+
+  cerr << "[Loaded " << lVal << "  start=" << km10.pc.fmtVMA() << "]" << logger.endl;
 
   if (rVal != "none") {
     km10.debugger.loadREL(rVal.c_str());
