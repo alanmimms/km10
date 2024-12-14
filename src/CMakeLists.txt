@@ -13,6 +13,7 @@ add_executable(km10
   km10.cpp
   i-byte.cpp
   i-move.cpp
+  i-uuos.cpp
 )
 
 add_library(km10lib

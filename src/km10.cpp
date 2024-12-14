@@ -52,11 +52,11 @@ KM10::KM10(unsigned nMemoryWords, KM10::BreakpointTable &aBPs, KM10::BreakpointT
     addressBPs(aBPs),
     executeBPs(eBPs)
 {
-  extern void installByteGroup(KM10 &);
-  extern void installMoveGroup(KM10 &);
-
-  installByteGroup(*this);
-  installMoveGroup(*this);
+#define DOGROUP(G)	extern void install##G##Group(KM10 &); install##G##Group(*this)
+  DOGROUP(Byte);
+  DOGROUP(Move);
+  DOGROUP(UUOs);
+#undef DOGROUP
 
   // Note this anonymous mmap() implicitly zeroes the virtual memory.
   physicalP = (W36 *) mmap(nullptr,
@@ -399,71 +399,6 @@ InstructionResult KM10::doNYI() {
 InstructionResult KM10::doIO() {
   if (logger.io) logger.s << "; ioDev=" << oct << iw.ioDev << " ioOp=" << oct << iw.ioOp;
   return Device::handleIO(iw, ea);
-}
-
-
-InstructionResult KM10::doLUUO() {
-
-  if (pc.isSection0()) {
-    W36 uuoState;
-    uuoState.op = iw.op;
-    uuoState.ac = iw.ac;
-    uuoState.i = 0;
-    uuoState.x = 0;
-    uuoState.y = ea.rhu;
-
-    // XXX this should select executive virtual space first.
-    memPutN(040, uuoState);
-    cerr << "LUUO at " << pc.fmtVMA() << " uuoState=" << uuoState.fmt36()
-	 << logger.endl << flush;
-    pcOffset = 041;
-    exceptionPC = pc + 1;
-    inInterrupt = true;
-    return iTrap;
-  } else {
-
-    if (flags.usr) {
-      W36 uuoA(uptP->luuoAddr);
-      memPutN(W36(((uint64_t) flags.u << 23) |
-		  ((uint64_t) iw.op << 15) |
-		  ((uint64_t) iw.ac << 5)), uuoA.u++);
-      memPutN(pc, uuoA.u++);
-      memPutN(ea.u, uuoA.u++);
-      pcOffset = memGetN(uuoA);
-      exceptionPC = pc + 1;
-      inInterrupt = true;
-      return iTrap;
-    } else {	       // Executive mode treats LUUOs as MUUOs
-      return doMUUO();
-    }
-  }
-}
-
-
-InstructionResult KM10::doILLEGAL() {
-  cerr << "ILLEGAL isn't implemented yet" << logger.endl << flush;
-  pcOffset = 
-  inInterrupt = true;
-  logger.nyi(*this);
-  return iMUUO;
-}
-
-
-InstructionResult KM10::doJSYS() {
-  cerr << "JSYS isn't implemented yet" << logger.endl << flush;
-  exceptionPC = pc + 1;
-  inInterrupt = true;
-  logger.nyi(*this);
-  return iMUUO;
-}
-
-
-InstructionResult KM10::doMUUO() {
-  cerr << "MUUOs aren't implemented yet" << logger.endl << flush;
-  exceptionPC = pc + 1;
-  inInterrupt = true;
-  logger.nyi(*this);
-  return iMUUO;
 }
 
 
