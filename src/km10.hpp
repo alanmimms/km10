@@ -356,17 +356,12 @@ public:
   void loadA10(const char *fileNameP);
 
 
-  ////////////////////////////////////////////////////////////////
-  struct MoveGroup {
-    MoveGroup(KM10 &cpu);
-  } moveGroup;
-
-
   inline void defOp(unsigned op, const char *mneP, function<InstructionResult()> impl) {
     ops[op] = impl;
   }
 
 
+  ////////////////////////////////////////////////////////////////
   // Helper methods as lambdas.
   function<W36()> acGet;
   function<W36()> acGetRH;

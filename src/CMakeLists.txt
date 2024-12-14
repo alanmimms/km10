@@ -11,6 +11,8 @@ add_executable(km10
   word.cpp
   logger.cpp
   km10.cpp
+  i-byte.cpp
+  i-move.cpp
 )
 
 add_library(km10lib
