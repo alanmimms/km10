@@ -23,6 +23,9 @@ Logger logger{};
 static KM10::BreakpointTable aBPs;
 static KM10::BreakpointTable eBPs;
 
+// Our array of handlers indexed by opcode.
+array<KM10::OpcodeMethod, 512> KM10::ops;
+
 
 ////////////////////////////////////////////////////////////////
 // Constructor

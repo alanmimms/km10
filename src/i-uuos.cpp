@@ -1,6 +1,6 @@
 #include "km10.hpp"
 
-void installUUOs(KM10 &c) {
+void installUUOsGroup(KM10 &c) {
 
   c.defOp(0000, "ILLEGAL", [&]() {
     cerr << "ILLEGAL isn't implemented yet" << logger.endl << flush;
