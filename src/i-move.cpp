@@ -1,5 +1,9 @@
 #include "km10.hpp"
 
+template <>
+void KM10::InstructionGroup<class MoveGroup>::install(KM10& km10) {
+
+
 void installMoveGroup(KM10 &c) {
   c.defOp(0200, "MOVE",  [&]() {c.acPut(c.memGet()); return iNormal;} );
   c.defOp(0201, "MOVEI", [&]() {c.acPut(c.immediate()); return iNormal;} );

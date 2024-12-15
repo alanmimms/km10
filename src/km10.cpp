@@ -55,11 +55,19 @@ KM10::KM10(unsigned nMemoryWords, KM10::BreakpointTable &aBPs, KM10::BreakpointT
     addressBPs(aBPs),
     executeBPs(eBPs)
 {
-#define DOGROUP(G)	extern void install##G##Group(KM10 &); install##G##Group(*this)
-  DOGROUP(Byte);
-  DOGROUP(Move);
-  DOGROUP(UUOs);
-#undef DOGROUP
+  // Install each instruction group's handlers in the ops array.
+  InstructionGroup<class ByteGroup>::install(*this);
+  InstructionGroup<class MoveGroup>::install(*this);
+  InstructionGroup<class UUOsGroup>::install(*this);
+  InstructionGroup<class MulDivGroup>::install(*this);
+  InstructionGroup<class BitRotGroup>::install(*this);
+  InstructionGroup<class JumpGroup>::install(*this);
+  InstructionGroup<class IntBinOpGroup>::install(*this);
+  InstructionGroup<class CmpJmpSkpGroup>::install(*this);
+  InstructionGroup<class AOSJSXGroup>::install(*this);
+  InstructionGroup<class HalfGroup>::install(*this);
+  InstructionGroup<class TestGroup>::install(*this);
+  InstructionGroup<class IOGroup>::install(*this);
 
   // Note this anonymous mmap() implicitly zeroes the virtual memory.
   physicalP = (W36 *) mmap(nullptr,
@@ -75,115 +83,123 @@ KM10::KM10(unsigned nMemoryWords, KM10::BreakpointTable &aBPs, KM10::BreakpointT
 
   // Initially, we have no user mode mapping.
   uptP = nullptr;
+}
 
-  // Helper lambdas that have to refer to this and other state.
-  acGet = [&]() {
-    return acGetN(iw.ac);
-  };
 
-  acGetRH = [&]() {
-    W36 value{0, acGet().rhu};
-    if (logger.mem) logger.s << "; acRH" << oct << iw.ac << ": " << value.fmt18();
-    return value;
-  };
+W36 KM10::acGet() {
+  return acGetN(iw.ac);
+}
+
+W36 KM10::acGetRH() {
+  W36 v{0, acGet().rhu};
+  if (logger.mem) logger.s << "; acRH" << oct << iw.ac << ": " << v.fmt18();
+  return v;
+}
+
 
   // This retrieves LH into the RH of the return value, which is
   // required for things like TLNN to work properly since they use
   // the EA as a mask.
-  acGetLH = [&]() {
-    W36 value{0, acGet().lhu};
-    if (logger.mem) logger.s << "; acLH" << oct << iw.ac << ": " << value.fmt18();
-    return value;
-  };
+W36 KM10::acGetLH() {
+  W36 v{0, acGet().lhu};
+  if (logger.mem) logger.s << "; acLH" << oct << iw.ac << ": " << v.fmt18();
+  return v;
+}
 
 
-  acPut = [&](W36 value) {
-    acPutN(value, iw.ac);
-  };
+void KM10::acPut(W36 v) {
+  acPutN(v, iw.ac);
+}
 
 
-  acPutRH = [&](W36 value) {
-    acPut(W36(acGet().lhu, value.rhu));
-  };
+void KM10::acPutRH(W36 v) {
+    acPut(W36(acGet().lhu, v.rhu));
+  }
 
 
-  // This is used to store back in, e.g., TLZE. But the LH of AC is
-  // in the RH of the word we're passed because of how the testing
-  // logic of these instructions must work. So we put the RH of the
-  // value into the LH of the AC, keeping the AC's RH intact.
-  acPutLH = [&](W36 value) {
-    acPut(W36(value.rhu, acGet().rhu));
-  };
+// This is used to store back in, e.g., TLZE. But the LH of AC is in
+// the RH of the word we're passed because of how the testing logic of
+// these instructions must work. So we put the RH of the value into
+// the LH of the AC, keeping the AC's RH intact.
+void KM10::acPutLH(W36 v) {
+    acPut(W36(v.rhu, acGet().rhu));
+  }
 
 
-  acGet2 = [&]() {
+W72 KM10::acGet2() {
     W72 ret{acGetN(iw.ac+0), acGetN(iw.ac+1)};
     return ret;
-  };
+  }
 
 
-  acPut2 = [&](W72 v) {
+void KM10::acPut2(W72 v) {
     acPutN(v.hi, iw.ac+0);
     acPutN(v.lo, iw.ac+1);
-  };
+  }
 
 
-  memGet = [&]() {
+W36 KM10::memGet() {
     return memGetN(ea);
-  };
+  }
 
 
-  memPut = [&](W36 value) {
-    memPutN(value, ea);
-  };
+void KM10::memPut(W36 v) {
+    memPutN(v, ea);
+  }
 
 
-  selfPut = [&](W36 value) {
-    memPut(value);
-    if (iw.ac != 0) acPut(value);
-  };
+void KM10::selfPut(W36 v) {
+    memPut(v);
+    if (iw.ac != 0) acPut(v);
+  }
 
 
-  bothPut = [&](W36 value) {
-    acPut(value);
-    memPut(value);
-  };
+void KM10::bothPut(W36 v) {
+    acPut(v);
+    memPut(v);
+  }
 
 
-  bothPut2 = [&](W72 v) {
+void KM10::bothPut2(W72 v) {
     acPutN(v.hi, iw.ac+0);
     acPutN(v.lo, iw.ac+1);
     memPut(v.hi);
-  };
+  }
 
 
-  swap = [&](W36 src) {return W36{src.rhu, src.lhu};};
+W36 KM10::swap(W36 src) {
+  return W36{src.rhu, src.lhu};
+}
 
 
-  negate = [&](W36 src) {
+W36 KM10::negate(W36 src) {
     W36 v(-src.s);
     if (src.u == W36::bit0) flags.tr1 = flags.ov = flags.cy1 = 1;
     if (src.u == 0) flags.cy0 = flags.cy1 = 1;
     return v;
-  };
+  }
 
 
-  magnitude = [&](W36 src) {
+W36::KM10::magnitude(W36 src) {
     W36 v(src.s < 0 ? -src.s : src.s);
     if (src.u == W36::bit0) flags.tr1 = flags.ov = flags.cy1 = 1;
     return v;
-  };
+  }
 
 
-  memGetSwapped = [&]() {return swap(memGet());};
+W36 KM10::memGetSwapped() {
+  return swap(memGet());
+}
 
 
-  memPutHi = [&](W72 v) {
+void KM10::memPutHi(W72 v) {
     memPut(v.hi);
-  };
+  }
 
 
-  immediate = [&]() {return W36(pc.isSection0() ? 0 : ea.lhu, ea.rhu);};
+W36 KM10::immediate() {
+  return W36(pc.isSection0() ? 0 : ea.lhu, ea.rhu);
+}
 
 
   // Condition testing predicates

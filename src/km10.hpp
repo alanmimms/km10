@@ -337,6 +337,26 @@ public:
   W36 eptAddressFor(const W36 *eptEntryP);
 
   // AC and memory accessors.
+  W36 acGet();
+  W36 acGetRH();
+  W36 acGetLH();
+  void acPut(W36 v);
+  void acPutRH(W36 v);
+  void acPutLH(W36 v);
+  W72 acGet2();
+  void acPut2(W72 v);
+  W36 memGet();
+  void memPut(W36 value);
+  void selfPut(W36 value);
+  void bothPut(W36 value);
+  void bothPut2(W72 v);
+  W36 swap(W36 src);
+  W36 negate(W36 src);
+  W36::magnitude(W36 src);
+  W36 memGetSwapped();
+  void memPutHi(W72 v);
+  W36 immediate();
+
   W36 acGetN(unsigned n);
   W36 acGetEA(unsigned n);
   void acPutN(W36 value, unsigned n);
@@ -362,27 +382,6 @@ public:
 
 
   ////////////////////////////////////////////////////////////////
-  // Helper methods as lambdas.
-  function<W36()> acGet;
-  function<W36()> acGetRH;
-  function<W36()> acGetLH;
-  function<void(W36)> acPut;
-  function<void(W36)> acPutRH;
-  function<void(W36)> acPutLH;
-  function<W72()> acGet2;
-  function<void(W72)> acPut2;
-  function<W36()> memGet;
-  function<void(W36)> memPut;
-  function<void(W36)> selfPut;
-  function<void(W36)> bothPut;
-  function<void(W72)> bothPut2;
-  function<W36(W36)> swap;
-  function<W36(W36)> negate;
-  function<W36(W36)> magnitude;
-  function<W36()> memGetSwapped;
-  function<void(W72)> memPutHi;
-  function<W36()> immediate;
-
   // Condition testing predicates
   function<bool(W36)> isLT0;
   function<bool(W36)> isLE0;
@@ -467,23 +466,13 @@ public:
   function<InstructionResult()> jumpAction;
 
 
-#define INSTRUCTION_CLASS(C)			\
-  struct C {					\
-    C();					\
-  } i##C
+    // Template for instruction groups
+  template <typename Group>
+  struct InstructionGroup {
+    static void install(KM10& km10);
+  };
 
-  INSTRUCTION_CLASS(UUO);
-  INSTRUCTION_CLASS(BYTE);
-  INSTRUCTION_CLASS(MOVE);
-  INSTRUCTION_CLASS(MULDIV);
-  INSTRUCTION_CLASS(BITROT);
-  INSTRUCTION_CLASS(JUMP);
-  INSTRUCTION_CLASS(INTBINOP);
-  INSTRUCTION_CLASS(CMPJMPSKP);
-  INSTRUCTION_CLASS(ASOJSX);
-  INSTRUCTION_CLASS(HALF);
-  INSTRUCTION_CLASS(TEST);
-  INSTRUCTION_CLASS(IO);
+
 
   // Genericized instruction class implementations.
   void doBinOp(auto getSrc1F, auto getSrc2F, auto modifyF, auto putDstF);
