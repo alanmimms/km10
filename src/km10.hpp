@@ -106,7 +106,7 @@ public:
 
 
   // This is an implementation of an opcode to be saved in the ops[].
-  using OpcodeMethod = function<InstructionResult()>;
+  using OpcodeHandler = InstructionResult (KM10::*)();
 
 
   // This is indexed by opcode, giving the method to call for that
@@ -114,7 +114,7 @@ public:
   // initializer. I make it static and bind the instance "this" at
   // time of call with ".*" since the elements point to instance
   // methods.
-  static array<OpcodeMethod, 512> ops;
+  static array<OpcodeHandler, 512> ops;
 
 
   // Constructor and destructor
@@ -376,7 +376,7 @@ public:
   void loadA10(const char *fileNameP);
 
 
-  inline void defOp(unsigned op, const char *mneP, function<InstructionResult()> impl) {
+  inline void defOp(unsigned op, const char *mneP, OpcodeHandler impl) {
     ops[op] = impl;
   }
 
@@ -466,19 +466,9 @@ public:
   function<InstructionResult()> jumpAction;
 
 
-    // Template for instruction groups
-  template <typename Group>
-  struct InstructionGroup {
-    static void install(KM10& km10);
-  };
-
-
-
   // Genericized instruction class implementations.
   void doBinOp(auto getSrc1F, auto getSrc2F, auto modifyF, auto putDstF);
   void doTXXXX(auto get1F, auto get2F, auto modifyF, auto condF, auto storeF);
-  void doHXXXX(auto getSrcF, auto getDstF, auto copyF, auto modifyF, auto putDstF);
-  void doMOVXX(auto getSrcF, auto modifyF, auto putDstF);
   void doSETXX(auto getSrcF, auto modifyF, auto putDstF);
   void doCAXXX(auto getSrc1F, auto getSrc2F, auto condF);
 

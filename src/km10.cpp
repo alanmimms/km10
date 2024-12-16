@@ -86,9 +86,12 @@ KM10::KM10(unsigned nMemoryWords, KM10::BreakpointTable &aBPs, KM10::BreakpointT
 }
 
 
+// Implement the helpers used by the various instruction emulator
+// functions.
 W36 KM10::acGet() {
   return acGetN(iw.ac);
 }
+
 
 W36 KM10::acGetRH() {
   W36 v{0, acGet().rhu};

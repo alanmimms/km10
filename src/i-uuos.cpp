@@ -1,53 +1,54 @@
 #include "km10.hpp"
 
-void installUUOsGroup(KM10 &c) {
+void KM10::installUUOsGroup() {
 
-  c.defOp(0000, "ILLEGAL", [&]() {
+  defOp(0000, "ILLEGAL", [this]() {
     cerr << "ILLEGAL isn't implemented yet" << logger.endl << flush;
-    c.pcOffset = 0;
-    c.inInterrupt = true;
+    pcOffset = 0;
+    inInterrupt = true;
     logger.nyi(c);
     return iMUUO;
   });
 
-  auto doMUUO = [&]() {
+
+  auto doMUUO = [this]() {
     cerr << "MUUOs aren't implemented yet" << logger.endl << flush;
     //    exceptionPC = pc + 1;
-    c.inInterrupt = true;
+    inInterrupt = true;
     logger.nyi(c);
     return iMUUO;
   };
 
-  auto doLUUO = [&]() {
+  auto doLUUO = [this]() {
 
-    if (c.pc.isSection0()) {
+    if (pisSection0()) {
       W36 uuoState;
-      uuoState.op = c.iw.op;
-      uuoState.ac = c.iw.ac;
+      uuoState.op = iw.op;
+      uuoState.ac = iw.ac;
       uuoState.i = 0;
       uuoState.x = 0;
-      uuoState.y = c.ea.rhu;
+      uuoState.y = ea.rhu;
 
       // XXX this should select executive virtual space first.
-      c.memPutN(040, uuoState);
-      cerr << "LUUO at " << c.pc.fmtVMA() << " uuoState=" << uuoState.fmt36()
+      memPutN(040, uuoState);
+      cerr << "LUUO at " << pfmtVMA() << " uuoState=" << uuoState.fmt36()
 	   << logger.endl << flush;
-      c.pcOffset = 041;
+      pcOffset = 041;
       //	exceptionPC = pc + 1;
-      c.inInterrupt = true;
+      inInterrupt = true;
       return iTrap;
     } else {
 
-      if (c.flags.usr) {
-	W36 uuoA(c.uptP->luuoAddr);
-	c.memPutN(W36(((uint64_t) c.flags.u << 23) |
-		      ((uint64_t) c.iw.op << 15) |
-		      ((uint64_t) c.iw.ac << 5)), uuoA.u++);
-	c.memPutN(c.pc, uuoA.u++);
-	c.memPutN(c.ea.u, uuoA.u++);
-	c.pcOffset = c.memGetN(uuoA);
+      if (flags.usr) {
+	W36 uuoA(uptP->luuoAddr);
+	memPutN(W36(((uint64_t) flags.u << 23) |
+		      ((uint64_t) iw.op << 15) |
+		      ((uint64_t) iw.ac << 5)), uuoA.u++);
+	memPutN(pc, uuoA.u++);
+	memPutN(ea.u, uuoA.u++);
+	pcOffset = memGetN(uuoA);
 	//	  exceptionPC = pc + 1;
-	c.inInterrupt = true;
+	inInterrupt = true;
 	return iTrap;
       } else {	       // Executive mode treats LUUOs as MUUOs
 	return doMUUO();
@@ -56,13 +57,14 @@ void installUUOsGroup(KM10 &c) {
   };
 
   // Install LUUOs and MUUOs
-  for(unsigned op=0001; op < 0037; ++op) c.defOp(op, "LUUO", doLUUO);
-  for(unsigned op=0040; op < 0101; ++op) c.defOp(op, "MUUO", doMUUO);
+  for(unsigned op=0001; op < 0037; ++op) defOp(op, "LUUO", doLUUO);
+  for(unsigned op=0040; op < 0101; ++op) defOp(op, "MUUO", doMUUO);
 
-  c.defOp(0104, "JSYS", [&]() {
+  // This might someday be special - we'll see.
+  defOp(0104, "JSYS", [this]() {
     cerr << "JSYS isn't implemented yet" << logger.endl << flush;
-    //    c.exceptionPC = c.pc + 1;
-    c.inInterrupt = true;
+    //    exceptionPC = pc + 1;
+    inInterrupt = true;
     logger.nyi(c);
     return iMUUO;
   });

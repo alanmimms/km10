@@ -1,27 +1,23 @@
 #include "km10.hpp"
 
-template <>
-void KM10::InstructionGroup<class MoveGroup>::install(KM10& km10) {
+void KM10::installMoveGroup() {
+  defOp(0200, "MOVE",  [this]() {acPut(memGet());		return iNormal;} );
+  defOp(0201, "MOVEI", [this]() {acPut(immediate());		return iNormal;} );
+  defOp(0202, "MOVEM", [this]() {memPut(acGet());		return iNormal;} );
+  defOp(0203, "MOVES", [this]() {selfPut(memGet());		return iNormal;} );
 
+  defOp(0204, "MOVS",  [this]() {acPut(swap(memGet()));		return iNormal;} );
+  defOp(0205, "MOVSI", [this]() {acPut(swap(immediate()));	return iNormal;} );
+  defOp(0206, "MOVSM", [this]() {memPut(swap(acGet()));		return iNormal;} );
+  defOp(0207, "MOVSS", [this]() {selfPut(swap(memGet()));	return iNormal;} );
 
-void installMoveGroup(KM10 &c) {
-  c.defOp(0200, "MOVE",  [&]() {c.acPut(c.memGet()); return iNormal;} );
-  c.defOp(0201, "MOVEI", [&]() {c.acPut(c.immediate()); return iNormal;} );
-  c.defOp(0202, "MOVEM", [&]() {c.memPut(c.acGet()); return iNormal;} );
-  c.defOp(0203, "MOVES", [&]() {c.selfPut(c.memGet()); return iNormal;} );
+  defOp(0210, "MOVN",  [this]() {acPut(negate(memGet()));	return iNormal;} );
+  defOp(0211, "MOVNI", [this]() {acPut(negate(immediate()));	return iNormal;} );
+  defOp(0212, "MOVNM", [this]() {memPut(negate(acGet()));	return iNormal;} );
+  defOp(0213, "MOVNS", [this]() {selfPut(negate(memGet()));	return iNormal;} );
 
-  c.defOp(0204, "MOVS",  [&]() {c.acPut(c.swap(c.memGet())); return iNormal;} );
-  c.defOp(0205, "MOVSI", [&]() {c.acPut(c.swap(c.immediate())); return iNormal;} );
-  c.defOp(0206, "MOVSM", [&]() {c.memPut(c.swap(c.acGet())); return iNormal;} );
-  c.defOp(0207, "MOVSS", [&]() {c.selfPut(c.swap(c.memGet())); return iNormal;} );
-
-  c.defOp(0210, "MOVN",  [&]() {c.acPut(c.negate(c.memGet())); return iNormal;} );
-  c.defOp(0211, "MOVNI", [&]() {c.acPut(c.negate(c.immediate())); return iNormal;} );
-  c.defOp(0212, "MOVNM", [&]() {c.memPut(c.swap(c.acGet())); return iNormal;} );
-  c.defOp(0213, "MOVNS", [&]() {c.selfPut(c.swap(c.memGet())); return iNormal;} );
-
-  c.defOp(0214, "MOVM",  [&]() {c.acPut(c.magnitude(c.memGet())); return iNormal;} );
-  c.defOp(0215, "MOVMI", [&]() {c.acPut(c.magnitude(c.immediate())); return iNormal;} );
-  c.defOp(0216, "MOVMM", [&]() {c.memPut(c.magnitude(c.acGet())); return iNormal;} );
-  c.defOp(0217, "MOVMS", [&]() {c.selfPut(c.magnitude(c.memGet())); return iNormal;} );
+  defOp(0214, "MOVM",  [this]() {acPut(magnitude(memGet()));	return iNormal;} );
+  defOp(0215, "MOVMI", [this]() {acPut(magnitude(immediate())); return iNormal;} );
+  defOp(0216, "MOVMM", [this]() {memPut(magnitude(acGet()));	return iNormal;} );
+  defOp(0217, "MOVMS", [this]() {selfPut(magnitude(memGet()));	return iNormal;} );
 }

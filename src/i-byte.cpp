@@ -1,43 +1,46 @@
+// TODO:
+// * Move BytePointer stuff here since it is only used here.
+
 #include "km10.hpp"
 #include "bytepointer.hpp"
 
-void installByteGroup(KM10 &c) {
+void KM10::installByteGroup() {
 
-  c.defOp(0133, "IBP/ADJBP", [&]() {
-    BytePointer *bp = BytePointer::makeFrom(c.ea, c);
+  defOp(0133, "IBP/ADJBP", [&]() {
+    BytePointer *bp = BytePointer::makeFrom(ea, *this);
 
-    if (c.iw.ac == 0) {		// IBP
+    if (iw.ac == 0) {		// IBP
       bp->inc(c);
     } else {			// ADJBP
-      bp->adjust(c.iw.ac, c);
+      bp->adjust(iw.ac, *this);
     }
 
     return iNormal;
   });
 
-  c.defOp(0134, "ILDB", [&]() {
-    BytePointer *bp = BytePointer::makeFrom(c.ea, c);
+  defOp(0134, "ILDB", [&]() {
+    BytePointer *bp = BytePointer::makeFrom(ea, *this);
     bp->inc(c);
-    c.acPut(bp->getByte(c));
+    acPut(bp->getByte(c));
     return iNormal;
   });
 
-  c.defOp(0135, "LDB", [&]() {
-    BytePointer *bp = BytePointer::makeFrom(c.ea, c);
-    c.acPut(bp->getByte(c));
+  defOp(0135, "LDB", [&]() {
+    BytePointer *bp = BytePointer::makeFrom(ea, *this);
+    acPut(bp->getByte(c));
     return iNormal;
   });
 
-  c.defOp(0136, "IDPB", [&]() {
-    BytePointer *bp = BytePointer::makeFrom(c.ea, c);
+  defOp(0136, "IDPB", [&]() {
+    BytePointer *bp = BytePointer::makeFrom(ea, *this);
     bp->inc(c);
-    bp->putByte(c.acGet(), c);
+    bp->putByte(acGet(), *this);
     return iNormal;
   });
 
-  c.defOp(0137, "DPB", [&]() {
-    BytePointer *bp = BytePointer::makeFrom(c.ea, c);
-    bp->putByte(c.acGet(), c);
+  defOp(0137, "DPB", [&]() {
+    BytePointer *bp = BytePointer::makeFrom(ea, *this);
+    bp->putByte(acGet(), *this);
     return iNormal;
   });
 }
