@@ -196,7 +196,7 @@ W36 KM10::negate(W36 src) {
   }
 
 
-W36::KM10::magnitude(W36 src) {
+W36 KM10::magnitude(W36 src) {
     W36 v(src.s < 0 ? -src.s : src.s);
     if (src.u == W36::bit0) flags.tr1 = flags.ov = flags.cy1 = 1;
     return v;
@@ -216,22 +216,6 @@ void KM10::memPutHi(W72 v) {
 W36 KM10::immediate() {
   return W36(pc.isSection0() ? 0 : ea.lhu, ea.rhu);
 }
-
-
-  // Condition testing predicates
-  isLT0 = [&] (W36 v) {return v.s  < 0;};
-  isLE0 = [&] (W36 v) {return v.s <= 0;};
-  isGT0 = [&] (W36 v) {return v.s  > 0;};
-  isGE0 = [&] (W36 v) {return v.s >= 0;};
-  isNE0 = [&] (W36 v) {return v.s != 0;};
-  isEQ0 = [&] (W36 v) {return v.s == 0;};
-  always = [&](W36 v) {return  true;};
-  never = [&] (W36 v) {return false;};
-
-  isNE0T = [&] (W36 a, W36 b) {return (a.u & b.u) != 0;};
-  isEQ0T = [&] (W36 a, W36 b) {return (a.u & b.u) == 0;};
-  alwaysT = [&](W36 a, W36 b) {return  true;};
-  neverT = [&] (W36 a, W36 b) {return false;};
 
 
   getE = [&]() {return ea;};
@@ -479,10 +463,6 @@ void KM10::doSETXX(auto getSrcF, auto modifyF, auto putDstF) {
 
 InstructionResult KM10::doCAXXX(auto getSrc1F, auto getSrc2F, auto condF) {
   return condF(getSrc1F().ext64(), getSrc2F().ext64()) ? iSkip : iNormal;
-}
-
-InstructionREsult KM10::doJUMP(auto condF) {
-  return condF(acGet()) ? iJump : iNormal;
 }
 
 
@@ -1136,70 +1116,6 @@ InstructionResult KM10::doCAMN() {
 
 InstructionResult KM10::doCAMG() {
   return doCAXXX(acGet, memGet, isGT);
-}
-
-InstructionResult KM10::doJUMP() {
-  return doJUMP(never);
-}
-
-InstructionResult KM10::doJUMPL() {
-  return doJUMP(isLT0);
-}
-
-InstructionResult KM10::doJUMPE() {
-  return doJUMP(isEQ0);
-}
-
-InstructionResult KM10::doJUMPLE() {
-  return doJUMP(isLE0);
-}
-
-InstructionResult KM10::doJUMPA() {
-  return doJUMP(always);
-}
-
-InstructionResult KM10::doJUMPGE() {
-  return doJUMP(isGE0);
-}
-
-InstructionResult KM10::doJUMPN() {
-  return doJUMP(isNE0);
-}
-
-InstructionResult KM10::doJUMPG() {
-  return doJUMP(isGT0);
-}
-
-InstructionResult KM10::doSKIP() {
-  return doSKIP(never);
-}
-
-InstructionResult KM10::doSKIPL() {
-  return doSKIP(isLT0);
-}
-
-InstructionResult KM10::doSKIPE() {
-  return doSKIP(isEQ0);
-}
-
-InstructionResult KM10::doSKIPLE() {
-  return doSKIP(isLE0);
-}
-
-InstructionResult KM10::doSKIPA() {
-  return doSKIP(always);
-}
-
-InstructionResult KM10::doSKIPGE() {
-  return doSKIP(isGE0);
-}
-
-InstructionResult KM10::doSKIPN() {
-  return doSKIP(isNE0);
-}
-
-InstructionResult KM10::doSKIPGT() {
-  return doSKIP(isGT0);
 }
 
 InstructionResult KM10::doAOJ() {
