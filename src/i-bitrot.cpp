@@ -1,8 +1,8 @@
 #include "km10.hpp"
 
 struct BitRotGroup: KM10 {
-
-  inline void install() {
-  }
 };
 
+
+void InstallBitRotGroup(KM10 &km10) {
+}

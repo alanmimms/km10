@@ -20,26 +20,28 @@ struct MoveGroup: KM10 {
   InstructionResult doMOVMI() {acPut(magnitude(immediate()));	return iNormal;}
   InstructionResult doMOVMM() {memPut(magnitude(acGet()));	return iNormal;}
   InstructionResult doMOVMS() {selfPut(magnitude(memGet()));	return iNormal;}
-
-  inline void install() {
-    defOp(0200, "MOVE",  static_cast<OpcodeHandler>(&MoveGroup::doMOVE));
-    defOp(0201, "MOVEI", static_cast<OpcodeHandler>(&MoveGroup::doMOVEI));
-    defOp(0202, "MOVEM", static_cast<OpcodeHandler>(&MoveGroup::doMOVEM));
-    defOp(0203, "MOVES", static_cast<OpcodeHandler>(&MoveGroup::doMOVES));
-
-    defOp(0204, "MOVS",  static_cast<OpcodeHandler>(&MoveGroup::doMOVS));
-    defOp(0205, "MOVSI", static_cast<OpcodeHandler>(&MoveGroup::doMOVSI));
-    defOp(0206, "MOVSM", static_cast<OpcodeHandler>(&MoveGroup::doMOVSM));
-    defOp(0207, "MOVSS", static_cast<OpcodeHandler>(&MoveGroup::doMOVSS));
-
-    defOp(0210, "MOVN",  static_cast<OpcodeHandler>(&MoveGroup::doMOVN));
-    defOp(0211, "MOVNI", static_cast<OpcodeHandler>(&MoveGroup::doMOVNI));
-    defOp(0212, "MOVNM", static_cast<OpcodeHandler>(&MoveGroup::doMOVNM));
-    defOp(0213, "MOVNS", static_cast<OpcodeHandler>(&MoveGroup::doMOVNS));
-
-    defOp(0214, "MOVM",  static_cast<OpcodeHandler>(&MoveGroup::doMOVM));
-    defOp(0215, "MOVMI", static_cast<OpcodeHandler>(&MoveGroup::doMOVMI));
-    defOp(0216, "MOVMM", static_cast<OpcodeHandler>(&MoveGroup::doMOVMM));
-    defOp(0217, "MOVMS", static_cast<OpcodeHandler>(&MoveGroup::doMOVMS));
-  }
 };
+
+
+void InstallMoveGroup(KM10 &km10) {
+  km10.defOp(0200, "MOVE",  static_cast<KM10::OpcodeHandler>(&MoveGroup::doMOVE));
+  km10.defOp(0201, "MOVEI", static_cast<KM10::OpcodeHandler>(&MoveGroup::doMOVEI));
+  km10.defOp(0202, "MOVEM", static_cast<KM10::OpcodeHandler>(&MoveGroup::doMOVEM));
+  km10.defOp(0203, "MOVES", static_cast<KM10::OpcodeHandler>(&MoveGroup::doMOVES));
+
+  km10.defOp(0204, "MOVS",  static_cast<KM10::OpcodeHandler>(&MoveGroup::doMOVS));
+  km10.defOp(0205, "MOVSI", static_cast<KM10::OpcodeHandler>(&MoveGroup::doMOVSI));
+  km10.defOp(0206, "MOVSM", static_cast<KM10::OpcodeHandler>(&MoveGroup::doMOVSM));
+  km10.defOp(0207, "MOVSS", static_cast<KM10::OpcodeHandler>(&MoveGroup::doMOVSS));
+
+  km10.defOp(0210, "MOVN",  static_cast<KM10::OpcodeHandler>(&MoveGroup::doMOVN));
+  km10.defOp(0211, "MOVNI", static_cast<KM10::OpcodeHandler>(&MoveGroup::doMOVNI));
+  km10.defOp(0212, "MOVNM", static_cast<KM10::OpcodeHandler>(&MoveGroup::doMOVNM));
+  km10.defOp(0213, "MOVNS", static_cast<KM10::OpcodeHandler>(&MoveGroup::doMOVNS));
+
+  km10.defOp(0214, "MOVM",  static_cast<KM10::OpcodeHandler>(&MoveGroup::doMOVM));
+  km10.defOp(0215, "MOVMI", static_cast<KM10::OpcodeHandler>(&MoveGroup::doMOVMI));
+  km10.defOp(0216, "MOVMM", static_cast<KM10::OpcodeHandler>(&MoveGroup::doMOVMM));
+  km10.defOp(0217, "MOVMS", static_cast<KM10::OpcodeHandler>(&MoveGroup::doMOVMS));
+}
+

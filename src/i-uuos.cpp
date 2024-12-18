@@ -63,13 +63,13 @@ struct UUOsGroup: KM10 {
     logger.nyi(*this);
     return iMUUO;
   }
-
-
-  void install() {
-    defOp(0000, "ILLEGAL", static_cast<OpcodeHandler>(&UUOsGroup::doILLEGAL));
-
-    // Install LUUOs and MUUOs
-    for(unsigned op=0001; op < 0037; ++op) defOp(op, "LUUO", static_cast<OpcodeHandler>(&UUOsGroup::doLUUO));
-    for(unsigned op=0040; op < 0101; ++op) defOp(op, "MUUO", static_cast<OpcodeHandler>(&UUOsGroup::doMUUO));
-  }
 };
+
+
+void InstallUUOsGroup(KM10 &km10) {
+  km10.defOp(0000, "ILLEGAL", static_cast<KM10::OpcodeHandler>(&UUOsGroup::doILLEGAL));
+
+  // Install LUUOs and MUUOs
+  for(unsigned op=0001; op < 0037; ++op) km10.defOp(op, "LUUO", static_cast<KM10::OpcodeHandler>(&UUOsGroup::doLUUO));
+  for(unsigned op=0040; op < 0101; ++op) km10.defOp(op, "MUUO", static_cast<KM10::OpcodeHandler>(&UUOsGroup::doMUUO));
+}

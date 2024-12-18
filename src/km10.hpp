@@ -114,7 +114,7 @@ public:
   // initializer. I make it static and bind the instance "this" at
   // time of call with ".*" since the elements point to instance
   // methods.
-  static array<OpcodeHandler, 512> ops;
+  array<OpcodeHandler, 512> ops;
 
 
   // Constructor and destructor

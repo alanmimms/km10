@@ -13,7 +13,6 @@ using namespace std;
 #include "instruction-result.hpp"
 #include "bytepointer.hpp"
 
-//#include "i-move.hpp"
 
 Logger logger{};
 
@@ -23,8 +22,20 @@ Logger logger{};
 static KM10::BreakpointTable aBPs;
 static KM10::BreakpointTable eBPs;
 
-// Our array of handlers indexed by opcode.
-array<KM10::OpcodeMethod, 512> KM10::ops;
+
+extern void InstallBitRotGroup(KM10 &km10);
+extern void InstallByteGroup(KM10 &km10);
+extern void InstallCmpAndGroup(KM10 &km10);
+extern void InstallHalfGroup(KM10 &km10);
+extern void InstallIncJSGroup(KM10 &km10);
+extern void InstallIntBinOpGroup(KM10 &km10);
+extern void InstallIOGroup(KM10 &km10);
+extern void InstallJumpGroup(KM10 &km10);
+extern void InstallMoveGroup(KM10 &km10);
+extern void InstallMulDivGroup(KM10 &km10);
+extern void InstallSetGroup(KM10 &km10);
+extern void InstallTestGroup(KM10 &km10);
+extern void InstallUUOsGroup(KM10 &km10);
 
 
 ////////////////////////////////////////////////////////////////
@@ -55,35 +66,21 @@ KM10::KM10(unsigned nMemoryWords, KM10::BreakpointTable &aBPs, KM10::BreakpointT
     addressBPs(aBPs),
     executeBPs(eBPs)
 {
-  // The instruction groups - OpcodeHandler implementations of the opcodes.
-  struct BitRotGroup;
-  struct ByteGroup;
-  struct CmpAndGroup;
-  struct HalfGroup;
-  struct IncJSGroup;
-  struct IntBinOpGroup;
-  struct IOGroup;
-  struct JumpGroup;
-  struct MoveGroup;
-  struct MulDivGroup;
-  struct SetGroup;
-  struct TestGroup;
-  struct UUOsGroup;
-  
   // Install each instruction group's handlers in the ops array.
-  static_cast<BitRotGroup*>(this)->install();
-  static_cast<ByteGroup*>(this)->install();
-  static_cast<CmpAndGroup*>(this)->install();
-  static_cast<HalfGroup*>(this)->install();
-  static_cast<IncJSGroup*>(this)->install();
-  static_cast<IntBinOpGroup*>(this)->install();
-  static_cast<IOGroup*>(this)->install();
-  static_cast<JumpGroup*>(this)->install();
-  static_cast<MoveGroup*>(this)->install();
-  static_cast<MulDivGroup*>(this)->install();
-  static_cast<SetGroup*>(this)->install();
-  static_cast<TestGroup*>(this)->install();
-  static_cast<UUOsGroup*>(this)->install();
+  ops.fill(nullptr);
+  InstallBitRotGroup(*this);
+  InstallByteGroup(*this);
+  InstallCmpAndGroup(*this);
+  InstallHalfGroup(*this);
+  InstallIncJSGroup(*this);
+  InstallIntBinOpGroup(*this);
+  InstallIOGroup(*this);
+  InstallJumpGroup(*this);
+  InstallMoveGroup(*this);
+  InstallMulDivGroup(*this);
+  InstallSetGroup(*this);
+  InstallTestGroup(*this);
+  InstallUUOsGroup(*this);
 
   // Note this anonymous mmap() implicitly zeroes the virtual memory.
   physicalP = (W36 *) mmap(nullptr,
@@ -307,6 +304,8 @@ W36 KM10::immediate() {
 
 ////////////////////////////////////////////////////////////////
 KM10::~KM10() {
+  // XXX this eventually must tear down kernel and user virtual
+  // mappings as well.
   if (physicalP) munmap(physicalP, memorySize * sizeof(uint64_t));
 }
 

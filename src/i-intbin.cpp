@@ -393,52 +393,50 @@ struct IntBinGroup: KM10 {
     bothPut(eqvWord(a1, a2));
     return iNormal;
   }
-
-
-  void install() {
-
-    defOp(220, "IMUL", static_cast<OpcodeHandler>(&IntBinGroup::doIMUL));
-    defOp(221, "IMULI", static_cast<OpcodeHandler>(&IntBinGroup::doIMULI));
-    defOp(222, "IMULM", static_cast<OpcodeHandler>(&IntBinGroup::doIMULM));
-    defOp(223, "IMULB", static_cast<OpcodeHandler>(&IntBinGroup::doIMULB));
-    defOp(224, "MUL", static_cast<OpcodeHandler>(&IntBinGroup::doMUL));
-    defOp(225, "MULI", static_cast<OpcodeHandler>(&IntBinGroup::doMULI));
-    defOp(226, "MULM", static_cast<OpcodeHandler>(&IntBinGroup::doMULM));
-    defOp(227, "MULB", static_cast<OpcodeHandler>(&IntBinGroup::doMULB));
-    defOp(230, "IDIV", static_cast<OpcodeHandler>(&IntBinGroup::doIDIV));
-    defOp(231, "IDIVI", static_cast<OpcodeHandler>(&IntBinGroup::doIDIVI));
-    defOp(232, "IDIVM", static_cast<OpcodeHandler>(&IntBinGroup::doIDIVM));
-    defOp(233, "IDIVB", static_cast<OpcodeHandler>(&IntBinGroup::doIDIVB));
-    defOp(234, "DIV", static_cast<OpcodeHandler>(&IntBinGroup::doDIV));
-    defOp(235, "DIVI", static_cast<OpcodeHandler>(&IntBinGroup::doDIVI));
-    defOp(236, "DIVM", static_cast<OpcodeHandler>(&IntBinGroup::doDIVM));
-    defOp(237, "DIVB", static_cast<OpcodeHandler>(&IntBinGroup::doDIVB));
-
-    defOp(270, "ADD", static_cast<OpcodeHandler>(&IntBinGroup::doADD));
-    defOp(271, "ADDI", static_cast<OpcodeHandler>(&IntBinGroup::doADDI));
-    defOp(272, "ADDM", static_cast<OpcodeHandler>(&IntBinGroup::doADDM));
-    defOp(273, "ADDB", static_cast<OpcodeHandler>(&IntBinGroup::doADDB));
-    defOp(274, "SUB", static_cast<OpcodeHandler>(&IntBinGroup::doSUB));
-    defOp(275, "SUBI", static_cast<OpcodeHandler>(&IntBinGroup::doSUBI));
-    defOp(276, "SUBM", static_cast<OpcodeHandler>(&IntBinGroup::doSUBM));
-    defOp(277, "SUBB", static_cast<OpcodeHandler>(&IntBinGroup::doSUBB));
-
-    defOp(430, "XOR", static_cast<OpcodeHandler>(&IntBinGroup::doXOR));
-    defOp(431, "XORI", static_cast<OpcodeHandler>(&IntBinGroup::doXORI));
-    defOp(432, "XORM", static_cast<OpcodeHandler>(&IntBinGroup::doXORM));
-    defOp(433, "XORB", static_cast<OpcodeHandler>(&IntBinGroup::doXORB));
-    defOp(434, "IOR", static_cast<OpcodeHandler>(&IntBinGroup::doIOR));
-    defOp(435, "IORI", static_cast<OpcodeHandler>(&IntBinGroup::doIORI));
-    defOp(436, "IORM", static_cast<OpcodeHandler>(&IntBinGroup::doIORM));
-    defOp(437, "IORB", static_cast<OpcodeHandler>(&IntBinGroup::doIORB));
-    defOp(440, "ANDCBM", static_cast<OpcodeHandler>(&IntBinGroup::doANDCBM));
-    defOp(441, "ANDCBMI", static_cast<OpcodeHandler>(&IntBinGroup::doANDCBMI));
-    defOp(442, "ANDCBMM", static_cast<OpcodeHandler>(&IntBinGroup::doANDCBMM));
-    defOp(443, "ANDCBMB", static_cast<OpcodeHandler>(&IntBinGroup::doANDCBMB));
-    defOp(444, "EQV", static_cast<OpcodeHandler>(&IntBinGroup::doEQV));
-    defOp(445, "EQVI", static_cast<OpcodeHandler>(&IntBinGroup::doEQVI));
-    defOp(446, "EQVM", static_cast<OpcodeHandler>(&IntBinGroup::doEQVM));
-    defOp(447, "EQVB", static_cast<OpcodeHandler>(&IntBinGroup::doEQVB));
-
-  }
 };
+
+
+void InstallIntBinGroup(KM10 &km10) {
+  km10.defOp(220, "IMUL", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doIMUL));
+  km10.defOp(221, "IMULI", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doIMULI));
+  km10.defOp(222, "IMULM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doIMULM));
+  km10.defOp(223, "IMULB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doIMULB));
+  km10.defOp(224, "MUL", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doMUL));
+  km10.defOp(225, "MULI", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doMULI));
+  km10.defOp(226, "MULM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doMULM));
+  km10.defOp(227, "MULB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doMULB));
+  km10.defOp(230, "IDIV", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doIDIV));
+  km10.defOp(231, "IDIVI", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doIDIVI));
+  km10.defOp(232, "IDIVM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doIDIVM));
+  km10.defOp(233, "IDIVB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doIDIVB));
+  km10.defOp(234, "DIV", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doDIV));
+  km10.defOp(235, "DIVI", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doDIVI));
+  km10.defOp(236, "DIVM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doDIVM));
+  km10.defOp(237, "DIVB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doDIVB));
+
+  km10.defOp(270, "ADD", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doADD));
+  km10.defOp(271, "ADDI", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doADDI));
+  km10.defOp(272, "ADDM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doADDM));
+  km10.defOp(273, "ADDB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doADDB));
+  km10.defOp(274, "SUB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doSUB));
+  km10.defOp(275, "SUBI", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doSUBI));
+  km10.defOp(276, "SUBM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doSUBM));
+  km10.defOp(277, "SUBB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doSUBB));
+
+  km10.defOp(430, "XOR", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doXOR));
+  km10.defOp(431, "XORI", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doXORI));
+  km10.defOp(432, "XORM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doXORM));
+  km10.defOp(433, "XORB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doXORB));
+  km10.defOp(434, "IOR", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doIOR));
+  km10.defOp(435, "IORI", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doIORI));
+  km10.defOp(436, "IORM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doIORM));
+  km10.defOp(437, "IORB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doIORB));
+  km10.defOp(440, "ANDCBM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doANDCBM));
+  km10.defOp(441, "ANDCBMI", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doANDCBMI));
+  km10.defOp(442, "ANDCBMM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doANDCBMM));
+  km10.defOp(443, "ANDCBMB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doANDCBMB));
+  km10.defOp(444, "EQV", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doEQV));
+  km10.defOp(445, "EQVI", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doEQVI));
+  km10.defOp(446, "EQVM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doEQVM));
+  km10.defOp(447, "EQVB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doEQVB));
+}

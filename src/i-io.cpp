@@ -1,8 +1,8 @@
 #include "km10.hpp"
 
 struct IOGroup: KM10 {
-  
-  void install() {
-  }
-
 };
+
+
+void InstallIOGroup(KM10 &km10) {
+}

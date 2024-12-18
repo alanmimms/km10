@@ -1,5 +1,5 @@
 // TODO:
-// * Move BytePointer stuff here since it is only used here.
+// * Move BytePointer stuff here since it is only used here?
 
 #include "km10.hpp"
 #include "bytepointer.hpp"
@@ -43,13 +43,14 @@ struct ByteGroup: KM10 {
     bp->putByte(acGet(), *this);
     return iNormal;
   };
-
-
-  void install() {
-    defOp(0133, "IBP/ADJBP", static_cast<OpcodeHandler>(&ByteGroup::doIBP_ADJBP));
-    defOp(0134, "ILDB",	     static_cast<OpcodeHandler>(&ByteGroup::doILDB));
-    defOp(0135, "LDB",	     static_cast<OpcodeHandler>(&ByteGroup::doLDB));
-    defOp(0136, "IDPB",	     static_cast<OpcodeHandler>(&ByteGroup::doIDPB));
-    defOp(0137, "DPB",	     static_cast<OpcodeHandler>(&ByteGroup::doDPB));
-  }
 };
+
+
+
+void InstallByteGroup(KM10 &km10) {
+    km10.defOp(0133, "IBP/ADJBP", static_cast<KM10::OpcodeHandler>(&ByteGroup::doIBP_ADJBP));
+    km10.defOp(0134, "ILDB",	  static_cast<KM10::OpcodeHandler>(&ByteGroup::doILDB));
+    km10.defOp(0135, "LDB",	  static_cast<KM10::OpcodeHandler>(&ByteGroup::doLDB));
+    km10.defOp(0136, "IDPB",	  static_cast<KM10::OpcodeHandler>(&ByteGroup::doIDPB));
+    km10.defOp(0137, "DPB",	  static_cast<KM10::OpcodeHandler>(&ByteGroup::doDPB));
+}

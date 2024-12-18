@@ -1,7 +1,7 @@
 #include "km10.hpp"
 
 struct JumpGroup: KM10 {
-
-  void install() {
-  }
 };
+
+void InstallJumpGroup(KM10 &km10) {
+}
