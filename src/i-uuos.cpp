@@ -1,27 +1,26 @@
 #include "km10.hpp"
 
-void KM10::installUUOsGroup() {
+struct UUOsGroup: KM10 {
 
-  defOp(0000, "ILLEGAL", [this]() {
+  InstructionResult doILLEGAL() {
     cerr << "ILLEGAL isn't implemented yet" << logger.endl << flush;
     pcOffset = 0;
     inInterrupt = true;
-    logger.nyi(c);
+    logger.nyi(*this);
     return iMUUO;
-  });
+  }
 
-
-  auto doMUUO = [this]() {
+  InstructionResult doMUUO() {
     cerr << "MUUOs aren't implemented yet" << logger.endl << flush;
     //    exceptionPC = pc + 1;
     inInterrupt = true;
-    logger.nyi(c);
+    logger.nyi(*this);
     return iMUUO;
-  };
+  }
 
-  auto doLUUO = [this]() {
+  InstructionResult doLUUO() {
 
-    if (pisSection0()) {
+    if (pc.isSection0()) {
       W36 uuoState;
       uuoState.op = iw.op;
       uuoState.ac = iw.ac;
@@ -31,7 +30,7 @@ void KM10::installUUOsGroup() {
 
       // XXX this should select executive virtual space first.
       memPutN(040, uuoState);
-      cerr << "LUUO at " << pfmtVMA() << " uuoState=" << uuoState.fmt36()
+      cerr << "LUUO at " << pc.fmtVMA() << " uuoState=" << uuoState.fmt36()
 	   << logger.endl << flush;
       pcOffset = 041;
       //	exceptionPC = pc + 1;
@@ -42,8 +41,8 @@ void KM10::installUUOsGroup() {
       if (flags.usr) {
 	W36 uuoA(uptP->luuoAddr);
 	memPutN(W36(((uint64_t) flags.u << 23) |
-		      ((uint64_t) iw.op << 15) |
-		      ((uint64_t) iw.ac << 5)), uuoA.u++);
+		    ((uint64_t) iw.op << 15) |
+		    ((uint64_t) iw.ac << 5)), uuoA.u++);
 	memPutN(pc, uuoA.u++);
 	memPutN(ea.u, uuoA.u++);
 	pcOffset = memGetN(uuoA);
@@ -54,18 +53,23 @@ void KM10::installUUOsGroup() {
 	return doMUUO();
       }
     }
-  };
-
-  // Install LUUOs and MUUOs
-  for(unsigned op=0001; op < 0037; ++op) defOp(op, "LUUO", doLUUO);
-  for(unsigned op=0040; op < 0101; ++op) defOp(op, "MUUO", doMUUO);
+  }
 
   // This might someday be special - we'll see.
-  defOp(0104, "JSYS", [this]() {
+  InstructionResult doJSYS() {
     cerr << "JSYS isn't implemented yet" << logger.endl << flush;
     //    exceptionPC = pc + 1;
     inInterrupt = true;
-    logger.nyi(c);
+    logger.nyi(*this);
     return iMUUO;
-  });
-}
+  }
+
+
+  void install() {
+    defOp(0000, "ILLEGAL", static_cast<OpcodeHandler>(&UUOsGroup::doILLEGAL));
+
+    // Install LUUOs and MUUOs
+    for(unsigned op=0001; op < 0037; ++op) defOp(op, "LUUO", static_cast<OpcodeHandler>(&UUOsGroup::doLUUO));
+    for(unsigned op=0040; op < 0101; ++op) defOp(op, "MUUO", static_cast<OpcodeHandler>(&UUOsGroup::doMUUO));
+  }
+};

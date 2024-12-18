@@ -4,43 +4,52 @@
 #include "km10.hpp"
 #include "bytepointer.hpp"
 
-void KM10::installByteGroup() {
+struct ByteGroup: KM10 {
 
-  defOp(0133, "IBP/ADJBP", [&]() {
+  InstructionResult doIBP_ADJBP() {
     BytePointer *bp = BytePointer::makeFrom(ea, *this);
 
     if (iw.ac == 0) {		// IBP
-      bp->inc(c);
+      bp->inc(*this);
     } else {			// ADJBP
       bp->adjust(iw.ac, *this);
     }
 
     return iNormal;
-  });
+  };
 
-  defOp(0134, "ILDB", [&]() {
+  InstructionResult doILDB() {
     BytePointer *bp = BytePointer::makeFrom(ea, *this);
-    bp->inc(c);
-    acPut(bp->getByte(c));
+    bp->inc(*this);
+    acPut(bp->getByte(*this));
     return iNormal;
-  });
+  };
 
-  defOp(0135, "LDB", [&]() {
+  InstructionResult doLDB() {
     BytePointer *bp = BytePointer::makeFrom(ea, *this);
-    acPut(bp->getByte(c));
+    acPut(bp->getByte(*this));
     return iNormal;
-  });
+  };
 
-  defOp(0136, "IDPB", [&]() {
+  InstructionResult doIDPB() {
     BytePointer *bp = BytePointer::makeFrom(ea, *this);
-    bp->inc(c);
+    bp->inc(*this);
     bp->putByte(acGet(), *this);
     return iNormal;
-  });
+  };
 
-  defOp(0137, "DPB", [&]() {
+  InstructionResult doDPB() {
     BytePointer *bp = BytePointer::makeFrom(ea, *this);
     bp->putByte(acGet(), *this);
     return iNormal;
-  });
-}
+  };
+
+
+  void install() {
+    defOp(0133, "IBP/ADJBP", static_cast<OpcodeHandler>(&ByteGroup::doIBP_ADJBP));
+    defOp(0134, "ILDB",	     static_cast<OpcodeHandler>(&ByteGroup::doILDB));
+    defOp(0135, "LDB",	     static_cast<OpcodeHandler>(&ByteGroup::doLDB));
+    defOp(0136, "IDPB",	     static_cast<OpcodeHandler>(&ByteGroup::doIDPB));
+    defOp(0137, "DPB",	     static_cast<OpcodeHandler>(&ByteGroup::doDPB));
+  }
+};

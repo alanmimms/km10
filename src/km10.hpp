@@ -352,7 +352,7 @@ public:
   void bothPut2(W72 v);
   W36 swap(W36 src);
   W36 negate(W36 src);
-  W36::magnitude(W36 src);
+  W36 magnitude(W36 src);
   W36 memGetSwapped();
   void memPutHi(W72 v);
   W36 immediate();
@@ -468,8 +468,6 @@ public:
 
   // Genericized instruction class implementations.
   void doBinOp(auto getSrc1F, auto getSrc2F, auto modifyF, auto putDstF);
-  void doTXXXX(auto get1F, auto get2F, auto modifyF, auto condF, auto storeF);
-  void doSETXX(auto getSrcF, auto modifyF, auto putDstF);
   void doCAXXX(auto getSrc1F, auto getSrc2F, auto condF);
 
   void doJUMP(auto condF);

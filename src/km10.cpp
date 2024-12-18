@@ -55,19 +55,35 @@ KM10::KM10(unsigned nMemoryWords, KM10::BreakpointTable &aBPs, KM10::BreakpointT
     addressBPs(aBPs),
     executeBPs(eBPs)
 {
+  // The instruction groups - OpcodeHandler implementations of the opcodes.
+  struct BitRotGroup;
+  struct ByteGroup;
+  struct CmpAndGroup;
+  struct HalfGroup;
+  struct IncJSGroup;
+  struct IntBinOpGroup;
+  struct IOGroup;
+  struct JumpGroup;
+  struct MoveGroup;
+  struct MulDivGroup;
+  struct SetGroup;
+  struct TestGroup;
+  struct UUOsGroup;
+  
   // Install each instruction group's handlers in the ops array.
-  InstructionGroup<class ByteGroup>::install(*this);
-  InstructionGroup<class MoveGroup>::install(*this);
-  InstructionGroup<class UUOsGroup>::install(*this);
-  InstructionGroup<class MulDivGroup>::install(*this);
-  InstructionGroup<class BitRotGroup>::install(*this);
-  InstructionGroup<class JumpGroup>::install(*this);
-  InstructionGroup<class IntBinOpGroup>::install(*this);
-  InstructionGroup<class CmpJmpSkpGroup>::install(*this);
-  InstructionGroup<class AOSJSXGroup>::install(*this);
-  InstructionGroup<class HalfGroup>::install(*this);
-  InstructionGroup<class TestGroup>::install(*this);
-  InstructionGroup<class IOGroup>::install(*this);
+  static_cast<BitRotGroup*>(this)->install();
+  static_cast<ByteGroup*>(this)->install();
+  static_cast<CmpAndGroup*>(this)->install();
+  static_cast<HalfGroup*>(this)->install();
+  static_cast<IncJSGroup*>(this)->install();
+  static_cast<IntBinOpGroup*>(this)->install();
+  static_cast<IOGroup*>(this)->install();
+  static_cast<JumpGroup*>(this)->install();
+  static_cast<MoveGroup*>(this)->install();
+  static_cast<MulDivGroup*>(this)->install();
+  static_cast<SetGroup*>(this)->install();
+  static_cast<TestGroup*>(this)->install();
+  static_cast<UUOsGroup*>(this)->install();
 
   // Note this anonymous mmap() implicitly zeroes the virtual memory.
   physicalP = (W36 *) mmap(nullptr,
@@ -268,119 +284,6 @@ W36 KM10::immediate() {
   extnL = [&](W36 v) {return W36(v.lhu, extnOf(v.lhu));};
 
 
-  // binary doModifyF functions
-  andWord = [&]  (W36 s1, W36 s2) {return s1.u & s2.u;};
-  andCWord = [&] (W36 s1, W36 s2) {return s1.u & ~s2.u;};
-  andCBWord = [&](W36 s1, W36 s2) {return ~s1.u & ~s2.u;};
-  iorWord = [&]  (W36 s1, W36 s2) {return s1.u | s2.u;};
-  iorCWord = [&] (W36 s1, W36 s2) {return s1.u | ~s2.u;};
-  iorCBWord = [&](W36 s1, W36 s2) {return ~s1.u | ~s2.u;};
-  xorWord = [&]  (W36 s1, W36 s2) {return s1.u ^ s2.u;};
-  xorCWord = [&] (W36 s1, W36 s2) {return s1.u ^ ~s2.u;};
-  xorCBWord = [&](W36 s1, W36 s2) {return ~s1.u ^ ~s2.u;};
-  eqvWord = [&]  (W36 s1, W36 s2) {return ~(s1.u ^ s2.u);};
-  eqvCWord = [&] (W36 s1, W36 s2) {return ~(s1.u ^ ~s2.u);};
-  eqvCBWord = [&](W36 s1, W36 s2) {return ~(~s1.u ^ ~s2.u);};
-
-
-  addWord = [&](W36 s1, W36 s2) {
-    int64_t sum = s1.ext64() + s2.ext64();
-
-    if (sum < -(int64_t) W36::bit0) {
-      flags.tr1 = flags.ov = flags.cy0 = 1;
-    } else if ((uint64_t) sum >= W36::bit0) {
-      flags.tr1 = flags.ov = flags.cy1 = 1;
-    } else {
-
-      if (s1.s < 0 && s2.s < 0) {
-	flags.cy0 = flags.cy1 = 1;
-      } else if ((s1.s < 0) != (s2.s < 0)) {
-	const uint64_t mag1 = abs(s1.s);
-	const uint64_t mag2 = abs(s2.s);
-
-	if ((s1.s >= 0 && mag1 >= mag2) ||
-	    (s2.s >= 0 && mag2 >= mag1)) {
-	  flags.cy0 = flags.cy1 = 1;
-	}
-      }
-    }
-
-    return sum;
-  };
-    
-
-  subWord = [&](W36 s1, W36 s2) {
-    int64_t diff = s1.ext64() - s2.ext64();
-
-    if (diff < -(int64_t) W36::bit0) {
-      flags.tr1 = flags.ov = flags.cy0 = 1;
-    } else if ((uint64_t) diff >= W36::bit0) {
-      flags.tr1 = flags.ov = flags.cy1 = 1;
-    }
-
-    return diff;
-  };
-    
-    
-  mulWord = [&](W36 s1, W36 s2) {
-    int128_t prod128 = (int128_t) s1.ext64() * s2.ext64();
-    W72 prod = W72::fromMag((uint128_t) (prod128 < 0 ? -prod128 : prod128), prod128 < 0);
-
-    if (s1.u == W36::bit0 && s2.u == W36::bit0) {
-      flags.tr1 = flags.ov = 1;
-      return W72{W36{1ull << 34}, W36{0}};
-    }
-
-    return prod;
-  };
-    
-
-  imulWord = [&](W36 s1, W36 s2) {
-    int128_t prod128 = (int128_t) s1.ext64() * s2.ext64();
-    W72 prod = W72::fromMag((uint128_t) (prod128 < 0 ? -prod128 : prod128), prod128 < 0);
-
-    if (s1.u == W36::bit0 && s2.u == W36::bit0) {
-      flags.tr1 = flags.ov = 1;
-    }
-
-
-    return W36((prod.s < 0 ? W36::bit0 : 0) | ((W36::all1s >> 1) & prod.u));
-  };
-
-    
-  idivWord = [&](W36 s1, W36 s2) {
-
-    if ((s1.u == W36::bit0 && s2.s == -1ll) || s2.u == 0ull) {
-      flags.ndv = flags.tr1 = flags.ov = 1;
-      return W72{s1, s2};
-    } else {
-      int64_t quo = s1.s / s2.s;
-      int64_t rem = abs(s1.s % s2.s);
-      if (quo < 0) rem = -rem;
-      return W72{W36{quo}, W36{abs(rem)}};
-    }
-  };
-
-    
-  divWord = [&](W72 s1, W36 s2) {
-    uint128_t den70 = ((uint128_t) s1.hi35 << 35) | s1.lo35;
-    auto dor = s2.mag;
-    auto signBit = s1.s < 0 ? 1ull << 35 : 0ull;
-
-    if (s1.hi35 >= s2.mag || s2.u == 0) {
-      flags.ndv = flags.tr1 = flags.ov = 1;
-      return s1;
-    } else {
-      int64_t quo = den70 / dor;
-      int64_t rem = den70 % dor;
-      W72 ret{
-	W36{(int64_t) ((quo & W36::magMask) | signBit)},
-	W36{(int64_t) ((rem & W36::magMask) | signBit)}};
-      return ret;
-    }
-  };
-
-    
   // Binary comparison predicates.
   isLT = [&]   (W36 v1, W36 v2) {return v1.ext64() <  v2.ext64();};
   isLE = [&]   (W36 v1, W36 v2) {return v1.ext64() <= v2.ext64();};
@@ -568,26 +471,6 @@ InstructionResult KM10::doDDIV() {
 void KM10::doBinOp(auto getSrc1F, auto getSrc2F, auto modifyF, auto putDstF) {
   auto result = modifyF(getSrc1F(), getSrc2F());
   if (!flags.ndv) putDstF(result);
-}
-
-
-InstructionResult KM10::doTXXXX(auto get1F, auto get2F, auto modifyF, auto condF, auto storeF) {
-  W36 a1 = get1F();
-  W36 a2 = get2F();
-  const bool doSkip = condF(a1, a2);
-  storeF(modifyF(a1, a2));
-  return doSkip = iSkip : iNormal;
-}
-
-
-void KM10::doHXXXX(auto getSrcF, auto getDstF, auto copyF, auto modifyF, auto putDstF) {
-  putDstF(modifyF(copyF(getSrcF(), getDstF())));
-}
-
-
-template<typename S, typename M, typename D>
-void KM10::doMOVXX(S getSrcF, M modifyF, D putDstF) {
-  putDstF(modifyF(getSrcF()));
 }
 
 
@@ -1565,86 +1448,6 @@ InstructionResult KM10::doSETAM() {
 
 InstructionResult KM10::doSETAB() {
   doSETXX(acGet, noMod1, bothPut);
-  return iNormal;
-}
-
-InstructionResult KM10::doXOR() {
-  doBinOp(memGet, acGet, xorWord, acPut);
-  return iNormal;
-}
-
-InstructionResult KM10::doXORI() {
-  doBinOp(immediate, acGet, xorWord, acPut);
-  return iNormal;
-}
-
-InstructionResult KM10::doXORM() {
-  doBinOp(memGet, acGet, xorWord, memPut);
-  return iNormal;
-}
-
-InstructionResult KM10::doXORB() {
-  doBinOp(memGet, acGet, xorWord, bothPut);
-  return iNormal;
-}
-
-InstructionResult KM10::doIOR() {
-  doBinOp(memGet, acGet, iorWord, acPut);
-  return iNormal;
-}
-
-InstructionResult KM10::doIORI() {
-  doBinOp(immediate, acGet, iorWord, acPut);
-  return iNormal;
-}
-
-InstructionResult KM10::doIORM() {
-  doBinOp(memGet, acGet, iorWord, memPut);
-  return iNormal;
-}
-
-InstructionResult KM10::doIORB() {
-  doBinOp(memGet, acGet, iorWord, bothPut);
-  return iNormal;
-}
-
-InstructionResult KM10::doANDCBM() {
-  doBinOp(memGet, acGet, andCBWord, acPut);
-  return iNormal;
-}
-
-InstructionResult KM10::doANDCBMI() {
-  doBinOp(immediate, acGet, andCBWord, acPut);
-  return iNormal;
-}
-
-InstructionResult KM10::doANDCBMM() {
-  doBinOp(memGet, acGet, andCBWord, memPut);
-  return iNormal;
-}
-
-InstructionResult KM10::doANDCBMB() {
-  doBinOp(memGet, acGet, andCBWord, bothPut);
-  return iNormal;
-}
-
-InstructionResult KM10::doEQV() {
-  doBinOp(memGet, acGet, eqvWord, acPut);
-  return iNormal;
-}
-
-InstructionResult KM10::doEQVI() {
-  doBinOp(immediate, acGet, eqvWord, acPut);
-  return iNormal;
-}
-
-InstructionResult KM10::doEQVM() {
-  doBinOp(memGet, acGet, eqvWord, memPut);
-  return iNormal;
-}
-
-InstructionResult KM10::doEQVB() {
-  doBinOp(memGet, acGet, eqvWord, bothPut);
   return iNormal;
 }
 
