@@ -115,7 +115,7 @@ Debugger::DebugAction Debugger::debug() {
 
   do {
     // Show next instruction to execute.
-    cout << km10.pc.fmtVMA() << ": " << dump(km10.iw, km10.pc);
+    cout << km10.fetchPC.fmtVMA() << ": " << dump(km10.iw, km10.pc);
     if (km10.inInterrupt) cout << " [EXC] ";
 
     cout << prompt << flush;
