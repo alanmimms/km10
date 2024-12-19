@@ -10,6 +10,7 @@ add_executable(km10
   tim.cpp
   word.cpp
   logger.cpp
+  i-aoxsox.cpp
   i-bitrot.cpp
   i-byte.cpp
   i-cmpand.cpp

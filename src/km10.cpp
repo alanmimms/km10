@@ -31,6 +31,7 @@ static KM10::BreakpointTable aBPs;
 static KM10::BreakpointTable eBPs;
 
 
+extern void InstallAOxSOxGroup(KM10 &km10);
 extern void InstallBitRotGroup(KM10 &km10);
 extern void InstallByteGroup(KM10 &km10);
 extern void InstallCmpAndGroup(KM10 &km10);
@@ -75,6 +76,8 @@ KM10::KM10(unsigned nMemoryWords, KM10::BreakpointTable &aBPs, KM10::BreakpointT
 {
   // Install each instruction group's handlers in the ops array.
   ops.fill(nullptr);
+
+  InstallAOxSOxGroup(*this);
   InstallBitRotGroup(*this);
   InstallByteGroup(*this);
   InstallCmpAndGroup(*this);
