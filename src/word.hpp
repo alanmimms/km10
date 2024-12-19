@@ -1,3 +1,6 @@
+// XXX TODO:
+// * Consolidate extnOf, ext64, etc.
+
 #pragma once
 
 #include <cstdint>
