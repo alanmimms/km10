@@ -18,110 +18,113 @@ struct AOxSOxGroup: KM10 {
       result = iNormal;
     }
 
-    if (condF(a)) actionF();
-    return result;
+    if (condF(a)) {
+      return actionF();
+    } else {
+      return result;
+    }
   }
 
   InstructionResult doAOJ() {
     return doAOJSSOJS(1,
 		      [](W36 a) {return false;},
-		      [&km10 = *this]() {});
+		      [&km10 = *this]() {return iNormal;});
   }
 
   InstructionResult doAOJL() {
     return doAOJSSOJS(1,
 		      [](W36 a) {return a.s < 0;},
-		      [&km10 = *this]() {km10.pc = km10.ea;});
+		      [&km10 = *this]() {return iJump;});
   }
 
   InstructionResult doAOJE() {
     return doAOJSSOJS(1,
 		      [](W36 a) {return a.s == 0;},
-		      [&km10 = *this]() {km10.pc = km10.ea;});
+		      [&km10 = *this]() {return iJump;});
   }
 
 
   InstructionResult doAOJLE() {
     return doAOJSSOJS(1,
 		      [](W36 a) {return a.s <= 0;},
-		      [&km10 = *this]() {km10.pc = km10.ea;});
+		      [&km10 = *this]() {return iJump;});
   }
 
   InstructionResult doAOJA() {
     return doAOJSSOJS(1,
 		      [](W36 a) {return true;},
-		      [&km10 = *this]() {km10.pc = km10.ea;});
+		      [&km10 = *this]() {return iJump;});
   }
 
 
   InstructionResult doAOJGE() {
     return doAOJSSOJS(1,
 		      [](W36 a) {return a.s >= 0;},
-		      [&km10 = *this]() {km10.pc = km10.ea;});
+		      [&km10 = *this]() {return iJump;});
   }
 
   InstructionResult doAOJN() {
     return doAOJSSOJS(1,
 		      [](W36 a) {return a.s != 0;},
-		      [&km10 = *this]() {km10.pc = km10.ea;});
+		      [&km10 = *this]() {return iJump;});
   }
 
 
   InstructionResult doAOJG() {
     return doAOJSSOJS(1,
 		      [](W36 a) {return a.s > 0;},
-		      [&km10 = *this]() {km10.pc = km10.ea;});
+		      [&km10 = *this]() {return iJump;});
   }
 
   InstructionResult doAOS() {
     return doAOJSSOJS(1,
 		      [](W36 a) {return false;},
-		      [&km10 = *this]() {});
+		      [&km10 = *this]() {return iNormal;});
   }
 
   InstructionResult doAOSL() {
     return doAOJSSOJS(1,
 		      [](W36 a) {return a.s < 0;},
-		      [&km10 = *this]() {++km10.pc.rhu;});
+		      [&km10 = *this]() {return iSkip;});
   }
 
   InstructionResult doAOSE() {
     return doAOJSSOJS(1,
 		      [](W36 a) {return a.s == 0;},
-		      [&km10 = *this]() {++km10.pc.rhu;});
+		      [&km10 = *this]() {return iSkip;});
   }
 
 
   InstructionResult doAOSLE() {
     return doAOJSSOJS(1,
 		      [](W36 a) {return a.s <= 0;},
-		      [&km10 = *this]() {++km10.pc.rhu;});
+		      [&km10 = *this]() {return iSkip;});
   }
 
   InstructionResult doAOSA() {
     return doAOJSSOJS(1,
 		      [](W36 a) {return true;},
-		      [&km10 = *this]() {++km10.pc.rhu;});
+		      [&km10 = *this]() {return iSkip;});
   }
 
 
   InstructionResult doAOSGE() {
     return doAOJSSOJS(1,
 		      [](W36 a) {return a.s >= 0;},
-		      [&km10 = *this]() {++km10.pc.rhu;});
+		      [&km10 = *this]() {return iSkip;});
   }
 
   InstructionResult doAOSN() {
     return doAOJSSOJS(1,
 		      [](W36 a) {return a.s != 0;},
-		      [&km10 = *this]() {++km10.pc.rhu;});
+		      [&km10 = *this]() {return iSkip;});
   }
 
 
   InstructionResult doAOSG() {
     return doAOJSSOJS(1,
 		      [](W36 a) {return a.s > 0;},
-		      [&km10 = *this]() {++km10.pc.rhu;});
+		      [&km10 = *this]() {return iSkip;});
   }
 
 
@@ -129,52 +132,52 @@ struct AOxSOxGroup: KM10 {
   InstructionResult doSOJ() {
     return doAOJSSOJS(-1,
 		      [](W36 a) {return false;},
-		      [&km10 = *this]() {});
+		      [&km10 = *this]() {return iNormal;});
   }
 
   InstructionResult doSOJL() {
     return doAOJSSOJS(-1,
 		      [](W36 a) {return a.s < 0;},
-		      [&km10 = *this]() {km10.pc = km10.ea;});
+		      [&km10 = *this]() {return iJump;});
   }
 
   InstructionResult doSOJE() {
     return doAOJSSOJS(-1,
 		      [](W36 a) {return a.s == 0;},
-		      [&km10 = *this]() {km10.pc = km10.ea;});
+		      [&km10 = *this]() {return iJump;});
   }
 
 
   InstructionResult doSOJLE() {
     return doAOJSSOJS(-1,
 		      [](W36 a) {return a.s <= 0;},
-		      [&km10 = *this]() {km10.pc = km10.ea;});
+		      [&km10 = *this]() {return iJump;});
   }
 
   InstructionResult doSOJA() {
     return doAOJSSOJS(-1,
 		      [](W36 a) {return true;},
-		      [&km10 = *this]() {km10.pc = km10.ea;});
+		      [&km10 = *this]() {return iJump;});
   }
 
 
   InstructionResult doSOJGE() {
     return doAOJSSOJS(-1,
 		      [](W36 a) {return a.s >= 0;},
-		      [&km10 = *this]() {km10.pc = km10.ea;});
+		      [&km10 = *this]() {return iJump;});
   }
 
   InstructionResult doSOJN() {
     return doAOJSSOJS(-1,
 		      [](W36 a) {return a.s != 0;},
-		      [&km10 = *this]() {km10.pc = km10.ea;});
+		      [&km10 = *this]() {return iJump;});
   }
 
 
   InstructionResult doSOJG() {
     return doAOJSSOJS(-1,
 		      [](W36 a) {return a.s > 0;},
-		      [&km10 = *this]() {km10.pc = km10.ea;});
+		      [&km10 = *this]() {return iJump;});
   }
 
 
@@ -183,52 +186,52 @@ struct AOxSOxGroup: KM10 {
   InstructionResult doSOS() {
     return doAOJSSOJS(-1,
 		      [](W36 a) {return false;},
-		      [&km10 = *this]() {});
+		      [&km10 = *this]() {return iNormal;});
   }
 
   InstructionResult doSOSL() {
     return doAOJSSOJS(-1,
 		      [](W36 a) {return a.s < 0;},
-		      [&km10 = *this]() {++km10.pc.rhu;});
+		      [&km10 = *this]() {return iSkip;});
   }
 
   InstructionResult doSOSE() {
     return doAOJSSOJS(-1,
 		      [](W36 a) {return a.s == 0;},
-		      [&km10 = *this]() {++km10.pc.rhu;});
+		      [&km10 = *this]() {return iSkip;});
   }
 
 
   InstructionResult doSOSLE() {
     return doAOJSSOJS(-1,
 		      [](W36 a) {return a.s <= 0;},
-		      [&km10 = *this]() {++km10.pc.rhu;});
+		      [&km10 = *this]() {return iSkip;});
   }
 
   InstructionResult doSOSA() {
     return doAOJSSOJS(-1,
 		      [](W36 a) {return true;},
-		      [&km10 = *this]() {++km10.pc.rhu;});
+		      [&km10 = *this]() {return iSkip;});
   }
 
 
   InstructionResult doSOSGE() {
     return doAOJSSOJS(-1,
 		      [](W36 a) {return a.s >= 0;},
-		      [&km10 = *this]() {++km10.pc.rhu;});
+		      [&km10 = *this]() {return iSkip;});
   }
 
   InstructionResult doSOSN() {
     return doAOJSSOJS(-1,
 		      [](W36 a) {return a.s != 0;},
-		      [&km10 = *this]() {++km10.pc.rhu;});
+		      [&km10 = *this]() {return iSkip;});
   }
 
 
   InstructionResult doSOSG() {
     return doAOJSSOJS(-1,
 		      [](W36 a) {return a.s > 0;},
-		      [&km10 = *this]() {++km10.pc.rhu;});
+		      [&km10 = *this]() {return iSkip;});
   }
 };
 
