@@ -1497,14 +1497,19 @@ InstructionResult KM10::doJSR() {
       });
   
     string lVal{"../images/klad/dfkaa.a10"};
-    app.add_option("-l,-load", lVal, ".A10 or .SAV file to load")
+    app.add_option("-l,--load", lVal, ".A10 or .SAV file to load")
       ->check(CLI::ExistingFile);
 
     string rVal{"../images/klad/dfkaa.rel"};
     app.add_option("-r,--rel", rVal, ".REL file to load symbols from")
       ->check(CLI::ExistingFile);
 
-    app.parse(argc, argv);
+    try {
+      app.parse(argc, argv);
+    } catch(const CLI::Error &e) {
+      cerr << "Command line error: " << endl << flush;
+      return app.exit(e);
+    }
 
     KM10 km10(mVal*1024, aBPs, eBPs);
     assert(sizeof(*km10.eptP) == 512 * 8);
@@ -1513,10 +1518,10 @@ InstructionResult KM10::doJSR() {
     if (lVal.ends_with(".a10")) {
       km10.loadA10(lVal.c_str());
     } else if (lVal.ends_with(".sav")) {
-      cerr << "ERROR: For now, '-load' option must name a .a10 file" << logger.endl;
+      cerr << "ERROR: For now, '--load' option must name a .a10 file" << logger.endl;
       return -1;
     } else {
-      cerr << "ERROR: '-load' option must name a .a10 file" << logger.endl;
+      cerr << "ERROR: '--load' option must name a .a10 file" << logger.endl;
       return -1;
     }
 
