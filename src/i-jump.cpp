@@ -14,14 +14,14 @@ struct JumpGroup: KM10 {
   InstructionResult doJUMPN()  { return acGet().s != 0 ? iJump : iNormal; }
   InstructionResult doJUMPG()  { return acGet().s >  0 ? iJump : iNormal; }
 
-  InstructionResult doSKIP()   { return iNormal; }
-  InstructionResult doSKIPL()  { return acGet().s  < 0 ? iSkip : iNormal; }
-  InstructionResult doSKIPLE() { return acGet().s <= 0 ? iSkip : iNormal; }
-  InstructionResult doSKIPA()  { return iSkip; }
-  InstructionResult doSKIPG()  { return acGet().s  > 0 ? iSkip : iNormal; }
-  InstructionResult doSKIPGE() { return acGet().s >= 0 ? iSkip : iNormal; }
-  InstructionResult doSKIPE()  { return acGet().s == 0 ? iSkip : iNormal; }
-  InstructionResult doSKIPN()  { return acGet().s != 0 ? iSkip : iNormal; }
+  InstructionResult doSKIP()   { if (iw.ac != 0) acPut(memGet()); return iNormal; }
+  InstructionResult doSKIPL()  { if (iw.ac != 0) acPut(memGet()); return memGet().s  < 0 ? iSkip : iNormal; }
+  InstructionResult doSKIPLE() { if (iw.ac != 0) acPut(memGet()); return memGet().s <= 0 ? iSkip : iNormal; }
+  InstructionResult doSKIPA()  { if (iw.ac != 0) acPut(memGet()); return iSkip; }
+  InstructionResult doSKIPG()  { if (iw.ac != 0) acPut(memGet()); return memGet().s  > 0 ? iSkip : iNormal; }
+  InstructionResult doSKIPGE() { if (iw.ac != 0) acPut(memGet()); return memGet().s >= 0 ? iSkip : iNormal; }
+  InstructionResult doSKIPE()  { if (iw.ac != 0) acPut(memGet()); return memGet().s == 0 ? iSkip : iNormal; }
+  InstructionResult doSKIPN()  { if (iw.ac != 0) acPut(memGet()); return memGet().s != 0 ? iSkip : iNormal; }
 
 
   InstructionResult doJRST() {

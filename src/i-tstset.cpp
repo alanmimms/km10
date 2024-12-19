@@ -31,7 +31,7 @@ struct TstSetGroup: KM10 {
 
   InstructionResult doTRNE() {
     W36 a1 = acGetRH();
-    W36 a2 = ea;
+    W36 a2 = ea.rhu;
     const bool doSkip = (a1.u & a2.u) == 0;
     /* No store */;
     return doSkip ? iSkip : iNormal;
@@ -39,8 +39,9 @@ struct TstSetGroup: KM10 {
 
   InstructionResult doTLNE() {
     W36 a1 = acGetLH();
-    W36 a2 = ea;
+    W36 a2 = ea.rhu;
     const bool doSkip = (a1.u & a2.u) == 0;
+    cout << "TLNE a1=" << a1.fmt36() << " a2=" << a2.fmt36() << " doSkip=" << doSkip << logger.endl << flush;
     /* No store */;
     return doSkip ? iSkip : iNormal;
   }
@@ -51,7 +52,7 @@ struct TstSetGroup: KM10 {
 
   InstructionResult doTRNN() {
     W36 a1 = acGetRH();
-    W36 a2 = ea;
+    W36 a2 = ea.rhu;
     const bool doSkip = (a1.u & a2.u) != 0;
     /* No store */;
     return doSkip ? iSkip : iNormal;
@@ -59,7 +60,7 @@ struct TstSetGroup: KM10 {
 
   InstructionResult doTLNN() {
     W36 a1 = acGetLH();
-    W36 a2 = ea;
+    W36 a2 = ea.rhu;
     const bool doSkip = (a1.u & a2.u) != 0;
     /* No store */;
     return doSkip ? iSkip : iNormal;
@@ -67,7 +68,7 @@ struct TstSetGroup: KM10 {
 
   InstructionResult doTRZ() {
     W36 a1 = acGetRH();
-    W36 a2 = ea;
+    W36 a2 = ea.rhu;
     const bool doSkip = false;
     acPutRH(zeroMaskR(a1, a2));
     return doSkip ? iSkip : iNormal;
@@ -75,7 +76,7 @@ struct TstSetGroup: KM10 {
 
   InstructionResult doTLZ() {
     W36 a1 = acGetLH();
-    W36 a2 = ea;
+    W36 a2 = ea.rhu;
     const bool doSkip = false;
     acPutLH(zeroMaskR(a1, a2));
     return doSkip ? iSkip : iNormal;
