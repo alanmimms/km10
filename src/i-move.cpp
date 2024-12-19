@@ -1,6 +1,33 @@
 #include "km10.hpp"
 
 struct MoveGroup: KM10 {
+
+  W36 negate(W36 src) {
+    W36 v(-src.s);
+    if (src.u == W36::bit0) flags.tr1 = flags.ov = flags.cy1 = 1;
+    if (src.u == 0) flags.cy0 = flags.cy1 = 1;
+    return v;
+  }
+
+
+  W36 magnitude(W36 src) {
+    W36 v(src.s < 0 ? -src.s : src.s);
+    if (src.u == W36::bit0) flags.tr1 = flags.ov = flags.cy1 = 1;
+    return v;
+  }
+
+
+  inline W36 swap(W36 src) {
+    return W36{src.rhu, src.lhu};
+  }
+
+
+  void selfPut(W36 v) {
+    memPut(v);
+    if (iw.ac != 0) acPut(v);
+  }
+
+
   InstructionResult doMOVE()  {acPut(memGet());			return iNormal;}
   InstructionResult doMOVEI() {acPut(immediate());		return iNormal;}
   InstructionResult doMOVEM() {memPut(acGet());			return iNormal;}

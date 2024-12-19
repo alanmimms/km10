@@ -57,22 +57,13 @@
 */
 
 #pragma once
-#include <string>
-#include <cstdint>
-#include <sstream>
-#include <iomanip>
-#include <fstream>
-#include <ostream>
-#include <fmt/core.h>
-#include <limits>
 #include <array>
-#include <functional>
 #include <assert.h>
 #include <unordered_set>
 #include <atomic>
+#include <string>
 
 using namespace std;
-using namespace fmt;
 
 #include "word.hpp"
 #include "apr.hpp"
@@ -85,8 +76,6 @@ using namespace fmt;
 #include "device.hpp"
 #include "debugger.hpp"
 #include "instruction-result.hpp"
-
-//#include "i-move.hpp"
 
 
 class KM10 {
@@ -191,24 +180,7 @@ public:
       u = newFlags;
     }
 
-    string toString() {
-      ostringstream ss;
-      ss << oct << setw(6) << setfill('0') << ((unsigned) u << 5);
-      if (ndv) ss << " NDV";
-      if (fuf) ss << " FUF";
-      if (tr1) ss << " TR1";
-      if (tr2) ss << " TR2";
-      if (afi) ss << " AFI";
-      if (pub) ss << " PUB";
-      if (uio) ss << (usr ? " UIO" : " PCU");
-      if (usr) ss << " USR";
-      if (fpd) ss << " FPD";
-      if (fov) ss << " FOV";
-      if (cy1) ss << " CY1";
-      if (cy0) ss << " CY0";
-      if (ov ) ss << " OV";
-      return ss.str();
-    }
+    string toString();
   } flags;
 
   union FlagsDWord {
@@ -347,13 +319,7 @@ public:
   void acPut2(W72 v);
   W36 memGet();
   void memPut(W36 value);
-  void selfPut(W36 value);
-  void bothPut(W36 value);
   void bothPut2(W72 v);
-  W36 swap(W36 src);
-  W36 negate(W36 src);
-  W36 magnitude(W36 src);
-  W36 memGetSwapped();
   void memPutHi(W72 v);
   W36 immediate();
 
@@ -376,103 +342,11 @@ public:
   void loadA10(const char *fileNameP);
 
 
+  // This is how our subclasses (separately compiled) install their
+  // OpcodeHandlers.
   inline void defOp(unsigned op, const char *mneP, OpcodeHandler impl) {
     ops[op] = impl;
   }
-
-
-  ////////////////////////////////////////////////////////////////
-  // Condition testing predicates
-  function<bool(W36)> isLT0;
-  function<bool(W36)> isLE0;
-  function<bool(W36)> isGT0;
-  function<bool(W36)> isGE0;
-  function<bool(W36)> isNE0;
-  function<bool(W36)> isEQ0;
-  function<bool(W36)> always;
-  function<bool(W36)> never;
-
-  function<bool(W36, W36)> isNE0T;
-  function<bool(W36, W36)> isEQ0T;
-  function<bool(W36, W36)> alwaysT;
-  function<bool(W36, W36)> neverT;
-
-  function<W36()> getE;
-  function<W36(W36)> noMod1;
-  function<W36(W36, W36)> noMod2;
-
-  // Masking functions
-  function<W36(W36, W36)> zeroMaskR;
-  function<W36(W36, W36)> zeroMask;
-  function<W36(W36, W36)> onesMaskR;
-  function<W36(W36, W36)> onesMask;
-  function<W36(W36, W36)> compMaskR;
-  function<W36(W36, W36)> compMask;
-  function<W36(W36)> zeroWord;
-  function<W36(W36)> onesWord;
-  function<W36(W36)> compWord;
-
-  function<void(W36)> noStore;
-
-  // Sign extension function
-  function<unsigned(const unsigned)> extnOf;
-
-  // doCopyF functions
-  function<W36(W36, W36)> copyHRR;
-  function<W36(W36, W36)> copyHRL;
-  function<W36(W36, W36)> copyHLL;
-  function<W36(W36, W36)> copyHLR;
-
-  // doModifyF functions
-  function<W36(W36)> zeroR;
-  function<W36(W36)> onesR;
-  function<W36(W36)> extnR;
-  function<W36(W36)> zeroL;
-  function<W36(W36)> onesL;
-  function<W36(W36)> extnL;
-
-  // Binary doModifyF functions
-  function<W36(W36, W36)> andWord;
-  function<W36(W36, W36)> andCWord;
-  function<W36(W36, W36)> andCBWord;
-  function<W36(W36, W36)> iorWord;
-  function<W36(W36, W36)> iorCWord;
-  function<W36(W36, W36)> iorCBWord;
-  function<W36(W36, W36)> xorWord;
-  function<W36(W36, W36)> xorCWord;
-  function<W36(W36, W36)> xorCBWord;
-  function<W36(W36, W36)> eqvWord;
-  function<W36(W36, W36)> eqvCWord;
-  function<W36(W36, W36)> eqvCBWord;
-
-  function<W36(W36, W36)> addWord;
-  function<W36(W36, W36)> subWord;
-  function<W72(W36, W36)> mulWord;
-  function<W36(W36, W36)> imulWord;
-  function<W72(W36, W36)> idivWord;
-  function<W72(W72, W36)> divWord;
-
-  // Binary comparison predicates
-  function<bool(W36, W36)> isLT;
-  function<bool(W36, W36)> isLE;
-  function<bool(W36, W36)> isGT;
-  function<bool(W36, W36)> isGE;
-  function<bool(W36, W36)> isNE;
-  function<bool(W36, W36)> isEQ;
-  function<bool(W36, W36)> always2;
-  function<bool(W36, W36)> never2;
-
-  function<InstructionResult()> skipAction;
-  function<InstructionResult()> jumpAction;
-
-
-  // Genericized instruction class implementations.
-  void doBinOp(auto getSrc1F, auto getSrc2F, auto modifyF, auto putDstF);
-  void doCAXXX(auto getSrc1F, auto getSrc2F, auto condF);
-
-  void doJUMP(auto condF);
-  void doSKIP(auto condF);
-  void doAOSXX(auto getF, const signed delta, auto putF, auto condF, auto actionF);
 
   void doPush(W36 v, W36 acN);
   W36 doPop(unsigned acN);

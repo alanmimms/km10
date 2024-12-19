@@ -10,6 +10,7 @@
 #include <set>
 #include <map>
 #include <vector>
+#include <functional>
 
 #include <unistd.h>
 #include <sys/stat.h>

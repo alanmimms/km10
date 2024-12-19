@@ -2,6 +2,12 @@
 
 struct IntBinGroup: KM10 {
 
+  inline void bothPut(W36 v) {
+    acPut(v);
+    memPut(v);
+  }
+
+
   W36 andWord(W36 s1, W36 s2) {return s1.u & s2.u;}
   W36 andCWord(W36 s1, W36 s2) {return s1.u & ~s2.u;}
   W36 andCBWord(W36 s1, W36 s2) {return ~s1.u & ~s2.u;}

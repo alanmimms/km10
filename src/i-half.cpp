@@ -1,6 +1,26 @@
 #include "km10.hpp"
 
 struct HalfGroup: KM10 {
+  inline W36 copyHRR(W36 src, W36 dst) {return W36(dst.lhu, src.rhu);};
+  inline W36 copyHRL(W36 src, W36 dst) {return W36(src.rhu, dst.rhu);};
+  inline W36 copyHLL(W36 src, W36 dst) {return W36(src.lhu, dst.rhu);};
+  inline W36 copyHLR(W36 src, W36 dst) {return W36(dst.lhu, src.lhu);};
+
+  inline W36 extnOf(W36 v) { return (v & 0400'000) ? W36::halfOnes : 0u; }
+
+  inline W36 zeroR(W36 v) {return W36(v.lhu, 0);};
+  inline W36 onesR(W36 v) {return W36(v.lhu, W36::halfOnes);};
+  inline W36 extnR(W36 v) {return W36(extnOf(v.rhu), v.rhu);};
+  inline W36 zeroL(W36 v) {return W36(0, v.rhu);};
+  inline W36 onesL(W36 v) {return W36(W36::halfOnes, v.rhu);};
+  inline W36 extnL(W36 v) {return W36(v.lhu, extnOf(v.lhu));};
+
+  void selfPut(W36 v) {
+    memPut(v);
+    if (iw.ac != 0) acPut(v);
+  }
+
+
   InstructionResult doHLL()   {   acPut(      copyHLL(   memGet(),  acGet()));  return iNormal; }
   InstructionResult doHLLI()  {   acPut(      copyHLL(immediate(),  acGet()));  return iNormal; }
   InstructionResult doHLLM()  {  memPut(      copyHLL(    acGet(), memGet()));  return iNormal; }

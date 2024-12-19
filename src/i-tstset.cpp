@@ -1,6 +1,6 @@
 #include "km10.hpp"
 
-struct TestGroup: KM10 {
+struct TstSetGroup: KM10 {
   W36 zeroMaskR(W36 a, W36 b) const {return a.u & ~(uint64_t) b.rhu;};
   W36 zeroMask(W36 a, W36 b) const {return a.u & ~b.u;};
 
@@ -15,13 +15,23 @@ struct TestGroup: KM10 {
   W36 compWord(W36 a) const {return ~a.u;};
 
 
+  inline W36 swap(W36 src) {
+    return W36{src.rhu, src.lhu};
+  }
+
+
+  inline W36 memGetSwapped() {
+    return swap(memGet());
+  }
+
+
   InstructionResult doTRN() { return iNormal; }
 
   InstructionResult doTLN() { return iNormal; }
 
   InstructionResult doTRNE() {
     W36 a1 = acGetRH();
-    W36 a2 = getE();
+    W36 a2 = ea;
     const bool doSkip = (a1.u & a2.u) == 0;
     /* No store */;
     return doSkip ? iSkip : iNormal;
@@ -29,7 +39,7 @@ struct TestGroup: KM10 {
 
   InstructionResult doTLNE() {
     W36 a1 = acGetLH();
-    W36 a2 = getE();
+    W36 a2 = ea;
     const bool doSkip = (a1.u & a2.u) == 0;
     /* No store */;
     return doSkip ? iSkip : iNormal;
@@ -41,7 +51,7 @@ struct TestGroup: KM10 {
 
   InstructionResult doTRNN() {
     W36 a1 = acGetRH();
-    W36 a2 = getE();
+    W36 a2 = ea;
     const bool doSkip = (a1.u & a2.u) != 0;
     /* No store */;
     return doSkip ? iSkip : iNormal;
@@ -49,7 +59,7 @@ struct TestGroup: KM10 {
 
   InstructionResult doTLNN() {
     W36 a1 = acGetLH();
-    W36 a2 = getE();
+    W36 a2 = ea;
     const bool doSkip = (a1.u & a2.u) != 0;
     /* No store */;
     return doSkip ? iSkip : iNormal;
@@ -57,7 +67,7 @@ struct TestGroup: KM10 {
 
   InstructionResult doTRZ() {
     W36 a1 = acGetRH();
-    W36 a2 = getE();
+    W36 a2 = ea;
     const bool doSkip = false;
     acPutRH(zeroMaskR(a1, a2));
     return doSkip ? iSkip : iNormal;
@@ -65,7 +75,7 @@ struct TestGroup: KM10 {
 
   InstructionResult doTLZ() {
     W36 a1 = acGetLH();
-    W36 a2 = getE();
+    W36 a2 = ea;
     const bool doSkip = false;
     acPutLH(zeroMaskR(a1, a2));
     return doSkip ? iSkip : iNormal;
@@ -73,7 +83,7 @@ struct TestGroup: KM10 {
 
   InstructionResult doTRZE() {
     W36 a1 = acGetRH();
-    W36 a2 = getE();
+    W36 a2 = ea;
     const bool doSkip = (a1.u & a2.u) == 0;
     acPutRH(zeroMaskR(a1, a2));
     return doSkip ? iSkip : iNormal;
@@ -81,7 +91,7 @@ struct TestGroup: KM10 {
 
   InstructionResult doTLZE() {
     W36 a1 = acGetLH();
-    W36 a2 = getE();
+    W36 a2 = ea;
     const bool doSkip = (a1.u & a2.u) == 0;
     acPutLH(zeroMaskR(a1, a2));
     return doSkip ? iSkip : iNormal;
@@ -89,7 +99,7 @@ struct TestGroup: KM10 {
 
   InstructionResult doTRZA() {
     W36 a1 = acGetRH();
-    W36 a2 = getE();
+    W36 a2 = ea;
     const bool doSkip = true;
     acPutRH(zeroMaskR(a1, a2));
     return doSkip ? iSkip : iNormal;
@@ -97,7 +107,7 @@ struct TestGroup: KM10 {
 
   InstructionResult doTLZA() {
     W36 a1 = acGetLH();
-    W36 a2 = getE();
+    W36 a2 = ea;
     const bool doSkip = true;
     acPutLH(zeroMaskR(a1, a2));
     return doSkip ? iSkip : iNormal;
@@ -105,7 +115,7 @@ struct TestGroup: KM10 {
 
   InstructionResult doTRZN() {
     W36 a1 = acGetRH();
-    W36 a2 = getE();
+    W36 a2 = ea;
     const bool doSkip = (a1.u & a2.u) != 0;
     acPutRH(zeroMaskR(a1, a2));
     return doSkip ? iSkip : iNormal;
@@ -113,7 +123,7 @@ struct TestGroup: KM10 {
 
   InstructionResult doTLZN() {
     W36 a1 = acGetLH();
-    W36 a2 = getE();
+    W36 a2 = ea;
     const bool doSkip = (a1.u & a2.u) != 0;
     acPutLH(zeroMaskR(a1, a2));
     return doSkip ? iSkip : iNormal;
@@ -121,7 +131,7 @@ struct TestGroup: KM10 {
 
   InstructionResult doTRC() {
     W36 a1 = acGetRH();
-    W36 a2 = getE();
+    W36 a2 = ea;
     const bool doSkip = false;
     acPutRH(compMaskR(a1, a2));
     return doSkip ? iSkip : iNormal;
@@ -129,7 +139,7 @@ struct TestGroup: KM10 {
 
   InstructionResult doTLC() {
     W36 a1 = acGetLH();
-    W36 a2 = getE();
+    W36 a2 = ea;
     const bool doSkip = false;
     acPutLH(compMaskR(a1, a2));
     return doSkip ? iSkip : iNormal;
@@ -137,7 +147,7 @@ struct TestGroup: KM10 {
 
   InstructionResult doTRCE() {
     W36 a1 = acGetRH();
-    W36 a2 = getE();
+    W36 a2 = ea;
     const bool doSkip = (a1.u & a2.u) == 0;
     acPutRH(compMaskR(a1, a2));
     return doSkip ? iSkip : iNormal;
@@ -145,7 +155,7 @@ struct TestGroup: KM10 {
 
   InstructionResult doTLCE() {
     W36 a1 = acGetLH();
-    W36 a2 = getE();
+    W36 a2 = ea;
     const bool doSkip = (a1.u & a2.u) == 0;
     acPutLH(compMaskR(a1, a2));
     return doSkip ? iSkip : iNormal;
@@ -153,7 +163,7 @@ struct TestGroup: KM10 {
 
   InstructionResult doTRCA() {
     W36 a1 = acGetRH();
-    W36 a2 = getE();
+    W36 a2 = ea;
     const bool doSkip = true;
     acPutRH(compMaskR(a1, a2));
     return doSkip ? iSkip : iNormal;
@@ -161,7 +171,7 @@ struct TestGroup: KM10 {
 
   InstructionResult doTLCA() {
     W36 a1 = acGetLH();
-    W36 a2 = getE();
+    W36 a2 = ea;
     const bool doSkip = true;
     acPutLH(compMaskR(a1, a2));
     return doSkip ? iSkip : iNormal;
@@ -169,7 +179,7 @@ struct TestGroup: KM10 {
 
   InstructionResult doTRCN() {
     W36 a1 = acGetRH();
-    W36 a2 = getE();
+    W36 a2 = ea;
     const bool doSkip = (a1.u & a2.u) != 0;
     acPutRH(compMaskR(a1, a2));
     return doSkip ? iSkip : iNormal;
@@ -177,7 +187,7 @@ struct TestGroup: KM10 {
 
   InstructionResult doTLCN() {
     W36 a1 = acGetLH();
-    W36 a2 = getE();
+    W36 a2 = ea;
     const bool doSkip = (a1.u & a2.u) != 0;
     acPutLH(compMaskR(a1, a2));
     return doSkip ? iSkip : iNormal;
@@ -185,7 +195,7 @@ struct TestGroup: KM10 {
 
   InstructionResult doTRO() {
     W36 a1 = acGetRH();
-    W36 a2 = getE();
+    W36 a2 = ea;
     const bool doSkip = false;
     acPutRH(onesMaskR(a1, a2));
     return doSkip ? iSkip : iNormal;
@@ -193,7 +203,7 @@ struct TestGroup: KM10 {
 
   InstructionResult doTLO() {
     W36 a1 = acGetLH();
-    W36 a2 = getE();
+    W36 a2 = ea;
     const bool doSkip = false;
     acPutLH(onesMaskR(a1, a2));
     return doSkip ? iSkip : iNormal;
@@ -201,7 +211,7 @@ struct TestGroup: KM10 {
 
   InstructionResult doTROE() {
     W36 a1 = acGetRH();
-    W36 a2 = getE();
+    W36 a2 = ea;
     const bool doSkip = (a1.u & a2.u) == 0;
     acPutRH(onesMaskR(a1, a2));
     return doSkip ? iSkip : iNormal;
@@ -209,7 +219,7 @@ struct TestGroup: KM10 {
 
   InstructionResult doTLOE() {
     W36 a1 = acGetLH();
-    W36 a2 = getE();
+    W36 a2 = ea;
     const bool doSkip = (a1.u & a2.u) == 0;
     acPutLH(onesMaskR(a1, a2));
     return doSkip ? iSkip : iNormal;
@@ -217,7 +227,7 @@ struct TestGroup: KM10 {
 
   InstructionResult doTROA() {
     W36 a1 = acGetRH();
-    W36 a2 = getE();
+    W36 a2 = ea;
     const bool doSkip = true;
     acPutRH(onesMaskR(a1, a2));
     return doSkip ? iSkip : iNormal;
@@ -225,7 +235,7 @@ struct TestGroup: KM10 {
 
   InstructionResult doTLOA() {
     W36 a1 = acGetLH();
-    W36 a2 = getE();
+    W36 a2 = ea;
     const bool doSkip = true;
     acPutLH(onesMaskR(a1, a2));
     return doSkip ? iSkip : iNormal;
@@ -233,7 +243,7 @@ struct TestGroup: KM10 {
 
   InstructionResult doTRON() {
     W36 a1 = acGetRH();
-    W36 a2 = getE();
+    W36 a2 = ea;
     const bool doSkip = (a1.u & a2.u) != 0;
     acPutRH(onesMaskR(a1, a2));
     return doSkip ? iSkip : iNormal;
@@ -241,7 +251,7 @@ struct TestGroup: KM10 {
 
   InstructionResult doTLON() {
     W36 a1 = acGetLH();
-    W36 a2 = getE();
+    W36 a2 = ea;
     const bool doSkip = (a1.u & a2.u) != 0;
     acPutLH(onesMaskR(a1, a2));
     return doSkip ? iSkip : iNormal;
@@ -478,73 +488,130 @@ struct TestGroup: KM10 {
     acPut(onesMask(a1, a2));
     return doSkip ? iSkip : iNormal;
   }
+
+  InstructionResult doSETZ() { (void) memGet(); acPut(0); return iNormal; }
+  InstructionResult doSETZI() { acPut(0); return iNormal; }
+  InstructionResult doSETZM() { (void) memGet(); memPut(0); return iNormal; }
+  InstructionResult doSETZB() { (void) memGet(); acPut(0); memPut(0); return iNormal; }
+
+  InstructionResult doSETM() { acPut(memGet()); return iNormal; }
+  InstructionResult doSETMI() { acPut(immediate()); return iNormal; }
+  InstructionResult doSETMM() { memPut(memGet()); return iNormal; }
+  InstructionResult doSETMB() { W36 a = memGet(); acPut(a); memPut(a); return iNormal; }
+  InstructionResult doSETCM() { acPut(~memGet().u); return iNormal; }
+  InstructionResult doSETCMI() { acPut(~immediate().u); return iNormal; }
+  InstructionResult doSETCMM() { memPut(~memGet().u); return iNormal; }
+  InstructionResult doSETCMB() { W36 a = ~memGet().u; acPut(a); memPut(a); return iNormal; }
+  InstructionResult doSETO() { (void) acGet(); acPut(W36::all1s); return iNormal; }
+  InstructionResult doSETOI() { acPut(~immediate().u); return iNormal; }
+  InstructionResult doSETOM() { memPut(~memGet().u); return iNormal; }
+  InstructionResult doSETOB() { W36 a = ~memGet().u; acPut(a); memPut(a); return iNormal; }
+  InstructionResult doSETA() { acPut(acGet()); return iNormal; }
+  InstructionResult doSETAI() { acPut(acGet()); return iNormal; }
+  InstructionResult doSETAM() { memPut(acGet()); return iNormal; }
+  InstructionResult doSETAB() { W36 a = acGet(); acPut(a); memPut(a); return iNormal; }
+  InstructionResult doSETCA() { acPut(~acGet().u); return iNormal; }
+  InstructionResult doSETCAI() { acPut(~immediate().u); return iNormal; }
+  InstructionResult doSETCAM() { acPut(~memGet().u); return iNormal; }
+  InstructionResult doSETCAB() { W36 a = ~acGet().u; acPut(a); memPut(a); return iNormal; }
 };
 
 
 
-void InstallTestGroup(KM10 &km10) {
-  km10.defOp(0600, "TRN", static_cast<KM10::OpcodeHandler>(&TestGroup::doTRN));
-  km10.defOp(0601, "TLN", static_cast<KM10::OpcodeHandler>(&TestGroup::doTLN));
-  km10.defOp(0602, "TRNE", static_cast<KM10::OpcodeHandler>(&TestGroup::doTRNE));
-  km10.defOp(0603, "TLNE", static_cast<KM10::OpcodeHandler>(&TestGroup::doTLNE));
-  km10.defOp(0604, "TRNA", static_cast<KM10::OpcodeHandler>(&TestGroup::doTRNA));
-  km10.defOp(0605, "TLNA", static_cast<KM10::OpcodeHandler>(&TestGroup::doTLNA));
-  km10.defOp(0606, "TRNN", static_cast<KM10::OpcodeHandler>(&TestGroup::doTRNN));
-  km10.defOp(0607, "TLNN", static_cast<KM10::OpcodeHandler>(&TestGroup::doTLNN));
-  km10.defOp(0610, "TRZ", static_cast<KM10::OpcodeHandler>(&TestGroup::doTRZ));
-  km10.defOp(0611, "TLZ", static_cast<KM10::OpcodeHandler>(&TestGroup::doTLZ));
-  km10.defOp(0612, "TRZE", static_cast<KM10::OpcodeHandler>(&TestGroup::doTRZE));
-  km10.defOp(0613, "TLZE", static_cast<KM10::OpcodeHandler>(&TestGroup::doTLZE));
-  km10.defOp(0614, "TRZA", static_cast<KM10::OpcodeHandler>(&TestGroup::doTRZA));
-  km10.defOp(0615, "TLZA", static_cast<KM10::OpcodeHandler>(&TestGroup::doTLZA));
-  km10.defOp(0616, "TRZN", static_cast<KM10::OpcodeHandler>(&TestGroup::doTRZN));
-  km10.defOp(0617, "TLZN", static_cast<KM10::OpcodeHandler>(&TestGroup::doTLZN));
-  km10.defOp(0620, "TRC", static_cast<KM10::OpcodeHandler>(&TestGroup::doTRC));
-  km10.defOp(0621, "TLC", static_cast<KM10::OpcodeHandler>(&TestGroup::doTLC));
-  km10.defOp(0622, "TRCE", static_cast<KM10::OpcodeHandler>(&TestGroup::doTRCE));
-  km10.defOp(0623, "TLCE", static_cast<KM10::OpcodeHandler>(&TestGroup::doTLCE));
-  km10.defOp(0624, "TRCA", static_cast<KM10::OpcodeHandler>(&TestGroup::doTRCA));
-  km10.defOp(0625, "TLCA", static_cast<KM10::OpcodeHandler>(&TestGroup::doTLCA));
-  km10.defOp(0626, "TRCN", static_cast<KM10::OpcodeHandler>(&TestGroup::doTRCN));
-  km10.defOp(0627, "TLCN", static_cast<KM10::OpcodeHandler>(&TestGroup::doTLCN));
-  km10.defOp(0630, "TRO", static_cast<KM10::OpcodeHandler>(&TestGroup::doTRO));
-  km10.defOp(0631, "TLO", static_cast<KM10::OpcodeHandler>(&TestGroup::doTLO));
-  km10.defOp(0632, "TROE", static_cast<KM10::OpcodeHandler>(&TestGroup::doTROE));
-  km10.defOp(0633, "TLOE", static_cast<KM10::OpcodeHandler>(&TestGroup::doTLOE));
-  km10.defOp(0634, "TROA", static_cast<KM10::OpcodeHandler>(&TestGroup::doTROA));
-  km10.defOp(0635, "TLOA", static_cast<KM10::OpcodeHandler>(&TestGroup::doTLOA));
-  km10.defOp(0636, "TRON", static_cast<KM10::OpcodeHandler>(&TestGroup::doTRON));
-  km10.defOp(0637, "TLON", static_cast<KM10::OpcodeHandler>(&TestGroup::doTLON));
-  km10.defOp(0640, "TDN", static_cast<KM10::OpcodeHandler>(&TestGroup::doTDN));
-  km10.defOp(0641, "TSN", static_cast<KM10::OpcodeHandler>(&TestGroup::doTSN));
-  km10.defOp(0642, "TDNE", static_cast<KM10::OpcodeHandler>(&TestGroup::doTDNE));
-  km10.defOp(0643, "TSNE", static_cast<KM10::OpcodeHandler>(&TestGroup::doTSNE));
-  km10.defOp(0644, "TDNA", static_cast<KM10::OpcodeHandler>(&TestGroup::doTDNA));
-  km10.defOp(0645, "TSNA", static_cast<KM10::OpcodeHandler>(&TestGroup::doTSNA));
-  km10.defOp(0646, "TDNN", static_cast<KM10::OpcodeHandler>(&TestGroup::doTDNN));
-  km10.defOp(0647, "TSNN", static_cast<KM10::OpcodeHandler>(&TestGroup::doTSNN));
-  km10.defOp(0650, "TDZ", static_cast<KM10::OpcodeHandler>(&TestGroup::doTDZ));
-  km10.defOp(0651, "TSZ", static_cast<KM10::OpcodeHandler>(&TestGroup::doTSZ));
-  km10.defOp(0652, "TDZE", static_cast<KM10::OpcodeHandler>(&TestGroup::doTDZE));
-  km10.defOp(0653, "TSZE", static_cast<KM10::OpcodeHandler>(&TestGroup::doTSZE));
-  km10.defOp(0654, "TDZA", static_cast<KM10::OpcodeHandler>(&TestGroup::doTDZA));
-  km10.defOp(0655, "TSZA", static_cast<KM10::OpcodeHandler>(&TestGroup::doTSZA));
-  km10.defOp(0656, "TDZN", static_cast<KM10::OpcodeHandler>(&TestGroup::doTDZN));
-  km10.defOp(0657, "TSZN", static_cast<KM10::OpcodeHandler>(&TestGroup::doTSZN));
-  km10.defOp(0660, "TDC", static_cast<KM10::OpcodeHandler>(&TestGroup::doTDC));
-  km10.defOp(0661, "TSC", static_cast<KM10::OpcodeHandler>(&TestGroup::doTSC));
-  km10.defOp(0662, "TDCE", static_cast<KM10::OpcodeHandler>(&TestGroup::doTDCE));
-  km10.defOp(0663, "TSCE", static_cast<KM10::OpcodeHandler>(&TestGroup::doTSCE));
-  km10.defOp(0664, "TDCA", static_cast<KM10::OpcodeHandler>(&TestGroup::doTDCA));
-  km10.defOp(0665, "TSCA", static_cast<KM10::OpcodeHandler>(&TestGroup::doTSCA));
-  km10.defOp(0666, "TDCN", static_cast<KM10::OpcodeHandler>(&TestGroup::doTDCN));
-  km10.defOp(0667, "TSZCN", static_cast<KM10::OpcodeHandler>(&TestGroup::doTSZCN));
-  km10.defOp(0670, "TDO", static_cast<KM10::OpcodeHandler>(&TestGroup::doTDO));
-  km10.defOp(0671, "TSO", static_cast<KM10::OpcodeHandler>(&TestGroup::doTSO));
-  km10.defOp(0672, "TDOE", static_cast<KM10::OpcodeHandler>(&TestGroup::doTDOE));
-  km10.defOp(0673, "TSOE", static_cast<KM10::OpcodeHandler>(&TestGroup::doTSOE));
-  km10.defOp(0674, "TDOA", static_cast<KM10::OpcodeHandler>(&TestGroup::doTDOA));
-  km10.defOp(0675, "TSOA", static_cast<KM10::OpcodeHandler>(&TestGroup::doTSOA));
-  km10.defOp(0676, "TDON", static_cast<KM10::OpcodeHandler>(&TestGroup::doTDON));
-  km10.defOp(0677, "TSON", static_cast<KM10::OpcodeHandler>(&TestGroup::doTSON));
+void InstallTstSetGroup(KM10 &km10) {
+  km10.defOp(0400, "SETZ",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doSETZ));
+  km10.defOp(0401, "SETZI", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doSETZI));
+  km10.defOp(0402, "SETZM", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doSETZM));
+  km10.defOp(0403, "SETZB", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doSETZB));
+
+  km10.defOp(0414, "SETM",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doSETM));
+  km10.defOp(0415, "SETMI", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doSETMI));
+  km10.defOp(0416, "SETMM", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doSETMM));
+  km10.defOp(0417, "SETMB", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doSETMB));
+
+  km10.defOp(0424, "SETA",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doSETA));
+  km10.defOp(0425, "SETAI", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doSETAI));
+  km10.defOp(0426, "SETAM", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doSETAM));
+  km10.defOp(0427, "SETAB", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doSETAB));
+
+  km10.defOp(0450, "SETCA",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doSETCA));
+  km10.defOp(0451, "SETCAI", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doSETCAI));
+  km10.defOp(0452, "SETCAM", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doSETCAM));
+  km10.defOp(0453, "SETCAB", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doSETCAB));
+
+  km10.defOp(0464, "SETCM",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doSETCM));
+  km10.defOp(0465, "SETCMI", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doSETCMI));
+  km10.defOp(0466, "SETCMM", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doSETCMM));
+  km10.defOp(0467, "SETCMB", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doSETCMB));
+
+  km10.defOp(0474, "SETO",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doSETO));
+  km10.defOp(0475, "SETOI", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doSETOI));
+  km10.defOp(0476, "SETOM", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doSETOM));
+  km10.defOp(0477, "SETOB", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doSETOB));
+
+
+  km10.defOp(0600, "TRN",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTRN));
+  km10.defOp(0601, "TLN",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLN));
+  km10.defOp(0602, "TRNE", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTRNE));
+  km10.defOp(0603, "TLNE", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLNE));
+  km10.defOp(0604, "TRNA", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTRNA));
+  km10.defOp(0605, "TLNA", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLNA));
+  km10.defOp(0606, "TRNN", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTRNN));
+  km10.defOp(0607, "TLNN", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLNN));
+  km10.defOp(0610, "TRZ",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTRZ));
+  km10.defOp(0611, "TLZ",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLZ));
+  km10.defOp(0612, "TRZE", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTRZE));
+  km10.defOp(0613, "TLZE", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLZE));
+  km10.defOp(0614, "TRZA", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTRZA));
+  km10.defOp(0615, "TLZA", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLZA));
+  km10.defOp(0616, "TRZN", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTRZN));
+  km10.defOp(0617, "TLZN", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLZN));
+  km10.defOp(0620, "TRC",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTRC));
+  km10.defOp(0621, "TLC",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLC));
+  km10.defOp(0622, "TRCE", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTRCE));
+  km10.defOp(0623, "TLCE", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLCE));
+  km10.defOp(0624, "TRCA", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTRCA));
+  km10.defOp(0625, "TLCA", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLCA));
+  km10.defOp(0626, "TRCN", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTRCN));
+  km10.defOp(0627, "TLCN", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLCN));
+  km10.defOp(0630, "TRO",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTRO));
+  km10.defOp(0631, "TLO",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLO));
+  km10.defOp(0632, "TROE", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTROE));
+  km10.defOp(0633, "TLOE", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLOE));
+  km10.defOp(0634, "TROA", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTROA));
+  km10.defOp(0635, "TLOA", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLOA));
+  km10.defOp(0636, "TRON", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTRON));
+  km10.defOp(0637, "TLON", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLON));
+  km10.defOp(0640, "TDN",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTDN));
+  km10.defOp(0641, "TSN",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTSN));
+  km10.defOp(0642, "TDNE", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTDNE));
+  km10.defOp(0643, "TSNE", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTSNE));
+  km10.defOp(0644, "TDNA", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTDNA));
+  km10.defOp(0645, "TSNA", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTSNA));
+  km10.defOp(0646, "TDNN", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTDNN));
+  km10.defOp(0647, "TSNN", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTSNN));
+  km10.defOp(0650, "TDZ",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTDZ));
+  km10.defOp(0651, "TSZ",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTSZ));
+  km10.defOp(0652, "TDZE", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTDZE));
+  km10.defOp(0653, "TSZE", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTSZE));
+  km10.defOp(0654, "TDZA", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTDZA));
+  km10.defOp(0655, "TSZA", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTSZA));
+  km10.defOp(0656, "TDZN", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTDZN));
+  km10.defOp(0657, "TSZN", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTSZN));
+  km10.defOp(0660, "TRO",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTRO));
+  km10.defOp(0661, "TLO",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLO));
+  km10.defOp(0662, "TROE", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTROE));
+  km10.defOp(0663, "TLOE", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLOE));
+  km10.defOp(0664, "TROA", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTROA));
+  km10.defOp(0665, "TLOA", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLOA));
+  km10.defOp(0666, "TRON", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTRON));
+  km10.defOp(0667, "TLON", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLON));
+  km10.defOp(0670, "TDO",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTDO));
+  km10.defOp(0671, "TSO",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTSO));
+  km10.defOp(0672, "TDOE", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTDOE));
+  km10.defOp(0673, "TSOE", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTSOE));
+  km10.defOp(0674, "TDOA", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTDOA));
+  km10.defOp(0675, "TSOA", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTSOA));
+  km10.defOp(0676, "TDON", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTDON));
+  km10.defOp(0677, "TSON", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTSON));
 }

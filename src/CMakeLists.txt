@@ -20,8 +20,7 @@ add_executable(km10
   i-jump.cpp
   i-move.cpp
   i-muldiv.cpp
-  i-set.cpp
-  i-test.cpp
+  i-tstset.cpp
   i-uuos.cpp
   km10.cpp
 )
