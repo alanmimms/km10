@@ -14,6 +14,7 @@ add_executable(km10
   i-bitrot.cpp
   i-byte.cpp
   i-cmpand.cpp
+  i-dword.cpp
   i-half.cpp
   i-incjs.cpp
   i-intbin.cpp
