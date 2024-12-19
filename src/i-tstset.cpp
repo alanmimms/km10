@@ -539,10 +539,10 @@ void InstallTstSetGroup(KM10 &km10) {
   km10.defOp(0452, "SETCAM", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doSETCAM));
   km10.defOp(0453, "SETCAB", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doSETCAB));
 
-  km10.defOp(0464, "SETCM",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doSETCM));
-  km10.defOp(0465, "SETCMI", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doSETCMI));
-  km10.defOp(0466, "SETCMM", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doSETCMM));
-  km10.defOp(0467, "SETCMB", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doSETCMB));
+  km10.defOp(0460, "SETCM",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doSETCM));
+  km10.defOp(0461, "SETCMI", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doSETCMI));
+  km10.defOp(0462, "SETCMM", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doSETCMM));
+  km10.defOp(0463, "SETCMB", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doSETCMB));
 
   km10.defOp(0474, "SETO",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doSETO));
   km10.defOp(0475, "SETOI", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doSETOI));

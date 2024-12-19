@@ -344,33 +344,209 @@ struct IntBinGroup: KM10 {
     return iNormal;
   }
 
+
+  InstructionResult doAND() {
+    W36 a1 = memGet();
+    W36 a2 = acGet();
+    acPut(a1 & a2);
+    return iNormal;
+  }
+
+  InstructionResult doANDI() {
+    W36 a1 = immediate();
+    W36 a2 = acGet();
+    acPut(a1 & a2);
+    return iNormal;
+  }
+
+  InstructionResult doANDM() {
+    W36 a1 = memGet();
+    W36 a2 = acGet();
+    acPut(a1 & a2);
+    return iNormal;
+  }
+
+  InstructionResult doANDB() {
+    W36 a1 = memGet();
+    W36 a2 = acGet();
+    bothPut(a1 & a2);
+    return iNormal;
+  }
+
+
+  InstructionResult doANDCA() {
+    W36 a1 = memGet();
+    W36 a2 = acGet();
+    acPut(a1 & ~a2);
+    return iNormal;
+  }
+
+  InstructionResult doANDCAI() {
+    W36 a1 = immediate();
+    W36 a2 = acGet();
+    acPut(a1 & ~a2);
+    return iNormal;
+  }
+
+  InstructionResult doANDCAM() {
+    W36 a1 = memGet();
+    W36 a2 = acGet();
+    memPut(a1 & ~a2);
+    return iNormal;
+  }
+
+  InstructionResult doANDCAB() {
+    W36 a1 = memGet();
+    W36 a2 = acGet();
+    bothPut(a1 & ~a2);
+    return iNormal;
+  }
+
+
+  InstructionResult doANDCM() {
+    W36 a1 = memGet();
+    W36 a2 = acGet();
+    acPut(~a1 & a2);
+    return iNormal;
+  }
+
+  InstructionResult doANDCMI() {
+    W36 a1 = immediate();
+    W36 a2 = acGet();
+    acPut(~a1 & a2);
+    return iNormal;
+  }
+
+  InstructionResult doANDCMM() {
+    W36 a1 = memGet();
+    W36 a2 = acGet();
+    memPut(~a1 & a2);
+    return iNormal;
+  }
+
+  InstructionResult doANDCMB() {
+    W36 a1 = memGet();
+    W36 a2 = acGet();
+    bothPut(~a1 & ~a2);
+    return iNormal;
+  }
+
+
+  InstructionResult doANDCB() {
+    W36 a1 = memGet();
+    W36 a2 = acGet();
+    acPut(~a1 & ~a2);
+    return iNormal;
+  }
+
+  InstructionResult doANDCBI() {
+    W36 a1 = immediate();
+    W36 a2 = acGet();
+    acPut(~a1 & ~a2);
+    return iNormal;
+  }
+
   InstructionResult doANDCBM() {
     W36 a1 = memGet();
     W36 a2 = acGet();
-    acPut(andCBWord(a1, a2));
+    memPut(~a1 & ~a2);
     return iNormal;
   }
 
-  InstructionResult doANDCBMI() {
+  InstructionResult doANDCBB() {
+    W36 a1 = memGet();
+    W36 a2 = acGet();
+    bothPut(~a1 & ~a2);
+    return iNormal;
+  }
+
+
+  InstructionResult doORCA() {
+    W36 a1 = memGet();
+    W36 a2 = acGet();
+    acPut(a1 | ~a2);
+    return iNormal;
+  }
+
+  InstructionResult doORCAI() {
     W36 a1 = immediate();
     W36 a2 = acGet();
-    acPut(andCBWord(a1, a2));
+    acPut(a1 | ~a2);
     return iNormal;
   }
 
-  InstructionResult doANDCBMM() {
+  InstructionResult doORCAM() {
     W36 a1 = memGet();
     W36 a2 = acGet();
-    memPut(andCBWord(a1, a2));
+    memPut(a1 | ~a2);
     return iNormal;
   }
 
-  InstructionResult doANDCBMB() {
+  InstructionResult doORCAB() {
     W36 a1 = memGet();
     W36 a2 = acGet();
-    bothPut(andCBWord(a1, a2));
+    bothPut(a1 | ~a2);
     return iNormal;
   }
+
+
+  InstructionResult doORCM() {
+    W36 a1 = memGet();
+    W36 a2 = acGet();
+    memPut(~a1 | a2);
+    return iNormal;
+  }
+
+  InstructionResult doORCMI() {
+    W36 a1 = immediate();
+    W36 a2 = acGet();
+    memPut(~a1 | a2);
+    return iNormal;
+  }
+
+  InstructionResult doORCMM() {
+    W36 a1 = memGet();
+    W36 a2 = acGet();
+    memPut(~a1 | a2);
+    return iNormal;
+  }
+
+  InstructionResult doORCMB() {
+    W36 a1 = memGet();
+    W36 a2 = acGet();
+    bothPut(~a1 | a2);
+    return iNormal;
+  }
+
+
+  InstructionResult doORCB() {
+    W36 a1 = memGet();
+    W36 a2 = acGet();
+    memPut(~a1 | ~a2);
+    return iNormal;
+  }
+
+  InstructionResult doORCBI() {
+    W36 a1 = immediate();
+    W36 a2 = acGet();
+    memPut(~a1 | ~a2);
+    return iNormal;
+  }
+
+  InstructionResult doORCBM() {
+    W36 a1 = memGet();
+    W36 a2 = acGet();
+    memPut(~a1 | ~a2);
+    return iNormal;
+  }
+
+  InstructionResult doORCBB() {
+    W36 a1 = memGet();
+    W36 a2 = acGet();
+    bothPut(~a1 | ~a2);
+    return iNormal;
+  }
+
 
   InstructionResult doEQV() {
     W36 a1 = memGet();
@@ -624,6 +800,20 @@ void InstallIntBinGroup(KM10 &km10) {
   km10.defOp(0276, "SUBM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doSUBM));
   km10.defOp(0277, "SUBB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doSUBB));
 
+  km10.defOp(0404, "AND",    static_cast<KM10::OpcodeHandler>(&IntBinGroup::doAND));
+  km10.defOp(0405, "ANDI",   static_cast<KM10::OpcodeHandler>(&IntBinGroup::doANDI));
+  km10.defOp(0406, "ANDM",   static_cast<KM10::OpcodeHandler>(&IntBinGroup::doANDM));
+  km10.defOp(0407, "ANDB",   static_cast<KM10::OpcodeHandler>(&IntBinGroup::doANDB));
+  km10.defOp(0410, "ANDCA",  static_cast<KM10::OpcodeHandler>(&IntBinGroup::doANDCA));
+  km10.defOp(0411, "ANDCAI", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doANDCAI));
+  km10.defOp(0412, "ANDCAM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doANDCAM));
+  km10.defOp(0413, "ANDCAB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doANDCAB));
+
+  km10.defOp(0420, "ANDCM",  static_cast<KM10::OpcodeHandler>(&IntBinGroup::doANDCM));
+  km10.defOp(0421, "ANDCMI", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doANDCMI));
+  km10.defOp(0422, "ANDCMM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doANDCMM));
+  km10.defOp(0423, "ANDCMB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doANDCMB));
+
   km10.defOp(0430, "XOR", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doXOR));
   km10.defOp(0431, "XORI", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doXORI));
   km10.defOp(0432, "XORM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doXORM));
@@ -632,12 +822,27 @@ void InstallIntBinGroup(KM10 &km10) {
   km10.defOp(0435, "IORI", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doIORI));
   km10.defOp(0436, "IORM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doIORM));
   km10.defOp(0437, "IORB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doIORB));
-  km10.defOp(0440, "ANDCBM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doANDCBM));
-  km10.defOp(0441, "ANDCBMI", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doANDCBMI));
-  km10.defOp(0442, "ANDCBMM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doANDCBMM));
-  km10.defOp(0443, "ANDCBMB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doANDCBMB));
+  km10.defOp(0440, "ANDCB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doANDCB));
+  km10.defOp(0441, "ANDCBI", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doANDCBI));
+  km10.defOp(0442, "ANDCBM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doANDCBM));
+  km10.defOp(0443, "ANDCBB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doANDCBB));
   km10.defOp(0444, "EQV", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doEQV));
   km10.defOp(0445, "EQVI", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doEQVI));
   km10.defOp(0446, "EQVM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doEQVM));
   km10.defOp(0447, "EQVB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doEQVB));
+
+  km10.defOp(0454, "ORCA", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doORCA));
+  km10.defOp(0455, "ORCAI", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doORCAI));
+  km10.defOp(0456, "ORCAM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doORCAM));
+  km10.defOp(0457, "ORCAB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doORCAB));
+
+  km10.defOp(0464, "ORCM",  static_cast<KM10::OpcodeHandler>(&IntBinGroup::doORCM));
+  km10.defOp(0465, "ORCMI", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doORCMI));
+  km10.defOp(0466, "ORCMM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doORCMM));
+  km10.defOp(0467, "ORCMB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doORCMB));
+
+  km10.defOp(0470, "ORCB",  static_cast<KM10::OpcodeHandler>(&IntBinGroup::doORCB));
+  km10.defOp(0471, "ORCBI", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doORCBI));
+  km10.defOp(0472, "ORCBM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doORCBM));
+  km10.defOp(0473, "ORCBB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doORCBB));
 }
