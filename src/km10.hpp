@@ -105,7 +105,6 @@ public:
   // methods.
   array<OpcodeHandler, 512> ops;
 
-
   // Constructor and destructor
   KM10(unsigned nMemoryWords, BreakpointTable &aBPs, BreakpointTable &eBPs);
 

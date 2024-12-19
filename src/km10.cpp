@@ -419,115 +419,6 @@ void KM10::logFlow(const char *msg) {
 }
 
 
-InstructionResult KM10::doASH() {
-  int n = ea.rhs % 36;
-  W36 a(acGet());
-  auto aSigned{a.ext64()};
-
-  W36 lostBits;
-
-  if (n > 0) {
-    lostBits.u = a.u & ((1ull << n) - 1);
-    a.s = aSigned >> n;
-  } else if (n < 0) {
-    n = -n;
-    lostBits.u = a.u & (W36::all1s >> n);
-    a.s = aSigned << n;
-  }
-
-  // Set flags. XXX not sure if these should be set for negative
-  // shift count. 1982_ProcRefMan.pdf p.97 is not clear.
-  if ((a.ext64() > 0 && lostBits.u != 0) || (a.ext64() < 0 && lostBits.u == 0))
-    flags.tr1 = flags.ov = 1;
-
-  // Restore sign bit from before shift.
-  a.u = (aSigned & W36::bit0) | (a.u & ~W36::bit0);
-  acPut(a);
-  return iNormal;
-}
-
-InstructionResult KM10::doROT() {
-  int n = ea.rhs % 36;
-  W36 a(acGet());
-  W36 prev(a);
-
-  if (n > 0) {
-    a.u <<= n;
-    a.u |= prev >> (36 - n);
-  } else if (n < 0) {
-    n = -n;
-    a.u >>= n;
-    a.u |= (prev << (36 - n)) & W36::all1s;
-  }
-
-  acPut(a);
-  return iNormal;
-}
-
-InstructionResult KM10::doLSH() {
-  int n = ea.rhs % 36;
-  W36 a(acGet());
-
-  if (n > 0)
-    a.u <<= n;
-  else if (n < 0)
-    a.u >>= -n;
-
-  acPut(a);
-  return iNormal;
-}
-
-InstructionResult KM10::doJFFO() {
-  W36 tmp = acGet();
-
-  if (tmp.ext64() != 0) {
-    unsigned count = 0;
-
-    while (tmp.ext64() >= 0) {
-      ++count;
-      tmp.u <<= 1;
-    }
-
-    tmp.u = count;
-  }
-
-  acPutN(tmp, iw.ac+1);
-  return iNormal;
-}
-
-InstructionResult KM10::doROTC() {
-  int n = ea.rhs % 72;
-  uint128_t a = ((uint128_t) acGetN(iw.ac+0) << 36) | acGetN(iw.ac+1);
-
-  if (n > 0) {
-    uint128_t newLSBs = a >> (72-n);
-    a <<= n;
-    a |= newLSBs;
-  } else if (n < 0) {
-    n = -n;
-    uint128_t newMSBs = a << (72-n);
-    a >>= n;
-    a |= newMSBs;
-  }
-
-  acPutN((a >> 36) & W36::all1s, iw.ac+0);
-  acPutN(a & W36::all1s, iw.ac+1);
-  return iNormal;
-}
-
-InstructionResult KM10::doLSHC() {
-  W72 a(acGet(), acGetN(iw.ac+1));
-
-  if (ea.rhs > 0)
-    a.u <<= ea.rhs & 0377;
-  else if (ea.rhs < 0)
-    a.u >>= -(ea.rhs & 0377);
-
-  acPutN(a.hi, iw.ac+0);
-  acPutN(a.lo, iw.ac+1);
-  return iNormal;
-}
-
 InstructionResult KM10::doEXCH() {
   W36 tmp = acGet();
   acPut(memGet());
@@ -1281,7 +1172,7 @@ InstructionResult KM10::doBLT() {
     app.option_defaults()->always_capture_default();
 
     bool dVal{true};
-    app.add_option("-d,--debug", dVal, "run the built-in debugger instead of starting execution");
+    //    app.add_option("-d,--debug", dVal, "run the built-in debugger instead of starting execution");
 
     unsigned mVal{4096};
     app.add_option("-m", mVal, "Size (in Kwords) of KM10 main memory")
@@ -1328,6 +1219,21 @@ InstructionResult KM10::doBLT() {
 
     if (rVal != "none") {
       km10.debugger.loadREL(rVal.c_str());
+    }
+
+    if (dVal) {
+      ofstream log;
+
+      log.open("ops-null.log");
+
+      for (size_t k=0; k < km10.ops.size(); ++k) {
+
+	if (km10.ops[k] == nullptr) {
+	  log << "ops NULL: " << oct << setw(4) << setfill('0') << k << endl;
+	}
+      }
+
+      cout << "[logged nullptr ops to ops-null.log]" << endl;
     }
 
     km10.running = !dVal;

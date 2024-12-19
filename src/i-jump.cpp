@@ -174,31 +174,6 @@ struct JumpGroup: KM10 {
     return iNormal;
   }
 
-  InstructionResult doAOBJP() {
-    W36 tmp = acGet();
-    tmp = W36(tmp.lhu + 1, tmp.rhu + 1);
-    acPut(tmp);
-
-    if (tmp.ext64() >= 0) {
-      logFlow("jump");
-      return iJump;
-    }
-
-    return iNormal;
-  }
-
-  InstructionResult doAOBJN() {
-    W36 tmp = acGet();
-    tmp = W36(tmp.lhu + 1, tmp.rhu + 1);
-    acPut(tmp);
-
-    if (tmp.ext64() < 0) {
-      logFlow("jump");
-      return iJump;
-    }
-
-    return iNormal;
-  }
 
   void doPush(W36 v, W36 acN) {
     W36 ac = acGetN(acN);
@@ -237,15 +212,6 @@ struct JumpGroup: KM10 {
   }
 
 
-  InstructionResult doPUSHJ() {
-    // Note this sets the flags that are cleared by PUSHJ before
-    // doPush() since doPush() can set flags.tr2.
-    flags.fpd = flags.afi = flags.tr1 = flags.tr2 = 0;
-    doPush(pc.isSection0() ? flagsWord(pc.rhu + 1) : W36(pc.vma + 1), iw.ac);
-    if (inInterrupt) flags.usr = flags.pub = 0;
-    return iJump;
-  }
-
   InstructionResult doAOBJP() {
     W36 tmp = acGet();
     tmp = W36(tmp.lhu + 1, tmp.rhu + 1);
@@ -271,22 +237,42 @@ struct JumpGroup: KM10 {
   }
 
 
-/usr/bin/ld: CMakeFiles/km10.dir/i-jump.cpp.o: in function `JumpGroup::doPUSHJ()':
-/home/alan/dec20/km10/src/i-jump.cpp:104: undefined reference to `KM10::doPush(W36, W36)'
-/usr/bin/ld: CMakeFiles/km10.dir/i-jump.cpp.o: in function `JumpGroup::doPUSH()':
-/home/alan/dec20/km10/src/i-jump.cpp:111: undefined reference to `KM10::doPush(W36, W36)'
-/usr/bin/ld: CMakeFiles/km10.dir/i-jump.cpp.o: in function `JumpGroup::doPOP()':
-/home/alan/dec20/km10/src/i-jump.cpp:116: undefined reference to `KM10::doPop(unsigned int)'
-/usr/bin/ld: CMakeFiles/km10.dir/i-jump.cpp.o: in function `JumpGroup::doPOPJ()':
-/home/alan/dec20/km10/src/i-jump.cpp:121: undefined reference to `KM10::doPop(unsigned int)'
-/usr/bin/ld: CMakeFiles/km10.dir/i-jump.cpp.o: in function `JumpGroup::doAOBJP()':
-/home/alan/dec20/km10/src/i-jump.cpp:179: undefined reference to `KM10::logFlow(char const*)'
-/usr/bin/ld: CMakeFiles/km10.dir/i-jump.cpp.o: in function `JumpGroup::doAOBJN()':
+  InstructionResult doADJSP() {
+    W36 a = acGet();
 
+    if (pc.isSection0() || a.lhs < 0) {
+      int32_t previousLH = a.lhs;
+
+      a.lhs += ea.rhs;
+      a.rhs += ea.rhs;
+      acPut(a);
+
+      if (ea.rhs < 0) {
+
+	if (previousLH >= 0 && a.lhs < 0) {
+	  flags.tr2 = 1;
+	  return iTrap;
+	}
+      } else if (ea.rhs > 0) {
+
+	if (previousLH < 0 && a.lhs >= 0) {
+	  flags.tr2 = 1;
+	  return iTrap;
+	}
+      }
+    } else if (!pc.isSection0() && (a.lhu & W36::bit0) == 0 && a.extract(6, 17) != 0) {
+      a.s += ea.rhs;
+      acPut(a);
+    }
+
+    return iNormal;
+  }
 };
 
 
 void InstallJumpGroup(KM10 &km10) {
+  km10.defOp(0105, "ADJSP",  static_cast<KM10::OpcodeHandler>(&JumpGroup::doADJSP));
+
   km10.defOp(0252, "AOBJP",  static_cast<KM10::OpcodeHandler>(&JumpGroup::doAOBJP));
   km10.defOp(0253, "AOBJN",  static_cast<KM10::OpcodeHandler>(&JumpGroup::doAOBJN));
   km10.defOp(0254, "JRST",   static_cast<KM10::OpcodeHandler>(&JumpGroup::doJRST));

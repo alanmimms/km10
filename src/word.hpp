@@ -139,7 +139,14 @@ struct W36 {
     W36 w(aMag & magMask);
     w.sign = aSign;
     return w;
-  }    
+  }
+
+  // Extract a bitfield using the awful PDP10 bit numbering.
+  inline uint64_t extract(int startBit, int endBit) {
+    const int width = endBit - startBit + 1;
+    const uint64_t mask = (1ull << width) - 1;
+    return (u >> (35 - endBit)) & mask;
+  }
 
 
   // Return mask for PDP10 bit number `n`.

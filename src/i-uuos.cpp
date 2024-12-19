@@ -70,6 +70,15 @@ void InstallUUOsGroup(KM10 &km10) {
   km10.defOp(0000, "ILLEGAL", static_cast<KM10::OpcodeHandler>(&UUOsGroup::doILLEGAL));
 
   // Install LUUOs and MUUOs
-  for(unsigned op=0001; op < 0037; ++op) km10.defOp(op, "LUUO", static_cast<KM10::OpcodeHandler>(&UUOsGroup::doLUUO));
-  for(unsigned op=0040; op < 0101; ++op) km10.defOp(op, "MUUO", static_cast<KM10::OpcodeHandler>(&UUOsGroup::doMUUO));
+  for(unsigned op=0001; op <= 0037; ++op) {
+    km10.defOp(op, "LUUO", static_cast<KM10::OpcodeHandler>(&UUOsGroup::doLUUO));
+  }
+  
+  for(unsigned op=0040; op <= 0101; ++op) {
+    km10.defOp(op, "MUUO", static_cast<KM10::OpcodeHandler>(&UUOsGroup::doMUUO));
+  }
+
+  km10.defOp(0247, "MUUO", static_cast<KM10::OpcodeHandler>(&UUOsGroup::doMUUO));
+
+  km10.defOp(0104, "JSYS", static_cast<KM10::OpcodeHandler>(&UUOsGroup::doJSYS));
 }

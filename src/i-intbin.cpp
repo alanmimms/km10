@@ -399,50 +399,245 @@ struct IntBinGroup: KM10 {
     bothPut(eqvWord(a1, a2));
     return iNormal;
   }
+
+  InstructionResult doASH() {
+    int n = ea.rhs % 36;
+    W36 a(acGet());
+    auto aSigned{a.ext64()};
+
+    W36 lostBits;
+
+    if (n > 0) {
+      lostBits.u = a.u & ((1ull << n) - 1);
+      a.s = aSigned >> n;
+    } else if (n < 0) {
+      n = -n;
+      lostBits.u = a.u & (W36::all1s >> n);
+      a.s = aSigned << n;
+    }
+
+    // Set flags. XXX not sure if these should be set for negative
+    // shift count. 1982_ProcRefMan.pdf p.97 is not clear.
+    if ((a.ext64() > 0 && lostBits.u != 0) || (a.ext64() < 0 && lostBits.u == 0))
+      flags.tr1 = flags.ov = 1;
+
+    // Restore sign bit from before shift.
+    a.u = (aSigned & W36::bit0) | (a.u & ~W36::bit0);
+    acPut(a);
+    return iNormal;
+  }
+
+
+  InstructionResult doASHC() {
+    W36 a0 = acGetN(iw.ac+0);
+    W36 a1 = acGetN(iw.ac+1);
+    int n = ea.rhs % 72;
+    const bool isNeg = a0.s < 0;
+    const uint64_t low35 = (1ull << 35) - 1;
+    int128_t w70 = (int128_t) a0.s << 35 | (a1.s & low35);
+
+    if (n > 0) {
+      w70 <<= n;
+    } else if (n < 0) {
+      n = -n;
+
+      // Mask of bits we're shifting away into oblivion.
+      uint128_t lostMask = (((uint128_t) 1) << n) - 1;
+
+      if (isNeg) {
+	// If negative and we're losing some 0 bits set TR1 and OV.
+	if ((w70 & lostMask) != lostMask) flags.tr1 = flags.ov = 1;
+      } else {
+	// If positive and we're losing some 1 bits set TR1 and OV.
+	if ((w70 & lostMask) != 0) flags.tr1 = flags.ov = 1;
+      }
+
+      w70 >>= n;
+    }
+
+    W72 a{(uint64_t) (w70 >> 35), (uint64_t) (w70 & low35), isNeg};
+
+    if (n != 0) {
+      acPutN(a.hi, iw.ac+0);
+      acPutN(a.lo, iw.ac+1);
+    }
+
+    return iNormal;
+  }
+
+
+  InstructionResult doROT() {
+    int n = ea.rhs % 36;
+    W36 a(acGet());
+    W36 prev(a);
+
+    if (n > 0) {
+      a.u <<= n;
+      a.u |= prev >> (36 - n);
+    } else if (n < 0) {
+      n = -n;
+      a.u >>= n;
+      a.u |= (prev << (36 - n)) & W36::all1s;
+    }
+
+    acPut(a);
+    return iNormal;
+  }
+
+
+  InstructionResult doLSH() {
+    int n = ea.rhs % 36;
+    W36 a(acGet());
+
+    if (n > 0)
+      a.u <<= n;
+    else if (n < 0)
+      a.u >>= -n;
+
+    acPut(a);
+    return iNormal;
+  }
+
+  InstructionResult doJFFO() {
+    W36 tmp = acGet();
+
+    if (tmp.s != 0) {
+      unsigned count = 0;
+
+      while (tmp.s > 0) {
+	++count;
+	tmp.u <<= 1;
+      }
+
+      tmp.u = count;
+    }
+
+    acPutN(tmp, iw.ac+1);
+    return tmp.u != 0 ? iJump : iNormal;
+  }
+
+  InstructionResult doROTC() {
+    int n = ea.rhs % 72;
+    uint128_t a = ((uint128_t) acGetN(iw.ac+0) << 36) | acGetN(iw.ac+1);
+
+    if (n > 0) {
+      uint128_t newLSBs = a >> (72-n);
+      a <<= n;
+      a |= newLSBs;
+    } else if (n < 0) {
+      n = -n;
+      uint128_t newMSBs = a << (72-n);
+      a >>= n;
+      a |= newMSBs;
+    }
+
+    acPutN((a >> 36) & W36::all1s, iw.ac+0);
+    acPutN(a & W36::all1s, iw.ac+1);
+    return iNormal;
+  }
+
+  InstructionResult doLSHC() {
+    W72 a(acGet(), acGetN(iw.ac+1));
+
+    if (ea.rhs > 0)
+      a.u <<= ea.rhs & 0377;
+    else if (ea.rhs < 0)
+      a.u >>= -(ea.rhs & 0377);
+
+    acPutN(a.hi, iw.ac+0);
+    acPutN(a.lo, iw.ac+1);
+    return iNormal;
+  }
+
+  InstructionResult doEXCH() {
+    W36 a = acGet();
+    acPut(memGet());
+    memPut(a);
+    return iNormal;
+  }
+
+  InstructionResult doBLT() {
+    W36 a(acGet());
+    bool mem = logger.mem;
+
+    logger.mem = false;
+    const string prefix{logger.endl + "                                                 ; "};
+
+    do {
+      W36 srcA(ea.lhu, a.lhu);
+      W36 dstA(ea.lhu, a.rhu);
+
+      if (logger.mem) logger.s << prefix << "BLT src=" << srcA.vma << "  dst=" << dstA.vma;
+
+      // Note this isn't bug-for-bug compatible with KL10. See
+      // footnote [2] in 1982_ProcRefMan.pdf p.58. We do
+      // wraparound.
+      memPutN(memGetN(srcA), dstA);
+      a = W36(a.lhu + 1, a.rhu + 1);
+
+      // Put it back for traps or page faults.
+      acPut(a);
+    } while (a.rhu <= ea.rhu);
+
+    if (logger.mem) logger.s << prefix << "BLT at end ac=" << a.fmt36();
+    logger.mem = mem;
+    return iNormal;
+  }
 };
 
 
 void InstallIntBinGroup(KM10 &km10) {
-  km10.defOp(220, "IMUL", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doIMUL));
-  km10.defOp(221, "IMULI", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doIMULI));
-  km10.defOp(222, "IMULM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doIMULM));
-  km10.defOp(223, "IMULB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doIMULB));
-  km10.defOp(224, "MUL", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doMUL));
-  km10.defOp(225, "MULI", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doMULI));
-  km10.defOp(226, "MULM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doMULM));
-  km10.defOp(227, "MULB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doMULB));
-  km10.defOp(230, "IDIV", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doIDIV));
-  km10.defOp(231, "IDIVI", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doIDIVI));
-  km10.defOp(232, "IDIVM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doIDIVM));
-  km10.defOp(233, "IDIVB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doIDIVB));
-  km10.defOp(234, "DIV", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doDIV));
-  km10.defOp(235, "DIVI", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doDIVI));
-  km10.defOp(236, "DIVM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doDIVM));
-  km10.defOp(237, "DIVB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doDIVB));
+  km10.defOp(0220, "IMUL", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doIMUL));
+  km10.defOp(0221, "IMULI", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doIMULI));
+  km10.defOp(0222, "IMULM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doIMULM));
+  km10.defOp(0223, "IMULB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doIMULB));
+  km10.defOp(0224, "MUL", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doMUL));
+  km10.defOp(0225, "MULI", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doMULI));
+  km10.defOp(0226, "MULM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doMULM));
+  km10.defOp(0227, "MULB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doMULB));
+  km10.defOp(0230, "IDIV", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doIDIV));
+  km10.defOp(0231, "IDIVI", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doIDIVI));
+  km10.defOp(0232, "IDIVM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doIDIVM));
+  km10.defOp(0233, "IDIVB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doIDIVB));
+  km10.defOp(0234, "DIV", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doDIV));
+  km10.defOp(0235, "DIVI", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doDIVI));
+  km10.defOp(0236, "DIVM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doDIVM));
+  km10.defOp(0237, "DIVB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doDIVB));
 
-  km10.defOp(270, "ADD", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doADD));
-  km10.defOp(271, "ADDI", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doADDI));
-  km10.defOp(272, "ADDM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doADDM));
-  km10.defOp(273, "ADDB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doADDB));
-  km10.defOp(274, "SUB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doSUB));
-  km10.defOp(275, "SUBI", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doSUBI));
-  km10.defOp(276, "SUBM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doSUBM));
-  km10.defOp(277, "SUBB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doSUBB));
+  km10.defOp(0240, "ASH", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doASH));
+  km10.defOp(0241, "ROT", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doROT));
+  km10.defOp(0242, "LSH", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doLSH));
+  km10.defOp(0243, "JFFO", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doJFFO));
+  km10.defOp(0244, "ASHC", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doASHC));
+  km10.defOp(0245, "ROTC", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doROTC));
+  km10.defOp(0246, "LSHC", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doLSHC));
 
-  km10.defOp(430, "XOR", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doXOR));
-  km10.defOp(431, "XORI", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doXORI));
-  km10.defOp(432, "XORM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doXORM));
-  km10.defOp(433, "XORB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doXORB));
-  km10.defOp(434, "IOR", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doIOR));
-  km10.defOp(435, "IORI", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doIORI));
-  km10.defOp(436, "IORM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doIORM));
-  km10.defOp(437, "IORB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doIORB));
-  km10.defOp(440, "ANDCBM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doANDCBM));
-  km10.defOp(441, "ANDCBMI", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doANDCBMI));
-  km10.defOp(442, "ANDCBMM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doANDCBMM));
-  km10.defOp(443, "ANDCBMB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doANDCBMB));
-  km10.defOp(444, "EQV", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doEQV));
-  km10.defOp(445, "EQVI", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doEQVI));
-  km10.defOp(446, "EQVM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doEQVM));
-  km10.defOp(447, "EQVB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doEQVB));
+  km10.defOp(0250, "EXCH", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doEXCH));
+  km10.defOp(0251, "LSHC", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doBLT));
+
+  km10.defOp(0270, "ADD", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doADD));
+  km10.defOp(0271, "ADDI", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doADDI));
+  km10.defOp(0272, "ADDM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doADDM));
+  km10.defOp(0273, "ADDB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doADDB));
+  km10.defOp(0274, "SUB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doSUB));
+  km10.defOp(0275, "SUBI", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doSUBI));
+  km10.defOp(0276, "SUBM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doSUBM));
+  km10.defOp(0277, "SUBB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doSUBB));
+
+  km10.defOp(0430, "XOR", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doXOR));
+  km10.defOp(0431, "XORI", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doXORI));
+  km10.defOp(0432, "XORM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doXORM));
+  km10.defOp(0433, "XORB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doXORB));
+  km10.defOp(0434, "IOR", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doIOR));
+  km10.defOp(0435, "IORI", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doIORI));
+  km10.defOp(0436, "IORM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doIORM));
+  km10.defOp(0437, "IORB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doIORB));
+  km10.defOp(0440, "ANDCBM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doANDCBM));
+  km10.defOp(0441, "ANDCBMI", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doANDCBMI));
+  km10.defOp(0442, "ANDCBMM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doANDCBMM));
+  km10.defOp(0443, "ANDCBMB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doANDCBMB));
+  km10.defOp(0444, "EQV", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doEQV));
+  km10.defOp(0445, "EQVI", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doEQVI));
+  km10.defOp(0446, "EQVM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doEQVM));
+  km10.defOp(0447, "EQVB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doEQVB));
 }
