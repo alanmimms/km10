@@ -7,21 +7,7 @@ struct IntBinGroup: KM10 {
     memPut(v);
   }
 
-
-  W36 andWord(W36 s1, W36 s2) {return s1.u & s2.u;}
-  W36 andCWord(W36 s1, W36 s2) {return s1.u & ~s2.u;}
-  W36 andCBWord(W36 s1, W36 s2) {return ~s1.u & ~s2.u;}
-  W36 iorWord(W36 s1, W36 s2) {return s1.u | s2.u;}
-  W36 iorCWord(W36 s1, W36 s2) {return s1.u | ~s2.u;}
-  W36 iorCBWord(W36 s1, W36 s2) {return ~s1.u | ~s2.u;}
-  W36 xorWord(W36 s1, W36 s2) {return s1.u ^ s2.u;}
-  W36 xorCWord(W36 s1, W36 s2) {return s1.u ^ ~s2.u;}
-  W36 xorCBWord(W36 s1, W36 s2) {return ~s1.u ^ ~s2.u;}
-  W36 eqvWord(W36 s1, W36 s2) {return ~(s1.u ^ s2.u);}
-  W36 eqvCWord(W36 s1, W36 s2) {return ~(s1.u ^ ~s2.u);}
-  W36 eqvCBWord(W36 s1, W36 s2) {return ~(~s1.u ^ ~s2.u);}
-
-  
+  // XXX this needs to be refactored so it can return iSkip vs iNormal.
   W36 addWord(W36 s1, W36 s2) {
     int64_t sum = s1.ext64() + s2.ext64();
 
@@ -291,56 +277,56 @@ struct IntBinGroup: KM10 {
   InstructionResult doXOR() {
     W36 a1 = memGet();
     W36 a2 = acGet();
-    acPut(xorWord(a1, a2));
+    acPut(a1.u ^ a2.u);
     return iNormal;
   }
 
   InstructionResult doXORI() {
     W36 a1 = immediate();
     W36 a2 = acGet();
-    acPut(xorWord(a1, a2));
+    acPut(a1.u & a2.u);
     return iNormal;
   }
 
   InstructionResult doXORM() {
     W36 a1 = memGet();
     W36 a2 = acGet();
-    memPut(xorWord(a1, a2));
+    memPut(a1.u ^ a2.u);
     return iNormal;
   }
 
   InstructionResult doXORB() {
     W36 a1 = memGet();
     W36 a2 = acGet();
-    bothPut(xorWord(a1, a2));
+    bothPut(a1.u ^ a2.u);
     return iNormal;
   }
 
   InstructionResult doIOR() {
     W36 a1 = memGet();
     W36 a2 = acGet();
-    acPut(iorWord(a1, a2));
+    acPut(a1.u | a2.u);
     return iNormal;
   }
 
   InstructionResult doIORI() {
     W36 a1 = immediate();
     W36 a2 = acGet();
-    acPut(iorWord(a1, a2));
+    acPut(a1.u | a2.u);
     return iNormal;
   }
 
   InstructionResult doIORM() {
     W36 a1 = memGet();
     W36 a2 = acGet();
-    memPut(iorWord(a1, a2));
+    memPut(a1.u | a2.u);
     return iNormal;
   }
 
   InstructionResult doIORB() {
     W36 a1 = memGet();
     W36 a2 = acGet();
-    bothPut(iorWord(a1, a2));
+    bothPut(a1.u | a2.u);
     return iNormal;
   }
 
@@ -362,7 +348,7 @@ struct IntBinGroup: KM10 {
   InstructionResult doANDM() {
     W36 a1 = memGet();
     W36 a2 = acGet();
-    acPut(a1 & a2);
+    memPut(a1 & a2);
     return iNormal;
   }
 
@@ -493,14 +479,14 @@ struct IntBinGroup: KM10 {
   InstructionResult doORCM() {
     W36 a1 = memGet();
     W36 a2 = acGet();
-    memPut(~a1 | a2);
+    acPut(~a1 | a2);
     return iNormal;
   }
 
   InstructionResult doORCMI() {
     W36 a1 = immediate();
     W36 a2 = acGet();
-    memPut(~a1 | a2);
+    acPut(~a1 | a2);
     return iNormal;
   }
 
@@ -522,14 +508,14 @@ struct IntBinGroup: KM10 {
   InstructionResult doORCB() {
     W36 a1 = memGet();
     W36 a2 = acGet();
-    memPut(~a1 | ~a2);
+    acPut(~a1 | ~a2);
     return iNormal;
   }
 
   InstructionResult doORCBI() {
     W36 a1 = immediate();
     W36 a2 = acGet();
-    memPut(~a1 | ~a2);
+    acPut(~a1 | ~a2);
     return iNormal;
   }
 
@@ -547,32 +533,31 @@ struct IntBinGroup: KM10 {
     return iNormal;
   }
 
-
   InstructionResult doEQV() {
     W36 a1 = memGet();
     W36 a2 = acGet();
-    acPut(eqvWord(a1, a2));
+    acPut(~(a1.u ^ a2.u));
     return iNormal;
   }
 
   InstructionResult doEQVI() {
     W36 a1 = immediate();
     W36 a2 = acGet();
-    acPut(eqvWord(a1, a2));
+    acPut(~(a1.u ^ a2.u));
     return iNormal;
   }
 
   InstructionResult doEQVM() {
     W36 a1 = memGet();
     W36 a2 = acGet();
-    memPut(eqvWord(a1, a2));
+    memPut(~(a1.u ^ a2.u));
     return iNormal;
   }
 
   InstructionResult doEQVB() {
     W36 a1 = memGet();
     W36 a2 = acGet();
-    bothPut(eqvWord(a1, a2));
+    bothPut(~(a1.u ^ a2.u));
     return iNormal;
   }
 
@@ -822,6 +807,7 @@ void InstallIntBinGroup(KM10 &km10) {
   km10.defOp(0435, "IORI", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doIORI));
   km10.defOp(0436, "IORM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doIORM));
   km10.defOp(0437, "IORB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doIORB));
+
   km10.defOp(0440, "ANDCB", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doANDCB));
   km10.defOp(0441, "ANDCBI", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doANDCBI));
   km10.defOp(0442, "ANDCBM", static_cast<KM10::OpcodeHandler>(&IntBinGroup::doANDCBM));

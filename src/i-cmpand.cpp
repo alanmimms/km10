@@ -1,23 +1,23 @@
 #include "km10.hpp"
 
 struct CmpAndGroup: KM10 {
-  InstructionResult doCAI() { return iNormal; }
-  InstructionResult doCAIL() { return acGet().s < immediate().s ? iSkip : iNormal; }
-  InstructionResult doCAIE() { return acGet().s == immediate().s ? iSkip : iNormal; }
+  InstructionResult doCAI()   { (void) acGet(); return iNormal; }
+  InstructionResult doCAIL()  { return acGet().s  < immediate().s ? iSkip : iNormal; }
+  InstructionResult doCAIE()  { return acGet().s == immediate().s ? iSkip : iNormal; }
   InstructionResult doCAILE() { return acGet().s <= immediate().s ? iSkip : iNormal; }
-  InstructionResult doCAIA() { return iSkip; }
-
+  InstructionResult doCAIA()  { (void) acGet(); return iSkip; }
   InstructionResult doCAIGE() { return acGet().s >= immediate().s ? iSkip : iNormal; }
-  InstructionResult doCAIN() { return acGet().s != immediate().s ? iSkip : iNormal; }
-  InstructionResult doCAIG() { return acGet().s > immediate().s ? iSkip : iNormal; }
-  InstructionResult doCAM() { return iNormal; }
-  InstructionResult doCAML() { return acGet().s < memGet().s ? iSkip : iNormal; }
-  InstructionResult doCAME() { return acGet().s == memGet().s ? iSkip : iNormal; }
+  InstructionResult doCAIN()  { return acGet().s != immediate().s ? iSkip : iNormal; }
+  InstructionResult doCAIG()  { return acGet().s  > immediate().s ? iSkip : iNormal; }
+
+  InstructionResult doCAM()   { (void) acGet(); (void) memGet(); return iNormal; }
+  InstructionResult doCAML()  { return acGet().s  < memGet().s ? iSkip : iNormal; }
+  InstructionResult doCAME()  { return acGet().s == memGet().s ? iSkip : iNormal; }
   InstructionResult doCAMLE() { return acGet().s <= memGet().s ? iSkip : iNormal; }
-  InstructionResult doCAMA() { (void) memGet(); return iSkip; }
+  InstructionResult doCAMA()  { (void) acGet(); (void) memGet(); return iSkip; }
   InstructionResult doCAMGE() { return acGet().s >= memGet().s ? iSkip : iNormal; }
-  InstructionResult doCAMN() { return acGet().s != memGet().s ? iSkip : iNormal; }
-  InstructionResult doCAMG() { return acGet().s > memGet().s ? iSkip : iNormal; }
+  InstructionResult doCAMN()  { return acGet().s != memGet().s ? iSkip : iNormal; }
+  InstructionResult doCAMG()  { return acGet().s  > memGet().s ? iSkip : iNormal; }
 };
 
 

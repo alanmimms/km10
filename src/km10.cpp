@@ -27,7 +27,8 @@ Logger logger{};
 
 // We keep these breakpoint sets outside of the looped main and not
 // part of KM10 or Debugger object so they stick across restart.
-static KM10::BreakpointTable aBPs;
+static KM10::BreakpointTable aGBPs;
+static KM10::BreakpointTable aPBPs;
 static KM10::BreakpointTable eBPs;
 
 
@@ -49,7 +50,10 @@ extern void InstallUUOsGroup(KM10 &km10);
 
 ////////////////////////////////////////////////////////////////
 // Constructor
-KM10::KM10(unsigned nMemoryWords, KM10::BreakpointTable &aBPs, KM10::BreakpointTable &eBPs)
+KM10::KM10(unsigned nMemoryWords,
+	   KM10::BreakpointTable &aGBPs,
+	   KM10::BreakpointTable &aPBPs,
+	   KM10::BreakpointTable &eBPs)
   : apr{*this},
     cca{*this},
     mtr{*this},
@@ -72,7 +76,8 @@ KM10::KM10(unsigned nMemoryWords, KM10::BreakpointTable &aBPs, KM10::BreakpointT
     AC(ACbanks[0]),
     memorySize(nMemoryWords),
     nSteps(0),
-    addressBPs(aBPs),
+    addressGBPs(aGBPs),
+    addressPBPs(aPBPs),
     executeBPs(eBPs)
 {
   // Install each instruction group's handlers in the ops array.
@@ -254,7 +259,7 @@ void KM10::acPutN(W36 value, unsigned n) {
 W36 KM10::memGetN(W36 a) {
   W36 value = a.rhu < 020 ? acGetEA(a.rhu) : memP[a.rhu];
   if (logger.mem) logger.s << "; " << a.fmtVMA() << ":" << value.fmt36();
-  if (addressBPs.contains(a.vma)) running = false;
+  if (addressGBPs.contains(a.vma)) running = false;
   return value;
 }
 
@@ -267,7 +272,7 @@ void KM10::memPutN(W36 value, W36 a) {
     memP[a.rhu] = value;
 
   if (logger.mem) logger.s << "; " << a.fmtVMA() << "=" << value.fmt36();
-  if (addressBPs.contains(a.vma)) running = false;
+  if (addressPBPs.contains(a.vma)) running = false;
 }
 
 
@@ -678,7 +683,7 @@ static int loopedMain(int argc, char *argv[]) {
     return app.exit(e);
   }
 
-  KM10 km10(mVal*1024, aBPs, eBPs);
+  KM10 km10(mVal*1024, aGBPs, aPBPs, eBPs);
   assert(sizeof(*km10.eptP) == 512 * 8);
   assert(sizeof(*km10.uptP) == 512 * 8);
 

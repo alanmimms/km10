@@ -41,6 +41,7 @@ static void sigintHandler(int signum) {
 Debugger::DebugAction Debugger::debug() {
   string line;
   vector<string> words;
+  const string dumpPrefix{">>>>>>>>>>>>>>>>>>>"};
 
 
   auto COMMAND = [&](const char *s1, const char *s2, auto handler) {
@@ -52,7 +53,7 @@ Debugger::DebugAction Debugger::debug() {
 
 
   auto dumpAC = [&](int k) {
-    cout << ">>>"
+    cout << dumpPrefix
 	 << oct << setfill(' ') << setw(2) << k << ": "
 	 << dump(km10.AC[k], W36(k), true) << logger.endl;
   };
@@ -141,7 +142,8 @@ Debugger::DebugAction Debugger::debug() {
       action = quit;
     });
 
-    COMMAND("abp", nullptr, [&]() {handleBPCommand(km10.addressBPs);});
+    COMMAND("gbp", nullptr, [&]() {handleBPCommand(km10.addressGBPs);});
+    COMMAND("pbp", nullptr, [&]() {handleBPCommand(km10.addressPBPs);});
 
     COMMAND("ac", nullptr, [&]() {
 
@@ -150,16 +152,23 @@ Debugger::DebugAction Debugger::debug() {
 	try {
 	  int n = stoi(words[1], nullptr, 8);
 
+	  if (n > 020) {
+	    cout << "ERROR: AC number too large" << logger.endl;
+	    return;
+	  }
+
 	  if (words.size() > 2) {
 	    W36 v{stoll(words[2], nullptr, 8)};
 	    km10.acPutN(v, n);
 	  } else {
 	    dumpAC(n);
+	    cout << logger.endl << flush;
 	  }
 	} catch (exception &e) {
 	}
       } else {
 	for (int k=0; k < 020; ++k) dumpAC(k);
+	cout << logger.endl << flush;
       }
     });
 
@@ -181,10 +190,11 @@ Debugger::DebugAction Debugger::debug() {
 
 	for (int k=0; k < n; ++k) {
 	  W36 w(km10.memGetN(a));
-	  cout << prefix << a.fmtVMA() << ": " << dump(w, a, true) << logger.endl << flush;
+	  cout << dumpPrefix << a.fmtVMA() << ": " << dump(w, a, true) << logger.endl;
 	  a = a + 1;
 	}
 
+	cout << logger.endl << flush;
 	lastAddr = a;
 	prevLine = "m";
       } catch (exception &e) {
@@ -327,7 +337,9 @@ Debugger::DebugAction Debugger::debug() {
 
     COMMAND("help", "?", [&]() {
       cout << R"(
-  abp [A]       Set address breakpoint after any access to address A or list breakpoints.
+  gbp [A]       Set address breakpoint after GET access to address A or list breakpoints.
+                Use -A to remove an existing address breakpoint or 'clear' to clear all.
+  pbp [A]       Set address breakpoint after PUT access to address A or list breakpoints.
                 Use -A to remove an existing address breakpoint or 'clear' to clear all.
   ac [N [V]]    Dump all ACs or, if N specified, a single AC; if V is specified set AC's value.
   b,bp [A]      Set breakpoint before execution of address A or display list of breakpoints.
