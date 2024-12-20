@@ -616,7 +616,7 @@ void KM10::emulate() {
       // In this case, jump instructions put destination in `ea` for
       // "free".
       pcOffset = 0;
-      fetchPC = ea;
+      fetchPC = pc = ea;
       continue;
 
     case iTrap:			// Advance and THEN handle trap.
@@ -625,11 +625,14 @@ void KM10::emulate() {
 
     case iMUUO:
     case iLUUO:
-    case iXCT:
       // All of these cases require that we fetch the next instruction
       // from a specified location (contained in `fetchPC` and already
       // set) and loop back to execute that instruction WITHOUT
       // changing PC.
+      continue;
+
+    case iXCT:
+      fetchPC = ea;		// Move forward in XCT chain.
       continue;
 
     case iHALT:
@@ -648,7 +651,7 @@ void KM10::emulate() {
 
     // If we get here we just offset the PC by `pcOffset` and loop to
     // fetch next instruction.
-    pc.vma = fetchPC.vma = fetchPC.vma + pcOffset;
+    pc.vma = fetchPC.vma = pc.vma + pcOffset;
   }
 
   // Restore console to normal
