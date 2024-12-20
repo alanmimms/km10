@@ -35,6 +35,7 @@ struct JumpGroup: KM10 {
       break;
 
     case 002:					// JRSTF
+      cout << "JRSTF ea=" << ea.fmt36() << logger.endl << flush;
       restoreFlags(ea);
       return iJump;
 
@@ -127,11 +128,11 @@ struct JumpGroup: KM10 {
   }
 
   InstructionResult doJSR() {
-    W36 tmp = ea.isSection0() ? flagsWord(ea.rhu) : W36(ea.vma);
+    W36 tmp = ea.isSection0() ? flagsWord(pc.rhu) : W36(pc.vma);
     cerr << ">>>>>> JSR saved PC=" << tmp.fmt36() << "  ea=" << ea.fmt36()
 	 << logger.endl << flush;
     memPut(tmp);
-    ea.vma = ea.rhu + 1;
+    ++ea.rhu;			// Advance past flags word to target instruction
     flags.fpd = flags.afi = flags.tr2 = flags.tr1 = 0;
     if (inInterrupt) flags.usr = flags.pub = 0;
     return iJump;
