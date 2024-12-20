@@ -413,7 +413,7 @@ struct IntBinGroup: KM10 {
   InstructionResult doANDCMB() {
     W36 a1 = memGet();
     W36 a2 = acGet();
-    bothPut(~a1 & ~a2);
+    bothPut(~a1 & a2);
     return iNormal;
   }
 
