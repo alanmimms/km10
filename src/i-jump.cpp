@@ -176,7 +176,7 @@ struct JumpGroup: KM10 {
   }
 
   InstructionResult doJSP() {
-    W36 tmp = ea.isSection0() ? flagsWord(tmp.rhu) : W36(tmp.vma);
+    W36 tmp = ea.isSection0() ? flagsWord(pc.rhu + 1) : W36(pc.vma + 1);
     cerr << ">>>>>> JSP set ac=" << tmp.fmt36() << "  ea=" << ea.fmt36()
 	 << logger.endl << flush;
     acPut(tmp);
