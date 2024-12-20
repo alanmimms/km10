@@ -553,7 +553,19 @@ void KM10::emulate() {
     // Handle execution breakpoints.
     if (executeBPs.contains(ea.vma)) running = false;
 
-    // XXX do we handle traps and interrupts here? Or some other place?
+    // Prepare to fetch next iw and remember if it's an interrupt or
+    // trap.
+    if ((flags.tr1 || flags.tr2) && pag.pagerEnabled()) {
+      // We have a trap.
+      fetchPC = eptAddressFor(flags.tr1 ? &eptP->trap1Insn : &eptP->stackOverflowInsn);
+      inInterrupt = true;
+      cerr << ">>>>> trap cycle PC now=" << pc.fmtVMA() << logger.endl << flush;
+    } else if (W36 vector = pi.setUpInterruptCycleIfPending(); vector != W36(0)) {
+      // We have an active interrupt.
+      fetchPC = vector;
+      inInterrupt = true;
+      cerr << ">>>>> interrupt cycle PC now=" << pc.fmtVMA() << logger.endl << flush;
+    }
 
     // Fetch the instruction.
     iw = memGetN(fetchPC);
@@ -576,11 +588,11 @@ void KM10::emulate() {
       case Debugger::restart:		// Restart emulator - total reboot
 	return;
 
-      case Debugger::pcChanged:	// PC changed by debugger - go fetch again
+      case Debugger::pcChanged:		// PC changed by debugger - go fetch again
 	fetchPC = pc;
 	continue;
 
-      default:			// This should never happen...
+      default:				// This should never happen...
 	assert("Debugger returned unknown action" == nullptr);
 	return;
       }

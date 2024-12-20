@@ -6,8 +6,8 @@
 //
 // * "Held" means the interrupt handler is executing.
 //
-// * "Level" is the interrupt's priority, where lower numbered levels
-//   are serviced ahead of higher numbered levels.
+// * "Level" is the interrupt's priority, where numerically lower
+//   levels are serviced ahead of numerically higher levels.
 //
 // * A "PR" is a Programmed Requested interrupt.
 //
