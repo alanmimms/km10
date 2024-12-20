@@ -128,7 +128,7 @@ struct JumpGroup: KM10 {
   }
 
   InstructionResult doJSR() {
-    W36 tmp = ea.isSection0() ? flagsWord(pc.rhu) : W36(pc.vma);
+    W36 tmp = ea.isSection0() ? flagsWord(pc.rhu + 1) : W36(pc.vma + 1);
     cerr << ">>>>>> JSR saved PC=" << tmp.fmt36() << "  ea=" << ea.fmt36()
 	 << logger.endl << flush;
     memPut(tmp);

@@ -320,6 +320,9 @@ uint64_t KM10::getEA(unsigned i, unsigned x, uint64_t y) {
 // Accessors
 bool KM10::userMode() {return !!flags.usr;}
 
+
+// This builds and returns a flags word with the specified PC in the
+// RH or VMA.
 W36 KM10::flagsWord(unsigned pc) {
   W36 v(pc);
   v.pcFlags = flags.u;
