@@ -143,7 +143,7 @@ struct JumpGroup: KM10 {
     // Note this sets the flags that are cleared by PUSHJ before
     // push() since push() can set flags.tr2.
     flags.fpd = flags.afi = flags.tr1 = flags.tr2 = 0;
-    push(pc.isSection0() ? flagsWord(ea.rhu) : W36(ea.vma), iw.ac);
+    push(pc.isSection0() ? flagsWord(pc.rhu + 1) : W36(pc.vma + 1), iw.ac);
     if (inInterrupt) flags.usr = flags.pub = 0;
     return iJump;
   }

@@ -30,6 +30,7 @@ void InstallCmpAndGroup(KM10 &km10) {
   km10.defOp(0305, "CAIGE", static_cast<KM10::OpcodeHandler>(&CmpAndGroup::doCAIGE));
   km10.defOp(0306, "CAIN",  static_cast<KM10::OpcodeHandler>(&CmpAndGroup::doCAIN));
   km10.defOp(0307, "CAIG",  static_cast<KM10::OpcodeHandler>(&CmpAndGroup::doCAIG));
+
   km10.defOp(0310, "CAM",   static_cast<KM10::OpcodeHandler>(&CmpAndGroup::doCAM));
   km10.defOp(0311, "CAML",  static_cast<KM10::OpcodeHandler>(&CmpAndGroup::doCAML));
   km10.defOp(0312, "CAME",  static_cast<KM10::OpcodeHandler>(&CmpAndGroup::doCAME));

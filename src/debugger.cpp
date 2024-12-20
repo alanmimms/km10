@@ -184,7 +184,7 @@ Debugger::DebugAction Debugger::debug() {
 	  string lowered(words[1]);
 	  for (auto& c: lowered) c = tolower(c);
 	  a = (lowered == "pc") ? km10.pc.u :
-	    (lowered == "@") ? km10.ea.u :
+	    (lowered == "@") ? km10.iw.y :
 	    stoll(words[1], nullptr, 8);
 	} else {
 	  a = lastAddr;
@@ -353,7 +353,7 @@ Debugger::DebugAction Debugger::debug() {
   l,log file [FILENAME]
                 Log to FILENAME or 'km10.log' if not specified (overwriting).
   l,log tty     Log to console.
-  m,mem A [N]   Dump N (octal) words of memory starting at A (octal). A can be 'pc' or '@' for EA.
+  m,mem A [N]   Dump N (octal) words of memory starting at A (octal). A can be 'pc' or '@' for Y.
   mset A V      Set memory address A to value V. A can be 'pc'.
   pc [N]        Dump PC and flags, or if N is specified set PC to N (octal).
   restart       Reset and reload as if started from scratch again.
