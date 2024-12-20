@@ -102,28 +102,65 @@ struct JumpGroup: KM10 {
   }
 
 
+  void push(W36 v, W36 acN) {
+    W36 ac = acGetN(acN);
+
+    if (pc.isSection0() || ac.lhs < 0 || (ac.lhu & 0007777) == 0) {
+      ac = W36(ac.lhu + 1, ac.rhu + 1);
+
+      if (ac.lhu == 0)
+	flags.tr2 = 1;
+      else			// Correct? Don't access memory for full stack?
+	memPutN(v, ac.rhu);
+    } else {
+      ac = ac + 1;
+      memPutN(ac.vma, v);
+    }
+
+    acPutN(ac, acN);
+  }
+
+
+  W36 pop(unsigned acN) {
+    W36 ac = acGetN(acN);
+    W36 poppedWord;
+
+    if (pc.isSection0() || ac.lhs < 0 || (ac.lhu & 0007777) == 0) {
+      poppedWord = memGetN(ac.rhu);
+      ac = W36(ac.lhu - 1, ac.rhu - 1);
+      if (ac.lhs == -1) flags.tr2 = 1;
+    } else {
+      poppedWord = memGetN(ac.vma);
+      ac = ac - 1;
+    }
+
+    acPutN(ac, acN);
+    return poppedWord;
+  }
+
+
   InstructionResult doPUSHJ() {
     // Note this sets the flags that are cleared by PUSHJ before
-    // doPush() since doPush() can set flags.tr2.
+    // push() since push() can set flags.tr2.
     flags.fpd = flags.afi = flags.tr1 = flags.tr2 = 0;
-    doPush(pc.isSection0() ? flagsWord(ea.rhu) : W36(ea.vma), iw.ac);
+    push(pc.isSection0() ? flagsWord(ea.rhu) : W36(ea.vma), iw.ac);
     if (inInterrupt) flags.usr = flags.pub = 0;
     return iJump;
   }
 
 
   InstructionResult doPUSH() {
-    doPush(memGet(), iw.ac);
+    push(memGet(), iw.ac);
     return iNormal;
   }
 
   InstructionResult doPOP() {
-    memPut(doPop(iw.ac));
+    memPut(pop(iw.ac));
     return iNormal;
   }
 
   InstructionResult doPOPJ() {
-    ea.rhu = doPop(iw.ac).rhu;
+    ea.rhu = pop(iw.ac).rhu;
     return iJump;
   }
 
@@ -173,43 +210,6 @@ struct JumpGroup: KM10 {
   InstructionResult doMAP() {
     logger.nyi(*this);
     return iNormal;
-  }
-
-
-  void doPush(W36 v, W36 acN) {
-    W36 ac = acGetN(acN);
-
-    if (pc.isSection0() || ac.lhs < 0 || (ac.lhu & 0007777) == 0) {
-      ac = W36(ac.lhu + 1, ac.rhu + 1);
-
-      if (ac.lhu == 0)
-	flags.tr2 = 1;
-      else			// Correct? Don't access memory for full stack?
-	memPutN(v, ac.rhu);
-    } else {
-      ac = ac + 1;
-      memPutN(ac.vma, v);
-    }
-
-    acPutN(ac, acN);
-  }
-
-
-  W36 doPop(unsigned acN) {
-    W36 ac = acGetN(acN);
-    W36 poppedWord;
-
-    if (pc.isSection0() || ac.lhs < 0 || (ac.lhu & 0007777) == 0) {
-      poppedWord = memGetN(ac.rhu);
-      ac = W36(ac.lhu - 1, ac.rhu - 1);
-      if (ac.lhs == -1) flags.tr2 = 1;
-    } else {
-      poppedWord = memGetN(ac.vma);
-      ac = ac - 1;
-    }
-
-    acPutN(ac, acN);
-    return poppedWord;
   }
 
 

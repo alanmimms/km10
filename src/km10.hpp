@@ -349,8 +349,7 @@ public:
   }
 
   InstructionResult doILLEGAL();
-  void doPush(W36 v, W36 acN);
-  W36 doPop(unsigned acN);
+
   void logFlow(const char *msg);
 
 
