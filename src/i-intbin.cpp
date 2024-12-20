@@ -284,7 +284,7 @@ struct IntBinGroup: KM10 {
   InstructionResult doXORI() {
     W36 a1 = immediate();
     W36 a2 = acGet();
-    acPut(a1.u & a2.u);
+    acPut(a1.u ^ a2.u);
     return iNormal;
   }
 

@@ -512,8 +512,8 @@ struct TstSetGroup: KM10 {
   InstructionResult doSETAM() { memPut(acGet()); return iNormal; }
   InstructionResult doSETAB() { W36 a = acGet(); acPut(a); memPut(a); return iNormal; }
   InstructionResult doSETCA() { acPut(~acGet().u); return iNormal; }
-  InstructionResult doSETCAI() { acPut(~immediate().u); return iNormal; }
-  InstructionResult doSETCAM() { acPut(~memGet().u); return iNormal; }
+  InstructionResult doSETCAI() { acPut(~acGet().u); return iNormal; }
+  InstructionResult doSETCAM() { memPut(~acGet().u); return iNormal; }
   InstructionResult doSETCAB() { W36 a = ~acGet().u; acPut(a); memPut(a); return iNormal; }
 };
 
