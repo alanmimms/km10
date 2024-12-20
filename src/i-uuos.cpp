@@ -2,14 +2,6 @@
 
 struct UUOsGroup: KM10 {
 
-  InstructionResult doILLEGAL() {
-    cerr << "ILLEGAL isn't implemented yet" << logger.endl << flush;
-    pcOffset = 0;
-    inInterrupt = true;
-    logger.nyi(*this);
-    return iMUUO;
-  }
-
   InstructionResult doMUUO() {
     cerr << "MUUOs aren't implemented yet" << logger.endl << flush;
     //    exceptionPC = pc + 1;
@@ -67,8 +59,6 @@ struct UUOsGroup: KM10 {
 
 
 void InstallUUOsGroup(KM10 &km10) {
-  km10.defOp(0000, "ILLEGAL", static_cast<KM10::OpcodeHandler>(&UUOsGroup::doILLEGAL));
-
   // Install LUUOs and MUUOs
   for(unsigned op=0001; op <= 0037; ++op) {
     km10.defOp(op, "LUUO", static_cast<KM10::OpcodeHandler>(&UUOsGroup::doLUUO));

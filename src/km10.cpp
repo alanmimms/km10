@@ -48,6 +48,16 @@ extern void InstallTstSetGroup(KM10 &km10);
 extern void InstallUUOsGroup(KM10 &km10);
 
 
+InstructionResult KM10::doILLEGAL() {
+  cerr << "ILLEGAL isn't implemented yet" << logger.endl << flush;
+  pcOffset = 0;
+  inInterrupt = true;
+  running = false;		// XXX for now
+  logger.nyi(*this);
+  return iMUUO;
+}
+
+
 ////////////////////////////////////////////////////////////////
 // Constructor
 KM10::KM10(unsigned nMemoryWords,
@@ -81,7 +91,7 @@ KM10::KM10(unsigned nMemoryWords,
     executeBPs(eBPs)
 {
   // Install each instruction group's handlers in the ops array.
-  ops.fill(nullptr);
+  ops.fill(static_cast<KM10::OpcodeHandler>(&KM10::doILLEGAL));
 
   InstallAOxSOxGroup(*this);
   InstallBitRotGroup(*this);
@@ -609,9 +619,12 @@ void KM10::emulate() {
       fetchPC = ea;
       continue;
 
+    case iTrap:			// Advance and THEN handle trap.
+      pcOffset = 1;
+      break;
+
     case iMUUO:
     case iLUUO:
-    case iTrap:
     case iXCT:
       // All of these cases require that we fetch the next instruction
       // from a specified location (contained in `fetchPC` and already

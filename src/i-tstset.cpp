@@ -258,9 +258,9 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTDN() { return iNormal; }
+  InstructionResult doTDN() { (void) memGet(); return iNormal; }
 
-  InstructionResult doTSN() { return iNormal; }
+  InstructionResult doTSN() { (void) memGet(); return iNormal; }
 
   InstructionResult doTDNE() {
     W36 a1 = acGet();
@@ -278,9 +278,9 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTDNA() { return iSkip; }
+  InstructionResult doTDNA() { (void) memGet(); return iSkip; }
 
-  InstructionResult doTSNA() { return iSkip; }
+  InstructionResult doTSNA() { (void) memGet(); return iSkip; }
 
   InstructionResult doTDNN() {
     W36 a1 = acGet();
@@ -418,7 +418,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTSZCN() {
+  InstructionResult doTSCN() {
     W36 a1 = acGet();
     W36 a2 = memGetSwapped();
     const bool doSkip = (a1.u & a2.u) != 0;
@@ -504,9 +504,9 @@ struct TstSetGroup: KM10 {
   InstructionResult doSETCMM() { memPut(~memGet().u); return iNormal; }
   InstructionResult doSETCMB() { W36 a = ~memGet().u; acPut(a); memPut(a); return iNormal; }
   InstructionResult doSETO() { (void) acGet(); acPut(W36::all1s); return iNormal; }
-  InstructionResult doSETOI() { acPut(~immediate().u); return iNormal; }
-  InstructionResult doSETOM() { memPut(~memGet().u); return iNormal; }
-  InstructionResult doSETOB() { W36 a = ~memGet().u; acPut(a); memPut(a); return iNormal; }
+  InstructionResult doSETOI() { acPut(W36::all1s); return iNormal; }
+  InstructionResult doSETOM() { memPut(W36::all1s); return iNormal; }
+  InstructionResult doSETOB() { acPut(W36::all1s); memPut(W36::all1s); return iNormal; }
   InstructionResult doSETA() { acPut(acGet()); return iNormal; }
   InstructionResult doSETAI() { acPut(acGet()); return iNormal; }
   InstructionResult doSETAM() { memPut(acGet()); return iNormal; }
@@ -559,46 +559,52 @@ void InstallTstSetGroup(KM10 &km10) {
   km10.defOp(0605, "TLNA", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLNA));
   km10.defOp(0606, "TRNN", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTRNN));
   km10.defOp(0607, "TLNN", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLNN));
-  km10.defOp(0610, "TRZ",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTRZ));
-  km10.defOp(0611, "TLZ",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLZ));
-  km10.defOp(0612, "TRZE", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTRZE));
-  km10.defOp(0613, "TLZE", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLZE));
-  km10.defOp(0614, "TRZA", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTRZA));
-  km10.defOp(0615, "TLZA", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLZA));
-  km10.defOp(0616, "TRZN", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTRZN));
-  km10.defOp(0617, "TLZN", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLZN));
-  km10.defOp(0620, "TRC",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTRC));
-  km10.defOp(0621, "TLC",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLC));
-  km10.defOp(0622, "TRCE", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTRCE));
-  km10.defOp(0623, "TLCE", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLCE));
-  km10.defOp(0624, "TRCA", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTRCA));
-  km10.defOp(0625, "TLCA", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLCA));
-  km10.defOp(0626, "TRCN", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTRCN));
-  km10.defOp(0627, "TLCN", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLCN));
-  km10.defOp(0630, "TRO",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTRO));
-  km10.defOp(0631, "TLO",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLO));
-  km10.defOp(0632, "TROE", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTROE));
-  km10.defOp(0633, "TLOE", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLOE));
-  km10.defOp(0634, "TROA", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTROA));
-  km10.defOp(0635, "TLOA", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLOA));
-  km10.defOp(0636, "TRON", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTRON));
-  km10.defOp(0637, "TLON", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLON));
-  km10.defOp(0640, "TDN",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTDN));
-  km10.defOp(0641, "TSN",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTSN));
-  km10.defOp(0642, "TDNE", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTDNE));
-  km10.defOp(0643, "TSNE", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTSNE));
-  km10.defOp(0644, "TDNA", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTDNA));
-  km10.defOp(0645, "TSNA", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTSNA));
-  km10.defOp(0646, "TDNN", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTDNN));
-  km10.defOp(0647, "TSNN", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTSNN));
-  km10.defOp(0650, "TDZ",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTDZ));
-  km10.defOp(0651, "TSZ",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTSZ));
-  km10.defOp(0652, "TDZE", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTDZE));
-  km10.defOp(0653, "TSZE", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTSZE));
-  km10.defOp(0654, "TDZA", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTDZA));
-  km10.defOp(0655, "TSZA", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTSZA));
-  km10.defOp(0656, "TDZN", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTDZN));
-  km10.defOp(0657, "TSZN", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTSZN));
+
+  km10.defOp(0610, "TDN",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTDN));
+  km10.defOp(0611, "TSN",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTSN));
+  km10.defOp(0612, "TDNE", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTDNE));
+  km10.defOp(0613, "TSNE", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTSNE));
+  km10.defOp(0614, "TDNA", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTDNA));
+  km10.defOp(0615, "TSNA", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTSNA));
+  km10.defOp(0616, "TDNN", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTDNN));
+  km10.defOp(0617, "TSNN", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTSNN));
+
+  km10.defOp(0620, "TRZ",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTRZ));
+  km10.defOp(0621, "TLZ",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLZ));
+  km10.defOp(0622, "TRZE", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTRZE));
+  km10.defOp(0623, "TLZE", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLZE));
+  km10.defOp(0624, "TRZA", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTRZA));
+  km10.defOp(0625, "TLZA", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLZA));
+  km10.defOp(0626, "TRZN", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTRZN));
+  km10.defOp(0627, "TLZN", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLZN));
+
+  km10.defOp(0630, "TDZ",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTDZ));
+  km10.defOp(0631, "TSZ",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTSZ));
+  km10.defOp(0632, "TDZE", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTDZE));
+  km10.defOp(0633, "TSZE", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTSZE));
+  km10.defOp(0634, "TDZA", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTDZA));
+  km10.defOp(0635, "TSZA", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTSZA));
+  km10.defOp(0636, "TDZN", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTDZN));
+  km10.defOp(0637, "TSZN", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTSZN));
+
+  km10.defOp(0640, "TRC",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTRC));
+  km10.defOp(0641, "TLC",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLC));
+  km10.defOp(0642, "TRCE", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTRCE));
+  km10.defOp(0643, "TLCE", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLCE));
+  km10.defOp(0644, "TRCA", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTRCA));
+  km10.defOp(0645, "TLCA", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLCA));
+  km10.defOp(0646, "TRCN", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTRCN));
+  km10.defOp(0647, "TLCN", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLCN));
+
+  km10.defOp(0650, "TDC",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTDC));
+  km10.defOp(0651, "TSC",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTSC));
+  km10.defOp(0652, "TDCE", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTDCE));
+  km10.defOp(0653, "TSCE", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTSCE));
+  km10.defOp(0654, "TDCA", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTDCA));
+  km10.defOp(0655, "TSCA", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTSCA));
+  km10.defOp(0656, "TDCN", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTDCN));
+  km10.defOp(0657, "TSCN", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTSCN));
+
   km10.defOp(0660, "TRO",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTRO));
   km10.defOp(0661, "TLO",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLO));
   km10.defOp(0662, "TROE", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTROE));
@@ -607,6 +613,7 @@ void InstallTstSetGroup(KM10 &km10) {
   km10.defOp(0665, "TLOA", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLOA));
   km10.defOp(0666, "TRON", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTRON));
   km10.defOp(0667, "TLON", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTLON));
+
   km10.defOp(0670, "TDO",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTDO));
   km10.defOp(0671, "TSO",  static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTSO));
   km10.defOp(0672, "TDOE", static_cast<KM10::OpcodeHandler>(&TstSetGroup::doTDOE));
