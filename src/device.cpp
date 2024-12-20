@@ -131,7 +131,8 @@ InstructionResult Device::doCONI(W36 iw, W36 ea) {
 
 
 InstructionResult Device::doCONSZ(W36 iw, W36 ea) {
-  W36 conditions = doCONI(iw, ea);
+  doCONI(iw, ea);
+  W36 conditions = km10.memGet();
   unsigned result = conditions.rhu & ea.rhu;
   bool skip = result == 0;
 
@@ -150,7 +151,8 @@ InstructionResult Device::doCONSZ(W36 iw, W36 ea) {
 
 
 InstructionResult Device::doCONSO(W36 iw, W36 ea) {
-  W36 conditions = doCONI(iw, ea);
+  doCONI(iw, ea);
+  W36 conditions = km10.memGet();
 
   if ((conditions.rhu & ea.rhu) != 0) {
     return InstructionResult::iSkip;
