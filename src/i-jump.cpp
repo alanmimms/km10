@@ -140,10 +140,13 @@ struct JumpGroup: KM10 {
 
 
   InstructionResult doPUSHJ() {
+    // It's maybe not allowed to use PUSHJ in interrupt, but we can
+    // support it if someone does.
+    int delta = inInterrupt ? 0 : 1;
     // Note this sets the flags that are cleared by PUSHJ before
     // push() since push() can set flags.tr2.
     flags.fpd = flags.afi = flags.tr1 = flags.tr2 = 0;
-    push(pc.isSection0() ? flagsWord(pc.rhu + 1) : W36(pc.vma + 1), iw.ac);
+    push(pc.isSection0() ? flagsWord(pc.rhu + delta) : W36(pc.vma + delta), iw.ac);
     if (inInterrupt) flags.usr = flags.pub = 0;
     return iJump;
   }
@@ -165,7 +168,8 @@ struct JumpGroup: KM10 {
   }
 
   InstructionResult doJSR() {
-    W36 tmp = ea.isSection0() ? flagsWord(pc.rhu + 1) : W36(pc.vma + 1);
+    int delta = inInterrupt ? 0 : 1;
+    W36 tmp = ea.isSection0() ? flagsWord(pc.rhu + delta) : W36(pc.vma + delta);
     cerr << ">>>>>> JSR saved PC=" << tmp.fmt36() << "  ea=" << ea.fmt36()
 	 << logger.endl << flush;
     memPut(tmp);
@@ -176,7 +180,8 @@ struct JumpGroup: KM10 {
   }
 
   InstructionResult doJSP() {
-    W36 tmp = ea.isSection0() ? flagsWord(pc.rhu + 1) : W36(pc.vma + 1);
+    int delta = inInterrupt ? 0 : 1;
+    W36 tmp = ea.isSection0() ? flagsWord(pc.rhu + delta) : W36(pc.vma + delta);
     cerr << ">>>>>> JSP set ac=" << tmp.fmt36() << "  ea=" << ea.fmt36()
 	 << logger.endl << flush;
     acPut(tmp);
@@ -186,8 +191,9 @@ struct JumpGroup: KM10 {
   }
 
   InstructionResult doJSA() {
+    int delta = inInterrupt ? 0 : 1;
     memPut(acGet());
-    acPut(W36(ea.rhu, pc.rhu + 1));
+    acPut(W36(ea.rhu, pc.rhu + delta));
     ++ea.rhu;
     if (inInterrupt) flags.usr = 0;
     return iJump;

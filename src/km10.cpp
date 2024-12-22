@@ -660,7 +660,6 @@ void KM10::emulate() {
       continue;
 
     case iTrap:			// Advance and THEN handle trap.
-      pcOffset = 1;
       break;
 
     case iMUUO:
@@ -669,6 +668,7 @@ void KM10::emulate() {
       // from a specified location (contained in `fetchPC` and already
       // set) and loop back to execute that instruction WITHOUT
       // changing PC.
+      pcOffset = 1;
       continue;
 
     case iXCT:

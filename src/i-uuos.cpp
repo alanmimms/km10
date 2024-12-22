@@ -13,21 +13,17 @@ struct UUOsGroup: KM10 {
   InstructionResult doLUUO() {
 
     if (pc.isSection0()) {
-      W36 uuoState;
-      uuoState.op = iw.op;
-      uuoState.ac = iw.ac;
-      uuoState.i = 0;
-      uuoState.x = 0;
-      uuoState.y = ea.rhu;
+      W36 uuoState = iw;
+      uuoState.x = 0;		// Always zero X.
 
       // XXX this should select executive virtual space first.
-      memPutN(040, uuoState);
+      memPutN(uuoState, 040);
       cerr << "LUUO at " << pc.fmtVMA() << " uuoState=" << uuoState.fmt36()
 	   << logger.endl << flush;
-      pcOffset = 041;
-      //	exceptionPC = pc + 1;
-      inInterrupt = true;
-      return iTrap;
+      pcOffset = 0;
+      fetchPC = 041;
+      // Do NOT set inInterrupt here since JSP, etc. need to save PC+1.
+      return iLUUO;
     } else {
 
       if (flags.usr) {
@@ -37,11 +33,12 @@ struct UUOsGroup: KM10 {
 		    ((uint64_t) iw.ac << 5)), uuoA.u++);
 	memPutN(pc, uuoA.u++);
 	memPutN(ea.u, uuoA.u++);
-	pcOffset = memGetN(uuoA);
-	//	  exceptionPC = pc + 1;
-	inInterrupt = true;
-	return iTrap;
-      } else {	       // Executive mode treats LUUOs as MUUOs
+	pcOffset = 0;
+	fetchPC = memGetN(uuoA.u++);
+	// Do NOT set inInterrupt here since we loaded PC from 420
+	// vector and JSP, etc. don't have to be weird.
+	return iLUUO;
+      } else {	       // Executive mode treats LUUOs as MUUOs.
 	return doMUUO();
       }
     }
