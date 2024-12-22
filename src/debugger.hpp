@@ -1,6 +1,7 @@
 #pragma once
 #include <map>
 #include <string>
+#include <optional>
 
 using namespace std;
 
@@ -31,6 +32,22 @@ struct Debugger {
   map<W36, string> valueToSymbol;
 
   bool verboseLoad;
+
+  static constexpr size_t pcHistorySize = 1024;
+
+  struct RingBuffer {
+    RingBuffer();
+
+    void add(const W36& element);
+    std::optional<W36> peek() const;
+    std::vector<W36> mostRecent(size_t n) const;
+    void print(std::ostream& s, size_t count) const;
+
+    std::array<W36, pcHistorySize> buffer;
+    size_t head;
+    bool full;
+  } pcRing;
+
 
   // This is how debugger tells our emulator loop what to do when it
   // returns.

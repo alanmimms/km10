@@ -15,7 +15,7 @@ string W36::fmt18() const {
 
 string W36::fmtVMA() const {
   ostringstream s;
-  s << (lhu & 07) << fmt18();
+  s << (lhu & 07) << ",," << fmt18();
   return s.str();
 }
 

@@ -551,7 +551,7 @@ void KM10::emulate() {
     cca.handleSweep();
 
     // Handle execution breakpoints.
-    if (executeBPs.contains(ea.vma)) running = false;
+    if (executeBPs.contains(fetchPC.vma)) running = false;
 
     // Prepare to fetch next iw and remember if it's an interrupt or
     // trap.
@@ -567,8 +567,9 @@ void KM10::emulate() {
       cerr << ">>>>> interrupt cycle PC now=" << pc.fmtVMA() << logger.endl << flush;
     }
 
-    // Fetch the instruction.
+    // Fetch the instruction and save PC (fetch, really) history.
     iw = memGetN(fetchPC);
+    debugger.pcRing.add(fetchPC);
 
     // If we're debugging, this is where we pause to let the user
     // inspect and change things. The debugger tells us what our next

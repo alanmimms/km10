@@ -327,6 +327,44 @@ Debugger::DebugAction Debugger::debug() {
       action = pcChanged;
     });
 
+    COMMAND("pchist", nullptr, [&]() {
+      size_t count;
+
+      if (words.size() == 1) {
+	count = pcHistorySize;
+      } else {
+
+	try {
+	  count = stol(words[1], nullptr);
+	} catch (exception &e) {
+	}
+      }
+
+      vector<W36> hist = pcRing.mostRecent(count);
+      static const int nPL = 8;		// # PC history elements per line of output
+      size_t countDown = hist.size() - 1;
+
+      // Iterate through the vector and print
+      for (size_t i=0; i < hist.size(); i += nPL) {
+	// Print the line prefix (starting count for this line)
+	cout << setw(6) << countDown << ": ";
+
+	// Print up to nPL elements for this line
+	for (size_t j=0; j < nPL && i + j < hist.size(); ++j) {
+	  cout << hist[i + j].fmtVMA();
+	  if (j < nPL - 1 && (i + j + 1) < hist.size()) cout << " ";
+	}
+
+	// Move to the next line
+	cout << logger.endl;
+
+	// Decrement the count by nPL
+	countDown = (countDown >= nPL) ? countDown - nPL : 0;
+      }
+
+      cout << logger.endl << flush;
+    });
+
     COMMAND("continue", "c", [&]() {
       km10.nSteps = 0;
       km10.running = true;
@@ -356,6 +394,7 @@ Debugger::DebugAction Debugger::debug() {
   m,mem A [N]   Dump N (octal) words of memory starting at A (octal). A can be 'pc' or '@' for Y.
   mset A V      Set memory address A to value V. A can be 'pc'.
   pc [N]        Dump PC and flags, or if N is specified set PC to N (octal).
+  pchist [N]    Dump all or some (N) most recent fetch-PC value history in FIFO order.
   restart       Reset and reload as if started from scratch again.
   s,step N      Step N (octal) instructions at current PC.
   show apr|pi|flags|devs
@@ -528,7 +567,7 @@ struct Radix50Word {
 
 
   // For googletest stringification
-  friend void PrintTo(const Radix50Word& w, std::ostream* os) {
+  friend void PrintTo(const Radix50Word& w, ostream* os) {
     *os << w.toString();
   }
 };
@@ -860,3 +899,47 @@ string Debugger::symbolicForm(W36 w) {
     return w.fmt18();
 }
 
+
+Debugger::RingBuffer::RingBuffer()
+  : head{0}, full{false}
+{}
+
+
+void Debugger::RingBuffer::add(const W36& element) {
+  buffer[head] = element;
+  head = (head + 1) % pcHistorySize;
+  if (head == 0) full = true;
+}
+
+
+std::optional<W36> Debugger::RingBuffer::peek() const {
+  if (head == 0 && !full) return std::nullopt; // Buffer is empty
+  size_t lastIndex = (head == 0) ? pcHistorySize - 1 : head - 1;
+  return buffer[lastIndex];
+}
+
+
+std::vector<W36> Debugger::RingBuffer::mostRecent(size_t n) const {
+  size_t count = full ? pcHistorySize : head;
+  size_t nToReturn = std::min(n, count);
+  size_t start = (count >= n) ? (head + pcHistorySize - nToReturn) % pcHistorySize : 0;
+
+  std::vector<W36> result;
+  for (size_t i = 0; i < nToReturn; ++i) {
+    result.push_back(buffer[(start + i) % pcHistorySize]);
+  }
+
+  return result;
+}
+
+void Debugger::RingBuffer::print(std::ostream& s, size_t count) const {
+  if (count > pcHistorySize) count = 0;
+  if (count == 0) count = full ? pcHistorySize : head;
+  size_t start = full ? head - count : 0;
+
+  for (size_t i = 0; i < count; ++i) {
+    s << buffer[(start + i) % pcHistorySize] << " ";
+  }
+
+  s << std::endl;
+}
