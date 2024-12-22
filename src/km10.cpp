@@ -560,11 +560,13 @@ void KM10::emulate() {
       fetchPC = eptAddressFor(flags.tr1 ? &eptP->trap1Insn : &eptP->stackOverflowInsn);
       inInterrupt = true;
       cerr << ">>>>> trap cycle PC now=" << pc.fmtVMA() << logger.endl << flush;
-    } else if (W36 vector = pi.setUpInterruptCycleIfPending(); vector != W36(0)) {
+    } else if (W36 vec = pi.setUpInterruptCycleIfPending(); vec != W36(0)) {
       // We have an active interrupt.
-      fetchPC = vector;
+      fetchPC = vec;
       inInterrupt = true;
-      cerr << ">>>>> interrupt cycle PC now=" << pc.fmtVMA() << logger.endl << flush;
+      cerr << ">>>>> interrupt cycle PC=" << pc.fmtVMA()
+	   << "  vector=" << fetchPC.fmtVMA()
+	   << logger.endl << flush;
     }
 
     // Fetch the instruction and save PC (fetch, really) history.
@@ -621,17 +623,38 @@ void KM10::emulate() {
     // switch case) we use `fetchPC` + pcOffset.
     switch (result) {
     case iNormal:
-      pcOffset = 1;
+
+      // If we're in an interrupt vector and we get iNormal, just
+      // fetch next word in the vector.
+      if (inInterrupt) {
+	fetchPC = fetchPC.vma + 1; // Increment to second word in vector.
+	pcOffset = 0;
+	continue;
+      } else {
+	pcOffset = 1;
+      }
+
       break;
 
     case iSkip:
       // Any skip instruction that skips.
-      pcOffset = 2;
+
+      // If we're in an interrupt vector and we get iSkip, vector is
+      // done so resume normal flow.
+      if (inInterrupt) {
+	pcOffset = 1;
+	inInterrupt = false;
+      } else {
+	pcOffset = 2;
+      }
+
       break;
 
     case iJump:
       // In this case, jump instructions put destination in `ea` for
-      // "free".
+      // "free". Make sure we don't stay in interrupt vector if we're
+      // in one.
+      inInterrupt = false;
       pcOffset = 0;
       fetchPC = pc = ea;
       continue;

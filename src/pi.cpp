@@ -135,6 +135,7 @@ void PIDevice::dismissInterrupt() {
   if (logger.ints) logger.s << "PI dismiss current interrupt" << logger.endl << flush;
   piState.currentLevel = PIState::noLevel;
   piState.held = 0;
+  km10.inInterrupt = false;
   cerr << " <<< dismissInterrupt, end piState=" << W36(piState.u).fmt18() << logger.endl << flush;
 }
 
@@ -166,6 +167,7 @@ InstructionResult PIDevice::doCONO(W36 iw, W36 ea) {
     clearIO();
     piState.u = 0;		// Really clear
     piState.currentLevel = PIState::noLevel;
+    km10.inInterrupt = false;
   } else {
     piState.writeEvenParityDir = pif.writeEvenParityDir;
     piState.writeEvenParityData = pif.writeEvenParityData;
