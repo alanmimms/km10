@@ -3,18 +3,58 @@
 struct UUOsGroup: KM10 {
 
   InstructionResult doMUUO() {
-    cerr << "MUUOs aren't implemented yet" << logger.endl << flush;
-    //    exceptionPC = pc + 1;
-    inInterrupt = true;
-    logger.nyi(*this);
+    uptPutN(W36(((uint64_t) flags.u << 23) |
+		((uint64_t) iw.op << 15) |
+		((uint64_t) iw.ac << 5)), 0424);
+    uptPutN(pc, 0425);
+    uptPutN(ea, 0426);
+    uptPutN(pag.getPCW(), 0427);
+
+    /*
+      Kernel	No trap	430
+      Kernel	Trap	431
+
+      Superv	No trap	432
+      Superv	Trap	433
+
+      Concealed	No trap	434
+      Concealed	Trap	435
+
+      Public	No trap	436
+      Public	Trap	437
+     */
+    
+    // XXX We don't handle traps in MUUOs yet.
+
+    if (flags.usr) {
+
+      if (flags.pcp) {		// Public
+	fetchPC = uptGetN(0436);
+      } else {			// Concealed
+	fetchPC = uptGetN(0434);
+      }
+    } else {
+
+      if (flags.pcp) {		// Supervisor
+	fetchPC = uptGetN(0432);
+      } else {			// Kernel
+	fetchPC = uptGetN(0430);
+      }
+    }
+
+    // Enter kernel mode to handle MUUO.
+    flags.u = 0;
+
     return iMUUO;
   }
+
 
   InstructionResult doLUUO() {
 
     if (pc.isSection0()) {
       W36 uuoState = iw;
-      uuoState.x = 0;		// Always zero X.
+      uuoState.x = 0;		// Always zero I,X.
+      uuoState.i = 0;
 
       // XXX this should select executive virtual space first.
       memPutN(uuoState, 040);
@@ -56,16 +96,15 @@ struct UUOsGroup: KM10 {
 
 
 void InstallUUOsGroup(KM10 &km10) {
+  // Install each instruction group's handlers in the ops array. We
+  // default every opcode to MUUO until we have an implementation for
+  // it.
+  km10.ops.fill(static_cast<KM10::OpcodeHandler>(&UUOsGroup::doMUUO));
+
   // Install LUUOs and MUUOs
   for(unsigned op=0001; op <= 0037; ++op) {
     km10.defOp(op, "LUUO", static_cast<KM10::OpcodeHandler>(&UUOsGroup::doLUUO));
   }
   
-  for(unsigned op=0040; op <= 0101; ++op) {
-    km10.defOp(op, "MUUO", static_cast<KM10::OpcodeHandler>(&UUOsGroup::doMUUO));
-  }
-
-  km10.defOp(0247, "MUUO", static_cast<KM10::OpcodeHandler>(&UUOsGroup::doMUUO));
-
   km10.defOp(0104, "JSYS", static_cast<KM10::OpcodeHandler>(&UUOsGroup::doJSYS));
 }

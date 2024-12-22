@@ -111,7 +111,7 @@ W36 PIDevice::setUpInterruptCycleIfPending() {
 
     // Function word is saved here by KL10 microcode. Does anyone
     // look at this? Who knows?
-    km10.ACbanks[7][3] = ifw;
+    km10.ACBlocks[7][3] = ifw;
 
     switch (ifw.intFunction) {
     case W36::zeroIF:

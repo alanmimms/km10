@@ -48,16 +48,6 @@ extern void InstallTstSetGroup(KM10 &km10);
 extern void InstallUUOsGroup(KM10 &km10);
 
 
-InstructionResult KM10::doILLEGAL() {
-  cerr << "ILLEGAL isn't implemented yet" << logger.endl << flush;
-  pcOffset = 0;
-  inInterrupt = true;
-  running = false;		// XXX for now
-  logger.nyi(*this);
-  return iMUUO;
-}
-
-
 ////////////////////////////////////////////////////////////////
 // Constructor
 KM10::KM10(unsigned nMemoryWords,
@@ -80,19 +70,19 @@ KM10::KM10(unsigned nMemoryWords,
     pcOffset(0),
     running(false),
     restart(false),
-    ACbanks{},
+    ACBlocks{},
     flags(0u),
     inInterrupt(false),
     era(0u),
-    AC(ACbanks[0]),
+    AC(ACBlocks[0]),
     memorySize(nMemoryWords),
     nSteps(0),
     addressGBPs(aGBPs),
     addressPBPs(aPBPs),
     executeBPs(eBPs)
 {
-  // Install each instruction group's handlers in the ops array.
-  ops.fill(static_cast<KM10::OpcodeHandler>(&KM10::doILLEGAL));
+  // THIS MUST BE FIRST so that all UUOs are MUUOs by default.
+  InstallUUOsGroup(*this);
 
   InstallAOxSOxGroup(*this);
   InstallBitRotGroup(*this);
@@ -107,7 +97,6 @@ KM10::KM10(unsigned nMemoryWords,
   InstallMoveGroup(*this);
   InstallMulDivGroup(*this);
   InstallTstSetGroup(*this);
-  InstallUUOsGroup(*this);
 
   // Note this anonymous mmap() implicitly zeroes the virtual memory.
   physicalP = (W36 *) mmap(nullptr,
@@ -123,6 +112,11 @@ KM10::KM10(unsigned nMemoryWords,
 
   // Initially, we have no user mode mapping.
   uptP = nullptr;
+}
+
+
+void KM10::updateACBlock(unsigned newBlock) {
+  AC = ACBlocks[newBlock];
 }
 
 
@@ -284,6 +278,18 @@ void KM10::memPutN(W36 value, W36 a) {
 
   if (logger.mem) logger.s << "; " << a.fmtVMA() << "=" << value.fmt36();
   if (addressPBPs.contains(a.vma)) running = false;
+}
+
+
+void KM10::uptPutN(W36 value, unsigned uptWordOffset) {
+  W36 memWordAddr = (W36 *) uptP - (W36 *) memP;
+  memPutN(value, memWordAddr + uptWordOffset);
+}
+
+
+W36 KM10::uptGetN(unsigned uptWordOffset) {
+  W36 memWordAddr = (W36 *) uptP - (W36 *) memP;
+  return memGetN(memWordAddr + uptWordOffset);
 }
 
 

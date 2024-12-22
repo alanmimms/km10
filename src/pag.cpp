@@ -9,6 +9,7 @@
 PAGDevice::PAGDevice(KM10 &cpu):
   Device(003, "PAG", cpu)
 {
+  processContext.u = 0;
   pagState.u = 0;
 }
 
@@ -19,7 +20,40 @@ bool PAGDevice::pagerEnabled() {
 }
 
 
+// This is also what is returned by DATAI PAG, .
+W36 PAGDevice::getPCW() const {
+  return processContext.u;
+}
+
+
 // I/O instruction handlers
+InstructionResult PAGDevice::doDATAO(W36 iw, W36 ea) {
+  if (logger.mem) logger.s << "; " << ea.fmt18();
+  ProcessContext newContext{km10.memGet()};
+
+  if (newContext.loadUserBase) processContext.userBaseAddress = newContext.userBaseAddress;
+  if (newContext.selectPrevContext) processContext.prevSection = newContext.prevSection;
+
+  if (newContext.selectACBlocks) {
+    processContext.prevACBlock = newContext.prevACBlock;
+    processContext.curACBlock = newContext.curACBlock;
+    km10.updateACBlock(newContext.curACBlock);
+  }
+    
+  // XXX We do not implement accounting, so ignore `doNotUpdateAccounts`.
+
+  return iNormal;
+}
+
+InstructionResult PAGDevice::doDATAI(W36 iw, W36 ea) {
+  ProcessContext result{processContext};
+  result.loadUserBase = 0;
+  result.selectPrevContext = 0;
+  result.selectACBlocks = 0;
+  km10.memPut(result.u);
+  return iNormal;
+}
+
 InstructionResult PAGDevice::doCONO(W36 iw, W36 ea) {
   if (logger.mem) logger.s << "; " << ea.fmt18();
   pagState.u = iw.y;

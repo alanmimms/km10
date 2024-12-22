@@ -139,8 +139,8 @@ public:
   // The "REBOOT flop"
   bool restart;
 
-  // KL10 has 8 banks of 16 ACs.
-  W36 ACbanks[8][16];
+  // KL10 has 8 blocks of 16 ACs.
+  W36 ACBlocks[8][16];
 
   union ATTRPACKED ProgramFlags {
 
@@ -268,8 +268,8 @@ public:
     W36 muuoOldPC;		// 425
     W36 muuoE;			// 426
     W36 muuoContext;		// 427
-    W36 kernelNoTrapMUUOPC;	// 430
-    W36 kernelTrapMUUOPC;	// 431
+    W36 kernNoTrapMUUOPC;	// 430
+    W36 kernTrapMUUOPC;		// 431
     W36 supvNoTrapMUUOPC;	// 432
     W36 supvTrapMUUOPC;		// 433
     W36 concNoTrapMUUOPC;	// 434
@@ -294,7 +294,6 @@ public:
     W36 reserved600_777[128];	// 600
   } *uptP;
 
-
   W36 *AC;
   unsigned memorySize;
   int64_t nSteps;
@@ -302,6 +301,9 @@ public:
   unordered_set<unsigned> &addressGBPs; // Address GET breakpoints
   unordered_set<unsigned> &addressPBPs; // Address PUT breakpoints
   unordered_set<unsigned> &executeBPs;	// Execution breakpoints
+
+  // Call by PAG when DATAO changes current AC block number.
+  void updateACBlock(unsigned acBlock);
 
 
   // Return the KM10 memory VIRTUAL address (EPT is in kernel virtual
@@ -327,7 +329,9 @@ public:
   W36 acGetEA(unsigned n);
   void acPutN(W36 value, unsigned n);
   W36 memGetN(W36 a);
+  W36 uptGetN(unsigned uptWordOffset);
   void memPutN(W36 value, W36 a);
+  void uptPutN(W36 value, unsigned uptWordOffset);
 
   // Effective address calculation.
   uint64_t getEA(unsigned i, unsigned x, uint64_t y);

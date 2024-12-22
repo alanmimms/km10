@@ -40,8 +40,13 @@ struct TstSetGroup: KM10 {
   InstructionResult doTLNE() {
     W36 a1 = acGetLH();
     W36 a2 = ea.rhu;
-    const bool doSkip = (a1.u & a2.u) == 0;
-    cout << "TLNE a1=" << a1.fmt36() << " a2=" << a2.fmt36() << " doSkip=" << doSkip << logger.endl << flush;
+    W36 andResult = a2.u & a1.u;
+    const bool doSkip = andResult.u == 0;
+    cout << "TLNE a1=" << a1.fmt36()
+	 << " a2=" << a2.fmt36()
+	 << " andResult=" << andResult.fmt36()
+	 << " doSkip=" << doSkip
+	 << logger.endl << flush;
     /* No store */;
     return doSkip ? iSkip : iNormal;
   }
