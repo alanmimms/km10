@@ -4,13 +4,6 @@ struct UUOsGroup: KM10 {
 
   InstructionResult doMUUO() {
     cout << "MUUO pc=" << pc.fmtVMA() << logger.endl << flush;
-    uptPutN(W36(((uint64_t) flags.u << 23) |
-		((uint64_t) iw.op << 15) |
-		((uint64_t) iw.ac << 5)), 0424);
-    uptPutN(pc, 0425);
-    uptPutN(ea, 0426);
-    uptPutN(pag.getPCW(), 0427);
-
     /*
       Kernel	No trap	430
       Kernel	Trap	431
@@ -26,22 +19,38 @@ struct UUOsGroup: KM10 {
      */
     
     // XXX We don't handle traps in MUUOs yet.
+    uint64_t contextBits;
 
     if (flags.usr) {
+      contextBits = 0;
 
-      if (flags.pcp) {		// Public
+      if (flags.pub) {		// Public
 	fetchPC = uptGetN(0436);
       } else {			// Concealed
 	fetchPC = uptGetN(0434);
       }
     } else {
+      contextBits = pag.getPCW();
 
-      if (flags.pcp) {		// Supervisor
+      if (flags.pub) {		// Supervisor
 	fetchPC = uptGetN(0432);
       } else {			// Kernel
 	fetchPC = uptGetN(0430);
       }
     }
+
+    ProgramFlags flagsBits{flags.u};
+
+    // It appears DFKAA at 70013 depends on these flags to be zero.
+    flagsBits.cy0 = flagsBits.cy1 = flagsBits.ov = 0;
+
+    uptPutN(W36(contextBits |
+		((uint64_t) flagsBits.u << 23) |
+		((uint64_t) iw.op << 15) |
+		((uint64_t) iw.ac << 5)), 0424);
+    uptPutN(pc, 0425);
+    uptPutN(ea, 0426);
+    uptPutN(pag.getPCW(), 0427);
 
     // Enter kernel mode to handle MUUO and keep on going from there.
     flags.u = 0;
