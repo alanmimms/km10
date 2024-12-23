@@ -3,6 +3,7 @@
 struct UUOsGroup: KM10 {
 
   InstructionResult doMUUO() {
+    cout << "MUUO pc=" << pc.fmtVMA() << logger.endl << flush;
     uptPutN(W36(((uint64_t) flags.u << 23) |
 		((uint64_t) iw.op << 15) |
 		((uint64_t) iw.ac << 5)), 0424);
@@ -42,14 +43,17 @@ struct UUOsGroup: KM10 {
       }
     }
 
-    // Enter kernel mode to handle MUUO.
+    // Enter kernel mode to handle MUUO and keep on going from there.
     flags.u = 0;
+    pc = fetchPC;
 
+    cout << "    fetchPC=" << fetchPC.fmtVMA() << logger.endl << flush;
     return iMUUO;
   }
 
 
   InstructionResult doLUUO() {
+    cout << "LUUO pc=" << pc.fmtVMA() << logger.endl << flush;
 
     if (pc.isSection0()) {
       W36 uuoState = iw;

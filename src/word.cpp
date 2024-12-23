@@ -211,18 +211,9 @@ string W36::disasm(Debugger *debuggerP) {
     case 0112: s << "DFMP"; break;
     case 0113: s << "DFDV"; break;
     case 0132: s << "FSC"; break;
-    case 0031: s << "GFSC"; break;
     case 0127: s << "FLTR"; break;
-    case 0030: s << "GFLTR"; break;
-    case 0027: s << "DGFLTR"; break;
     case 0122: s << "FIX"; break;
     case 0126: s << "FIXR"; break;
-    case 0024: s << "GFIX"; break;
-    case 0026: s << "GFIXR"; break;
-    case 0023: s << "GDFIX"; break;
-    case 0025: s << "GDFIXR"; break;
-    case 0021: s << "GSNGL"; break;
-    case 0022: s << "GDBLE"; break;
     case 0130: s << "UFA"; break;
     case 0131: s << "DFN"; break;
 
@@ -526,13 +517,45 @@ string W36::disasm(Debugger *debuggerP) {
 
       // UUO
     case 0001: s << "LUUO"; break;
+    case 0002: s << "LUUO"; break;
+    case 0003: s << "LUUO"; break;
+    case 0004: s << "LUUO"; break;
+    case 0005: s << "LUUO"; break;
+    case 0006: s << "LUUO"; break;
+    case 0007: s << "LUUO"; break;
+    case 0010: s << "LUUO"; break;
+    case 0011: s << "LUUO"; break;
+    case 0012: s << "LUUO"; break;
+    case 0013: s << "LUUO"; break;
+    case 0014: s << "LUUO"; break;
+    case 0015: s << "LUUO"; break;
+    case 0016: s << "LUUO"; break;
+    case 0017: s << "LUUO"; break;
+    case 0020: s << "LUUO"; break;
+    case 0021: s << "LUUO"; break;
+    case 0022: s << "LUUO"; break;
+    case 0023: s << "LUUO"; break;
+    case 0024: s << "LUUO"; break;
+    case 0025: s << "LUUO"; break;
+    case 0026: s << "LUUO"; break;
+    case 0027: s << "LUUO"; break;
+    case 0030: s << "LUUO"; break;
+    case 0031: s << "LUUO"; break;
+    case 0032: s << "LUUO"; break;
+    case 0033: s << "LUUO"; break;
+    case 0034: s << "LUUO"; break;
+    case 0035: s << "LUUO"; break;
+    case 0036: s << "LUUO"; break;
+    case 0037: s << "LUUO"; break;
+
     case 0104: s << "JSYS"; break;
 
       // EXTEND
     case 0123: s << "EXTEND"; break;
 
     default:
-      return s.str();
+      s << "MUUO";
+      break;
     }
   }
 

@@ -106,12 +106,11 @@ KM10::KM10(unsigned nMemoryWords,
 			   0, 0);
   assert(physicalP != nullptr);
 
-  // Initially we have no virtual addressing, so virtual == physical.
+  // Initially we have no virtual addressing, so virtual == physical
+  // and EPT and UPT are mapped to physical addresses based at zero.
   memP = physicalP;
   eptP = (ExecutiveProcessTable *) memP;
-
-  // Initially, we have no user mode mapping.
-  uptP = nullptr;
+  uptP = (UserProcessTable *) memP;
 }
 
 
@@ -283,13 +282,21 @@ void KM10::memPutN(W36 value, W36 a) {
 
 void KM10::uptPutN(W36 value, unsigned uptWordOffset) {
   W36 memWordAddr = (W36 *) uptP - (W36 *) memP;
+  cout << "uptPutN(value=" << value.fmt36()
+       << ", offset=" << W36(uptWordOffset).fmt18()
+       << ") memWordAddr=" << memWordAddr.fmt36()
+       << logger.endl << flush;
   memPutN(value, memWordAddr + uptWordOffset);
 }
 
 
 W36 KM10::uptGetN(unsigned uptWordOffset) {
   W36 memWordAddr = (W36 *) uptP - (W36 *) memP;
-  return memGetN(memWordAddr + uptWordOffset);
+  W36 result = memGetN(memWordAddr + uptWordOffset);
+  cout << "uptGetN(offset=" << W36(uptWordOffset).fmt18()
+       << ") memWordAddr=" << memWordAddr.fmt36()
+       << "  result=" << result.fmt36() << logger.endl << flush;
+  return result;
 }
 
 
@@ -671,9 +678,9 @@ void KM10::emulate() {
     case iMUUO:
     case iLUUO:
       // All of these cases require that we fetch the next instruction
-      // from a specified location (contained in `fetchPC` and already
-      // set) and loop back to execute that instruction WITHOUT
-      // changing PC.
+      // from a specified location (already in `fetchPC`) and loop
+      // back to execute that instruction with PC left pointing to
+      // next word for the monitor to use to figure out the UUO.
       pcOffset = 1;
       continue;
 
