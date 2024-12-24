@@ -136,6 +136,16 @@ Debugger::DebugAction Debugger::debug() {
       if (s.length() > 0) words.push_back(s);
     }
 
+    // Handle commands that are just abbreviations of others here
+    // with reparse.
+    //
+    // `@ [N]` --> `m @ [N]`.
+    if (words[0] == "@") {
+      vector<string> expansion = {"m", "@"};
+      if (words.size() > 1) expansion.push_back(words[1]);
+      words = move(expansion);
+    }
+
     COMMAND("quit", "q", [&]() {
       km10.running = false;
       km10.restart = false;
@@ -206,7 +216,8 @@ Debugger::DebugAction Debugger::debug() {
     COMMAND("mset", nullptr, [&]() {
 
       if (words.size() <= 2) {
-	cout << "Must specify both memory address and value to set it to." << logger.endl << flush;
+	cout << "Must specify both memory address and value to set it to."
+	     << logger.endl << flush;
 	return;
       }
 
@@ -288,13 +299,15 @@ Debugger::DebugAction Debugger::debug() {
       } else if (words.size() >= 2) {
 
 	if (words[1] == "off") {
-	  logger.ac = logger.io = logger.pc = logger.dte = logger.mem = logger.load = logger.ints = false;
+	  logger.ac = logger.io = logger.pc = logger.dte =
+	    logger.mem = logger.load = logger.ints = false;
 	} else if (words[1] == "file") {
 	  logger.logToFile(words.size() == 3 ? words[2] : "km10.log");
 	} else if (words[1] == "tty") {
 	  logger.logToTTY();
 	} else if (words[1] == "all") {
-	  logger.ac = logger.io = logger.pc = logger.dte = logger.mem = logger.load = logger.ints = true;
+	  logger.ac = logger.io = logger.pc = logger.dte =
+	    logger.mem = logger.load = logger.ints = true;
 	} else {
 	  if (words[1] == "ac") logger.ac = !logger.ac;
 	  if (words[1] == "io") logger.io = !logger.io;
@@ -381,7 +394,8 @@ Debugger::DebugAction Debugger::debug() {
                 Use -A to remove an existing address breakpoint or 'clear' to clear all.
   pbp [A]       Set address breakpoint after PUT access to address A or list breakpoints.
                 Use -A to remove an existing address breakpoint or 'clear' to clear all.
-  ac [N [V]]    Dump all ACs or, if N specified, a single AC; if V is specified set AC's value.
+  ac [N [V]]    Dump all ACs or, if N specified, a single AC.
+                If V is specified, set AC's value.
   b,bp [A]      Set breakpoint before execution of address A or display list of breakpoints.
                 Use -A to remove existing breakpoint or 'clear' to clear all breakpoints.
   c,continue    Continue execution at current PC.
@@ -391,7 +405,9 @@ Debugger::DebugAction Debugger::debug() {
   l,log file [FILENAME]
                 Log to FILENAME or 'km10.log' if not specified (overwriting).
   l,log tty     Log to console.
-  m,mem A [N]   Dump N (octal) words of memory starting at A (octal). A can be 'pc' or '@' for Y.
+  m,mem A [N]   Dump N (octal) words of memory starting at A (octal).
+                A can be 'pc' or '@' for Y. Use '@' command as equivalent to 'm @'.
+  @ [N]         Dump N (octal) words starting at current instruction's Y.
   mset A V      Set memory address A to value V. A can be 'pc'.
   pc [N]        Dump PC and flags, or if N is specified set PC to N (octal).
   pchist [N]    Dump all or some (N) most recent fetch-PC value history in FIFO order.
@@ -621,7 +637,8 @@ void Debugger::loadREL(const char *fileNameP) {
     if ((symOrAddr >> 32) == 014) {
       string symbol = codeSymbol.toString();
       loadAddr = globalSymbols[symbol];
-      if (verboseLoad) cout << "Offset by " << symbol << "=" << W36(loadAddr).fmtVMA() << endl;
+      if (verboseLoad) cout << "Offset by " << symbol
+			    << "=" << W36(loadAddr).fmtVMA() << endl;
       loadAddr += rel[x++].u;	// Add the offset
     } else {
       loadAddr = symOrAddr;	// Get the load addres
@@ -806,7 +823,8 @@ void Debugger::loadREL(const char *fileNameP) {
     if (it != blockTypeHandler.end()) {
       it->second();		// Invoke the handler
     } else {
-      if (verboseLoad) cout << "blockType " << right << oct << blockType << " not defined" << endl;
+      if (verboseLoad) cout << "blockType " << right << oct << blockType
+			    << " not defined" << endl;
       return;			// FOR NOW
       x += sc;			// Try to skip the block
     }
