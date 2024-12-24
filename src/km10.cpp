@@ -579,7 +579,8 @@ void KM10::emulate() {
       // We have a trap.
       fetchPC = eptAddressFor(flags.tr1 ? &eptP->trap1Insn : &eptP->stackOverflowInsn);
       inInterrupt = true;
-      cerr << ">>>>> trap cycle PC now=" << pc.fmtVMA() << logger.endl << flush;
+      if (logger.ints) logger.s << ">>>>> trap cycle PC now=" << pc.fmtVMA()
+				<< logger.endl << flush;
     } else if (W36 vec = pi.setUpInterruptCycleIfPending(); vec != W36(0)) {
       // We have an active interrupt.
       fetchPC = vec;
@@ -635,7 +636,7 @@ void KM10::emulate() {
     }
 
     if (logger.loggingToFile && logger.pc) {
-      logger.s << ea.fmtVMA() << ": " << debugger.dump(iw, ea);
+      logger.s << fetchPC.fmtVMA() << ": " << debugger.dump(iw, fetchPC);
     }
 
     // Compute effective address.
@@ -644,8 +645,10 @@ void KM10::emulate() {
     // Execute the instruction in `iw`.
     IResult result = (this->*ops[iw.op])();
 
-    if (iw.op == 0312) cerr << "CAME: pc=" << pc.fmtVMA()
-			    << "  inInterrupt=" << inInterrupt;
+    if (iw.op == 0312) {
+      logger.s << "CAME: pc=" << pc.fmtVMA()
+	       << "  inInterrupt=" << inInterrupt;
+    }
 
     // If we "continue" we have to set up `fetchPC` to point to the
     // instruction to fetch and execute next. If we "break" (from the
@@ -663,9 +666,9 @@ void KM10::emulate() {
 	pcOffset = 1;
       }
 
-      if (iw.op == 0312) cerr << "  fetchPC=" << fetchPC.fmtVMA()
-			      << "  pcOffset=" << pcOffset
-			      << logger.endl << flush;
+      if (iw.op == 0312) logger.s << "  fetchPC=" << fetchPC.fmtVMA()
+				  << "  pcOffset=" << pcOffset
+				  << logger.endl << flush;
 
       break;
 
@@ -681,9 +684,9 @@ void KM10::emulate() {
 	pcOffset = 2;
       }
 
-      if (iw.op == 0312) cerr << "  fetchPC=" << fetchPC.fmtVMA()
-			      << "  pcOffset=" << pcOffset
-			      << logger.endl << flush;
+      if (iw.op == 0312) logger.s << "  fetchPC=" << fetchPC.fmtVMA()
+				  << "  pcOffset=" << pcOffset
+				  << logger.endl << flush;
 
       break;
 
