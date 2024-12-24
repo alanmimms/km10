@@ -276,7 +276,11 @@ Debugger::DebugAction Debugger::debug() {
 		 << logger.endl;
 	  }
 	} else if (words[1] == "counters") {
+	  double insPerSec = (double) km10.instructionCounter / (double) km10.runNS * 1.0e9;
 	  cout << "Instructions: " << setw(12) << dec << km10.instructionCounter
+	       << logger.endl
+	       << "              " << fixed << setw(14) << setprecision(1)
+	       << insPerSec << "/sec"
 	       << logger.endl;
 	} else {
 	  cout << "Must specify apr or flags" << logger.endl;

@@ -302,6 +302,7 @@ public:
   unordered_set<unsigned> &addressPBPs; // Address PUT breakpoints
   unordered_set<unsigned> &executeBPs;	// Execution breakpoints
   uint64_t instructionCounter;
+  uint64_t runNS;
 
   // Call by PAG when DATAO changes current AC block number.
   void updateACBlock(unsigned acBlock);

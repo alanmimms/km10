@@ -9,6 +9,7 @@
 #include <ostream>
 #include <limits>
 #include <string>
+#include <ctime>
 using namespace std;
 
 #if 0
@@ -82,7 +83,8 @@ KM10::KM10(unsigned nMemoryWords,
     addressGBPs(aGBPs),
     addressPBPs(aPBPs),
     executeBPs(eBPs),
-    instructionCounter(0)
+    instructionCounter(0),
+    runNS(0)
 {
   // THIS MUST BE FIRST so that all UUOs are MUUOs by default.
   InstallUUOsGroup(*this);
@@ -545,8 +547,17 @@ void KM10::loadA10(const char *fileNameP) {
 }
 
 
+static uint64_t getCPUTimeNS() {
+  struct timespec ts;
+  if (clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts) != 0) throw runtime_error("Failed to get CPU time");
+  return (uint64_t) ts.tv_sec * 1000ll*1000ll*1000ll + ts.tv_nsec;
+}
+
+
 ////////////////////////////////////////////////////////////////
 void KM10::emulate() {
+  uint64_t startNS = getCPUTimeNS();	// Beginning of Time
+
   ////////////////////////////////////////////////////////////////
   // Connect our DTE20 (put console into raw mode)
   dte.connect();
@@ -587,6 +598,7 @@ void KM10::emulate() {
     // inspect and change things. The debugger tells us what our next
     // action should be based on its return value.
     if (!running) {
+      runNS += getCPUTimeNS() - startNS;
 
       switch (debugger.debug()) {
       case Debugger::step:		// Debugger has set step count in nSteps.
@@ -603,13 +615,17 @@ void KM10::emulate() {
 
       case Debugger::pcChanged:		// PC changed by debugger - go fetch again
 	fetchPC = pc;
+	startNS = getCPUTimeNS();	// Restart time - debugger is exiting.
 	continue;
 
       default:				// This should never happen...
 	assert("Debugger returned unknown action" == nullptr);
 	return;
       }
+
+      startNS = getCPUTimeNS();		// Restart time - debugger is exiting.
     }
+
 
     // Handle nSteps so we don't keep running if we run out of step
     // count. THIS instruction is our single remaining step. If
