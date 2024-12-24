@@ -2,7 +2,7 @@
 #include "device.hpp"
 #include "pag.hpp"
 #include "km10.hpp"
-#include "instruction-result.hpp"
+#include "iresult.hpp"
 
 
 // Constructors
@@ -27,7 +27,7 @@ W36 PAGDevice::getPCW() const {
 
 
 // I/O instruction handlers
-InstructionResult PAGDevice::doDATAO(W36 iw, W36 ea) {
+IResult PAGDevice::doDATAO(W36 iw, W36 ea) {
   if (logger.mem) logger.s << "; " << ea.fmt18();
   ProcessContext newContext{km10.memGet()};
 
@@ -45,7 +45,7 @@ InstructionResult PAGDevice::doDATAO(W36 iw, W36 ea) {
   return iNormal;
 }
 
-InstructionResult PAGDevice::doDATAI(W36 iw, W36 ea) {
+IResult PAGDevice::doDATAI(W36 iw, W36 ea) {
   ProcessContext result{processContext};
   result.loadUserBase = 0;
   result.selectPrevContext = 0;
@@ -54,13 +54,13 @@ InstructionResult PAGDevice::doDATAI(W36 iw, W36 ea) {
   return iNormal;
 }
 
-InstructionResult PAGDevice::doCONO(W36 iw, W36 ea) {
+IResult PAGDevice::doCONO(W36 iw, W36 ea) {
   if (logger.mem) logger.s << "; " << ea.fmt18();
   pagState.u = iw.y;
   return iNormal;
 }
 
-InstructionResult PAGDevice::doCONI(W36 iw, W36 ea) {
+IResult PAGDevice::doCONI(W36 iw, W36 ea) {
   W36 conditions{km10.memGetN(ea).lhu, pagState.u};
   km10.memPut(conditions);
   return iNormal;

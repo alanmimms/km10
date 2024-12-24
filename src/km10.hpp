@@ -75,7 +75,7 @@ using namespace std;
 #include "dte20.hpp"
 #include "device.hpp"
 #include "debugger.hpp"
-#include "instruction-result.hpp"
+#include "iresult.hpp"
 
 
 class KM10 {
@@ -95,7 +95,7 @@ public:
 
 
   // This is an implementation of an opcode to be saved in the ops[].
-  using OpcodeHandler = InstructionResult (KM10::*)();
+  using OpcodeHandler = IResult (KM10::*)();
 
 
   // This is indexed by opcode, giving the method to call for that
@@ -354,7 +354,7 @@ public:
     ops[op] = impl;
   }
 
-  InstructionResult doILLEGAL();
+  IResult doILLEGAL();
 
   void logFlow(const char *msg);
 

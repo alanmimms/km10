@@ -5,26 +5,26 @@ struct JumpGroup: KM10 {
     if (logger.pc) logger.s << " [" << msg << "]";
   }
 
-  InstructionResult doJUMP()   { return iNormal; }
-  InstructionResult doJUMPL()  { return acGet().s  < 0 ? iJump : iNormal; }
-  InstructionResult doJUMPE()  { return acGet().s == 0 ? iJump : iNormal; }
-  InstructionResult doJUMPLE() { return acGet().s <= 0 ? iJump : iNormal; }
-  InstructionResult doJUMPA()  { return iJump; }
-  InstructionResult doJUMPGE() { return acGet().s >= 0 ? iJump : iNormal; }
-  InstructionResult doJUMPN()  { return acGet().s != 0 ? iJump : iNormal; }
-  InstructionResult doJUMPG()  { return acGet().s >  0 ? iJump : iNormal; }
+  IResult doJUMP()   { return iNormal; }
+  IResult doJUMPL()  { return acGet().s  < 0 ? iJump : iNormal; }
+  IResult doJUMPE()  { return acGet().s == 0 ? iJump : iNormal; }
+  IResult doJUMPLE() { return acGet().s <= 0 ? iJump : iNormal; }
+  IResult doJUMPA()  { return iJump; }
+  IResult doJUMPGE() { return acGet().s >= 0 ? iJump : iNormal; }
+  IResult doJUMPN()  { return acGet().s != 0 ? iJump : iNormal; }
+  IResult doJUMPG()  { return acGet().s >  0 ? iJump : iNormal; }
 
-  InstructionResult doSKIP()   { if (iw.ac != 0) acPut(memGet()); return iNormal; }
-  InstructionResult doSKIPL()  { if (iw.ac != 0) acPut(memGet()); return memGet().s  < 0 ? iSkip : iNormal; }
-  InstructionResult doSKIPLE() { if (iw.ac != 0) acPut(memGet()); return memGet().s <= 0 ? iSkip : iNormal; }
-  InstructionResult doSKIPA()  { if (iw.ac != 0) acPut(memGet()); return iSkip; }
-  InstructionResult doSKIPG()  { if (iw.ac != 0) acPut(memGet()); return memGet().s  > 0 ? iSkip : iNormal; }
-  InstructionResult doSKIPGE() { if (iw.ac != 0) acPut(memGet()); return memGet().s >= 0 ? iSkip : iNormal; }
-  InstructionResult doSKIPE()  { if (iw.ac != 0) acPut(memGet()); return memGet().s == 0 ? iSkip : iNormal; }
-  InstructionResult doSKIPN()  { if (iw.ac != 0) acPut(memGet()); return memGet().s != 0 ? iSkip : iNormal; }
+  IResult doSKIP()   { if (iw.ac != 0) acPut(memGet()); return iNormal; }
+  IResult doSKIPL()  { if (iw.ac != 0) acPut(memGet()); return memGet().s  < 0 ? iSkip : iNormal; }
+  IResult doSKIPLE() { if (iw.ac != 0) acPut(memGet()); return memGet().s <= 0 ? iSkip : iNormal; }
+  IResult doSKIPA()  { if (iw.ac != 0) acPut(memGet()); return iSkip; }
+  IResult doSKIPG()  { if (iw.ac != 0) acPut(memGet()); return memGet().s  > 0 ? iSkip : iNormal; }
+  IResult doSKIPGE() { if (iw.ac != 0) acPut(memGet()); return memGet().s >= 0 ? iSkip : iNormal; }
+  IResult doSKIPE()  { if (iw.ac != 0) acPut(memGet()); return memGet().s == 0 ? iSkip : iNormal; }
+  IResult doSKIPN()  { if (iw.ac != 0) acPut(memGet()); return memGet().s != 0 ? iSkip : iNormal; }
 
 
-  InstructionResult doJRST() {
+  IResult doJRST() {
 
     switch (iw.ac) {
     case 000:					// JRST
@@ -79,7 +79,7 @@ struct JumpGroup: KM10 {
 
 
 
-  InstructionResult doJFCL() {
+  IResult doJFCL() {
     unsigned wasFlags = flags.u;
     unsigned testFlags = (unsigned) iw.ac << 9; // Align with OV,CY0,CY1,FOV
     flags.u &= ~testFlags;
@@ -88,7 +88,7 @@ struct JumpGroup: KM10 {
   }
 
 
-  InstructionResult doPXCT() {
+  IResult doPXCT() {
 
     if (userMode() || iw.ac == 0) {
       return iXCT;
@@ -137,7 +137,7 @@ struct JumpGroup: KM10 {
   }
 
 
-  InstructionResult doPUSHJ() {
+  IResult doPUSHJ() {
     // It's maybe not allowed to use PUSHJ in interrupt, but we can
     // support it if someone does.
     int delta = inInterrupt ? 0 : 1;
@@ -150,22 +150,22 @@ struct JumpGroup: KM10 {
   }
 
 
-  InstructionResult doPUSH() {
+  IResult doPUSH() {
     push(memGet(), iw.ac);
     return iNormal;
   }
 
-  InstructionResult doPOP() {
+  IResult doPOP() {
     memPut(pop(iw.ac));
     return iNormal;
   }
 
-  InstructionResult doPOPJ() {
+  IResult doPOPJ() {
     ea.rhu = pop(iw.ac).rhu;
     return iJump;
   }
 
-  InstructionResult doJSR() {
+  IResult doJSR() {
     int delta = inInterrupt ? 0 : 1;
     W36 tmp = ea.isSection0() ? flagsWord(pc.rhu + delta) : W36(pc.vma + delta);
     memPut(tmp);
@@ -175,7 +175,7 @@ struct JumpGroup: KM10 {
     return iJump;
   }
 
-  InstructionResult doJSP() {
+  IResult doJSP() {
     int delta = inInterrupt ? 0 : 1;
     W36 tmp = ea.isSection0() ? flagsWord(pc.rhu + delta) : W36(pc.vma + delta);
     acPut(tmp);
@@ -184,7 +184,7 @@ struct JumpGroup: KM10 {
     return iJump;
   }
 
-  InstructionResult doJSA() {
+  IResult doJSA() {
     int delta = inInterrupt ? 0 : 1;
     memPut(acGet());
     acPut(W36(ea.rhu, pc.rhu + delta));
@@ -193,12 +193,12 @@ struct JumpGroup: KM10 {
     return iJump;
   }
 
-  InstructionResult doJRA() {
+  IResult doJRA() {
     acPut(memGetN(acGet().lhu));
     return iJump;
   }
 
-  InstructionResult doXCT() {
+  IResult doXCT() {
     if (userMode() || iw.ac == 0) {
       return iXCT;
     } else {					// PXCT
@@ -207,13 +207,13 @@ struct JumpGroup: KM10 {
     }
   }
 
-  InstructionResult doMAP() {
+  IResult doMAP() {
     logger.nyi(*this);
     return iNormal;
   }
 
 
-  InstructionResult doAOBJP() {
+  IResult doAOBJP() {
     W36 tmp = acGet();
     tmp = W36(tmp.lhu + 1, tmp.rhu + 1);
     acPut(tmp);
@@ -225,7 +225,7 @@ struct JumpGroup: KM10 {
     }
   }
 
-  InstructionResult doAOBJN() {
+  IResult doAOBJN() {
     W36 tmp = acGet();
     tmp = W36(tmp.lhu + 1, tmp.rhu + 1);
     acPut(tmp);
@@ -238,7 +238,7 @@ struct JumpGroup: KM10 {
   }
 
 
-  InstructionResult doADJSP() {
+  IResult doADJSP() {
     W36 a = acGet();
 
     if (pc.isSection0() || a.lhs < 0) {

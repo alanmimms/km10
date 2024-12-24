@@ -104,112 +104,112 @@ struct IntBinGroup: KM10 {
     }
   }
 
-  InstructionResult doIMUL() {
+  IResult doIMUL() {
     W36 a1 = acGet();
     W36 a2 = memGet();
     acPut(imulWord(a1, a2));
     return iNormal;
   }
 
-  InstructionResult doIMULI() {
+  IResult doIMULI() {
     W36 a1 = acGet();
     W36 a2 = immediate();
     acPut(imulWord(a1, a2));
     return iNormal;
   }
 
-  InstructionResult doIMULM() {
+  IResult doIMULM() {
     W36 a1 = acGet();
     W36 a2 = memGet();
     memPut(imulWord(a1, a2));
     return iNormal;
   }
 
-  InstructionResult doIMULB() {
+  IResult doIMULB() {
     W36 a1 = acGet();
     W36 a2 = memGet();
     bothPut(imulWord(a1, a2));
     return iNormal;
   }
 
-  InstructionResult doMUL() {
+  IResult doMUL() {
     W36 a1 = acGet();
     W36 a2 = memGet();
     acPut2(mulWord(a1, a2));
     return iNormal;
   }
 
-  InstructionResult doMULI() {
+  IResult doMULI() {
     W36 a1 = acGet();
     W36 a2 = immediate();
     acPut2(mulWord(a1, a2));
     return iNormal;
   }
 
-  InstructionResult doMULM() {
+  IResult doMULM() {
     W36 a1 = acGet();
     W36 a2 = memGet();
     memPutHi(mulWord(a1, a2));
     return iNormal;
   }
 
-  InstructionResult doMULB() {
+  IResult doMULB() {
     W36 a1 = acGet();
     W36 a2 = memGet();
     bothPut2(mulWord(a1, a2));
     return iNormal;
   }
 
-  InstructionResult doIDIV() {
+  IResult doIDIV() {
     W36 a1 = acGet();
     W36 a2 = memGet();
     acPut2(idivWord(a1, a2));
     return iNormal;
   }
 
-  InstructionResult doIDIVI() {
+  IResult doIDIVI() {
     W36 a1 = acGet();
     W36 a2 = immediate();
     acPut2(idivWord(a1, a2));
     return iNormal;
   }
 
-  InstructionResult doIDIVM() {
+  IResult doIDIVM() {
     W36 a1 = acGet();
     W36 a2 = memGet();
     memPutHi(idivWord(a1, a2));
     return iNormal;
   }
 
-  InstructionResult doIDIVB() {
+  IResult doIDIVB() {
     W36 a1 = acGet();
     W36 a2 = memGet();
     bothPut2(idivWord(a1, a2));
     return iNormal;
   }
 
-  InstructionResult doDIV() {
+  IResult doDIV() {
     W72 a1 = acGet2();
     W36 a2 = memGet();
     acPut2(divWord(a1, a2));
     return iNormal;
   }
 
-  InstructionResult doDIVI() {
+  IResult doDIVI() {
     W72 a1 = acGet2();
     W36 a2 = immediate();
     acPut2(divWord(a1, a2));
     return iNormal;
   }
 
-  InstructionResult doDIVM() {
+  IResult doDIVM() {
     W72 a1 = acGet2();
     W36 a2 = memGet();
     memPutHi(divWord(a1, a2));
     return iNormal;
   }
 
-  InstructionResult doDIVB() {
+  IResult doDIVB() {
     W72 a1 = acGet2();
     W36 a2 = memGet();
     bothPut2(divWord(a1, a2));
@@ -217,56 +217,56 @@ struct IntBinGroup: KM10 {
   }
 
 
-  InstructionResult doADD() {
+  IResult doADD() {
     W36 a1 = acGet();
     W36 a2 = memGet();
     acPut(addWord(a1, a2));
     return iNormal;
   }
 
-  InstructionResult doADDI() {
+  IResult doADDI() {
     W36 a1 = acGet();
     W36 a2 = immediate();
     acPut(addWord(a1, a2));
     return iNormal;
   }
 
-  InstructionResult doADDM() {
+  IResult doADDM() {
     W36 a1 = acGet();
     W36 a2 = memGet();
     memPut(addWord(a1, a2));
     return iNormal;
   }
 
-  InstructionResult doADDB() {
+  IResult doADDB() {
     W36 a1 = acGet();
     W36 a2 = memGet();
     bothPut(addWord(a1, a2));
     return iNormal;
   }
 
-  InstructionResult doSUB() {
+  IResult doSUB() {
     W36 a1 = acGet();
     W36 a2 = memGet();
     acPut(subWord(a1, a2));
     return iNormal;
   }
 
-  InstructionResult doSUBI() {
+  IResult doSUBI() {
     W36 a1 = acGet();
     W36 a2 = immediate();
     acPut(subWord(a1, a2));
     return iNormal;
   }
 
-  InstructionResult doSUBM() {
+  IResult doSUBM() {
     W36 a1 = acGet();
     W36 a2 = memGet();
     memPut(subWord(a1, a2));
     return iNormal;
   }
 
-  InstructionResult doSUBB() {
+  IResult doSUBB() {
     W36 a1 = acGet();
     W36 a2 = memGet();
     bothPut(subWord(a1, a2));
@@ -274,56 +274,56 @@ struct IntBinGroup: KM10 {
   }
 
 
-  InstructionResult doXOR() {
+  IResult doXOR() {
     W36 a1 = memGet();
     W36 a2 = acGet();
     acPut(a1.u ^ a2.u);
     return iNormal;
   }
 
-  InstructionResult doXORI() {
+  IResult doXORI() {
     W36 a1 = immediate();
     W36 a2 = acGet();
     acPut(a1.u ^ a2.u);
     return iNormal;
   }
 
-  InstructionResult doXORM() {
+  IResult doXORM() {
     W36 a1 = memGet();
     W36 a2 = acGet();
     memPut(a1.u ^ a2.u);
     return iNormal;
   }
 
-  InstructionResult doXORB() {
+  IResult doXORB() {
     W36 a1 = memGet();
     W36 a2 = acGet();
     bothPut(a1.u ^ a2.u);
     return iNormal;
   }
 
-  InstructionResult doIOR() {
+  IResult doIOR() {
     W36 a1 = memGet();
     W36 a2 = acGet();
     acPut(a1.u | a2.u);
     return iNormal;
   }
 
-  InstructionResult doIORI() {
+  IResult doIORI() {
     W36 a1 = immediate();
     W36 a2 = acGet();
     acPut(a1.u | a2.u);
     return iNormal;
   }
 
-  InstructionResult doIORM() {
+  IResult doIORM() {
     W36 a1 = memGet();
     W36 a2 = acGet();
     memPut(a1.u | a2.u);
     return iNormal;
   }
 
-  InstructionResult doIORB() {
+  IResult doIORB() {
     W36 a1 = memGet();
     W36 a2 = acGet();
     bothPut(a1.u | a2.u);
@@ -331,28 +331,28 @@ struct IntBinGroup: KM10 {
   }
 
 
-  InstructionResult doAND() {
+  IResult doAND() {
     W36 a1 = memGet();
     W36 a2 = acGet();
     acPut(a1 & a2);
     return iNormal;
   }
 
-  InstructionResult doANDI() {
+  IResult doANDI() {
     W36 a1 = immediate();
     W36 a2 = acGet();
     acPut(a1 & a2);
     return iNormal;
   }
 
-  InstructionResult doANDM() {
+  IResult doANDM() {
     W36 a1 = memGet();
     W36 a2 = acGet();
     memPut(a1 & a2);
     return iNormal;
   }
 
-  InstructionResult doANDB() {
+  IResult doANDB() {
     W36 a1 = memGet();
     W36 a2 = acGet();
     bothPut(a1 & a2);
@@ -360,28 +360,28 @@ struct IntBinGroup: KM10 {
   }
 
 
-  InstructionResult doANDCA() {
+  IResult doANDCA() {
     W36 a1 = memGet();
     W36 a2 = acGet();
     acPut(a1 & ~a2);
     return iNormal;
   }
 
-  InstructionResult doANDCAI() {
+  IResult doANDCAI() {
     W36 a1 = immediate();
     W36 a2 = acGet();
     acPut(a1 & ~a2);
     return iNormal;
   }
 
-  InstructionResult doANDCAM() {
+  IResult doANDCAM() {
     W36 a1 = memGet();
     W36 a2 = acGet();
     memPut(a1 & ~a2);
     return iNormal;
   }
 
-  InstructionResult doANDCAB() {
+  IResult doANDCAB() {
     W36 a1 = memGet();
     W36 a2 = acGet();
     bothPut(a1 & ~a2);
@@ -389,28 +389,28 @@ struct IntBinGroup: KM10 {
   }
 
 
-  InstructionResult doANDCM() {
+  IResult doANDCM() {
     W36 a1 = memGet();
     W36 a2 = acGet();
     acPut(~a1 & a2);
     return iNormal;
   }
 
-  InstructionResult doANDCMI() {
+  IResult doANDCMI() {
     W36 a1 = immediate();
     W36 a2 = acGet();
     acPut(~a1 & a2);
     return iNormal;
   }
 
-  InstructionResult doANDCMM() {
+  IResult doANDCMM() {
     W36 a1 = memGet();
     W36 a2 = acGet();
     memPut(~a1 & a2);
     return iNormal;
   }
 
-  InstructionResult doANDCMB() {
+  IResult doANDCMB() {
     W36 a1 = memGet();
     W36 a2 = acGet();
     bothPut(~a1 & a2);
@@ -418,28 +418,28 @@ struct IntBinGroup: KM10 {
   }
 
 
-  InstructionResult doANDCB() {
+  IResult doANDCB() {
     W36 a1 = memGet();
     W36 a2 = acGet();
     acPut(~a1 & ~a2);
     return iNormal;
   }
 
-  InstructionResult doANDCBI() {
+  IResult doANDCBI() {
     W36 a1 = immediate();
     W36 a2 = acGet();
     acPut(~a1 & ~a2);
     return iNormal;
   }
 
-  InstructionResult doANDCBM() {
+  IResult doANDCBM() {
     W36 a1 = memGet();
     W36 a2 = acGet();
     memPut(~a1 & ~a2);
     return iNormal;
   }
 
-  InstructionResult doANDCBB() {
+  IResult doANDCBB() {
     W36 a1 = memGet();
     W36 a2 = acGet();
     bothPut(~a1 & ~a2);
@@ -447,28 +447,28 @@ struct IntBinGroup: KM10 {
   }
 
 
-  InstructionResult doORCA() {
+  IResult doORCA() {
     W36 a1 = memGet();
     W36 a2 = acGet();
     acPut(a1 | ~a2);
     return iNormal;
   }
 
-  InstructionResult doORCAI() {
+  IResult doORCAI() {
     W36 a1 = immediate();
     W36 a2 = acGet();
     acPut(a1 | ~a2);
     return iNormal;
   }
 
-  InstructionResult doORCAM() {
+  IResult doORCAM() {
     W36 a1 = memGet();
     W36 a2 = acGet();
     memPut(a1 | ~a2);
     return iNormal;
   }
 
-  InstructionResult doORCAB() {
+  IResult doORCAB() {
     W36 a1 = memGet();
     W36 a2 = acGet();
     bothPut(a1 | ~a2);
@@ -476,28 +476,28 @@ struct IntBinGroup: KM10 {
   }
 
 
-  InstructionResult doORCM() {
+  IResult doORCM() {
     W36 a1 = memGet();
     W36 a2 = acGet();
     acPut(~a1 | a2);
     return iNormal;
   }
 
-  InstructionResult doORCMI() {
+  IResult doORCMI() {
     W36 a1 = immediate();
     W36 a2 = acGet();
     acPut(~a1 | a2);
     return iNormal;
   }
 
-  InstructionResult doORCMM() {
+  IResult doORCMM() {
     W36 a1 = memGet();
     W36 a2 = acGet();
     memPut(~a1 | a2);
     return iNormal;
   }
 
-  InstructionResult doORCMB() {
+  IResult doORCMB() {
     W36 a1 = memGet();
     W36 a2 = acGet();
     bothPut(~a1 | a2);
@@ -505,63 +505,63 @@ struct IntBinGroup: KM10 {
   }
 
 
-  InstructionResult doORCB() {
+  IResult doORCB() {
     W36 a1 = memGet();
     W36 a2 = acGet();
     acPut(~a1 | ~a2);
     return iNormal;
   }
 
-  InstructionResult doORCBI() {
+  IResult doORCBI() {
     W36 a1 = immediate();
     W36 a2 = acGet();
     acPut(~a1 | ~a2);
     return iNormal;
   }
 
-  InstructionResult doORCBM() {
+  IResult doORCBM() {
     W36 a1 = memGet();
     W36 a2 = acGet();
     memPut(~a1 | ~a2);
     return iNormal;
   }
 
-  InstructionResult doORCBB() {
+  IResult doORCBB() {
     W36 a1 = memGet();
     W36 a2 = acGet();
     bothPut(~a1 | ~a2);
     return iNormal;
   }
 
-  InstructionResult doEQV() {
+  IResult doEQV() {
     W36 a1 = memGet();
     W36 a2 = acGet();
     acPut(~(a1.u ^ a2.u));
     return iNormal;
   }
 
-  InstructionResult doEQVI() {
+  IResult doEQVI() {
     W36 a1 = immediate();
     W36 a2 = acGet();
     acPut(~(a1.u ^ a2.u));
     return iNormal;
   }
 
-  InstructionResult doEQVM() {
+  IResult doEQVM() {
     W36 a1 = memGet();
     W36 a2 = acGet();
     memPut(~(a1.u ^ a2.u));
     return iNormal;
   }
 
-  InstructionResult doEQVB() {
+  IResult doEQVB() {
     W36 a1 = memGet();
     W36 a2 = acGet();
     bothPut(~(a1.u ^ a2.u));
     return iNormal;
   }
 
-  InstructionResult doASH() {
+  IResult doASH() {
     int n = ea.rhs % 36;
     W36 a(acGet());
     auto aSigned{a.ext64()};
@@ -589,7 +589,7 @@ struct IntBinGroup: KM10 {
   }
 
 
-  InstructionResult doASHC() {
+  IResult doASHC() {
     W36 a0 = acGetN(iw.ac+0);
     W36 a1 = acGetN(iw.ac+1);
     int n = ea.rhs % 72;
@@ -627,7 +627,7 @@ struct IntBinGroup: KM10 {
   }
 
 
-  InstructionResult doROT() {
+  IResult doROT() {
     int n = ea.rhs % 36;
     W36 a(acGet());
     W36 prev(a);
@@ -646,7 +646,7 @@ struct IntBinGroup: KM10 {
   }
 
 
-  InstructionResult doLSH() {
+  IResult doLSH() {
     int n = ea.rhs % 36;
     W36 a(acGet());
 
@@ -659,7 +659,7 @@ struct IntBinGroup: KM10 {
     return iNormal;
   }
 
-  InstructionResult doJFFO() {
+  IResult doJFFO() {
     W36 tmp = acGet();
 
     if (tmp.s != 0) {
@@ -677,7 +677,7 @@ struct IntBinGroup: KM10 {
     return tmp.u != 0 ? iJump : iNormal;
   }
 
-  InstructionResult doROTC() {
+  IResult doROTC() {
     int n = ea.rhs % 72;
     uint128_t a = ((uint128_t) acGetN(iw.ac+0) << 36) | acGetN(iw.ac+1);
 
@@ -697,7 +697,7 @@ struct IntBinGroup: KM10 {
     return iNormal;
   }
 
-  InstructionResult doLSHC() {
+  IResult doLSHC() {
     W72 a(acGet(), acGetN(iw.ac+1));
 
     if (ea.rhs > 0)
@@ -710,14 +710,14 @@ struct IntBinGroup: KM10 {
     return iNormal;
   }
 
-  InstructionResult doEXCH() {
+  IResult doEXCH() {
     W36 a = acGet();
     acPut(memGet());
     memPut(a);
     return iNormal;
   }
 
-  InstructionResult doBLT() {
+  IResult doBLT() {
     W36 a(acGet());
     bool mem = logger.mem;
 

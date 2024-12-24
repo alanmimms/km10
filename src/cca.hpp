@@ -28,13 +28,13 @@ struct CCADevice: Device {
 
 
   // I/O instruction handlers
-  virtual InstructionResult doCONO(W36 iw, W36 ea) override;
-  virtual InstructionResult doDATAI(W36 iw, W36 ea); // SWPIA
-  virtual InstructionResult doBLKO(W36 iw, W36 ea);  // SWPVA
-  virtual InstructionResult doDATAO(W36 iw, W36 ea); // SWPUA
-  virtual InstructionResult doCONI(W36 iw, W36 ea);  // SWPIO
-  virtual InstructionResult doCONSZ(W36 iw, W36 ea); // SWPVO
-  virtual InstructionResult doCONSO(W36 iw, W36 ea); // SWPUO
+  virtual IResult doCONO(W36 iw, W36 ea) override;
+  virtual IResult doDATAI(W36 iw, W36 ea); // SWPIA
+  virtual IResult doBLKO(W36 iw, W36 ea);  // SWPVA
+  virtual IResult doDATAO(W36 iw, W36 ea); // SWPUA
+  virtual IResult doCONI(W36 iw, W36 ea);  // SWPIO
+  virtual IResult doCONSZ(W36 iw, W36 ea); // SWPVO
+  virtual IResult doCONSO(W36 iw, W36 ea); // SWPUO
 
   virtual void clearIO();
 };

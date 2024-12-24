@@ -244,11 +244,11 @@ struct APRDevice: Device {
   void endSweep();
 
   // I/O instruction handlers
-  virtual InstructionResult doDATAI(W36 iw, W36 ea) override;
-  virtual InstructionResult doBLKI(W36 iw, W36 ea) override; // APRID
-  virtual InstructionResult doBLKO(W36 iw, W36 ea) override; // WRFIL
-  virtual InstructionResult doCONO(W36 iw, W36 ea) override; // WRAPR
-  virtual InstructionResult doCONI(W36 iw, W36 ea) override; // RDAPR
+  virtual IResult doDATAI(W36 iw, W36 ea) override;
+  virtual IResult doBLKI(W36 iw, W36 ea) override; // APRID
+  virtual IResult doBLKO(W36 iw, W36 ea) override; // WRFIL
+  virtual IResult doCONO(W36 iw, W36 ea) override; // WRAPR
+  virtual IResult doCONI(W36 iw, W36 ea) override; // RDAPR
 
   virtual void clearIO() override;
 };

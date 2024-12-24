@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include "km10.hpp"
-#include "instruction-result.hpp"
+#include "iresult.hpp"
 #include "apr.hpp"
 #include "device.hpp"
 #include "logger.hpp"
@@ -25,22 +25,22 @@ void APRDevice::endSweep() {
 }
 
 // I/O instruction handlers
-InstructionResult APRDevice::doBLKI(W36 iw, W36 ea) {	// APRID
+IResult APRDevice::doBLKI(W36 iw, W36 ea) {	// APRID
   km10.memPut(aprIDValue.u);
-  return InstructionResult::iNormal;
+  return IResult::iNormal;
 }
 
-InstructionResult APRDevice::doBLKO(W36 iw, W36 ea) {	// WRFIL
+IResult APRDevice::doBLKO(W36 iw, W36 ea) {	// WRFIL
   // This is essentially a no-op.
-  return InstructionResult::iNormal;
+  return IResult::iNormal;
 }
 
-InstructionResult APRDevice::doDATAI(W36 iw, W36 ea) {
+IResult APRDevice::doDATAI(W36 iw, W36 ea) {
   km10.memPut(breakState.u);
-  return InstructionResult::iNormal;
+  return IResult::iNormal;
 }
 
-InstructionResult APRDevice::doCONO(W36 iw, W36 ea) {		// WRAPR
+IResult APRDevice::doCONO(W36 iw, W36 ea) {		// WRAPR
   APRFunctions func{ea.rhu};
   unsigned select = func.getSelect().u;
 
@@ -83,10 +83,10 @@ InstructionResult APRDevice::doCONO(W36 iw, W36 ea) {		// WRAPR
   }
 
   if (logger.ints) logger.s << logger.endl;
-  return InstructionResult::iNormal;
+  return IResult::iNormal;
 }
 
-InstructionResult APRDevice::doCONI(W36 iw, W36 ea) {		// RDAPR
+IResult APRDevice::doCONI(W36 iw, W36 ea) {		// RDAPR
   aprState.intLevel = intLevel;	// Refresh our version of the interrupt level
   W36 conditions{(int64_t) aprState.u};
   if (logger.ints) logger.s << km10.pc.fmtVMA() << " RDAPR aprState="
@@ -94,7 +94,7 @@ InstructionResult APRDevice::doCONI(W36 iw, W36 ea) {		// RDAPR
 			    << " ea=" << ea.fmtVMA()
 			    << logger.endl;
   km10.memPut(conditions);
-  return InstructionResult::iNormal;
+  return IResult::iNormal;
 }
 
 void APRDevice::clearIO() {

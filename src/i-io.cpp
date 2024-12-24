@@ -2,7 +2,7 @@
 
 struct IOGroup: KM10 {
 
-  InstructionResult doIO() {
+  IResult doIO() {
     if (logger.io) logger.s << "; ioDev=" << oct << iw.ioDev << " ioOp=" << oct << iw.ioOp;
     return Device::handleIO(iw, ea);
   }

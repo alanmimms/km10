@@ -6,7 +6,7 @@
 
 struct ByteGroup: KM10 {
 
-  InstructionResult doIBP_ADJBP() {
+  IResult doIBP_ADJBP() {
     BytePointer *bp = BytePointer::makeFrom(ea, *this);
 
     if (iw.ac == 0) {		// IBP
@@ -18,27 +18,27 @@ struct ByteGroup: KM10 {
     return iNormal;
   };
 
-  InstructionResult doILDB() {
+  IResult doILDB() {
     BytePointer *bp = BytePointer::makeFrom(ea, *this);
     bp->inc(*this);
     acPut(bp->getByte(*this));
     return iNormal;
   };
 
-  InstructionResult doLDB() {
+  IResult doLDB() {
     BytePointer *bp = BytePointer::makeFrom(ea, *this);
     acPut(bp->getByte(*this));
     return iNormal;
   };
 
-  InstructionResult doIDPB() {
+  IResult doIDPB() {
     BytePointer *bp = BytePointer::makeFrom(ea, *this);
     bp->inc(*this);
     bp->putByte(acGet(), *this);
     return iNormal;
   };
 
-  InstructionResult doDPB() {
+  IResult doDPB() {
     BytePointer *bp = BytePointer::makeFrom(ea, *this);
     bp->putByte(acGet(), *this);
     return iNormal;

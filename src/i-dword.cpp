@@ -3,7 +3,7 @@
 
 struct DWordGroup: KM10 {
 
-  InstructionResult doDADD() {
+  IResult doDADD() {
     auto a1 = W72{memGetN(ea.u+0), memGetN(ea.u+1)};
     auto a2 = W72{acGetN(iw.ac+0), acGetN(iw.ac+1)};
 
@@ -14,7 +14,7 @@ struct DWordGroup: KM10 {
     auto isNeg1 = s1 < 0;
     auto isNeg2 = s2 < 0;
     int128_t sum128 = s1 + s2;
-    InstructionResult result = iNormal;
+    IResult result = iNormal;
 
     if (sum128 >= W72::sBit1) {
       flags.cy1 = flags.tr1 = flags.ov = 1;
@@ -37,7 +37,7 @@ struct DWordGroup: KM10 {
   }
 
 
-  InstructionResult doDSUB() {
+  IResult doDSUB() {
     auto a1 = W72{memGetN(ea.u+0), memGetN(ea.u+1)};
     auto a2 = W72{acGetN(iw.ac+0), acGetN(iw.ac+1)};
 
@@ -48,7 +48,7 @@ struct DWordGroup: KM10 {
     auto isNeg1 = s1 < 0;
     auto isNeg2 = s2 < 0;
     int128_t diff128 = s1 - s2;
-    InstructionResult result = iNormal;
+    IResult result = iNormal;
 
     if (diff128 >= W72::sBit1) {
       flags.cy1 = flags.tr1 = flags.ov = 1;
@@ -70,7 +70,7 @@ struct DWordGroup: KM10 {
   }
 
 
-  InstructionResult doDMUL() {
+  IResult doDMUL() {
     auto a = W72{memGetN(ea.u+0), memGetN(ea.u+1)};
     auto b = W72{acGetN(iw.ac+0), acGetN(iw.ac+1)};
     const uint128_t a70 = a.toU70();
@@ -96,7 +96,7 @@ struct DWordGroup: KM10 {
   }
 
 
-  InstructionResult doDDIV() {
+  IResult doDDIV() {
     const W144 den{
       acGetN(iw.ac+0),
       acGetN(iw.ac+1),

@@ -21,7 +21,7 @@ using namespace fmt;
 
 #include "km10.hpp"
 #include "logger.hpp"
-#include "instruction-result.hpp"
+#include "iresult.hpp"
 #include "bytepointer.hpp"
 
 
@@ -642,7 +642,10 @@ void KM10::emulate() {
     ea.u = getEA(iw.i, iw.x, iw.y);
 
     // Execute the instruction in `iw`.
-    InstructionResult result = (this->*ops[iw.op])();
+    IResult result = (this->*ops[iw.op])();
+
+    if (iw.op == 0312) cerr << "CAME: pc=" << pc.fmtVMA()
+			    << "  inInterrupt=" << inInterrupt;
 
     // If we "continue" we have to set up `fetchPC` to point to the
     // instruction to fetch and execute next. If we "break" (from the
@@ -660,6 +663,10 @@ void KM10::emulate() {
 	pcOffset = 1;
       }
 
+      if (iw.op == 0312) cerr << "  fetchPC=" << fetchPC.fmtVMA()
+			      << "  pcOffset=" << pcOffset
+			      << logger.endl << flush;
+
       break;
 
     case iSkip:
@@ -674,6 +681,10 @@ void KM10::emulate() {
 	pcOffset = 2;
       }
 
+      if (iw.op == 0312) cerr << "  fetchPC=" << fetchPC.fmtVMA()
+			      << "  pcOffset=" << pcOffset
+			      << logger.endl << flush;
+
       break;
 
     case iJump:
@@ -682,8 +693,8 @@ void KM10::emulate() {
       // in one.
       inInterrupt = false;
       pcOffset = 0;
-      fetchPC = pc = ea;
-      continue;
+      pc = ea;
+      break;
 
     case iTrap:			// Advance and THEN handle trap.
       break;

@@ -25,11 +25,11 @@ struct TstSetGroup: KM10 {
   }
 
 
-  InstructionResult doTRN() { return iNormal; }
+  IResult doTRN() { return iNormal; }
 
-  InstructionResult doTLN() { return iNormal; }
+  IResult doTLN() { return iNormal; }
 
-  InstructionResult doTRNE() {
+  IResult doTRNE() {
     W36 a1 = acGetRH();
     W36 a2 = ea.rhu;
     const bool doSkip = (a1.u & a2.u) == 0;
@@ -37,7 +37,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTLNE() {
+  IResult doTLNE() {
     W36 a1 = acGetLH();
     W36 a2 = ea.rhu;
     W36 andResult = a2.u & a1.u;
@@ -46,11 +46,11 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTRNA() { return iSkip; }
+  IResult doTRNA() { return iSkip; }
 
-  InstructionResult doTLNA() { return iSkip; }
+  IResult doTLNA() { return iSkip; }
 
-  InstructionResult doTRNN() {
+  IResult doTRNN() {
     W36 a1 = acGetRH();
     W36 a2 = ea.rhu;
     const bool doSkip = (a1.u & a2.u) != 0;
@@ -58,7 +58,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTLNN() {
+  IResult doTLNN() {
     W36 a1 = acGetLH();
     W36 a2 = ea.rhu;
     W36 andResult = a2.u & a1.u;
@@ -67,7 +67,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTRZ() {
+  IResult doTRZ() {
     W36 a1 = acGetRH();
     W36 a2 = ea.rhu;
     const bool doSkip = false;
@@ -75,7 +75,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTLZ() {
+  IResult doTLZ() {
     W36 a1 = acGetLH();
     W36 a2 = ea.rhu;
     const bool doSkip = false;
@@ -83,7 +83,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTRZE() {
+  IResult doTRZE() {
     W36 a1 = acGetRH();
     W36 a2 = ea;
     const bool doSkip = (a1.u & a2.u) == 0;
@@ -91,7 +91,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTLZE() {
+  IResult doTLZE() {
     W36 a1 = acGetLH();
     W36 a2 = ea;
     const bool doSkip = (a1.u & a2.u) == 0;
@@ -99,7 +99,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTRZA() {
+  IResult doTRZA() {
     W36 a1 = acGetRH();
     W36 a2 = ea;
     const bool doSkip = true;
@@ -107,7 +107,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTLZA() {
+  IResult doTLZA() {
     W36 a1 = acGetLH();
     W36 a2 = ea;
     const bool doSkip = true;
@@ -115,7 +115,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTRZN() {
+  IResult doTRZN() {
     W36 a1 = acGetRH();
     W36 a2 = ea;
     const bool doSkip = (a1.u & a2.u) != 0;
@@ -123,7 +123,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTLZN() {
+  IResult doTLZN() {
     W36 a1 = acGetLH();
     W36 a2 = ea;
     const bool doSkip = (a1.u & a2.u) != 0;
@@ -131,7 +131,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTRC() {
+  IResult doTRC() {
     W36 a1 = acGetRH();
     W36 a2 = ea;
     const bool doSkip = false;
@@ -139,7 +139,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTLC() {
+  IResult doTLC() {
     W36 a1 = acGetLH();
     W36 a2 = ea;
     const bool doSkip = false;
@@ -147,7 +147,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTRCE() {
+  IResult doTRCE() {
     W36 a1 = acGetRH();
     W36 a2 = ea;
     const bool doSkip = (a1.u & a2.u) == 0;
@@ -155,7 +155,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTLCE() {
+  IResult doTLCE() {
     W36 a1 = acGetLH();
     W36 a2 = ea;
     const bool doSkip = (a1.u & a2.u) == 0;
@@ -163,7 +163,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTRCA() {
+  IResult doTRCA() {
     W36 a1 = acGetRH();
     W36 a2 = ea;
     const bool doSkip = true;
@@ -171,7 +171,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTLCA() {
+  IResult doTLCA() {
     W36 a1 = acGetLH();
     W36 a2 = ea;
     const bool doSkip = true;
@@ -179,7 +179,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTRCN() {
+  IResult doTRCN() {
     W36 a1 = acGetRH();
     W36 a2 = ea;
     const bool doSkip = (a1.u & a2.u) != 0;
@@ -187,7 +187,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTLCN() {
+  IResult doTLCN() {
     W36 a1 = acGetLH();
     W36 a2 = ea;
     const bool doSkip = (a1.u & a2.u) != 0;
@@ -195,7 +195,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTRO() {
+  IResult doTRO() {
     W36 a1 = acGetRH();
     W36 a2 = ea;
     const bool doSkip = false;
@@ -203,7 +203,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTLO() {
+  IResult doTLO() {
     W36 a1 = acGetLH();
     W36 a2 = ea;
     const bool doSkip = false;
@@ -211,7 +211,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTROE() {
+  IResult doTROE() {
     W36 a1 = acGetRH();
     W36 a2 = ea;
     const bool doSkip = (a1.u & a2.u) == 0;
@@ -219,7 +219,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTLOE() {
+  IResult doTLOE() {
     W36 a1 = acGetLH();
     W36 a2 = ea;
     const bool doSkip = (a1.u & a2.u) == 0;
@@ -227,7 +227,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTROA() {
+  IResult doTROA() {
     W36 a1 = acGetRH();
     W36 a2 = ea;
     const bool doSkip = true;
@@ -235,7 +235,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTLOA() {
+  IResult doTLOA() {
     W36 a1 = acGetLH();
     W36 a2 = ea;
     const bool doSkip = true;
@@ -243,7 +243,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTRON() {
+  IResult doTRON() {
     W36 a1 = acGetRH();
     W36 a2 = ea;
     const bool doSkip = (a1.u & a2.u) != 0;
@@ -251,7 +251,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTLON() {
+  IResult doTLON() {
     W36 a1 = acGetLH();
     W36 a2 = ea;
     const bool doSkip = (a1.u & a2.u) != 0;
@@ -259,11 +259,11 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTDN() { (void) memGet(); return iNormal; }
+  IResult doTDN() { (void) memGet(); return iNormal; }
 
-  InstructionResult doTSN() { (void) memGet(); return iNormal; }
+  IResult doTSN() { (void) memGet(); return iNormal; }
 
-  InstructionResult doTDNE() {
+  IResult doTDNE() {
     W36 a1 = acGet();
     W36 a2 = memGet();
     const bool doSkip = (a1.u & a2.u) == 0;
@@ -271,7 +271,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTSNE() {
+  IResult doTSNE() {
     W36 a1 = acGet();
     W36 a2 = memGetSwapped();
     const bool doSkip = (a1.u & a2.u) == 0;
@@ -279,11 +279,11 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTDNA() { (void) memGet(); return iSkip; }
+  IResult doTDNA() { (void) memGet(); return iSkip; }
 
-  InstructionResult doTSNA() { (void) memGet(); return iSkip; }
+  IResult doTSNA() { (void) memGet(); return iSkip; }
 
-  InstructionResult doTDNN() {
+  IResult doTDNN() {
     W36 a1 = acGet();
     W36 a2 = memGet();
     const bool doSkip = (a1.u & a2.u) != 0;
@@ -291,7 +291,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTSNN() {
+  IResult doTSNN() {
     W36 a1 = acGet();
     W36 a2 = memGetSwapped();
     const bool doSkip = (a1.u & a2.u) != 0;
@@ -299,7 +299,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTDZ() {
+  IResult doTDZ() {
     W36 a1 = acGet();
     W36 a2 = memGet();
     const bool doSkip = false;
@@ -307,7 +307,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTSZ() {
+  IResult doTSZ() {
     W36 a1 = acGet();
     W36 a2 = memGetSwapped();
     const bool doSkip = false;
@@ -315,7 +315,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTDZE() {
+  IResult doTDZE() {
     W36 a1 = acGet();
     W36 a2 = memGet();
     const bool doSkip = (a1.u & a2.u) == 0;
@@ -323,7 +323,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTSZE() {
+  IResult doTSZE() {
     W36 a1 = acGet();
     W36 a2 = memGetSwapped();
     const bool doSkip = (a1.u & a2.u) == 0;
@@ -331,7 +331,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTDZA() {
+  IResult doTDZA() {
     W36 a1 = acGet();
     W36 a2 = memGet();
     const bool doSkip = true;
@@ -339,7 +339,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTSZA() {
+  IResult doTSZA() {
     W36 a1 = acGet();
     W36 a2 = memGetSwapped();
     const bool doSkip = true;
@@ -347,7 +347,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTDZN() {
+  IResult doTDZN() {
     W36 a1 = acGet();
     W36 a2 = memGet();
     const bool doSkip = (a1.u & a2.u) != 0;
@@ -355,7 +355,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTSZN() {
+  IResult doTSZN() {
     W36 a1 = acGet();
     W36 a2 = memGetSwapped();
     const bool doSkip = (a1.u & a2.u) != 0;
@@ -363,7 +363,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTDC() {
+  IResult doTDC() {
     W36 a1 = acGet();
     W36 a2 = memGet();
     const bool doSkip = false;
@@ -371,7 +371,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTSC() {
+  IResult doTSC() {
     W36 a1 = acGet();
     W36 a2 = memGetSwapped();
     const bool doSkip = false;
@@ -379,7 +379,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTDCE() {
+  IResult doTDCE() {
     W36 a1 = acGet();
     W36 a2 = memGet();
     const bool doSkip = (a1.u & a2.u) == 0;
@@ -387,7 +387,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTSCE() {
+  IResult doTSCE() {
     W36 a1 = acGet();
     W36 a2 = memGetSwapped();
     const bool doSkip = (a1.u & a2.u) == 0;
@@ -395,7 +395,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTDCA() {
+  IResult doTDCA() {
     W36 a1 = acGet();
     W36 a2 = memGet();
     const bool doSkip = true;
@@ -403,7 +403,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTSCA() {
+  IResult doTSCA() {
     W36 a1 = acGet();
     W36 a2 = memGetSwapped();
     const bool doSkip = true;
@@ -411,7 +411,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTDCN() {
+  IResult doTDCN() {
     W36 a1 = acGet();
     W36 a2 = memGet();
     const bool doSkip = (a1.u & a2.u) != 0;
@@ -419,7 +419,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTSCN() {
+  IResult doTSCN() {
     W36 a1 = acGet();
     W36 a2 = memGetSwapped();
     const bool doSkip = (a1.u & a2.u) != 0;
@@ -427,7 +427,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTDO() {
+  IResult doTDO() {
     W36 a1 = acGet();
     W36 a2 = memGet();
     const bool doSkip = false;
@@ -435,7 +435,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTSO() {
+  IResult doTSO() {
     W36 a1 = acGet();
     W36 a2 = memGetSwapped();
     const bool doSkip = false;
@@ -443,7 +443,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTDOE() {
+  IResult doTDOE() {
     W36 a1 = acGet();
     W36 a2 = memGet();
     const bool doSkip = (a1.u & a2.u) == 0;
@@ -451,7 +451,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTSOE() {
+  IResult doTSOE() {
     W36 a1 = acGet();
     W36 a2 = memGetSwapped();
     const bool doSkip = (a1.u & a2.u) == 0;
@@ -459,7 +459,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTDOA() {
+  IResult doTDOA() {
     W36 a1 = acGet();
     W36 a2 = memGet();
     const bool doSkip = true;
@@ -467,7 +467,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTSOA() {
+  IResult doTSOA() {
     W36 a1 = acGet();
     W36 a2 = memGetSwapped();
     const bool doSkip = true;
@@ -475,7 +475,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTDON() {
+  IResult doTDON() {
     W36 a1 = acGet();
     W36 a2 = memGet();
     const bool doSkip = (a1.u & a2.u) != 0;
@@ -483,7 +483,7 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doTSON() {
+  IResult doTSON() {
     W36 a1 = acGet();
     W36 a2 = memGetSwapped();
     const bool doSkip = (a1.u & a2.u) != 0;
@@ -491,31 +491,31 @@ struct TstSetGroup: KM10 {
     return doSkip ? iSkip : iNormal;
   }
 
-  InstructionResult doSETZ() { (void) memGet(); acPut(0); return iNormal; }
-  InstructionResult doSETZI() { acPut(0); return iNormal; }
-  InstructionResult doSETZM() { (void) memGet(); memPut(0); return iNormal; }
-  InstructionResult doSETZB() { (void) memGet(); acPut(0); memPut(0); return iNormal; }
+  IResult doSETZ() { (void) memGet(); acPut(0); return iNormal; }
+  IResult doSETZI() { acPut(0); return iNormal; }
+  IResult doSETZM() { (void) memGet(); memPut(0); return iNormal; }
+  IResult doSETZB() { (void) memGet(); acPut(0); memPut(0); return iNormal; }
 
-  InstructionResult doSETM() { acPut(memGet()); return iNormal; }
-  InstructionResult doSETMI() { acPut(immediate()); return iNormal; }
-  InstructionResult doSETMM() { memPut(memGet()); return iNormal; }
-  InstructionResult doSETMB() { W36 a = memGet(); acPut(a); memPut(a); return iNormal; }
-  InstructionResult doSETCM() { acPut(~memGet().u); return iNormal; }
-  InstructionResult doSETCMI() { acPut(~immediate().u); return iNormal; }
-  InstructionResult doSETCMM() { memPut(~memGet().u); return iNormal; }
-  InstructionResult doSETCMB() { W36 a = ~memGet().u; acPut(a); memPut(a); return iNormal; }
-  InstructionResult doSETO() { (void) acGet(); acPut(W36::all1s); return iNormal; }
-  InstructionResult doSETOI() { acPut(W36::all1s); return iNormal; }
-  InstructionResult doSETOM() { memPut(W36::all1s); return iNormal; }
-  InstructionResult doSETOB() { acPut(W36::all1s); memPut(W36::all1s); return iNormal; }
-  InstructionResult doSETA() { acPut(acGet()); return iNormal; }
-  InstructionResult doSETAI() { acPut(acGet()); return iNormal; }
-  InstructionResult doSETAM() { memPut(acGet()); return iNormal; }
-  InstructionResult doSETAB() { W36 a = acGet(); acPut(a); memPut(a); return iNormal; }
-  InstructionResult doSETCA() { acPut(~acGet().u); return iNormal; }
-  InstructionResult doSETCAI() { acPut(~acGet().u); return iNormal; }
-  InstructionResult doSETCAM() { memPut(~acGet().u); return iNormal; }
-  InstructionResult doSETCAB() { W36 a = ~acGet().u; acPut(a); memPut(a); return iNormal; }
+  IResult doSETM() { acPut(memGet()); return iNormal; }
+  IResult doSETMI() { acPut(immediate()); return iNormal; }
+  IResult doSETMM() { memPut(memGet()); return iNormal; }
+  IResult doSETMB() { W36 a = memGet(); acPut(a); memPut(a); return iNormal; }
+  IResult doSETCM() { acPut(~memGet().u); return iNormal; }
+  IResult doSETCMI() { acPut(~immediate().u); return iNormal; }
+  IResult doSETCMM() { memPut(~memGet().u); return iNormal; }
+  IResult doSETCMB() { W36 a = ~memGet().u; acPut(a); memPut(a); return iNormal; }
+  IResult doSETO() { (void) acGet(); acPut(W36::all1s); return iNormal; }
+  IResult doSETOI() { acPut(W36::all1s); return iNormal; }
+  IResult doSETOM() { memPut(W36::all1s); return iNormal; }
+  IResult doSETOB() { acPut(W36::all1s); memPut(W36::all1s); return iNormal; }
+  IResult doSETA() { acPut(acGet()); return iNormal; }
+  IResult doSETAI() { acPut(acGet()); return iNormal; }
+  IResult doSETAM() { memPut(acGet()); return iNormal; }
+  IResult doSETAB() { W36 a = acGet(); acPut(a); memPut(a); return iNormal; }
+  IResult doSETCA() { acPut(~acGet().u); return iNormal; }
+  IResult doSETCAI() { acPut(~acGet().u); return iNormal; }
+  IResult doSETCAM() { memPut(~acGet().u); return iNormal; }
+  IResult doSETCAB() { W36 a = ~acGet().u; acPut(a); memPut(a); return iNormal; }
 };
 
 

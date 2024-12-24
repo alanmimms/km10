@@ -36,7 +36,7 @@
 #include "device.hpp"
 #include "pi.hpp"
 #include "km10.hpp"
-#include "instruction-result.hpp"
+#include "iresult.hpp"
 
 
 // Constructors
@@ -157,7 +157,7 @@ void PIDevice::clearIO() {
   piState.piOn = piOn;
 }
 
-InstructionResult PIDevice::doCONO(W36 iw, W36 ea) {
+IResult PIDevice::doCONO(W36 iw, W36 ea) {
   PIFunctions pif(ea.u);
 
   if (logger.mem) logger.s << "; " << ea.fmt18();
@@ -207,7 +207,7 @@ InstructionResult PIDevice::doCONO(W36 iw, W36 ea) {
 }
 
 
-InstructionResult PIDevice::doCONI(W36 iw, W36 ea) {
+IResult PIDevice::doCONI(W36 iw, W36 ea) {
   W36 conditions{(int64_t) piState.u};
   km10.memPut(conditions);
   return iNormal;

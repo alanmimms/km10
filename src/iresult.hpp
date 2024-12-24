@@ -6,7 +6,7 @@
 //
 // At the end of an instruction, iNormal, iSkip, iNoSuchDevice, and
 // iNYI all use pc + pcOffset as the next fetchPC address.
-enum InstructionResult {
+enum IResult {
   iNormal,	 // Normal execution with no PC modification or traps.
   iSkip,	 // Instruction caused a skip condition.
   iJump,	 // Instruction changed the PC.

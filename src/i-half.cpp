@@ -21,70 +21,70 @@ struct HalfGroup: KM10 {
   }
 
 
-  InstructionResult doHLL()   {   acPut(      copyHLL(   memGet(),  acGet()));  return iNormal; }
-  InstructionResult doHLLI()  {   acPut(      copyHLL(immediate(),  acGet()));  return iNormal; }
-  InstructionResult doHLLM()  {  memPut(      copyHLL(    acGet(), memGet()));  return iNormal; }
-  InstructionResult doHLLS()  { selfPut(      copyHLL(   memGet(), memGet()));  return iNormal; }
-  InstructionResult doHRL()   {   acPut(      copyHRL(   memGet(),  acGet()));  return iNormal; }
-  InstructionResult doHRLI()  {   acPut(      copyHRL(immediate(),  acGet()));  return iNormal; }
-  InstructionResult doHRLM()  {  memPut(      copyHRL(    acGet(), memGet()));  return iNormal; }
-  InstructionResult doHRLS()  { selfPut(      copyHRL(   memGet(), memGet()));  return iNormal; }
-  InstructionResult doHLLZ()  {   acPut(zeroR(copyHLL(   memGet(),  acGet()))); return iNormal; }
-  InstructionResult doHLLZI() {   acPut(zeroR(copyHLL(immediate(),  acGet()))); return iNormal; }
-  InstructionResult doHLLZM() {  memPut(zeroR(copyHLL(    acGet(), memGet()))); return iNormal; }
-  InstructionResult doHLLZS() { selfPut(zeroR(copyHLL(   memGet(), memGet()))); return iNormal; }
-  InstructionResult doHRLZ()  {   acPut(zeroR(copyHRL(   memGet(),  acGet()))); return iNormal; }
-  InstructionResult doHRLZI() {   acPut(zeroR(copyHRL(immediate(),  acGet()))); return iNormal; }
-  InstructionResult doHRLZM() {  memPut(zeroR(copyHRL(    acGet(), memGet()))); return iNormal; }
-  InstructionResult doHRLZS() { selfPut(zeroR(copyHRL(   memGet(), memGet()))); return iNormal; }
-  InstructionResult doHLLO()  {   acPut(onesR(copyHLL(   memGet(),  acGet()))); return iNormal; }
-  InstructionResult doHLLOI() {   acPut(onesR(copyHLL(immediate(),  acGet()))); return iNormal; }
-  InstructionResult doHLLOM() {  memPut(onesR(copyHLL(    acGet(), memGet()))); return iNormal; }
-  InstructionResult doHLLOS() { selfPut(onesR(copyHLL(   memGet(), memGet()))); return iNormal; }
-  InstructionResult doHRLO()  {   acPut(onesR(copyHRL(   memGet(),  acGet()))); return iNormal; }
-  InstructionResult doHRLOI() {   acPut(onesR(copyHRL(immediate(),  acGet()))); return iNormal; }
-  InstructionResult doHRLOM() {  memPut(onesR(copyHRL(    acGet(), memGet()))); return iNormal; }
-  InstructionResult doHRLOS() { selfPut(onesR(copyHRL(   memGet(), memGet()))); return iNormal; }
-  InstructionResult doHLLE()  {   acPut(extnL(copyHLL(   memGet(),  acGet()))); return iNormal; }
-  InstructionResult doHLLEI() {   acPut(extnL(copyHLL(immediate(),  acGet()))); return iNormal; }
-  InstructionResult doHLLEM() {  memPut(extnL(copyHLL(    acGet(), memGet()))); return iNormal; }
-  InstructionResult doHLLES() { selfPut(extnL(copyHLL(   memGet(), memGet()))); return iNormal; }
-  InstructionResult doHRLE()  {   acPut(extnL(copyHRL(   memGet(),  acGet()))); return iNormal; }
-  InstructionResult doHRLEI() {   acPut(extnL(copyHRL(immediate(),  acGet()))); return iNormal; }
-  InstructionResult doHRLEM() {  memPut(extnL(copyHRL(    acGet(), memGet()))); return iNormal; }
-  InstructionResult doHRLES() { selfPut(extnL(copyHRL(   memGet(), memGet()))); return iNormal; }
-  InstructionResult doHRR()   {   acPut(      copyHRR(   memGet(),  acGet()));  return iNormal; }
-  InstructionResult doHRRI()  {   acPut(      copyHRR(immediate(),  acGet()));  return iNormal; }
-  InstructionResult doHRRM()  {  memPut(      copyHRR(    acGet(), memGet()));  return iNormal; }
-  InstructionResult doHRRS()  { selfPut(      copyHRR(   memGet(), memGet()));  return iNormal; }
-  InstructionResult doHLR()   {   acPut(      copyHLR(   memGet(),  acGet()));  return iNormal; }
-  InstructionResult doHLRI()  {   acPut(      copyHLR(immediate(),  acGet()));  return iNormal; }
-  InstructionResult doHLRM()  {  memPut(      copyHLR(    acGet(), memGet()));  return iNormal; }
-  InstructionResult doHLRS()  { selfPut(      copyHLR(   memGet(), memGet()));  return iNormal; }
-  InstructionResult doHRRZ()  {   acPut(zeroL(copyHRR(   memGet(),  acGet()))); return iNormal; }
-  InstructionResult doHRRZI() {   acPut(zeroL(copyHRR(immediate(),  acGet()))); return iNormal; }
-  InstructionResult doHRRZM() {  memPut(zeroL(copyHRR(    acGet(), memGet()))); return iNormal; }
-  InstructionResult doHRRZS() { selfPut(zeroL(copyHRR(   memGet(), memGet()))); return iNormal; }
-  InstructionResult doHLRZ()  {   acPut(zeroL(copyHLR(   memGet(),  acGet()))); return iNormal; }
-  InstructionResult doHLRZI() {   acPut(zeroL(copyHLR(immediate(),  acGet()))); return iNormal; }
-  InstructionResult doHLRZM() {  memPut(zeroL(copyHLR(    acGet(), memGet()))); return iNormal; }
-  InstructionResult doHLRZS() { selfPut(zeroL(copyHLR(   memGet(), memGet()))); return iNormal; }
-  InstructionResult doHRRO()  {   acPut(onesL(copyHRR(   memGet(),  acGet()))); return iNormal; }
-  InstructionResult doHRROI() {   acPut(onesL(copyHRR(immediate(),  acGet()))); return iNormal; }
-  InstructionResult doHRROM() {  memPut(onesL(copyHRR(    acGet(), memGet()))); return iNormal; }
-  InstructionResult doHRROS() { selfPut(onesL(copyHRR(   memGet(), memGet()))); return iNormal; }
-  InstructionResult doHLRO()  {   acPut(onesL(copyHLR(   memGet(),  acGet()))); return iNormal; }
-  InstructionResult doHLROI() {   acPut(onesL(copyHLR(immediate(),  acGet()))); return iNormal; }
-  InstructionResult doHLROM() {  memPut(onesL(copyHLR(    acGet(), memGet()))); return iNormal; }
-  InstructionResult doHLROS() { selfPut(onesL(copyHLR(   memGet(), memGet()))); return iNormal; }
-  InstructionResult doHRRE()  {   acPut(extnR(copyHRR(   memGet(),  acGet()))); return iNormal; }
-  InstructionResult doHRREI() {   acPut(extnR(copyHRR(immediate(),  acGet()))); return iNormal; }
-  InstructionResult doHRREM() {  memPut(extnR(copyHRR(    acGet(), memGet()))); return iNormal; }
-  InstructionResult doHRRES() { selfPut(extnR(copyHRR(   memGet(), memGet()))); return iNormal; }
-  InstructionResult doHLRE()  {   acPut(extnR(copyHLR(   memGet(),  acGet()))); return iNormal; }
-  InstructionResult doHLREI() {   acPut(extnR(copyHLR(immediate(),  acGet()))); return iNormal; }
-  InstructionResult doHLREM() {  memPut(extnR(copyHLR(    acGet(), memGet()))); return iNormal; }
-  InstructionResult doHLRES() { selfPut(extnR(copyHLR(   memGet(), memGet()))); return iNormal; }
+  IResult doHLL()   {   acPut(      copyHLL(   memGet(),  acGet()));  return iNormal; }
+  IResult doHLLI()  {   acPut(      copyHLL(immediate(),  acGet()));  return iNormal; }
+  IResult doHLLM()  {  memPut(      copyHLL(    acGet(), memGet()));  return iNormal; }
+  IResult doHLLS()  { selfPut(      copyHLL(   memGet(), memGet()));  return iNormal; }
+  IResult doHRL()   {   acPut(      copyHRL(   memGet(),  acGet()));  return iNormal; }
+  IResult doHRLI()  {   acPut(      copyHRL(immediate(),  acGet()));  return iNormal; }
+  IResult doHRLM()  {  memPut(      copyHRL(    acGet(), memGet()));  return iNormal; }
+  IResult doHRLS()  { selfPut(      copyHRL(   memGet(), memGet()));  return iNormal; }
+  IResult doHLLZ()  {   acPut(zeroR(copyHLL(   memGet(),  acGet()))); return iNormal; }
+  IResult doHLLZI() {   acPut(zeroR(copyHLL(immediate(),  acGet()))); return iNormal; }
+  IResult doHLLZM() {  memPut(zeroR(copyHLL(    acGet(), memGet()))); return iNormal; }
+  IResult doHLLZS() { selfPut(zeroR(copyHLL(   memGet(), memGet()))); return iNormal; }
+  IResult doHRLZ()  {   acPut(zeroR(copyHRL(   memGet(),  acGet()))); return iNormal; }
+  IResult doHRLZI() {   acPut(zeroR(copyHRL(immediate(),  acGet()))); return iNormal; }
+  IResult doHRLZM() {  memPut(zeroR(copyHRL(    acGet(), memGet()))); return iNormal; }
+  IResult doHRLZS() { selfPut(zeroR(copyHRL(   memGet(), memGet()))); return iNormal; }
+  IResult doHLLO()  {   acPut(onesR(copyHLL(   memGet(),  acGet()))); return iNormal; }
+  IResult doHLLOI() {   acPut(onesR(copyHLL(immediate(),  acGet()))); return iNormal; }
+  IResult doHLLOM() {  memPut(onesR(copyHLL(    acGet(), memGet()))); return iNormal; }
+  IResult doHLLOS() { selfPut(onesR(copyHLL(   memGet(), memGet()))); return iNormal; }
+  IResult doHRLO()  {   acPut(onesR(copyHRL(   memGet(),  acGet()))); return iNormal; }
+  IResult doHRLOI() {   acPut(onesR(copyHRL(immediate(),  acGet()))); return iNormal; }
+  IResult doHRLOM() {  memPut(onesR(copyHRL(    acGet(), memGet()))); return iNormal; }
+  IResult doHRLOS() { selfPut(onesR(copyHRL(   memGet(), memGet()))); return iNormal; }
+  IResult doHLLE()  {   acPut(extnL(copyHLL(   memGet(),  acGet()))); return iNormal; }
+  IResult doHLLEI() {   acPut(extnL(copyHLL(immediate(),  acGet()))); return iNormal; }
+  IResult doHLLEM() {  memPut(extnL(copyHLL(    acGet(), memGet()))); return iNormal; }
+  IResult doHLLES() { selfPut(extnL(copyHLL(   memGet(), memGet()))); return iNormal; }
+  IResult doHRLE()  {   acPut(extnL(copyHRL(   memGet(),  acGet()))); return iNormal; }
+  IResult doHRLEI() {   acPut(extnL(copyHRL(immediate(),  acGet()))); return iNormal; }
+  IResult doHRLEM() {  memPut(extnL(copyHRL(    acGet(), memGet()))); return iNormal; }
+  IResult doHRLES() { selfPut(extnL(copyHRL(   memGet(), memGet()))); return iNormal; }
+  IResult doHRR()   {   acPut(      copyHRR(   memGet(),  acGet()));  return iNormal; }
+  IResult doHRRI()  {   acPut(      copyHRR(immediate(),  acGet()));  return iNormal; }
+  IResult doHRRM()  {  memPut(      copyHRR(    acGet(), memGet()));  return iNormal; }
+  IResult doHRRS()  { selfPut(      copyHRR(   memGet(), memGet()));  return iNormal; }
+  IResult doHLR()   {   acPut(      copyHLR(   memGet(),  acGet()));  return iNormal; }
+  IResult doHLRI()  {   acPut(      copyHLR(immediate(),  acGet()));  return iNormal; }
+  IResult doHLRM()  {  memPut(      copyHLR(    acGet(), memGet()));  return iNormal; }
+  IResult doHLRS()  { selfPut(      copyHLR(   memGet(), memGet()));  return iNormal; }
+  IResult doHRRZ()  {   acPut(zeroL(copyHRR(   memGet(),  acGet()))); return iNormal; }
+  IResult doHRRZI() {   acPut(zeroL(copyHRR(immediate(),  acGet()))); return iNormal; }
+  IResult doHRRZM() {  memPut(zeroL(copyHRR(    acGet(), memGet()))); return iNormal; }
+  IResult doHRRZS() { selfPut(zeroL(copyHRR(   memGet(), memGet()))); return iNormal; }
+  IResult doHLRZ()  {   acPut(zeroL(copyHLR(   memGet(),  acGet()))); return iNormal; }
+  IResult doHLRZI() {   acPut(zeroL(copyHLR(immediate(),  acGet()))); return iNormal; }
+  IResult doHLRZM() {  memPut(zeroL(copyHLR(    acGet(), memGet()))); return iNormal; }
+  IResult doHLRZS() { selfPut(zeroL(copyHLR(   memGet(), memGet()))); return iNormal; }
+  IResult doHRRO()  {   acPut(onesL(copyHRR(   memGet(),  acGet()))); return iNormal; }
+  IResult doHRROI() {   acPut(onesL(copyHRR(immediate(),  acGet()))); return iNormal; }
+  IResult doHRROM() {  memPut(onesL(copyHRR(    acGet(), memGet()))); return iNormal; }
+  IResult doHRROS() { selfPut(onesL(copyHRR(   memGet(), memGet()))); return iNormal; }
+  IResult doHLRO()  {   acPut(onesL(copyHLR(   memGet(),  acGet()))); return iNormal; }
+  IResult doHLROI() {   acPut(onesL(copyHLR(immediate(),  acGet()))); return iNormal; }
+  IResult doHLROM() {  memPut(onesL(copyHLR(    acGet(), memGet()))); return iNormal; }
+  IResult doHLROS() { selfPut(onesL(copyHLR(   memGet(), memGet()))); return iNormal; }
+  IResult doHRRE()  {   acPut(extnR(copyHRR(   memGet(),  acGet()))); return iNormal; }
+  IResult doHRREI() {   acPut(extnR(copyHRR(immediate(),  acGet()))); return iNormal; }
+  IResult doHRREM() {  memPut(extnR(copyHRR(    acGet(), memGet()))); return iNormal; }
+  IResult doHRRES() { selfPut(extnR(copyHRR(   memGet(), memGet()))); return iNormal; }
+  IResult doHLRE()  {   acPut(extnR(copyHLR(   memGet(),  acGet()))); return iNormal; }
+  IResult doHLREI() {   acPut(extnR(copyHLR(immediate(),  acGet()))); return iNormal; }
+  IResult doHLREM() {  memPut(extnR(copyHLR(    acGet(), memGet()))); return iNormal; }
+  IResult doHLRES() { selfPut(extnR(copyHLR(   memGet(), memGet()))); return iNormal; }
 };
 
 

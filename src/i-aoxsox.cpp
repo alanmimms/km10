@@ -2,7 +2,7 @@
 
 struct AOxSOxGroup: KM10 {
 
-  InstructionResult checkAOTraps(W36 a) {
+  IResult checkAOTraps(W36 a) {
 
     if (a.u == (1ull << 35) - 1) {
       flags.tr1 = flags.ov = flags.cy1 = 1;
@@ -15,9 +15,9 @@ struct AOxSOxGroup: KM10 {
     }
   }
 
-  InstructionResult doAOJ(auto condF, auto actionF) {
+  IResult doAOJ(auto condF, auto actionF) {
     W36 a = acGet();
-    InstructionResult result = checkAOTraps(a);
+    IResult result = checkAOTraps(a);
 
     ++a.u;
     acPut(a);
@@ -29,9 +29,9 @@ struct AOxSOxGroup: KM10 {
     }
   }
 
-  InstructionResult doAOS(auto condF, auto actionF) {
+  IResult doAOS(auto condF, auto actionF) {
     W36 a = memGet();
-    InstructionResult result = checkAOTraps(a);
+    IResult result = checkAOTraps(a);
 
     ++a.u;
     memPut(a);
@@ -45,7 +45,7 @@ struct AOxSOxGroup: KM10 {
   }
 
 
-  InstructionResult checkSOTraps(W36 a) {
+  IResult checkSOTraps(W36 a) {
 
     if (a.u == W36::bit0) {
       flags.tr1 = flags.ov = flags.cy1 = 1;
@@ -58,9 +58,9 @@ struct AOxSOxGroup: KM10 {
     }
   }
 
-  InstructionResult doSOJ(auto condF, auto actionF) {
+  IResult doSOJ(auto condF, auto actionF) {
     W36 a = acGet();
-    InstructionResult result = checkSOTraps(a);
+    IResult result = checkSOTraps(a);
 
     --a.u;
     acPut(a);
@@ -72,9 +72,9 @@ struct AOxSOxGroup: KM10 {
     }
   }
 
-  InstructionResult doSOS(auto condF, auto actionF) {
+  IResult doSOS(auto condF, auto actionF) {
     W36 a = memGet();
-    InstructionResult result = checkSOTraps(a);
+    IResult result = checkSOTraps(a);
 
     --a.u;
     memPut(a);
@@ -88,133 +88,133 @@ struct AOxSOxGroup: KM10 {
   }
 
 
-  InstructionResult doAOJ() {
+  IResult doAOJ() {
     return doAOJ([](W36 a) {return false;},
 		 [&km10 = *this]() {return iNormal;});
   }
 
-  InstructionResult doAOJL() {
+  IResult doAOJL() {
     return doAOJ([](W36 a) {return a.s < 0;},
 		 [&km10 = *this]() {return iJump;});
   }
 
-  InstructionResult doAOJE() {
+  IResult doAOJE() {
     return doAOJ([](W36 a) {return a.s == 0;},
 		 [&km10 = *this]() {return iJump;});
   }
 
 
-  InstructionResult doAOJLE() {
+  IResult doAOJLE() {
     return doAOJ([](W36 a) {return a.s <= 0;},
 		 [&km10 = *this]() {return iJump;});
   }
 
-  InstructionResult doAOJA() {
+  IResult doAOJA() {
     return doAOJ([](W36 a) {return true;},
 		 [&km10 = *this]() {return iJump;});
   }
 
 
-  InstructionResult doAOJGE() {
+  IResult doAOJGE() {
     return doAOJ([](W36 a) {return a.s >= 0;},
 		 [&km10 = *this]() {return iJump;});
   }
 
-  InstructionResult doAOJN() {
+  IResult doAOJN() {
     return doAOJ([](W36 a) {return a.s != 0;},
 		 [&km10 = *this]() {return iJump;});
   }
 
 
-  InstructionResult doAOJG() {
+  IResult doAOJG() {
     return doAOJ([](W36 a) {return a.s > 0;},
 		 [&km10 = *this]() {return iJump;});
   }
 
-  InstructionResult doAOS() {
+  IResult doAOS() {
     return doAOS([](W36 a) {return false;},
 		 [&km10 = *this]() {return iNormal;});
   }
 
-  InstructionResult doAOSL() {
+  IResult doAOSL() {
     return doAOS([](W36 a) {return a.s < 0;},
 		 [&km10 = *this]() {return iSkip;});
   }
 
-  InstructionResult doAOSE() {
+  IResult doAOSE() {
     return doAOS([](W36 a) {return a.s == 0;},
 		 [&km10 = *this]() {return iSkip;});
   }
 
 
-  InstructionResult doAOSLE() {
+  IResult doAOSLE() {
     return doAOS([](W36 a) {return a.s <= 0;},
 		 [&km10 = *this]() {return iSkip;});
   }
 
-  InstructionResult doAOSA() {
+  IResult doAOSA() {
     return doAOS([](W36 a) {return true;},
 		 [&km10 = *this]() {return iSkip;});
   }
 
 
-  InstructionResult doAOSGE() {
+  IResult doAOSGE() {
     return doAOS([](W36 a) {return a.s >= 0;},
 		 [&km10 = *this]() {return iSkip;});
   }
 
-  InstructionResult doAOSN() {
+  IResult doAOSN() {
     return doAOS([](W36 a) {return a.s != 0;},
 		 [&km10 = *this]() {return iSkip;});
   }
 
 
-  InstructionResult doAOSG() {
+  IResult doAOSG() {
     return doAOS([](W36 a) {return a.s > 0;},
 		 [&km10 = *this]() {return iSkip;});
   }
 
 
 
-  InstructionResult doSOJ() {
+  IResult doSOJ() {
     return doSOJ([](W36 a) {return false;},
 		 [&km10 = *this]() {return iNormal;});
   }
 
-  InstructionResult doSOJL() {
+  IResult doSOJL() {
     return doSOJ([](W36 a) {return a.s < 0;},
 		 [&km10 = *this]() {return iJump;});
   }
 
-  InstructionResult doSOJE() {
+  IResult doSOJE() {
     return doSOJ([](W36 a) {return a.s == 0;},
 		 [&km10 = *this]() {return iJump;});
   }
 
 
-  InstructionResult doSOJLE() {
+  IResult doSOJLE() {
     return doSOJ([](W36 a) {return a.s <= 0;},
 		 [&km10 = *this]() {return iJump;});
   }
 
-  InstructionResult doSOJA() {
+  IResult doSOJA() {
     return doSOJ([](W36 a) {return true;},
 		 [&km10 = *this]() {return iJump;});
   }
 
 
-  InstructionResult doSOJGE() {
+  IResult doSOJGE() {
     return doSOJ([](W36 a) {return a.s >= 0;},
 		 [&km10 = *this]() {return iJump;});
   }
 
-  InstructionResult doSOJN() {
+  IResult doSOJN() {
     return doSOJ([](W36 a) {return a.s != 0;},
 		 [&km10 = *this]() {return iJump;});
   }
 
 
-  InstructionResult doSOJG() {
+  IResult doSOJG() {
     return doSOJ([](W36 a) {return a.s > 0;},
 		 [&km10 = *this]() {return iJump;});
   }
@@ -222,45 +222,45 @@ struct AOxSOxGroup: KM10 {
 
 
 
-  InstructionResult doSOS() {
+  IResult doSOS() {
     return doSOS([](W36 a) {return false;},
 		 [&km10 = *this]() {return iNormal;});
   }
 
-  InstructionResult doSOSL() {
+  IResult doSOSL() {
     return doSOS([](W36 a) {return a.s < 0;},
 		 [&km10 = *this]() {return iSkip;});
   }
 
-  InstructionResult doSOSE() {
+  IResult doSOSE() {
     return doSOS([](W36 a) {return a.s == 0;},
 		 [&km10 = *this]() {return iSkip;});
   }
 
 
-  InstructionResult doSOSLE() {
+  IResult doSOSLE() {
     return doSOS([](W36 a) {return a.s <= 0;},
 		 [&km10 = *this]() {return iSkip;});
   }
 
-  InstructionResult doSOSA() {
+  IResult doSOSA() {
     return doSOS([](W36 a) {return true;},
 		 [&km10 = *this]() {return iSkip;});
   }
 
 
-  InstructionResult doSOSGE() {
+  IResult doSOSGE() {
     return doSOS([](W36 a) {return a.s >= 0;},
 		 [&km10 = *this]() {return iSkip;});
   }
 
-  InstructionResult doSOSN() {
+  IResult doSOSN() {
     return doSOS([](W36 a) {return a.s != 0;},
 		 [&km10 = *this]() {return iSkip;});
   }
 
 
-  InstructionResult doSOSG() {
+  IResult doSOSG() {
     return doSOS([](W36 a) {return a.s > 0;},
 		 [&km10 = *this]() {return iSkip;});
   }

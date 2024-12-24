@@ -2,7 +2,7 @@
 
 #include "word.hpp"
 #include "device.hpp"
-#include "instruction-result.hpp"
+#include "iresult.hpp"
 
 
 class KM10;
@@ -57,10 +57,10 @@ struct PAGDevice: Device {
 
 
   // I/O instruction handlers
-  virtual InstructionResult doDATAI(W36 iw, W36 ea) override;
-  virtual InstructionResult doDATAO(W36 iw, W36 ea) override;
-  virtual InstructionResult doCONO(W36 iw, W36 ea) override;
-  virtual InstructionResult doCONI(W36 iw, W36 ea) override;
+  virtual IResult doDATAI(W36 iw, W36 ea) override;
+  virtual IResult doDATAO(W36 iw, W36 ea) override;
+  virtual IResult doCONO(W36 iw, W36 ea) override;
+  virtual IResult doCONI(W36 iw, W36 ea) override;
   virtual void clearIO();
 
   W36 getPCW() const;

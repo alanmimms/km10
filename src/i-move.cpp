@@ -28,25 +28,25 @@ struct MoveGroup: KM10 {
   }
 
 
-  InstructionResult doMOVE()  {acPut(memGet());			return iNormal;}
-  InstructionResult doMOVEI() {acPut(immediate());		return iNormal;}
-  InstructionResult doMOVEM() {memPut(acGet());			return iNormal;}
-  InstructionResult doMOVES() {selfPut(memGet());		return iNormal;}
+  IResult doMOVE()  {acPut(memGet());			return iNormal;}
+  IResult doMOVEI() {acPut(immediate());		return iNormal;}
+  IResult doMOVEM() {memPut(acGet());			return iNormal;}
+  IResult doMOVES() {selfPut(memGet());		return iNormal;}
 
-  InstructionResult doMOVS()  {acPut(swap(memGet()));		return iNormal;}
-  InstructionResult doMOVSI() {acPut(swap(immediate()));	return iNormal;}
-  InstructionResult doMOVSM() {memPut(swap(acGet()));		return iNormal;}
-  InstructionResult doMOVSS() {selfPut(swap(memGet()));		return iNormal;}
+  IResult doMOVS()  {acPut(swap(memGet()));		return iNormal;}
+  IResult doMOVSI() {acPut(swap(immediate()));	return iNormal;}
+  IResult doMOVSM() {memPut(swap(acGet()));		return iNormal;}
+  IResult doMOVSS() {selfPut(swap(memGet()));		return iNormal;}
 
-  InstructionResult doMOVN()  {acPut(negate(memGet()));		return iNormal;}
-  InstructionResult doMOVNI() {acPut(negate(immediate()));	return iNormal;}
-  InstructionResult doMOVNM() {memPut(negate(acGet()));		return iNormal;}
-  InstructionResult doMOVNS() {selfPut(negate(memGet()));	return iNormal;}
+  IResult doMOVN()  {acPut(negate(memGet()));		return iNormal;}
+  IResult doMOVNI() {acPut(negate(immediate()));	return iNormal;}
+  IResult doMOVNM() {memPut(negate(acGet()));		return iNormal;}
+  IResult doMOVNS() {selfPut(negate(memGet()));	return iNormal;}
 
-  InstructionResult doMOVM()  {acPut(magnitude(memGet()));	return iNormal;}
-  InstructionResult doMOVMI() {acPut(magnitude(immediate()));	return iNormal;}
-  InstructionResult doMOVMM() {memPut(magnitude(acGet()));	return iNormal;}
-  InstructionResult doMOVMS() {selfPut(magnitude(memGet()));	return iNormal;}
+  IResult doMOVM()  {acPut(magnitude(memGet()));	return iNormal;}
+  IResult doMOVMI() {acPut(magnitude(immediate()));	return iNormal;}
+  IResult doMOVMM() {memPut(magnitude(acGet()));	return iNormal;}
+  IResult doMOVMS() {selfPut(magnitude(memGet()));	return iNormal;}
 };
 
 

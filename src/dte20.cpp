@@ -19,7 +19,7 @@ using namespace std;
 #include "logger.hpp"
 #include "tsqueue.hpp"
 #include "dte20.hpp"
-#include "instruction-result.hpp"
+#include "iresult.hpp"
 
 
 DTE20::DTE20(unsigned anAddr, KM10 &cpu)
@@ -87,7 +87,7 @@ void DTE20::clearIO() {
 }
 
 
-InstructionResult DTE20::doCONO(W36 iw, W36 ea) {
+IResult DTE20::doCONO(W36 iw, W36 ea) {
   CONOMask req(ea);
   if (logger.dte) logger.s << "; DTE CONO " << oct << ea;
 
@@ -150,13 +150,13 @@ InstructionResult DTE20::doCONO(W36 iw, W36 ea) {
     logger.nyi(km10);
   }
 
-  return InstructionResult::iNormal;
+  return IResult::iNormal;
 }
 
 
-InstructionResult DTE20::doCONI(W36 iw, W36 ea) {
+IResult DTE20::doCONI(W36 iw, W36 ea) {
   if (logger.dte) logger.s << "; DTE CONI";
-  return InstructionResult::iNormal;
+  return IResult::iNormal;
 }
 
 

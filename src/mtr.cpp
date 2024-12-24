@@ -1,12 +1,12 @@
 #include "word.hpp"
 #include "km10.hpp"
 #include "device.hpp"
-#include "instruction-result.hpp"
+#include "iresult.hpp"
 #include "mtr.hpp"
 
 // I/O instruction handlers
 // WRTIME
-InstructionResult MTRDevice::doCONO(W36 iw, W36 ea) {
+IResult MTRDevice::doCONO(W36 iw, W36 ea) {
   W36 conditions{km10.memGetN(ea).rhu};
   if (logger.mem) logger.s << "; " << ea.fmt18();
   mtrState.u = iw.y;
@@ -17,19 +17,19 @@ InstructionResult MTRDevice::doCONO(W36 iw, W36 ea) {
   return iNormal;
 }
 
-InstructionResult MTRDevice::doCONI(W36 iw, W36 ea) {
+IResult MTRDevice::doCONI(W36 iw, W36 ea) {
   km10.memPut(mtrState.u);
   return iNormal;
 }
 
 // RDEACT
-InstructionResult MTRDevice::doDATAI(W36 iw, W36 ea) {
+IResult MTRDevice::doDATAI(W36 iw, W36 ea) {
   km10.memPut(0);
   return iNormal;
 }
   
 // RDMACT
-InstructionResult MTRDevice::doBLKI(W36 iw, W36 ea) {
+IResult MTRDevice::doBLKI(W36 iw, W36 ea) {
   return iNormal;
 }
 

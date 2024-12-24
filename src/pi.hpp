@@ -43,7 +43,7 @@
 
 #include "word.hpp"
 #include "device.hpp"
-#include "instruction-result.hpp"
+#include "iresult.hpp"
 
 
 struct PIDevice: Device {
@@ -171,6 +171,6 @@ struct PIDevice: Device {
 
   // I/O instruction handlers
   virtual void clearIO() override;
-  virtual InstructionResult doCONO(W36 iw, W36 ea) override;
-  virtual InstructionResult doCONI(W36 iw, W36 ea) override;
+  virtual IResult doCONO(W36 iw, W36 ea) override;
+  virtual IResult doCONI(W36 iw, W36 ea) override;
 };

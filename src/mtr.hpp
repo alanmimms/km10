@@ -2,7 +2,7 @@
 
 #include "word.hpp"
 #include "device.hpp"
-#include "instruction-result.hpp"
+#include "iresult.hpp"
 
 class KM10;
 
@@ -58,9 +58,9 @@ struct MTRDevice: Device {
 
   // I/O instruction handlers
   // WRTIME
-  virtual InstructionResult doCONO(W36 iw, W36 ea) override;
-  virtual InstructionResult doCONI(W36 iw, W36 ea) override;
-  virtual InstructionResult doDATAI(W36 iw, W36 ea);
-  virtual InstructionResult doBLKI(W36 iw, W36 ea);
+  virtual IResult doCONO(W36 iw, W36 ea) override;
+  virtual IResult doCONI(W36 iw, W36 ea) override;
+  virtual IResult doDATAI(W36 iw, W36 ea);
+  virtual IResult doBLKI(W36 iw, W36 ea);
   virtual void clearIO();
 };

@@ -5,7 +5,7 @@
 #include "logger.hpp"
 #include "device.hpp"
 #include "km10.hpp"
-#include "instruction-result.hpp"
+#include "iresult.hpp"
 
 using namespace std;
 
@@ -35,7 +35,7 @@ void Device::requestInterrupt()  {
 
 // Handle an I/O instruction by calling the appropriate device
 // driver's I/O instruction handler method.
-InstructionResult Device::handleIO(W36 iw, W36 ea) {
+IResult Device::handleIO(W36 iw, W36 ea) {
   Device *devP;
 
   if (auto it = devices.find((unsigned) iw.ioDev); it != devices.end()) {
@@ -72,7 +72,7 @@ InstructionResult Device::handleIO(W36 iw, W36 ea) {
     return devP->doCONSO(iw, ea);
 
   default:
-    return InstructionResult::iNYI;
+    return IResult::iNYI;
   }
 }
 
@@ -84,73 +84,73 @@ void Device::clearIO() {	// Default is to do mostly nothing
 }
 
 
-InstructionResult Device::doDATAI(W36 iw, W36 ea) {
+IResult Device::doDATAI(W36 iw, W36 ea) {
   km10.memPut(0);
-  return InstructionResult::iNormal;
+  return IResult::iNormal;
 }
   
-InstructionResult Device::doBLKI(W36 iw, W36 ea) {
+IResult Device::doBLKI(W36 iw, W36 ea) {
   W36 e{km10.memGetN(ea)};
   km10.memPut(W36{++e.lhu, ++e.rhu});
   doDATAI(iw, e.rhu);
 
   if (e.lhu != 0) {
-    return InstructionResult::iSkip;
+    return IResult::iSkip;
   } else {
-    return InstructionResult::iNormal;
+    return IResult::iNormal;
   }
 }
 
-InstructionResult Device::doBLKO(W36 iw, W36 ea) {
+IResult Device::doBLKO(W36 iw, W36 ea) {
   W36 e{km10.memGetN(ea)};
   km10.memPut(W36{++e.lhu, ++e.rhu});
   doDATAO(iw, e.rhu);
 
   if (e.lhu != 0) {
-    return InstructionResult::iSkip;
+    return IResult::iSkip;
   } else {
-    return InstructionResult::iNormal;
+    return IResult::iNormal;
   }
 }
 
 
-InstructionResult Device::doDATAO(W36 iw, W36 ea) {
-  return InstructionResult::iNoSuchDevice;
+IResult Device::doDATAO(W36 iw, W36 ea) {
+  return IResult::iNoSuchDevice;
 }
 
 
-InstructionResult Device::doCONO(W36 iw, W36 ea) {
-  return InstructionResult::iNoSuchDevice;
+IResult Device::doCONO(W36 iw, W36 ea) {
+  return IResult::iNoSuchDevice;
 }
 
 
-InstructionResult Device::doCONI(W36 iw, W36 ea) {
+IResult Device::doCONI(W36 iw, W36 ea) {
   km10.memPut(0);
-  return InstructionResult::iNormal;
+  return IResult::iNormal;
 }
 
 
-InstructionResult Device::doCONSZ(W36 iw, W36 ea) {
+IResult Device::doCONSZ(W36 iw, W36 ea) {
   doCONI(iw, ea);
   W36 conditions = km10.memGet();
   unsigned result = conditions.rhu & ea.rhu;
   bool skip = result == 0;
 
   if (skip) {
-    return InstructionResult::iSkip;
+    return IResult::iSkip;
   } else {
-    return InstructionResult::iNormal;
+    return IResult::iNormal;
   }
 }
 
 
-InstructionResult Device::doCONSO(W36 iw, W36 ea) {
+IResult Device::doCONSO(W36 iw, W36 ea) {
   doCONI(iw, ea);
   W36 conditions = km10.memGet();
 
   if ((conditions.rhu & ea.rhu) != 0) {
-    return InstructionResult::iSkip;
+    return IResult::iSkip;
   } else {
-    return InstructionResult::iNormal;
+    return IResult::iNormal;
   }
 }

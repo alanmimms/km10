@@ -2,7 +2,7 @@
 
 struct UUOsGroup: KM10 {
 
-  InstructionResult doMUUO() {
+  IResult doMUUO() {
     /*
       Kernel	No trap	430
       Kernel	Trap	431
@@ -58,7 +58,7 @@ struct UUOsGroup: KM10 {
   }
 
 
-  InstructionResult doLUUO() {
+  IResult doLUUO() {
     if (pc.isSection0()) {
       W36 uuoState = iw;
       uuoState.x = 0;		// Always zero I,X.
@@ -91,7 +91,7 @@ struct UUOsGroup: KM10 {
   }
 
   // This might someday be special - we'll see.
-  InstructionResult doJSYS() {
+  IResult doJSYS() {
     cerr << "JSYS isn't implemented yet" << logger.endl << flush;
     //    exceptionPC = pc + 1;
     inInterrupt = true;

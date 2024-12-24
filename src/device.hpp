@@ -7,7 +7,7 @@ using namespace std;
 
 #include "word.hpp"
 #include "logger.hpp"
-#include "instruction-result.hpp"
+#include "iresult.hpp"
 
 
 class KM10;
@@ -55,18 +55,18 @@ struct Device {
 
   // Handle an I/O instruction by calling the appropriate device
   // driver's I/O instruction handler method.
-  static InstructionResult handleIO(W36 iw, W36 ea);
+  static IResult handleIO(W36 iw, W36 ea);
 
 
   // I/O instruction handlers
   virtual void clearIO();
 
-  virtual InstructionResult doDATAI(W36 iw, W36 ea);
-  virtual InstructionResult doDATAO(W36 iw, W36 ea);
-  virtual InstructionResult doBLKI(W36 iw, W36 ea);
-  virtual InstructionResult doBLKO(W36 iw, W36 ea);
-  virtual InstructionResult doCONO(W36 iw, W36 ea);
-  virtual InstructionResult doCONI(W36 iw, W36 ea);
-  virtual InstructionResult doCONSZ(W36 iw, W36 ea);
-  virtual InstructionResult doCONSO(W36 iw, W36 ea);
+  virtual IResult doDATAI(W36 iw, W36 ea);
+  virtual IResult doDATAO(W36 iw, W36 ea);
+  virtual IResult doBLKI(W36 iw, W36 ea);
+  virtual IResult doBLKO(W36 iw, W36 ea);
+  virtual IResult doCONO(W36 iw, W36 ea);
+  virtual IResult doCONI(W36 iw, W36 ea);
+  virtual IResult doCONSZ(W36 iw, W36 ea);
+  virtual IResult doCONSO(W36 iw, W36 ea);
 };

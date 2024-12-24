@@ -103,8 +103,8 @@ struct DTE20: Device {
 
   // I/O instruction handlers
   virtual void clearIO() override;
-  virtual InstructionResult doCONO(W36 iw, W36 ea) override;
-  virtual InstructionResult doCONI(W36 iw, W36 ea) override;
+  virtual IResult doCONO(W36 iw, W36 ea) override;
+  virtual IResult doCONI(W36 iw, W36 ea) override;
 
   // TTY handlers and stuff
   static void consoleIOLoop();
