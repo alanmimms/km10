@@ -23,12 +23,7 @@ FetchContent_Declare(googletest
 include(GoogleTest)
 enable_testing()
 
-FetchContent_Declare(fmt
-    GIT_REPOSITORY "https://github.com/fmtlib/fmt.git"
-    GIT_TAG "11.0.2"
-)
-
-FetchContent_MakeAvailable(CLI googletest fmt)
+FetchContent_MakeAvailable(CLI googletest)
 
 add_subdirectory(src)
 add_subdirectory(tests)

@@ -46,16 +46,16 @@ InstructionResult APRDevice::doCONO(W36 iw, W36 ea) {		// WRAPR
 
   if (logger.mem) cerr << "; " << ea.fmt18();
 
-  cerr << km10.pc.fmtVMA() << " WRAPR: intLevel=" << oct << func.intLevel;
+  if (logger.ints) logger.s << km10.pc.fmtVMA() << " WRAPR: intLevel=" << oct << func.intLevel;
   intLevel = aprState.intLevel = func.intLevel;
 
   if (func.disable) {
-    cerr << " disable=" << oct << select;
+    if (logger.ints) logger.s << " disable=" << oct << select;
     aprState.setEnabled(aprState.getEnabled().u & ~select);
   }
 
   if (func.enable) {
-    cerr << " enable=" << oct << select;
+    if (logger.ints) logger.s << " enable=" << oct << select;
     aprState.setEnabled(aprState.getEnabled().u | select);
   }
 
@@ -68,30 +68,31 @@ InstructionResult APRDevice::doCONO(W36 iw, W36 ea) {		// WRAPR
   }
 
   if (func.clear) {
-    cerr << " clear=" << oct << select;
+    if (logger.ints) logger.s << " clear=" << oct << select;
     aprState.setActive(aprState.getActive().u & ~select);
   }
 
   if (func.set) {
-    cerr << " set=" << oct << select;
+    if (logger.ints) logger.s << " set=" << oct << select;
     aprState.setActive(aprState.getActive().u | select);
   }
 
   if (func.clearIO) {
-    cerr << " clearIO";
+    if (logger.ints) logger.s << " clearIO";
     Device::clearAll();
   }
 
-  cerr << logger.endl;
+  if (logger.ints) logger.s << logger.endl;
   return InstructionResult::iNormal;
 }
 
 InstructionResult APRDevice::doCONI(W36 iw, W36 ea) {		// RDAPR
   aprState.intLevel = intLevel;	// Refresh our version of the interrupt level
   W36 conditions{(int64_t) aprState.u};
-  cerr << km10.pc.fmtVMA() << " RDAPR aprState=" << conditions.fmt36()
-       << " ea=" << ea.fmtVMA()
-       << logger.endl;
+  if (logger.ints) logger.s << km10.pc.fmtVMA() << " RDAPR aprState="
+			    << conditions.fmt36()
+			    << " ea=" << ea.fmtVMA()
+			    << logger.endl;
   km10.memPut(conditions);
   return InstructionResult::iNormal;
 }

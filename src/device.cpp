@@ -28,7 +28,7 @@ void Device::clearAll() {
 
 // Request an interrupt at this Device's assigned level.
 void Device::requestInterrupt()  {
-  cerr << " <<< interrupt requested >>>";
+  if (logger.ints) logger.s << " <<< interrupt requested >>>";
   intPending = true;
 }
 
@@ -135,12 +135,6 @@ InstructionResult Device::doCONSZ(W36 iw, W36 ea) {
   W36 conditions = km10.memGet();
   unsigned result = conditions.rhu & ea.rhu;
   bool skip = result == 0;
-
-  cerr << ">>>>>>> CONSZ " << name << "," << W36(ea.rhu).fmt18()
-       << ": conditions=" << conditions.fmt36()
-       << "  result=" << W36(result).fmt18()
-       << "  skip=" << skip
-       << logger.endl << flush;
 
   if (skip) {
     return InstructionResult::iSkip;

@@ -3,7 +3,6 @@
 struct UUOsGroup: KM10 {
 
   InstructionResult doMUUO() {
-    cout << "MUUO pc=" << pc.fmtVMA() << logger.endl << flush;
     /*
       Kernel	No trap	430
       Kernel	Trap	431
@@ -55,15 +54,11 @@ struct UUOsGroup: KM10 {
     // Enter kernel mode to handle MUUO and keep on going from there.
     flags.u = 0;
     pc = fetchPC;
-
-    cout << "    fetchPC=" << fetchPC.fmtVMA() << logger.endl << flush;
     return iMUUO;
   }
 
 
   InstructionResult doLUUO() {
-    cout << "LUUO pc=" << pc.fmtVMA() << logger.endl << flush;
-
     if (pc.isSection0()) {
       W36 uuoState = iw;
       uuoState.x = 0;		// Always zero I,X.
@@ -71,8 +66,6 @@ struct UUOsGroup: KM10 {
 
       // XXX this should select executive virtual space first.
       memPutN(uuoState, 040);
-      cerr << "LUUO at " << pc.fmtVMA() << " uuoState=" << uuoState.fmt36()
-	   << logger.endl << flush;
       pcOffset = 0;
       fetchPC = 041;
       // Do NOT set inInterrupt here since JSP, etc. need to save PC+1.

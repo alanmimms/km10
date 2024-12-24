@@ -11,8 +11,10 @@
 #include <string>
 using namespace std;
 
+#if 0
 #include <fmt/core.h>
 using namespace fmt;
+#endif
 
 #include <CLI/CLI.hpp>
 
@@ -79,7 +81,8 @@ KM10::KM10(unsigned nMemoryWords,
     nSteps(0),
     addressGBPs(aGBPs),
     addressPBPs(aPBPs),
-    executeBPs(eBPs)
+    executeBPs(eBPs),
+    instructionCounter(0)
 {
   // THIS MUST BE FIRST so that all UUOs are MUUOs by default.
   InstallUUOsGroup(*this);
@@ -282,10 +285,6 @@ void KM10::memPutN(W36 value, W36 a) {
 
 void KM10::uptPutN(W36 value, unsigned uptWordOffset) {
   W36 memWordAddr = ((W36 *) uptP - (W36 *) memP) + uptWordOffset;
-  cout << "uptPutN(value=" << value.fmt36()
-       << ", offset=" << W36(uptWordOffset).fmt18()
-       << ") memWordAddr=" << memWordAddr.fmt36()
-       << logger.endl << flush;
   memPutN(value, memWordAddr);
 }
 
@@ -293,9 +292,6 @@ void KM10::uptPutN(W36 value, unsigned uptWordOffset) {
 W36 KM10::uptGetN(unsigned uptWordOffset) {
   W36 memWordAddr = (W36 *) uptP - (W36 *) memP;
   W36 result = memGetN(memWordAddr + uptWordOffset);
-  cout << "uptGetN(offset=" << W36(uptWordOffset).fmt18()
-       << ") memWordAddr=" << memWordAddr.fmt36()
-       << "  result=" << result.fmt36() << logger.endl << flush;
   return result;
 }
 
@@ -577,12 +573,13 @@ void KM10::emulate() {
       // We have an active interrupt.
       fetchPC = vec;
       inInterrupt = true;
-      cerr << ">>>>> interrupt cycle PC=" << pc.fmtVMA()
-	   << "  vector=" << fetchPC.fmtVMA()
-	   << logger.endl << flush;
+      if (logger.ints) logger.s << ">>>>> interrupt cycle PC=" << pc.fmtVMA()
+				<< "  vector=" << fetchPC.fmtVMA()
+				<< logger.endl << flush;
     }
 
     // Fetch the instruction and save PC (fetch, really) history.
+    ++instructionCounter;
     iw = memGetN(fetchPC);
     debugger.pcRing.add(fetchPC);
 

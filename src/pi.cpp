@@ -119,9 +119,10 @@ W36 PIDevice::setUpInterruptCycleIfPending() {
       return km10.eptAddressFor(&km10.eptP->pioInstructions[2*highestLevel]);
 
     default:
-      cerr << "PI got IFW from '" << highestDevP->name << "' specifying function "
-	   << (int) ifw.intFunction << ", which is not implemented yet."
-	   << logger.endl;
+      if (logger.ints) logger.s << "PI got IFW from '" << highestDevP->name
+				<< "' specifying function "
+				<< (int) ifw.intFunction << ", which is not implemented yet."
+				<< logger.endl;
       break;
     }
   }
@@ -136,7 +137,8 @@ void PIDevice::dismissInterrupt() {
   piState.currentLevel = PIState::noLevel;
   piState.held = 0;
   km10.inInterrupt = false;
-  cerr << " <<< dismissInterrupt, end piState=" << W36(piState.u).fmt18() << logger.endl << flush;
+  if (logger.ints) logger.s << " <<< dismissInterrupt, end piState="
+			    << W36(piState.u).fmt18() << logger.endl << flush;
 }
 
 
@@ -160,8 +162,8 @@ InstructionResult PIDevice::doCONO(W36 iw, W36 ea) {
 
   if (logger.mem) logger.s << "; " << ea.fmt18();
 
-  cerr << km10.pc.fmtVMA() << ": CONO PI,"
-       << pif.toString() << " ea=" << ea.fmt18() << logger.endl;
+  if (logger.ints) logger.s << km10.pc.fmtVMA() << ": CONO PI,"
+			    << pif.toString() << " ea=" << ea.fmt18() << logger.endl;
 
   if (pif.clearPI) {
     clearIO();
@@ -192,14 +194,15 @@ InstructionResult PIDevice::doCONO(W36 iw, W36 ea) {
 
       piState.prLevels |= pif.levels;
       requestInterrupt();
-      cerr << " <<< CONO PI, has triggered an interrupt on level "
-	   << intLevel << " >>>" << logger.endl << flush;
+      if (logger.ints) logger.s << " <<< CONO PI, has triggered an interrupt on level "
+				<< intLevel << " >>>" << logger.endl << flush;
     } else {
       intPending = false;
     }
   }
 
-  cerr << " <<< CONO PI, end piState=" << W36(piState.u).fmt18() << logger.endl << flush;
+  if (logger.ints) logger.s << " <<< CONO PI, end piState="
+			    << W36(piState.u).fmt18() << logger.endl << flush;
   return iNormal;
 }
 

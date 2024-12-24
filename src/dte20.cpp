@@ -130,12 +130,20 @@ InstructionResult DTE20::doCONO(W36 iw, W36 ea) {
 
     case enterSecondaryProtocol:
       cerr << "DTE20 enter secondary protocol command with data " << mc.data << " (ignored)."
-	   << endl;
+	   << endl << flush;
       break;
 
     case enterPrimaryProtocol:
       cerr << "DTE20 enter primary protocol command with data " << mc.data << " (ignored)."
-	   << endl;
+	   << endl << flush;
+      break;
+
+    case endOfDiagRun:
+      cerr << "[End of diagnostic RUN status=" << oct << mc.data << "]" << endl << flush;
+      break;
+
+    case endOfDiagPass:
+      cerr << "[End of diagnostic PASS status=" << oct << mc.data << "]" << endl << flush;
       break;
     }
   } else {

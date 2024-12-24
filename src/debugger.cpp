@@ -275,6 +275,9 @@ Debugger::DebugAction Debugger::debug() {
 		 << " intPending=" << devP->intPending
 		 << logger.endl;
 	  }
+	} else if (words[1] == "counters") {
+	  cout << "Instructions: " << setw(12) << dec << km10.instructionCounter
+	       << logger.endl;
 	} else {
 	  cout << "Must specify apr or flags" << logger.endl;
 	}
@@ -413,7 +416,7 @@ Debugger::DebugAction Debugger::debug() {
   pchist [N]    Dump all or some (N) most recent fetch-PC value history in FIFO order.
   restart       Reset and reload as if started from scratch again.
   s,step N      Step N (octal) instructions at current PC.
-  show apr|pi|flags|devs
+  show apr|pi|flags|devs|counters
                 Display APR, PI state, program flags, or device list.
   stats         Display emulator statistics.
   q,quit        Quit the KM10 simulator.

@@ -64,6 +64,8 @@ struct DTE20: Device {
 
   // See klcom.mem p.50
   enum DTECMD {
+    endOfDiagRun = 003,
+    endOfDiagPass = 004,
     ctyInput = 007,
     ctyOutput,
     enterSecondaryProtocol,

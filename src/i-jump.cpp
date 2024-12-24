@@ -35,7 +35,6 @@ struct JumpGroup: KM10 {
       break;
 
     case 002:					// JRSTF
-      cout << "JRSTF ea=" << ea.fmt36() << logger.endl << flush;
       restoreFlags(ea);
       return iJump;
 
@@ -62,7 +61,6 @@ struct JumpGroup: KM10 {
       break;
 
     case 012:					// JEN
-      cerr << ">>>>>> JEN ea=" << ea.fmtVMA() << logger.endl << flush;
       pi.dismissInterrupt();
       restoreFlags(ea);
       return iJump;
@@ -170,8 +168,6 @@ struct JumpGroup: KM10 {
   InstructionResult doJSR() {
     int delta = inInterrupt ? 0 : 1;
     W36 tmp = ea.isSection0() ? flagsWord(pc.rhu + delta) : W36(pc.vma + delta);
-    cerr << ">>>>>> JSR saved PC=" << tmp.fmt36() << "  ea=" << ea.fmt36()
-	 << logger.endl << flush;
     memPut(tmp);
     ++ea.rhu;			// Advance past flags word to target instruction
     flags.fpd = flags.afi = flags.tr2 = flags.tr1 = 0;
@@ -182,8 +178,6 @@ struct JumpGroup: KM10 {
   InstructionResult doJSP() {
     int delta = inInterrupt ? 0 : 1;
     W36 tmp = ea.isSection0() ? flagsWord(pc.rhu + delta) : W36(pc.vma + delta);
-    cerr << ">>>>>> JSP set ac=" << tmp.fmt36() << "  ea=" << ea.fmt36()
-	 << logger.endl << flush;
     acPut(tmp);
     flags.fpd = flags.afi = flags.tr2 = flags.tr1 = 0;
     if (inInterrupt) flags.usr = flags.pub = 0;
