@@ -61,7 +61,9 @@ InstructionResult APRDevice::doCONO(W36 iw, W36 ea) {		// WRAPR
 
   // Are any newly enabled and set interrupts added by this change?
   // If so, an interrupt is now pending.
-  if (func.enable && func.set && (aprState.getEnabled().u & select) > aprState.getActive().u) {
+  if (func.enable && func.set &&
+      (aprState.getEnabled().u & select) > aprState.getActive().u)
+  {
     requestInterrupt();
   }
 
