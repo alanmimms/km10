@@ -128,13 +128,13 @@ string KM10::ProgramFlags::toString() {
   if (tr2) ss << " TR2";
   if (afi) ss << " AFI";
   if (pub) ss << " PUB";
-  if (uio) ss << (usr ? " UIO" : " PCU");
+  if (uio) ss << " UIO/PCU";
   if (usr) ss << " USR";
   if (fpd) ss << " FPD";
   if (fov) ss << " FOV";
   if (cy1) ss << " CY1";
   if (cy0) ss << " CY0";
-  if (ov ) ss << " OV";
+  if (ov ) ss << " OV/PCP";
   return ss.str();
 }
 
@@ -281,12 +281,12 @@ void KM10::memPutN(W36 value, W36 a) {
 
 
 void KM10::uptPutN(W36 value, unsigned uptWordOffset) {
-  W36 memWordAddr = (W36 *) uptP - (W36 *) memP;
+  W36 memWordAddr = ((W36 *) uptP - (W36 *) memP) + uptWordOffset;
   cout << "uptPutN(value=" << value.fmt36()
        << ", offset=" << W36(uptWordOffset).fmt18()
        << ") memWordAddr=" << memWordAddr.fmt36()
        << logger.endl << flush;
-  memPutN(value, memWordAddr + uptWordOffset);
+  memPutN(value, memWordAddr);
 }
 
 
@@ -772,20 +772,8 @@ static int loopedMain(int argc, char *argv[]) {
     km10.debugger.loadREL(rVal.c_str());
   }
 
-  if (dVal) {
-    ofstream log;
-
-    log.open("ops-null.log");
-
-    for (size_t k=0; k < km10.ops.size(); ++k) {
-
-      if (km10.ops[k] == nullptr) {
-	log << "ops NULL: " << oct << setw(4) << setfill('0') << k << endl;
-      }
-    }
-
-    cout << "[logged nullptr ops to ops-null.log]" << endl;
-  }
+  // Make sure we defined very ops entry.
+  if (dVal) for (unsigned op=0; op < 512; ++op) assert(km10.ops[op] != nullptr);
 
   km10.running = !dVal;
   km10.emulate();
