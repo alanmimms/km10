@@ -48,7 +48,7 @@ struct UUOsGroup: KM10 {
 		((uint64_t) flagsBits.u << 23) |
 		((uint64_t) iw.op << 15) |
 		((uint64_t) iw.ac << 5)), 0424);
-    uptPutN(pc, 0425);
+    uptPutN(pc.vma+1, 0425);
     uptPutN(ea, 0426);
     uptPutN(pag.getPCW(), 0427);
 
