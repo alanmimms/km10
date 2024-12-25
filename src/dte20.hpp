@@ -64,8 +64,7 @@ struct DTE20: Device {
 
   // See klcom.mem p.50
   enum DTECMD {
-    endOfDiagRun = 003,
-    endOfDiagPass = 004,
+    diagNotice = 001,
     ctyInput = 007,
     ctyOutput,
     enterSecondaryProtocol,
@@ -80,7 +79,7 @@ struct DTE20: Device {
       unsigned fn: 8;
     };
 
-    unsigned u;
+    unsigned u: 16;
 
     MonitorCommand(unsigned v) : u(v) {}
   };

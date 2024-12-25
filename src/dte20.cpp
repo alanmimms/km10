@@ -96,7 +96,8 @@ IResult DTE20::doCONO(W36 iw, W36 ea) {
 
     MonitorCommand mc{km10.eptP->DTEto11Arg.rhu};
 
-    if (logger.dte) logger.s << " to11DoorBell arg=" << oct << km10.eptP->DTEto11Arg.rhu;
+    if (logger.dte) logger.s << " to11DoorBell arg=" << oct << km10.eptP->DTEto11Arg.rhu
+			     << " data=" << mc.data << " fn=" << mc.fn << endl << flush;
 
     switch (mc.fn) {
     case ctyInput:
@@ -138,12 +139,16 @@ IResult DTE20::doCONO(W36 iw, W36 ea) {
 	   << endl << flush;
       break;
 
-    case endOfDiagRun:
-      cerr << "[End of diagnostic RUN status=" << oct << mc.data << "]" << endl << flush;
-      break;
+    case diagNotice:
 
-    case endOfDiagPass:
-      cerr << "[End of diagnostic PASS status=" << oct << mc.data << "]" << endl << flush;
+      if (mc.data == 004) {
+	cerr << "[End of diagnostic PASS status=" << oct << mc.data << "]" << endl << flush;
+      } else if (mc.data == 003) {
+	cerr << "[End of diagnostic RUN status=" << oct << mc.data << "]" << endl << flush;
+      } else {
+	cerr << "[Unknown diagNotice status=" << oct << mc.data << "]" << endl << flush;
+      }
+
       break;
     }
   } else {
