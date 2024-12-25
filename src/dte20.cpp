@@ -141,14 +141,22 @@ IResult DTE20::doCONO(W36 iw, W36 ea) {
 
     case diagNotice:
 
-      if (mc.data == 004) {
-	cerr << "[End of diagnostic PASS status=" << oct << mc.data << "]" << endl << flush;
-      } else if (mc.data == 003) {
-	cerr << "[End of diagnostic RUN status=" << oct << mc.data << "]" << endl << flush;
-      } else {
+      switch (mc.data) {
+      case 004:			// End of PASS
+	cerr << "[End of diagnostic PASS]" << endl << flush;
+	break;
+
+      case 003:
+	cerr << "[End of diagnostic RUN]" << endl << flush;
+	break;
+
+      default:
 	cerr << "[Unknown diagNotice status=" << oct << mc.data << "]" << endl << flush;
+	break;
       }
 
+      // Acknowledge the command. (rsxt20.l20:5980)
+      km10.eptP->DTEMonitorOpComplete = W36(-2 & 0xFFFF);
       break;
     }
   } else {

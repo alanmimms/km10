@@ -30,6 +30,7 @@ Logger logger{};
 
 // We keep these breakpoint sets outside of the looped main and not
 // part of KM10 or Debugger object so they stick across restart.
+static KM10::BreakpointTable aOBPs;
 static KM10::BreakpointTable aGBPs;
 static KM10::BreakpointTable aPBPs;
 static KM10::BreakpointTable eBPs;
@@ -54,6 +55,7 @@ extern void InstallUUOsGroup(KM10 &km10);
 ////////////////////////////////////////////////////////////////
 // Constructor
 KM10::KM10(unsigned nMemoryWords,
+	   KM10::BreakpointTable &aOBPs,
 	   KM10::BreakpointTable &aGBPs,
 	   KM10::BreakpointTable &aPBPs,
 	   KM10::BreakpointTable &eBPs)
@@ -80,6 +82,7 @@ KM10::KM10(unsigned nMemoryWords,
     AC(ACBlocks[0]),
     memorySize(nMemoryWords),
     nSteps(0),
+    opBPs(aOBPs),
     addressGBPs(aGBPs),
     addressPBPs(aPBPs),
     executeBPs(eBPs),
@@ -595,6 +598,8 @@ void KM10::emulate() {
     iw = memGetN(fetchPC);
     debugger.pcRing.add(fetchPC);
 
+    if (opBPs.contains(iw.op)) running = false;
+
     // If we're debugging, this is where we pause to let the user
     // inspect and change things. The debugger tells us what our next
     // action should be based on its return value.
@@ -645,11 +650,6 @@ void KM10::emulate() {
     // Execute the instruction in `iw`.
     IResult result = (this->*ops[iw.op])();
 
-    if (iw.op == 0312) {
-      logger.s << "CAME: pc=" << pc.fmtVMA()
-	       << "  inInterrupt=" << inInterrupt;
-    }
-
     // If we "continue" we have to set up `fetchPC` to point to the
     // instruction to fetch and execute next. If we "break" (from the
     // switch case) we use `fetchPC` + pcOffset.
@@ -666,10 +666,6 @@ void KM10::emulate() {
 	pcOffset = 1;
       }
 
-      if (iw.op == 0312) logger.s << "  fetchPC=" << fetchPC.fmtVMA()
-				  << "  pcOffset=" << pcOffset
-				  << logger.endl << flush;
-
       break;
 
     case iSkip:
@@ -683,10 +679,6 @@ void KM10::emulate() {
       } else {
 	pcOffset = 2;
       }
-
-      if (iw.op == 0312) logger.s << "  fetchPC=" << fetchPC.fmtVMA()
-				  << "  pcOffset=" << pcOffset
-				  << logger.endl << flush;
 
       break;
 
@@ -779,7 +771,7 @@ static int loopedMain(int argc, char *argv[]) {
     return app.exit(e);
   }
 
-  KM10 km10(mVal*1024, aGBPs, aPBPs, eBPs);
+  KM10 km10(mVal*1024, aOBPs, aGBPs, aPBPs, eBPs);
   assert(sizeof(*km10.eptP) == 512 * 8);
   assert(sizeof(*km10.uptP) == 512 * 8);
 

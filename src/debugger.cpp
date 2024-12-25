@@ -64,7 +64,12 @@ Debugger::DebugAction Debugger::debug() {
     if (words.size() == 1) {
 
       for (auto bp: s) {
-	cout << ">>>" << W36(bp).fmtVMA() << logger.endl;
+
+	if (bp > 0777777u) {
+	  cout << ">>>" << W36(bp).fmtVMA() << logger.endl;
+	} else {
+	  cout << ">>>" << oct << bp << logger.endl;
+	}
       }
 
     } else if (words.size() > 1) {
@@ -96,10 +101,12 @@ Debugger::DebugAction Debugger::debug() {
   // Put console back into normal mode
   km10.dte.disconnect();
 
+  // We have to set this every time but we only install the signal
+  // handler once for this process.
+  cpuForHandlerP = &km10;
   static bool firstTime{true};
 
   if (firstTime) {
-    cpuForHandlerP = &km10;
     signal(SIGINT, sigintHandler);
 
     cout << "[KM-10 debugger]" << logger.endl << flush;
@@ -152,6 +159,7 @@ Debugger::DebugAction Debugger::debug() {
       action = quit;
     });
 
+    COMMAND("obp", nullptr, [&]() {handleBPCommand(km10.opBPs);});
     COMMAND("gbp", nullptr, [&]() {handleBPCommand(km10.addressGBPs);});
     COMMAND("pbp", nullptr, [&]() {handleBPCommand(km10.addressPBPs);});
 
@@ -401,6 +409,7 @@ Debugger::DebugAction Debugger::debug() {
                 Use -A to remove an existing address breakpoint or 'clear' to clear all.
   pbp [A]       Set address breakpoint after PUT access to address A or list breakpoints.
                 Use -A to remove an existing address breakpoint or 'clear' to clear all.
+  obp op        Breakpoint on next instruction with 'op' as its opcode.
   ac [N [V]]    Dump all ACs or, if N specified, a single AC.
                 If V is specified, set AC's value.
   b,bp [A]      Set breakpoint before execution of address A or display list of breakpoints.

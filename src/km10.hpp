@@ -106,7 +106,11 @@ public:
   array<OpcodeHandler, 512> ops;
 
   // Constructor and destructor
-  KM10(unsigned nMemoryWords, BreakpointTable &aGBPs, BreakpointTable &aPBPs, BreakpointTable &eBPs);
+  KM10(unsigned nMemoryWords,
+       BreakpointTable &aOBPs,
+       BreakpointTable &aGBPs,
+       BreakpointTable &aPBPs,
+       BreakpointTable &eBPs);
 
   ~KM10();
 
@@ -298,6 +302,7 @@ public:
   unsigned memorySize;
   int64_t nSteps;
   uint64_t nInsns;
+  unordered_set<unsigned> &opBPs;	// Opcode breakpoints
   unordered_set<unsigned> &addressGBPs; // Address GET breakpoints
   unordered_set<unsigned> &addressPBPs; // Address PUT breakpoints
   unordered_set<unsigned> &executeBPs;	// Execution breakpoints
