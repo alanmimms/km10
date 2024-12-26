@@ -51,9 +51,6 @@ struct TIMDevice: Device {
   // are.
   void updateCounts();
 
-  // I/O instruction handlers
-  virtual IResult doCONO(W36 iw, W36 ea) override;
-  virtual IResult doCONI(W36 iw, W36 ea) override;
-  virtual IResult doDATAI(W36 iw, W36 ea);
-  virtual void clearIO();
+  virtual unsigned getConditions();
+  virtual void putConditions(unsigned v);
 };

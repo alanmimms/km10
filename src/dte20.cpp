@@ -28,6 +28,7 @@ DTE20::DTE20(unsigned anAddr, KM10 &cpu)
 	   cpu,
 	   true),
     protocolMode(SECONDARY),
+    genericConditions(0),
     isConnected(false),
     console("/dev/tty"),
     endl{"\n"}
@@ -87,7 +88,19 @@ void DTE20::clearIO() {
 }
 
 
+unsigned DTE20::getConditions() {
+  return genericConditions;
+}
+
+
+void DTE20::putConditions(unsigned v) {
+  genericConditions = v;
+}
+
+
+
 IResult DTE20::doCONO(W36 iw, W36 ea) {
+  putConditions(ea.rhu);
   CONOMask req(ea);
   if (logger.dte) logger.s << "; DTE CONO " << oct << ea;
 
@@ -163,12 +176,6 @@ IResult DTE20::doCONO(W36 iw, W36 ea) {
     logger.nyi(km10);
   }
 
-  return IResult::iNormal;
-}
-
-
-IResult DTE20::doCONI(W36 iw, W36 ea) {
-  if (logger.dte) logger.s << "; DTE CONI";
   return IResult::iNormal;
 }
 

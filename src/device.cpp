@@ -10,6 +10,9 @@
 using namespace std;
 
 
+map<unsigned, Device *> Device::devices = {};
+
+
 // Return the device's interrupt function word for its highest
 // pending interrupt. Default is to use fixed vector for the level.
 // Return zero for level to indicate no pending interrupt from this
@@ -81,14 +84,10 @@ IResult Device::handleIO(W36 iw, W36 ea) {
 void Device::clearIO() {	// Default is to do mostly nothing
   intPending = false;
   intLevel = 0;
+  putConditions(0);
 }
 
 
-IResult Device::doDATAI(W36 iw, W36 ea) {
-  km10.memPut(0);
-  return IResult::iNormal;
-}
-  
 IResult Device::doBLKI(W36 iw, W36 ea) {
   W36 e{km10.memGetN(ea)};
   km10.memPut(W36{++e.lhu, ++e.rhu});
@@ -100,6 +99,7 @@ IResult Device::doBLKI(W36 iw, W36 ea) {
     return IResult::iNormal;
   }
 }
+
 
 IResult Device::doBLKO(W36 iw, W36 ea) {
   W36 e{km10.memGetN(ea)};
@@ -114,29 +114,32 @@ IResult Device::doBLKO(W36 iw, W36 ea) {
 }
 
 
+IResult Device::doDATAI(W36 iw, W36 ea) {
+  km10.memPut(0);
+  return IResult::iNormal;
+}
+  
+
 IResult Device::doDATAO(W36 iw, W36 ea) {
   return IResult::iNoSuchDevice;
 }
 
 
 IResult Device::doCONO(W36 iw, W36 ea) {
+  putConditions(ea.rhu);
   return IResult::iNoSuchDevice;
 }
 
 
 IResult Device::doCONI(W36 iw, W36 ea) {
-  km10.memPut(0);
+  km10.memPut(getConditions());
   return IResult::iNormal;
 }
 
 
 IResult Device::doCONSZ(W36 iw, W36 ea) {
-  doCONI(iw, ea);
-  W36 conditions = km10.memGet();
-  unsigned result = conditions.rhu & ea.rhu;
-  bool skip = result == 0;
 
-  if (skip) {
+  if ((getConditions() & ea.rhu) == 0) {
     return IResult::iSkip;
   } else {
     return IResult::iNormal;
@@ -145,10 +148,8 @@ IResult Device::doCONSZ(W36 iw, W36 ea) {
 
 
 IResult Device::doCONSO(W36 iw, W36 ea) {
-  doCONI(iw, ea);
-  W36 conditions = km10.memGet();
 
-  if ((conditions.rhu & ea.rhu) != 0) {
+  if ((getConditions() & ea.rhu) != 0) {
     return IResult::iSkip;
   } else {
     return IResult::iNormal;

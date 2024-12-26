@@ -236,6 +236,9 @@ struct APRDevice: Device {
   { }
 
 
+  virtual unsigned getConditions();
+  virtual void putConditions(unsigned v);
+
   // Interrupt handling
   void requestInterrupt() override;
 
@@ -245,6 +248,7 @@ struct APRDevice: Device {
 
   // I/O instruction handlers
   virtual IResult doDATAI(W36 iw, W36 ea) override;
+  virtual IResult doDATAO(W36 iw, W36 ea) override;
   virtual IResult doBLKI(W36 iw, W36 ea) override; // APRID
   virtual IResult doBLKO(W36 iw, W36 ea) override; // WRFIL
   virtual IResult doCONO(W36 iw, W36 ea) override; // WRAPR

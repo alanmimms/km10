@@ -66,7 +66,7 @@ KM10::KM10(unsigned nMemoryWords,
     pi {*this},
     tim{*this},
     dte{040, *this},
-    noDevice{0777777ul, "?NoDevice?", *this},
+    noDevice{0777777ul, *this},
     debugger{*this},
     pc(0),
     iw(0),
@@ -359,6 +359,16 @@ void KM10::restoreFlags(W36 ea) {
   if (flags.pub) newFlags.pub = 1;
 
   flags.u = newFlags.u;
+}
+
+
+unsigned KM10::NoDevice::getConditions() {
+  return genericConditions;
+}
+
+
+void KM10::NoDevice::putConditions(unsigned v) {
+  genericConditions = v;
 }
 
 

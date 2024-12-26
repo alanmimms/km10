@@ -27,48 +27,58 @@ void CCADevice::handleSweep() {
 }
 
 
+unsigned CCADevice::getConditions() {
+  return genericConditions;
+}
+
+
+void CCADevice::putConditions(unsigned v) {
+  genericConditions = v;
+}
+
+
 // I/O instruction handlers
 IResult CCADevice::doCONO(W36 iw, W36 ea) {
   startSweep();
-  return IResult::iNormal;
+  return Device::doCONO(iw, ea);
 }
 
 // SWPIA
 IResult CCADevice::doDATAI(W36 iw, W36 ea) {
   startSweep();
-  return IResult::iNormal;
+  return Device::doDATAI(iw, ea);
 }
 
 // SWPVA
 IResult CCADevice::doBLKO(W36 iw, W36 ea) {
   startSweep();
-  return IResult::iNormal;
+  return Device::doBLKO(iw, ea);
 }
 
 
 // SWPUA
 IResult CCADevice::doDATAO(W36 iw, W36 ea) {
   startSweep();
-  return IResult::iNormal;
+  return Device::doDATAO(iw, ea);
 }
 
 
 // SWPIO
 IResult CCADevice::doCONI(W36 iw, W36 ea) {
   startSweep();
-  return IResult::iNormal;
+  return Device::doCONI(iw, ea);
 }
 
 // SWPVO
 IResult CCADevice::doCONSZ(W36 iw, W36 ea) {
   startSweep();
-  return IResult::iNormal; // XXX
+  return Device::doCONSZ(iw, ea);
 }
 
 // SWPUO
 IResult CCADevice::doCONSO(W36 iw, W36 ea) {
   startSweep();
-  return IResult::iNormal; // XXX
+  return Device::doCONSO(iw, ea);
 }
 
 void CCADevice::clearIO() {

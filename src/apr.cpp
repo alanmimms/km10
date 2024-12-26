@@ -35,18 +35,28 @@ IResult APRDevice::doBLKO(W36 iw, W36 ea) {	// WRFIL
   return IResult::iNormal;
 }
 
+
+// XXX implement address breaks under program control.
 IResult APRDevice::doDATAI(W36 iw, W36 ea) {
   km10.memPut(breakState.u);
   return IResult::iNormal;
 }
 
-IResult APRDevice::doCONO(W36 iw, W36 ea) {		// WRAPR
-  APRFunctions func{ea.rhu};
+
+IResult APRDevice::doDATAO(W36 iw, W36 ea) {
+  breakState.u = km10.memGet().rhu;
+  return IResult::iNormal;
+}
+
+
+void APRDevice::putConditions(unsigned v) {
+  APRFunctions func{v};
   unsigned select = func.getSelect().u;
 
-  if (logger.mem) cerr << "; " << ea.fmt18();
+  if (logger.mem) cerr << "; " << km10.ea.fmt18();
 
-  if (logger.ints) logger.s << km10.pc.fmtVMA() << " WRAPR: intLevel=" << oct << func.intLevel;
+  if (logger.ints) logger.s << km10.pc.fmtVMA() << " WRAPR: intLevel="
+			    << oct << func.intLevel;
   intLevel = aprState.intLevel = func.intLevel;
 
   if (func.disable) {
@@ -83,19 +93,31 @@ IResult APRDevice::doCONO(W36 iw, W36 ea) {		// WRAPR
   }
 
   if (logger.ints) logger.s << logger.endl;
+}
+
+
+IResult APRDevice::doCONO(W36 iw, W36 ea) {		// WRAPR
+  putConditions(ea.rhu);
   return IResult::iNormal;
 }
 
-IResult APRDevice::doCONI(W36 iw, W36 ea) {		// RDAPR
+
+unsigned APRDevice::getConditions() {
   aprState.intLevel = intLevel;	// Refresh our version of the interrupt level
-  W36 conditions{(int64_t) aprState.u};
+  return aprState.u;
+}
+
+
+IResult APRDevice::doCONI(W36 iw, W36 ea) {		// RDAPR
+  unsigned conditions = getConditions();
   if (logger.ints) logger.s << km10.pc.fmtVMA() << " RDAPR aprState="
-			    << conditions.fmt36()
+			    << conditions
 			    << " ea=" << ea.fmtVMA()
 			    << logger.endl;
   km10.memPut(conditions);
   return IResult::iNormal;
 }
+
 
 void APRDevice::clearIO() {
   Device::clearIO();

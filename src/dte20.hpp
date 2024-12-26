@@ -84,6 +84,7 @@ struct DTE20: Device {
     MonitorCommand(unsigned v) : u(v) {}
   };
 
+  unsigned genericConditions: 18;
   thread consoleIOThread;
   bool consoleIOThreadDone;
   bool isConnected;
@@ -100,10 +101,12 @@ struct DTE20: Device {
   inline static TSQueue<char> ctyQ;
 
 
+  virtual unsigned getConditions();
+  virtual void putConditions(unsigned v);
+
   // I/O instruction handlers
   virtual void clearIO() override;
   virtual IResult doCONO(W36 iw, W36 ea) override;
-  virtual IResult doCONI(W36 iw, W36 ea) override;
 
   // TTY handlers and stuff
   static void consoleIOLoop();

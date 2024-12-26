@@ -157,13 +157,21 @@ void PIDevice::clearIO() {
   piState.piOn = piOn;
 }
 
-IResult PIDevice::doCONO(W36 iw, W36 ea) {
-  PIFunctions pif(ea.u);
 
-  if (logger.mem) logger.s << "; " << ea.fmt18();
+
+
+unsigned PIDevice::getConditions() {
+  return (unsigned) piState.u;
+}
+
+
+void PIDevice::putConditions(unsigned v) {
+  PIFunctions pif(v);
+
+  if (logger.mem) logger.s << "; " << km10.ea.fmt18();
 
   if (logger.ints) logger.s << km10.pc.fmtVMA() << ": CONO PI,"
-			    << pif.toString() << " ea=" << ea.fmt18() << logger.endl;
+			    << pif.toString() << " ea=" << km10.ea.fmt18() << logger.endl;
 
   if (pif.clearPI) {
     clearIO();
@@ -203,12 +211,4 @@ IResult PIDevice::doCONO(W36 iw, W36 ea) {
 
   if (logger.ints) logger.s << " <<< CONO PI, end piState="
 			    << W36(piState.u).fmt18() << logger.endl << flush;
-  return iNormal;
-}
-
-
-IResult PIDevice::doCONI(W36 iw, W36 ea) {
-  W36 conditions{(int64_t) piState.u};
-  km10.memPut(conditions);
-  return iNormal;
 }

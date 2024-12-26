@@ -169,8 +169,9 @@ struct PIDevice: Device {
   // This ends interrupt service.
   void dismissInterrupt();
 
+  virtual unsigned getConditions();
+  virtual void putConditions(unsigned v);
+
   // I/O instruction handlers
   virtual void clearIO() override;
-  virtual IResult doCONO(W36 iw, W36 ea) override;
-  virtual IResult doCONI(W36 iw, W36 ea) override;
 };

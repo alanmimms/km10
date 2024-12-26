@@ -13,27 +13,11 @@ void TIMDevice::updateCounts() {
 }
 
 
-// I/O instruction handlers
-IResult TIMDevice::doCONO(W36 iw, W36 ea) {
-  if (logger.mem) logger.s << "; " << ea.fmt18();
-  timState.u = iw.y;
-  return iNormal;
+unsigned TIMDevice::getConditions() {
+  return timState.u;
 }
 
 
-IResult TIMDevice::doCONI(W36 iw, W36 ea) {
-  W36 conditions{(int64_t) timState.u};
-  km10.memPut(conditions);
-  return iNormal;
-}
-
-// RDTIME
-IResult TIMDevice::doDATAI(W36 iw, W36 ea) {
-  km10.memPut(0);
-  return iNormal;
-}
-  
-
-void TIMDevice::clearIO() {
-  timState.u = 0;
+void TIMDevice::putConditions(unsigned v) {
+  timState.u = v;
 }

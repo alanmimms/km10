@@ -79,6 +79,7 @@ using namespace std;
 
 
 class KM10 {
+
 public:
   APRDevice apr;
   CCADevice cca;
@@ -87,7 +88,17 @@ public:
   PIDevice pi;
   TIMDevice tim;
   DTE20 dte;
-  Device noDevice;
+
+  struct NoDevice: Device {
+    NoDevice(unsigned anAddr, KM10 &cpu)
+      : Device(anAddr, "?no-device?", cpu)
+    {}
+
+    unsigned genericConditions: 18;
+    virtual unsigned getConditions();
+    virtual void putConditions(unsigned v);
+  } noDevice;
+
   Debugger debugger;
 
 

@@ -22,7 +22,7 @@ struct Device {
   // Set this in DTE20 device so it can cause interrupts on level #0.
   bool canIntLevel0;
 
-  static inline map<unsigned, Device *> devices{};
+  static map<unsigned, Device *> devices;
 
   // Constructors
   Device(unsigned anAddr, string aName, KM10 &cpu, bool aCanIntLevel0 = false)
@@ -60,6 +60,12 @@ struct Device {
 
   // I/O instruction handlers
   virtual void clearIO();
+
+  // This is for CONI/CONSZ/CONSO to build on.
+  virtual unsigned getConditions() = 0;
+
+  // This is for CONO to write conditions.
+  virtual void putConditions(unsigned v) = 0;
 
   virtual IResult doDATAI(W36 iw, W36 ea);
   virtual IResult doDATAO(W36 iw, W36 ea);

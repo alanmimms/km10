@@ -26,6 +26,16 @@ W36 PAGDevice::getPCW() const {
 }
 
 
+unsigned PAGDevice::getConditions() {
+  return pagState.u;
+}
+
+
+void PAGDevice::putConditions(unsigned v) {
+  pagState.u = v;
+}
+
+
 // I/O instruction handlers
 IResult PAGDevice::doDATAO(W36 iw, W36 ea) {
   if (logger.mem) logger.s << "; " << ea.fmt18();
@@ -45,6 +55,7 @@ IResult PAGDevice::doDATAO(W36 iw, W36 ea) {
   return iNormal;
 }
 
+
 IResult PAGDevice::doDATAI(W36 iw, W36 ea) {
   ProcessContext result{processContext};
   result.loadUserBase = 0;
@@ -52,20 +63,4 @@ IResult PAGDevice::doDATAI(W36 iw, W36 ea) {
   result.selectACBlocks = 0;
   km10.memPut(result.u);
   return iNormal;
-}
-
-IResult PAGDevice::doCONO(W36 iw, W36 ea) {
-  if (logger.mem) logger.s << "; " << ea.fmt18();
-  pagState.u = iw.y;
-  return iNormal;
-}
-
-IResult PAGDevice::doCONI(W36 iw, W36 ea) {
-  W36 conditions{km10.memGetN(ea).lhu, pagState.u};
-  km10.memPut(conditions);
-  return iNormal;
-}
-
-void PAGDevice::clearIO() {
-  pagState.u = 0;
 }

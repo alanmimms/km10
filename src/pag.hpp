@@ -56,12 +56,12 @@ struct PAGDevice: Device {
   bool pagerEnabled();
 
 
+  virtual unsigned getConditions();
+  virtual void putConditions(unsigned v);
+
   // I/O instruction handlers
   virtual IResult doDATAI(W36 iw, W36 ea) override;
   virtual IResult doDATAO(W36 iw, W36 ea) override;
-  virtual IResult doCONO(W36 iw, W36 ea) override;
-  virtual IResult doCONI(W36 iw, W36 ea) override;
-  virtual void clearIO();
 
   W36 getPCW() const;
 };

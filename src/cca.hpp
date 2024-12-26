@@ -5,6 +5,8 @@
 
 
 struct CCADevice: Device {
+  unsigned genericConditions: 18;
+
   // Counts down to zero when sweep is busy, causing interrupt when
   // sweep is done.
   int sweepCountDown;
@@ -12,6 +14,7 @@ struct CCADevice: Device {
   // Constructors
   CCADevice(KM10 &cpu)
     : Device(014, "CCA", cpu),
+      genericConditions(0),
       sweepCountDown(0)
   { }
 
@@ -26,6 +29,9 @@ struct CCADevice: Device {
   // and for APR to trigger the optional interrupt when it's done.
   void handleSweep();
 
+
+  virtual unsigned getConditions();
+  virtual void putConditions(unsigned v);
 
   // I/O instruction handlers
   virtual IResult doCONO(W36 iw, W36 ea) override;
