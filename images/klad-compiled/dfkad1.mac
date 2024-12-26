@@ -1,0 +1,2000 @@
+SUBTTL	DIAGNOSTIC SECTION
+
+START:	SKIPN	USER
+	JRST	STARTA
+
+	SKIPL	MONCTL
+	TTCALL	3,PGMNAM
+	JRST	STARTA
+
+PGMNAM:	ASCIZ/
+DECSYSTEM KL10 BASIC INSTRUCTION DIAGNOSTIC (4) [DFKAD]
+/
+
+;Basic instruction test (4)
+;The test is designed for initial debugging of
+;Processor hardware and to detect (solid) failures
+;In the field.
+
+STARTA:	JRST	.+1
+SUBTTL	TEST OF AC HARDWARE AND INDEX REGISTERS
+
+;Note:	an "*" in the comment field of an instruction indicates that
+;	It is the tested instruction.
+
+
+;**********
+
+;This test verifies that ac1 is accessable
+;In this case, ac1 is preloaded with 1.
+;C(ac1) is then checked for a1.  this test passes if c(ac1)=1.
+;If this test fails, the ac hardware is probably faulty.
+
+C100:	SETZ				;Clear ac0
+	MOVEI	1,1			;Preload ac1 umth 1
+	CAIE	1,1			;Pass if c(ac1)=1
+	STOP
+
+;**********
+
+;This test verifies that ac2 is accessable.
+;In this case, ac2 is preloaded with 2.
+;C(ac2) is then checked for 2.  this test passes if c(ac2)=2.
+;If this test fails, the ac hardware is probably faulty.
+
+C200:	MOVEI	2,2			;Preload ac2 with 2
+	CAIE	2,2			;Pass if c(ac2)=2
+	STOP
+
+;**********
+;This test verifies that ac4 is accessable.
+;In this case, ac4 is preloaded with 4.
+;C(ac4) is then checked for 4.  this test passes if c(ac4)=4.
+;If this test fails, the ac hardware is probably faulty.
+
+C300:	MOVEI	4,4			;Preload ac4 with 4 
+	CAIE	4,4			;Pass if c(ac4)=4
+	STOP
+
+;**********
+
+;This test verifies that ac10 is accessable.
+;In this case, ac10 is preloaded with 10.
+;C(ac10) is then checked for 10.  this test passes if c(ac10)=10.
+;If this test fails, the ac hardware is probably faulty.
+
+C400:	MOVEI	10,10			;Preload ac10 with 10
+	CAIE	10,10			;Pass if c(ac10)=10
+	STOP
+
+;**********
+SN=500
+	ZZ=-1
+
+;This test  verifies that all acs exist.  first, each ac is
+;Preloaded with its own address. then, the contents of each
+;Ac is checked for its address.  if any ac does not contain
+;Its address, this test fails.
+
+C500:	REPEAT	^D16,
+<	ZZ=ZZ+1
+	MOVEI	ZZ,ZZ			;Preload each ac with its addr>
+PAGE
+	ZZ=20
+
+	REPEAT	^D16,<
+;This test  verifies that all acs exist.  first, each ac is
+;Preloaded with its own address. then, the contents of each
+;Ac is checked for its address.  if any ac does not contain
+;Its address, this test fails.
+
+SN=SN+1
+	ZZ=ZZ-1
+	CAIE	ZZ,ZZ			;Check that each ac contains its own address
+	STOP
+					;In case of failure, loop to "c500" address
+
+;**********
+>
+SN=600
+	ZZ=0
+
+;This test verifies that an address within the ac range may be accessed as
+;Either an ac or a memory location and that either reference refers to the
+;Same hardware.  each ac is preloaded with its address.  then the contents
+;Of each  ac  is  checked for its address.  if any ac does not contain its
+;Address, this test fails.
+
+C600:	REPEAT	^D15,
+<	ZZ=ZZ+1
+	MOVEI	ZZ			;Preload each ac with its address
+	MOVEM	ZZ			;By referencing each ac as memory.>
+
+	ZZ=20
+
+	REPEAT	^D15,<
+;This test verifies that an address within the ac range may be accessed as
+;Either an ac or a memory location and that either reference refers to the
+;Same hardware.  each ac is preloaded with its address.  then the contents
+;Of each  ac  is  checked for its address.  if any ac does not contain its
+;Address, this test fails.
+
+SN=SN+1
+	ZZ=ZZ-1
+	CAIE	ZZ,ZZ			;Check that each ac contains its own address
+	STOP
+					;In case of failure, loop to "c600" address
+
+;**********
+>
+SN=700
+	ZZ=0
+
+C700:	REPEAT	^D15,<
+;This test verifies that the index registers are accessable. first, an
+;Index register is preloaded with its address.  then, it is referenced
+;As an index register.  if it contains its address, this test  passes.
+;This test is repeated 15 times in order to test each index register.
+
+SN=SN+1
+	ZZ=ZZ+1
+	MOVEI	ZZ,ZZ			;Preload index register with its address
+	CAIE	ZZ,(ZZ)			;Pass if index register contains its address
+	STOP
+
+;**********
+>
+SN=1000
+	ZZ=0
+
+C1000:	REPEAT	^D15,<
+;This test verifies that all index registers index correctly. first, both
+;Halves of the index register are preloaded with its  address.  then, the
+;Index register is referenced. it is then checked for its address in both
+;Halves.  if it contains its address in both halves this test passes.
+;This test is repeated 15 times in order to test each index register.
+
+SN=SN+1
+	ZZ=ZZ+1
+	MOVEI	ZZ,ZZ			;Preload both halves of index reg with its address
+	HRLI	ZZ,ZZ			;Pass if index register contains its address
+	CAME	ZZ,(ZZ)			;In both halves
+	STOP
+
+;**********
+>
+SUBTTL	TEST OF INDEX REGISTER ADDRESSING
+
+;**********
+
+;This  test  verifies that index register addressing functions correctly.
+;In this test, a move  instruction  using indexing is executed.  the move
+;Instruction should place the contents of the location specified by index
+;Register 2 into ac3.  since index  register 2 was preloaded with a 1 and
+;Ac1 was preloaded with a 0, the  final  result  in  ac3 should be 0.  if
+;C(ac3)=0, this test passes.
+
+C1100:	SETOM	3			;Preload ac3 with -1,,1
+	SETZM	1			;Preload ac1 with 0
+	MOVEI	2,1			;Setup index register 2 with 1
+	MOVE	3,(2)			;*Fwt from indexed location
+	SKIPE	3			;Test indexing
+	STOP
+
+;**********
+
+SN=1200
+	ZZ=0
+
+C1200:	REPEAT	^D18,<
+;This test  verifies  that index register addressing functions correctly.
+;In this test, a move  instruction  using indexing is executed.  the move
+;Instruction should place the contents of the location specified by index
+;Register 2 into ac3.  since  index register 2 was preloaded with a 1 and
+;Ac1 was preloaded with a floating 1. the final result in ac3 should be a
+;Floating 1.  if c(ac3)=a floating 1, this test passes.
+
+SN=SN+1
+	ZZ=ZZ+ZZ
+	IFE	ZZ,<ZZ=1>
+	SETOM	3			;Preload ac3 with -1,,-1
+	MOVEI	1,ZZ			;Preload ac1 with floating 1
+	MOVEI	2,1			;Setup index register
+	MOVE	3,(2)			;*Fwt from indexed location
+	CAIE	3,ZZ			;Test indexing
+	STOP
+
+;**********
+>
+SN=1300
+	ZZ=0
+
+C1300:	REPEAT	^D18,<
+;This test  verifies  that index register addressing functions correctly.
+;In this test, a move  instruction  using indexing is executed.  the move
+;Instruction should place the contents of the location specified by index
+;Register 2 into ac3.  since  index register 2 was preloaded with a 1 and
+;Ac1 was preloaded with a floating 1, the final result in ac3 should be a
+;Floating 1.  if c(ac3)=a floating 1, this test passes.
+
+SN=SN+1
+	ZZ=ZZ+ZZ
+	IFE	ZZ,<ZZ=1>
+	SETOM	3			;Preload ac3 with -1,,-1
+	MOVSI	1,ZZ			;Preload ac1 with floating 1
+	MOVEI	2,1			;Setup index register
+	MOVE	3,(2)			;*Fwt from indexed location
+	CAME	3,[ZZ,,0]		;Test indexing
+	STOP
+
+;**********
+>
+;This  test  verifies that index register addressing functions correctly.
+;In this test, a move instruction  using  indexing is executed.  the move
+;Instruction should place the contents of the location specified by index
+;Register 2 into ac3.  since  index register 2 was preloaded with a 1 and
+;Ac1 was preloaded with -1,,-1, the final result in ac3 should be -1,,-1.
+;If c(ac3)=-1,,-1, this test passes.
+
+C1400:	SETZM	3			;Preload ac3 with 0
+	SETOM	1			;Preload ac1 with -1,,-1
+	MOVEI	2,1			;Setup index register
+	MOVE	3,(2)			;*Fwt from indexed location
+	CAME	3,[-1,,-1]		;Test indexing
+	STOP
+
+;**********
+
+SN=1500
+	ZZ=0
+
+C1500:	REPEAT	^D18,<
+;This test  verifies  that index register addressing functions correctly.
+;In this test, a move instruction  using  indexing is executed.  the move
+;Instruction should place the contents of the location specified by index
+;Register 2 into ac3.  since  index register 2 was preloaded with a 1 and
+;Ac1 was preloaded with a floating 0, the final result in ac3 should be a
+;Floating 0. if c(ac3)=a floating 0, this test passes.
+
+SN=SN+1
+	ZZ=<ZZ+ZZ+1>&777777
+	IFE	<ZZ-1>,<ZZ=777776>
+	SETZM	3			;Preload ac3 with 0
+	HRROI	1,ZZ			;Preload ac1 with floating 0
+	MOVEI	2,1			;Setup index register
+	MOVE	3,(2)			;*Fwt from indexed location
+	CAME	3,[-1,,ZZ]		;Test indexing
+	STOP
+
+;**********
+>
+SN=1600
+	ZZ=0 
+
+C1600:	REPEAT	^D18,<
+;This  test  verifies that index register addressing functions correctly.
+;In this test,  a move  instruction using indexing is executed.  the move
+;Instruction should place the contents of the location specified by index
+;Register 2 into ac3.  since  index register 2 was preloaded with a 1 and
+;Ac1 was preloaded with a floating 0, the final result in ac3 should be a
+;Floating 0.  if c(ac3)=a floating 0, this test passes.
+
+SN=SN+1
+	ZZ=<ZZ+ZZ+1>&777777
+	IFE	<ZZ-1>,<ZZ=777776>
+	SETZM	3			;Preload ac3 with 0
+	HRLOI	1,ZZ			;Preload ac1 with floating 0
+	MOVEI	2,1			;Setup index register
+	MOVE	3,(2)			;*Fwt from indexed location
+	CAME	3,[ZZ,,-1]		;Test indexing
+	STOP
+
+;**********
+>
+;Verify indexing where 'e' is non-zero
+
+SN=1700
+	ZZ=-1
+	XX=-10
+
+;This test verifies that index register addressing functions  correctly.  in
+;This test, the index reg is set-up with movei zz+1,zz-xx, where zz+1 is the
+;Index reg. the ac is preloaded with its own address, 0,,zz. caie is used to
+;Test the indexing operation. if the result in c(ac)=xx+c(zz+1 - right), this
+;Test passes.  xx+c(zz+1 - right) should = zz.
+
+C1700:	REPEAT	^D15,
+<SN=SN+1
+	ZZ=ZZ+1
+	XX=XX+3
+	MOVEI	ZZ+1,ZZ-XX		;Setup index register
+	MOVEI	ZZ,ZZ			;Preload ac with 0,,zz
+	CAIE	ZZ,XX(ZZ+1)		;*Test indexing
+	STOP
+
+;**********
+>
+PAGE
+SN=2000
+	ZZ=-1
+	XX=-20
+
+;This test verifies that index register  addressing functions correctly.  in
+;This test, the index reg is set-up with movei zz+1,zz-xx, where zz+1 is the
+;Index reg.  indexing  is  tested  by  loading the ac via movei zz,xx(zz+1), 
+;Where xx+c(zz+1)=zz. if the result in the ac equals 0,,zz, this test passes.
+
+C2000:	REPEAT	^D15,
+<SN=SN+1
+	ZZ=ZZ+1
+	XX=XX+5
+	MOVEI	ZZ+1,ZZ-XX		;Setup index register
+	MOVEI	ZZ,XX(ZZ+1)		;*Test indexing
+	CAIE	ZZ,ZZ			;Pass if c(ac)=0,,address of ac
+	STOP
+
+;**********
+>
+SUBTTL	TEST OF EXCH INSTRUCTION
+
+;**********
+
+;This test verifies that exch moves c(e) into ac and moves c(ac) into e.
+;In this case, ac=e=0 and c(ac)=c(e).  hence, the final result in ac0
+;Should be 0.  if c(ac)=0, the test passes.
+
+C2100:	SETZ				;Preload ac,e with 0
+	EXCH				;*Exch should place 0 into ac0
+	SKIPE				;Pass if c(ac0)=0
+	STOP
+
+;**********
+
+;This test verifies that exch moves c(e) into ac and moves c(ac) into e.
+;In this case, ac=e=-1,,-1 and c(ac)=c(e).  hence, the final result in
+;Ac0 should be -1,,-1.  if c(ac)=-1,,-1, the test passes.
+
+C2200:	SETO				;Preload ac,e with -1,,-1
+	EXCH				;*Exch should place -1,,-1 into ac0
+	CAME	[-1]			;Pass if c(ac0)=-1,,-1
+	STOP
+
+;**********
+;This test verifies that exch moves c(e) into ac and moves c(ac) into e.
+;In this case, c(ac)=-1,,0 and c(e)=0,,-1.  hence, the final result in
+;The ac should be 0,,-1 and the result in e should be -1,,0.  if these
+;Results occur, the test passes.
+
+C2400:	MOVSI	-1			;Preload ac with -1,,0
+	MOVEI	1,-1			;Preload e with 0,,-1
+	EXCH	1			;*Exch should place 0,,-1 into ac and -1,,0 into e
+	CAME	1,[-1,,0]		;Pass if c(e)=-1,,0
+	STOP
+C2410:	CAME	0,[0,,-1]		;Pass if c(ac)=0,,-1
+	STOP
+
+;**********
+
+;This test verifies that exch moves c(e) into ac and moves c(ac) into e.
+;In this case, c(ac)=0,,-1 and c(e)=-1,,0.  hence, the final result in
+;The ac should be -1,,0 and the result in e should be 0,,-1.  if these
+;Results occur, the test passes.
+
+C2700:	MOVEI	-1			;Preload ac with 0,,-1
+	MOVSI	1,-1			;Preload e with -1,,0
+	EXCH	1			;*Exch should place -1,,0 into ac and 0,,-1 into e
+	CAIE	1,-1			;Pass if c(e)=0,,-1
+	STOP
+C2710:	CAME	,[XWD -1,0]		;Pass if c(ac)=-1,,0
+	STOP
+
+;**********
+;This test is a reliability check of exch.  first, ac, e are preloaded
+;With 252525,,252525. there, exch is executed 7 times.  the ac is then
+;Checked for 252525,,252525.   if c(ac)=c(e)=252525,,252525, this test
+;Passes.  in this test ac=e=ac0.
+
+C3000:	MOVE	[252525252525]		;Preload ac,e with 252525,,252525
+	REPEAT	7,
+<	EXCH				;*Exch should place 252525,,252525 into ac0>
+	CAME	[252525252525]		;Pass if c(ac0)=252525,,252525
+	STOP
+
+;**********
+
+;This test verifies that exch moves c(ac) into e and c(e) into the ac.
+;In this case, c(ac)=0 and c(e)=-1,,-1.  exch is executed 7 times; then,
+;The ac is checked for -1,,-1 and e is checked for 0.  if either of these
+;Results are not found, this test fails.
+
+C3100:	SETZ				;Preload ac with 0
+	SETO	1,0			;Preload e with -1,,-1
+	REPEAT	7,
+<	EXCH	1			;*Exch should exchange c(ac) and c(e)>
+	CAME	[-1]			;Pass if c(ac)=-1,,-1
+	STOP
+C3110:	CAME	1,[0]			;Pass if c(e)=0
+	STOP
+SUBTTL	TEST OF MOVEM INSTRUCTION
+
+;This test verifies that movem places c(ac) into e and does not modify c(ac)
+;In this case, c(ac)=-1,,-1 and c(e)=0.  hence, the result in ac and e should
+;Be -1,,-1.  if c(ac) and c(e)=-1,,-1, this test passes
+
+C3200:	SETO				;Preload ac with -1,,-1
+	SETZ	1,0			;Preload e with 0
+	MOVEM	1			;*Movem should place -1,,-1 into e
+	CAME	1,[-1]			;Pass if c(e)=-1,,-1
+	STOP
+C3210:	CAME	0,[-1]			;Pass if c(ac)=-1,,-1
+	STOP
+
+;**********
+SUBTTL	TEST OF JFCL INSTRUCTION AND ARITHMETIC FLAGS
+
+;**********
+
+;This test verifies that jfcl 17,.+1 always returns to the next sequential
+;Instruction.  if jfcl skips the next instruction, this test fails.
+
+C3300:	MOVE	[HALT .+3]		;This instruction should not affect the test
+	JFCL	17,.+1			;*Jfcl should return to next sequential instruction
+	CAIA				;Skip halt instruction if jfcl passes
+	STOP
+
+;**********
+
+;This test verifies that  jfcl 17,.+1  always clears the cry0 flag.  addi is
+;Used to set cry0.  then, jfcl 17,.+1 is executed to clear cry0.  jfcl 4,.+2
+;Is executed to determine whether cry0 was reset by the previous jfcl.  this
+;Test fails if jfcl 17,.+1 did not clear cry0.
+
+C3400:	MOVE	[-1]			;Preload ac with -1,,-1
+	ADDI	1			;Set cry0 flag
+	JFCL	17,.+1			;*Clear arithmetic flags
+	JFCL	4,.+2			;Pass if cry0 was reset by previous instruction
+	SKIPA				;Skip halt if cry0 was cleared
+	STOP
+
+;**********
+;This test verifies that jfcl 17,.+1 always clears the cry1 flag.
+;Addi is used to set cry1.  then, jfcl 17,.+1 is executed to clear cry1.
+;Jfcl 4,.+2 is executed to determine whether cry1 was reset by the previous jfcl.
+;This test fails if jfcl 17,.+1 did not clear cry1.
+
+C3500:	MOVE	[-1]			;Preload ac with -1,,-1
+	ADDI	1			;Set cry1 flag
+	JFCL	17,.+1			;*Clear arithmetic flags
+	JFCL	2,.+2			;Pass if cry1 was reset by previous instruction
+	SKIPA				;Skip halt if cry1 was cleared
+	STOP
+
+;**********
+
+;This test verifies that jfcl 17,.+1 always clears the arov flag.
+;Addi is used to set arov.  then, jfcl 17,.+1 is executed to clear arov.
+;Jfcl 4,.+2 is executed to determine whether arov was reset by the previous jfcl.
+;This test fails if jfcl 17,.+1 did not clear arov.
+
+C3600:	MOVSI	400000			;Preload ac with -1,,-1
+	ADD	[XWD 400000,0]		;Set arov flag
+	JFCL	17,.+1			;*Clear arithmetic flags
+	JFCL	10,.+2			;Pass if arov was reset by previous instruction
+	SKIPA				;Skip halt if arov was cleared
+	STOP
+
+;**********
+;This test verifies that jfcl 0, is a no-op.
+;In this test, add is used to set cry0.  then jfcl 0,.+2 is executed.
+;If jfcl 0,.+2 does not skip the next instruction, this test passes.
+
+C3700:	MOVSI	400000			;Preload ac with most negative number
+	ADD	[-1]			;Set cry0 flag
+	JFCL	.+2			;*Jfcl should return to next sequential instruction
+	SKIPA				;Pass if jfcl did not skip
+	STOP
+
+;**********
+
+;This test verifies that jfcl 0, is a no-op.
+;In this test, add is used to set cry1.  then jfcl 0,.+2 is executed.
+;If jfcl 0,.+2 does not skip the next instruction, this test passes.
+
+C4000:	MOVSI	200000			;Preload ac with most negative number
+	ADD	[XWD 200000,0]		;Set cry1 flag
+	JFCL	.+2			;*Jfcl should return to next sequential instruction
+	SKIPA				;Pass if jfcl did not skip
+	STOP
+
+;**********
+;This test verifies that addi has the ability to set an arithmetic flag and
+;That 'jfcl 17,.+2' jumps whenever any arithmetic flag is set.  in this test,
+;Addi should set cry0 and cry1. then, jfcl should skip because a flag was set
+;By addi.  if this test fails, addi could have  failed  to set a flag or jfcl
+;Could have failed to jump when a flag was set.
+
+C4100:	MOVE	[-1]			;Preload ac with all ones
+	ADDI	1			;*Addi should set cry0/1 flags
+	JFCL	17,.+2			;*Jfcl should jump because flags are set
+	STOP
+
+;**********
+
+;This test verifies that cai does not clear any arithmetic flags.
+;First, cry0 and cry1 are set by addi; then cai is executed.
+;Jfcl should jump because flags are set.  if jfcl does not jump,
+;The flags were cleared by cai.  hence, cai failed.
+
+C4200:	MOVE	[-1]			;Preload ac with -1,,-1
+	ADDI	1			;Set cyr0/1 flags
+	CAI	17,17			;*Cai should not clear flags
+	JFCL	17,.+2			;Pass if cai cleared flags
+	STOP
+
+;**********
+;This test verifies that addi has the ability to set an arithmetic flag and
+;That 'jfcl 17,.+2' jumps whenever any arithmetic flag is set. in this test,
+;Addi should set cry0 and cry1. then jfcl should skip because a flag was set
+;By addi.  if this test fails, addi could have failed to set a flag or  jfcl
+;Could have failed to jump when a flag was set.
+
+C4300:	MOVE	[-1]			;Preload ac with all ones
+	ADDI	1			;*Addi should set cry1 flags
+	JFCL	2,.+2			;*Jfcl should jump because cry1 flag is set
+	STOP
+
+;**********
+
+;This test verifies that addi has the ability to set an arithmetic flag and
+;That 'jfcl 17,.+2' jumps whenever any arithmetic flag is set. in this test,
+;Addi should set cry0 and cry1.  then, jfcl should skip because a flag was
+;Set by addi.  if this test fails, addi could have failed to set a flag or
+;Jfcl could have failed to jump when a flag was set.
+
+C4400:	MOVE	[-1]			;Preload ac with all ones
+	ADDI	1			;*Addi should set cry0 flag
+	JFCL	4,.+2			;*Jfcl should jump because cry0 flag is set
+	STOP
+
+;**********
+;This test verifies that addi has the ability to set an arithmetic flag and
+;That 'jfcl 17,.+2' jumps whenever any arithmetic flag is set. because a flag
+;Was set by add.  if this test fails, addi could have failed to set a flag or 
+;Jfcl could have failed to jump when a flag was set.
+
+C4500:	MOVSI	400000			;Preload ac with all ones
+	ADD	[XWD 400000,0]		;*Add should set arov flag
+	JFCL	10,.+2			;*Jfcl should jump because arov flag is set
+	STOP
+
+;**********
+
+;This test verifies that jfcl 17,.+1 always clears the floating overflow 
+;Flag (fov).  first jfcl 17,.+1 is executed to clear fov.  then, jfcl 1,.+2
+;Is executed to determine whether fov was cleared.  if fov was clear, this
+;Test passes.
+
+C4600:	JFCL	17,.+1			;*Clear arithmetic flags
+	JFCL	1,.+2			;Pass if fov was cleared
+	SKIPA				;Skip halt if test passed
+	STOP
+
+;**********
+;This test verifies that jfcl 13, does not reset cry0.
+;First cry0 and cry1 are set by addi; then, jfcl 13,.+2 is executed
+;To clear all arithmetic flags except cry0.
+;This test passes if jfcl 13,.+1 did not reset cry0.
+
+C4700:	MOVE	[-1]			;Reload ac with -1,,-1
+	ADDI	1			;Set cry0/1
+	JFCL	13,.+1			;*Jfcl 13, should not reset cry0
+	JFCL	4,.+2			;Fail if cry 0 was reset
+	STOP
+
+;**********
+
+;This test verifies that jfcl 15, does not reset cry1.
+;First cry0 and cry1 are set by addi; then, jfcl15,.+2 is executed
+;To clear all arithmetic flags except cry1.
+;This test passes if jfcl 15,.+1 did not reset cry1.
+
+C5000:	MOVE	[-1]			;Preload ac with -1,,-1
+	ADDI	1			;Set cry0/1
+	JFCL	15,.+1			;*Jfcl15, should not reset cry0
+	JFCL	2,.+2			;Fail if cry1 was reset
+	STOP
+
+;**********
+;This test verifies that jfcl 17, does not reset arov.
+;First arov is set by add; then, jfcl 17,.+2 is executed
+;To clear all arithmetic flags except arov.
+;This test passes if jfcl 17,.+1 did not reset arov.
+
+C5100:	MOVSI	400000			;Preload ac with -1,,-1
+	ADD	[XWD 400000,0]		;Set arov 
+	JFCL	7,.+1			;*Jfcl 17, should not reset arov
+	JFCL	10,.+2			;Fail if arov was reset
+	STOP
+
+;**********
+
+;This test verifies that add of 0 to 0 will not set arov.
+;First, all flags are reset, then 0 is added to 0 via add.
+;Arov is then checked.  if arov is set, this test fails.
+
+C5200:	JFCL	17,.+1			;Reset arithmetic flags
+	SETZ				;Preload ac,e with 0
+	ADD				;*Add should not set arov
+	JFCL	10,.+2			;Pass if arov was reset
+	SKIPA				;Skip halt if add passed
+	STOP
+
+;**********
+;This test verifies that add of 0 to 0 will not set cry0.
+;First, all flags are reset, then 0 is added to 0 via add.
+;Cry0 is then checked.  if cry0 is set, this test fails.
+
+
+C5300:	SETZ				;Reset arithmetic flags
+	JFCL	17,.+1			;Preload ac,e with 0
+	ADD				;*Add should not set cry0
+	JFCL	4,.+2			;Pass if cry0 was reset
+	SKIPA				;Skip halt if add passed
+	STOP
+
+;**********
+
+;This test verifies that add of 0 to 0 will not set cry1.
+;First, all flags are reset, then 0 is added to 0 via add.
+;Cry1 is then checked.  if cry1 is set, this test fails.
+
+C5400:	SETZ				;Reset arithmetic flags
+	JFCL	17,.+1			;Preload ac,e with 0
+	ADD				;*Add should not set cry1
+	JFCL	2,.+2			;Pass if cry1 was reset
+	SKIPA				;Skip halt if add passed
+	STOP
+
+;**********
+;This test verifies that the 30x and the 31x instruction groups do not affect
+;The arithmetic flags.  first, the flags are cleared and ac0 is cleared; then,
+;Cai and  cam  are executed.  the flags are then checked.  if any of the flags
+;Are set, this test fails and cai or cam is considered to have erroneously set
+;The flags.
+
+C5500:	JFCL	17,.+1			;Clear all flags
+	SETZ				;Clear ac,0
+	CAI				;*Cai should not set any arithmetic flag
+	CAM	[-1]			;*Cam should not set any arithmetic flag
+	JFCL	17,.+2			;Fail if any flag was set
+	SKIPA				;Skip halt if test passed
+	STOP
+
+;**********
+
+;This test verifies that the boolean instruction groups do not affect the
+;Arithmetic flags.  first the flags are cleared and ac0 is cleared; then,
+;Xor [0] and xor [-1] are executed.  the flags are then checked.  if any
+;Of the flags are set, this test fails and xor is considered to have
+;Erroneously set the flags.
+
+C5600:	JFCL	17,.+1			;Clear all flags
+	SETO				;Clear ac,0
+	XOR	[0]			;*Xor should not set any arithmetic flag
+	XOR	[-1]			;*Xor should not set any arithmetic flag
+	JFCL	17,.+2			;Fail if any flag was set
+	SKIPA				;Skip halt if test passed
+	STOP
+
+;**********
+;This test verifies that the aobjx instruction group does do not affect the
+;Arithmetic flags.  first the flags are cleared and ac0 is cleared; then, aobjn
+;And aobjp are executed.  the flags are then checked.  if any of the flags are
+;Set, this test fails and aobjn or aobjp is considered to have erroneously set
+;The flags.
+
+C5700:	SETO				;Clear all flags
+	JFCL	17,.+1			;Clear ac,0
+	AOBJN	.+1			;*Aobjn should not set any arithmetic arithmetic
+	AOBJP	.+1			;*Aobjp should not set any arithmetic flag
+	JFCL	17,.+2			;Fail if any flag was set
+	SKIPA				;Skip halt if tst passed
+	STOP
+
+;**********
+;This test verifies that skip does not affect the flags.
+;First, the arithmetic flags are cleared; then, skip is executed.
+;If skip sets arov, cryo, cry1 or fov, this test fails.
+
+C5701:	JFCL	17,.+1			;Clear all flags
+	SKIP	0,[-1]			;*Skip should not set any flags
+	JFCL	17,.+2			;Fail if any flag is set
+	SKIPA				;Pass if no flag is set
+	STOP
+
+;**********
+
+;This test verifies that jump does not affect the flags.
+;First, the arithmetic flags are cleared; then, jump is executed.
+;If jump sets arov, cryo, cry1 or fov, this test fails.
+
+C5702:	JFCL	17,.+1			;Clear all flags
+	JUMP	0,[-1]			;*Jump should not set any flags
+	JFCL	17,.+2			;Fail if any flag is set
+	SKIPA				;Pass if no flag is set
+	STOP
+
+;**********
+SUBTTL	TEST OF JRST INSTRUCTION AND ARITHMETIC FLAGS
+
+;**********
+
+;This test verifies that 'jrst, 0' does not set any flags.
+;First the arithmetic flags are reset; then, 'jrst 0,.+1' is executed
+;The arov,cry0 and cry1 flags are then checked. if any
+;Of these flags are set, this test fails
+
+C6000:	JFCL	17,.+1			;Reset all flags
+	JRST	.+1			;*Jrst should not set any flags
+	JFCL	16,.+2			;Pass if no flags are set
+	SKIPA				;Skip halt if jrst passes
+	STOP
+
+;**********
+
+;This test verifies that 'move 2,2' does not set any flags.
+;First, the arithmetic flags are reset; then, 'move 2,2' is executed.
+;The fov,arov,cry0 and cry1 flags are then checked.  if any
+;Of these flags are set, this test fails.
+
+C6100:	JFCL	17,.+1			;Reset all flags
+	MOVE	2,2			;*Move should not set any flags
+	JFCL	17,.+2			;Pass if no flags are set
+	SKIPA				;Skip halt if move passed
+	STOP
+
+;**********
+;This test verifies that jrst 2,.+1(1) will set the arithmetic flag
+;Specified in ac1.  in this case, ac1 specifies the cry0 flag.
+;First, all flags are reset; then ac1 is set to specify cry0.
+;Next, jrst 2,.+1(1) is executed to set cry0.  cry0 is then checked.  if
+;Cry0 is set, this test passes.  otherwise, jrst 2,.+1 is faulty.
+
+C6200:	JFCL	17,.+1			;Clear all flags
+	SFLAG	CRY0			;Set cry0 flag
+	JFCL	4,.+2			;Pass if cry0 is set
+	STOP
+
+;**********
+
+;This test verifies that jrst 2,.+(1) will set the arithmetic flag
+;Specified in ac1.  in this case, ac1 contain 0.  hence, jrst 2,.+1(1)
+;Should reset the arithmetic flags.  first, the cry0/1, flags are set by addi;
+;Then the flags should be cleared by jrst 2,.+1.  if cry1 was cleared, the
+;Test passes.  otherwise, jrst 2,.+1 is faulty.
+
+C6300:	MOVE	[-1]			;Preload ac0 with -1,,-1
+	ADDI	1			;Set cry0/1 flags
+	SFLAG	0			;Reset all arithmetic flags
+	JFCL	2,.+2			;Pass if cry1 is reset
+	SKIPA				;Skip halt instruction if test passed
+	STOP
+
+;**********
+
+;This test verifies that jrst 2,.+(1) will set the arithmetic flag
+;Specified in ac1.  in this case, ac1 contain 0.  hence, jrst 2,.+1(1)
+;Should reset the arithmetic flags.  first, the cry0/1, flags are set by add
+;Then the flags should be cleared by jrst 2,.+1.  if arov was cleared, the
+;Test passes.  otherwise, jrst 2,.+1 is faulty.
+
+C6400:	MOVSI	400000			;Preload ac0 with -1,,-1
+	ADD	[-1]			;Set cry0 and arov flags
+	SFLAG	0			;Reset all arithmetic flags
+	JFCL	10,.+2			;Pass if arov is reset
+	SKIPA				;Skip halt instruction if test passed
+	STOP
+
+;**********
+
+;This test verifies that jrst 2,.+1(1) will set the arithmetic flag
+;Specified in ac1.  in this case, ac1 specifies the arov flag.
+;First, all flags are reset; then ac1 set to specify arov.
+;Next, jrst 2,.+1(1) is executed to set arov.  arov is then checked.  if
+;Arov is set, this test passes.  otherwise, jrst 2,.+1 is faulty.
+
+C6500:	SFLAG	AROV			;Set arov flag
+	JFCL	10,.+2			;Pass if arov was set
+	STOP
+
+;**********
+;This test verifies that jrst 2,.+1(1) will set the arithmetic flag
+;Specified in ac1.  in this case, ac1 specifies the cry1 flag.
+;First, all flags are reset; then ac1 set to specify cry1.
+;Next, jrst 2,.+1(1) is executed to set cry1.  cry1 is then checked.  if
+;Cry1 is set, this test passes.  otherwise, jrst 2,.+1 is faulty.
+
+C6600:	SFLAG	CRY1			;Set cry1 flag
+	JFCL	2,.+2			;Pass if cry1 was set
+	STOP
+
+;**********
+
+;This test verifies that jrst 2,.+1(1) will set the arithmetic flag
+;Specified in ac1.  in this case, ac1 specifies the fov flag.
+;First, all flags are reset; then ac1 set to specify fov.
+;Next, jrst 2,.+1(1) is executed to set fov.  fov is then checked.  if
+;Fov is set, this test passes.  otherwise, jrst 2,.+1 is faulty.
+
+C6700:	SFLAG	FOV			;Set fov flag
+	JFCL	1,.+2			;Pass if fov was set
+	STOP
+
+;**********
+;This test verifies that jfcl 0, should never jump.
+;First, fov is set via jrst2, ;then jfcl 0,
+;Is executed.  if jfcl 0, does not skip, this test passes.
+
+C7000:	SFLAG	FOV			;Set fov flag
+	JFCL	,.+2			;*Jfcl should not jump
+	SKIPA				;Pass if jfcl did not jump
+	STOP
+
+;**********
+
+;This test verifies that  jrst 2,.+1(1)  will set the arithmetic  flag
+;Specified in ac1.  in this case, ac1 contains 0. hence, jrst 2,.+1(1)
+;Should  reset  the arithmetic flags.  first, the cry0, flag is set by
+;Jrst 2,.+1(1) with c(ac1)=cry0.  then, the flags should be cleared by
+;Jrst 2,.+1 with c(ac1)=0.  if cry0 was cleared, the test passes.
+;Otherwise, jrst 2,.+1 is faulty.
+
+C7100:	SFLAG	CRY0			;Set cry0 flags
+	SETZ	1,			;Setup mask to clear arithmetic flags
+	JRST	2,.+1(1)		;*Reset arithmetic flags
+	JFCL	4,.+2			;Pass if cry0 flag was reset
+	SKIPA				;Skip halt instruction if test pssed
+	STOP
+
+;**********
+;This test verifies that jrst 2,.+1(1) will set the arithmetic flag
+;Specified in ac1. in this case, ac1 contains 0. hence, jrst 2,.+1(1)
+;Should reset the  arithmetic  flags.  first, the fov, flag is set by
+;Jrst 2,.+1(1) with c(ac1)=fov.  then, the flags should be cleared by
+;Jrst 2,.+1 with c(ac1)=0.  if fov was cleared, the test passes.
+;Otherwise, jrst 2,.+1 is faulty.
+
+C7200:	SFLAG	FOV			;Set fov flag
+	SETZ	1,			;Setup mask to clear arithmetic flags,
+	JRST	2,.+1(1)		;*Reset arithmetic flags
+	JFCL	1,.+2			;Pass if fov flag was reset
+	SKIPA				;Skip halt instruction if test pssed
+	STOP
+
+;**********
+
+;This test verifies that  jrst 2,.+1(1)  will set the arithmetic flag
+;Specified in ac1.  in this case, ac1 contains 0. hence, jrst 2,.+1(1)
+;Should reset the arithmetic flags.  first, the arithmetic flags are
+;Reset by jfcl 17,.+1.  then, the flags should be cleared by jrst 2,.+1.
+;If all the arithmetic flags were cleared, the test passes.  otherwise,
+;Jrst 2,.+1 is faulty.
+
+C7300:	JFCL	17,.+1			;Clear flags
+	SETZ	1,			;Setup mask to clear aritmetic flags
+	JRST	2,.+1(1)		;*Reset arithmetic flags
+	JFCL	17,.+2			;Pass if all flags are reset
+	SKIPA				;Skip halt instruction if test passed
+	STOP
+
+;**********
+SUBTTL	TEST OF JSP INSTRUCTION
+
+;**********
+
+;This test verifies that jsp always stores the flags and pc in the ac.
+;In this case, the flags are reset; then, jsp is executed.  the ac is then
+;Checked for its contents non-zero.  if c(ac)=0, it indicates
+;That neither the flags nor the pc was saved.  hence, this test fails.
+
+C7400:	SETZB	1			;Clear ac and setup mask to reset flags
+	JRST	2,.+1(1)		;Reset flags
+	JSP	.+1			;*Jsp should store flags and pc in the ac
+	SKIPN				;Pass if c(ac) is non-zero
+	STOP				;It did not store any flags or pc
+
+;**********
+
+;This test verifies that jsp always stores the pc in the right half of the ac.
+;In this case, the ac is cleared, then, jsp is executed.  the right half of
+;The ac is then checked for its contents non-zero.  if c(ac right half)
+;Is non-zero, it indicated that the pc was saved; and this test passes.
+
+C7500:	SETZ				;Clean ac
+	JSP	.+1			;*Jsp should store the pc in the ac
+	TRNN	-1			;Pass if c(ac) in non-zero
+	STOP
+
+;**********
+;This test verifies that jsp always stores the flags in the left half of the ac.
+;Fist, the ac is cleared; then, some flags are set and jsp is executed.
+;The left half of the ac is checked for its contents non-zero to determine
+;Whether the flags were saved.  if c(ac-left) is non-zero, this test passes.
+
+C7600:	SETZM	0			;Clear ac
+	MOVSI	1,740000		;Set up mask to set flags
+	JRST	2,.+1(1)		;Set some arithmetic flags
+	JSP	.+1			;*Jsp should store flags in the ac
+	TLNN	-1			;Pass if c(ac) is non-zero
+	STOP
+
+;**********
+
+;This test verifies that jsp always stores the flags in the left half of the
+;Ac. first, the ac is cleared; then, the arov flag is set and jsp is executed.
+;Then, the arov flag bit of the left half of the ac is checked for its contents
+;Non-zero to determine whether the arov flag was saved.  if the arov flag bit
+;Of the ac is set, this test passes.
+
+C7700:	SETZM	0			;Clear the ac
+	SFLAG	AROV			;Set arov flag
+	JSP	.+1			;*Jsp should save the flags in the ac-left
+	TLNN	AROV			;Pass if arov was saved
+	STOP
+
+;**********
+;This test verifies that jsp always stores the flags in the left half of the
+;Ac. first, the ac is cleared; then, the cry0 flag is set and jsp is executed.
+;Then, the cry0 flag bit of the left half of the ac is checked for its contents
+;Non-zero to determine whether the cry0 flag was saved.  if the cry0 flag bit
+;Of the ac is set, this test passes.
+
+C10000:	SETZM	0			;Clear the ac
+	SFLAG	CRY0			;Set cry0 flag
+	JSP	.+1			;*Jsp should save the flags in the ac-left
+	TLNN	CRY0			;Pass if cry0 was saved
+	STOP
+
+;**********
+
+;This test verifies that jsp always stores the flags in the left half of the
+;Ac. first, the ac is cleared; then, the cry1 flag is set and jsp is executed.
+;Then, the cry1 flag bit of the left half of the ac is checked for its contents
+;Non-zero to determine whether the flag was saved.  if the cry1 flag bit of the
+;Ac is set, this test passes.
+
+C10100:	SETZ				;Clear ac
+	SFLAG	CRY1			;Set cry1 flag
+	JSP	.+1			;*Jsp should save the flags in the ac-left
+	TLNN	CRY1			;Pass if arov was saved
+	STOP
+
+;**********
+;This test verifies that jsp always stores the flags in the left half of the
+;Ac.  first, the ac is cleared; then, the fov flag is set and jsp is executed.
+;Then, the fov flag bit of the left half of the ac is checked for its contents
+;Non-zero to determine whether the fov flag was saved.  if the fov flag bit of
+;The ac is set, this test passes.
+
+C10200:	SETZ				;Clear the ac
+	SFLAG	FOV			;Set fov flag
+	JSP	.+1			;*Jsp should save the flags in the ac-left
+	TLNN	FOV			;Pass if fov was saved
+	STOP
+
+;**********
+
+;This test verifies that jsp will store only flags that exist.  i.e. reset
+;Flags  will not be set in the ac.  only flags that are clearable by jrstf
+;Will be checked here.  first all clearable flags are reset by jrstf. then
+;Jsp is executed.  the ac is then checked.  if any clearable flags are set
+;In the ac, this test fails.
+
+C10300:	SFLAG	0			;Clear all clearable flags
+	JSP	.+1			;*Jsp should not store clearable falgs
+	TLNE	761777			;Fail if any clearable flag is set
+	STOP
+
+;**********
+
+;This test verifies that jsp always jumps.
+;In this test, jsp .+2 is executed.  if jsp jumps, the
+;Test passes.  otherwise, this test halts.
+
+C10400:	JSP	.+2			;*Jsp should always jump
+	STOP
+SUBTTL	TEST JRST INSTRUCTION
+
+;**********
+
+;This test verifies that jrst always jumps.
+;In this test, jrst .+2 is executed.  if jrst jumps, the test passes;
+;Otherwise, this test halts.
+
+C10500:	JRST	.+2			;*Jrst 0, should always jump
+	STOP
+
+;**********
+SUBTTL	TEST OF AOBJX INSTRUCTIONS
+
+;**********
+
+;This test verifies that aobjn always adds 1 to both halves of the ac.
+;First, the ac is cleared; then, aobjn is executed and the ac is checked
+;For 1,,1.  if c(ac)=1,,1, this test passes.
+
+C11200:	SETZ				;Clear the ac
+	AOBJN	.+1			;*Aobjn should add 1 to both halves of the ac
+	CAME	[XWD 1,1]		;Pass if c(ac)=1,,1
+	STOP
+
+;**********
+
+;This test verifies that aobjp always adds 1 to both halves of the ac.
+;First, the ac is cleared; then aobjp is executed and the ac is checked
+;For 1,,1.  if c(ac)=1,,1, this test passes.
+
+C11300:	MOVE	[XWD 377777,377777]	;Preload ac with 377777,,377777
+	AOBJP	.+1			;*Aobjp should add, to both halves of the ac
+	CAME	[XWD 400000,400000]	;Pass if c(ac)=400000,400000
+	STOP
+
+;**********
+;This test verifies that aobjn will not jump when c(ac) is positive
+;First, the ac is cleared; and aobjn is executed.  aobjn should not jump
+;Because c(ac) is positive.  if aobjn jumps, this test fails.
+
+C11400:	SETZ				;Clear the ac
+	AOBJN	.+2			;*Aobjn should not jump when c(ac) is positive
+	SKIPA				;Pass if aobjn does not jump
+	STOP
+
+;**********
+
+;This test verifies that aobjp will jump when c(ac) is positive
+;First, the ac is cleared; and aobjp is executed.  aobjp should jump
+;Because c(ac) is positive.  if aobjp does not jump, this test fails.
+
+C11500:	SETZ				;Clear the ac
+	AOBJP 	.+2			;*Aobjp should jump because c(ac) is positive
+	STOP
+
+;**********
+;This test verifies that aobjn will jump when c(ac) is negative.  first,
+;The ac is preloaded with 400000,,0; and aobjn is executed.  aobjn should
+;Jump because c(ac) is negative.  if aobjn does not jump, this test fails.
+
+C11600:	MOVE	[XWD 400000,400000]	;Preload ac with 400000,,400000
+	AOBJN	.+2			;*Aobjn should jump because c(ac) is negative
+	STOP
+
+;**********
+
+;This test verifies that aobjp will not jump when c(ac) is negative.  first,
+;The ac is preloaded with 400000,,0; and aobjp is executed. aobjp should not
+;Jump because c(ac) is negative.  if aobjp jumps, this test fails.
+
+C11700:	MOVE	[XWD 400000,400000]	;Preload ac with 400000,,400000
+	AOBJP	.+2			;*Aobjp should not jump because c(ac) is negative
+	SKIPA				;Pass if aobjp does not jump
+	STOP
+
+;**********
+
+;This test verifies that there is no carry from bit 18 to bit 17 of the ac
+;On aobjn. the ac is preloaded with -1,,-1; then aobjn is executed. aobjn
+;Should add one to both halves of the ac without generating a carry from
+;Bit 18 to bit 17. if no carry was generated, this test passes.
+
+C12000:	SETO				;Preload ac with -1,, -1
+	AOBJN	.+1			;*Aobjn should not cause a carry from bit 18 to 17
+	SKIPE				;Pass if c(ac)=0 (no carry was generated)
+	STOP
+
+;**********
+SUBTTL	TEST SETTING OF ARITHMETIC FLAGS VIA MOVNX AND MOVMX
+
+;This test verifies that movni sets cry0 and cry1 flags only when the data
+;Is 0. first, the arithmetic flags are reset; then, movni is executed with
+;Data of zeros.  the arithmetic flags are checked.  cry0/1 are set and arov
+;And fov reset, this test passes.
+
+C12100:	JFCL	17,.+1			;Clear flags
+	MOVNI	0			;* Movni 0 should set cry0/1
+	JCRY0	.+2			;Pass if cry0 is set
+	STOP
+	JCRY1	.+2			;Pass if cry1 is set
+	STOP
+	JOV	.+2			;Pass if arov reset
+	SKIPA
+	STOP
+	JFOV	.+2			;Pass if fov reset
+	SKIPA
+	STOP
+
+;**********
+
+;This test verifies that movn will not set arithmetic flags when the data
+;Is -1,,-1.  first, the flags are reset; then, movn [-1,,-1] is executed.
+;The arithmetic flags are checked.  if  any arithmetic  flag is set, this
+;Test fails.
+
+C12200:	JFCL	17,.+1			;Clear flags
+	MOVN	[-1]			;*Movn [-1,,-1] should set arithmetic flags
+	JFCL	17,.+2			;Fail if an arithmetic flag is set
+	SKIPA				;Skip halt instruction if movn passed.
+	STOP
+
+;**********
+;This test verifies that movn will set the arov and
+;Cry1 flags only when the data is 400000,,0
+;First, the flags are reset; then, movn [400000,,0] is executed.
+;The arithmetic flags are checked.
+;If arov and cry1 are set and cry0 and fov are reset, this test passes.
+
+C12300:	JFCL	17,.+1			;Clear arithmetic flags
+	MOVN	[XWD 400000,0]		;*Movn [400000,,0] should set arov and cry1 only
+	JOV	.+2			;Pass if arov is set
+	STOP
+	JCRY1	.+2			;Pass if cry0 is set
+	STOP
+	JCRY0	.+2			;Pass if cry0 is reset
+	SKIPA
+	STOP
+	JFOV	.+2			;Pass if fov is reset
+	SKIPA
+	STOP
+
+;**********
+;This test verifies that movm will set the arov and
+;Cry1 flags only when the data is 400000,,0
+;First, the flags are reset; then, movm [400000,,0] is executed.
+;The arithmetic flags are checked.
+;If arov and cry1 are set and cry0 and fov are reset, this test passes.
+
+C12301:	JFCL	17,.+1			;Clear arithmetic flags
+	MOVM	[XWD 400000,0]		;*Movm [400000,,0] should set arov and cry1 only
+	JOV	.+2			;Pass if arov is set
+	STOP
+	JCRY1	.+2			;Pass if cry0 is set
+	STOP
+	JCRY0	.+2			;Pass if cry0 is reset
+	SKIPA
+	STOP
+	JFOV	.+2			;Pass if fov is reset
+	SKIPA
+	STOP
+
+;**********
+SUBTTL	TEST OF AOS AND SOS INSTRUCTIONS
+
+;**********
+
+;This test verifies that aos adds 1 to memory and does not skip.
+;First, e is cleared; then, aos is executed. next e is checked for 1.
+;If c(e) is not 1 or aos skipped, this test fails.
+
+C12600:	SETZ				;Clear e
+	AOS				;*Aos should add 1 to c(e) and not skip
+	CAIE	1			;Pass if c(e)=0,,1 andaos did not skip
+	STOP
+
+;**********
+
+;This test verifies that aos adds 1 to memory and does not skip.  first,
+;E is preloaded with -1,,-1; then, aos is executed. next e is checked for 0.
+;If c(e) is not 0 or aos skipped, this test fails.
+
+C12700:	SETO				;Preload e with -1,,-1
+	AOS				;*Aos should add 1 to c(e) and not skip
+	CAIE				;Pass if c(e)=0,,0 and aos did not skip
+	STOP
+
+;**********
+;This test verifies that sos subtracts 1 from memory and does not skip.
+;First, e is cleared; then, sos is executed. next e is checked for -1,,-1.
+;If c(e) is not -1,,-1 or sos skipped, this test fails.
+
+C13100:	SETZ				;Clear e
+	SOS				;*Sos should subtract 1 from c(e) and not skip
+	CAME	[-1]			;Pass if c(e)=-1,,-1 and sos did not skip
+	STOP
+
+;**********
+
+;This test verifies that sos subtracts 1 from memory and does not skip.
+;First, e is preloaded with a; then, sos is executed. next e is checked for 0.
+;If c(e) is not 0 or sos skipped, this test fails.
+
+C13200:	MOVEI	1			;Preload e with 1
+	SOS				;*Sos should subtract 1 from c(e) and did not skip
+	CAIE	0			;Pass if c(e)=0 and sos did not skip
+	STOP
+
+;**********
+;This test verifies that sos sets cry0/1 flags if c(e) is a non-zero number
+;Other than 400000,,0.  in this case, c(e)=1.  first the flags are reset; then
+;Sos is executed.  the  flags are checked.  if cry0 and cry1 are set and arov
+;And fov are reset, this test passes.
+
+C13300:	JFCL	17,.+1			;Reset arithmetic flags
+	MOVEI	1			;Preload e with 1
+	SOS				;*Sos should set cry0/1
+	JCRY0	.+2			;Pass if cry0 is set
+	STOP
+	JCRY1	.+2			;Pass if cry1 is set
+	STOP
+	JOV	.+2			;Pass if arov is reset
+	SKIPA
+	STOP
+	JFOV	.+2			;Pass if fov is reset
+	SKIPA
+	STOP
+
+;**********
+;This test verifies that aos sets cry0 and cry1 flag if c(e) is -1,,-1
+;First the flags are reset; then aos is executed.  the flags are checked.
+;If cry0 and cry1 are set and arov and fov are reset, this test passes.
+
+C13400:	JFCL	17,.+1			;Reset arithmetic flags
+	SETO				;Preload e with 1
+	AOS				;*Aos should set cry0 and cry1
+	JCRY0	.+2			;Pass if cry0 is set
+	STOP
+	JCRY1	.+2			;Pass if cry1 is set
+	STOP
+	JOV	.+2			;Pass if arov is reset
+	SKIPA
+	STOP
+	JFOV	.+2			;Pass if fov is reset
+	SKIPA
+	STOP
+
+;**********
+SUBTTL	TEST OF INTERACTION OF JFCL, JRST, AND JSP WITH ARITHMETIC FLAGS
+
+;**********
+
+;This test verifies that jfcl 1, will always clear fov flag.
+;First, fov is set via jrst 2, ;then jfcl 1,.+1 is executed to clear fov.
+;If fov was cleared, this test passes.
+
+C13600:	SFLAG	FOV			;Set fov flag
+	JFCL	1,.+1			;*Jfcl should reset fov
+	JFCL	1,.+2			;Pass if fov is reset
+	SKIPA				;Skip halt if jfcl 1,.+1 passed
+	STOP
+
+;**********
+
+;This test verifies that jrst 2, can set fxu and jsp can save fxu in the ac.
+;First, fxu is set via jrst 2, ;then, jsp is executed. the ac is checked for
+;Fxu. if fxu is set, this test passes; otherwise, either jrst 2, or jsp failed.
+
+C13700:	SFLAG	FXU			;*Set fxu flag
+	JSP	.+1			;*Store fxu flag in ac
+	TLNN	FXU			;Pass if fxu is set in the ac
+	STOP
+
+;**********
+;This test verifies that jrst 2, can reset fxu and jsp can save fxu in the ac.
+;First, fxu is set; then, fxu is reset via jrst 2,.  next, jsp is executed; and
+;The ac is checked for fxu reset.  if fxu is reset in the ac, this test passes;
+;Otherwise, jrst 2, failed to clear fxu or jsp stored fxu incorectly.
+
+C14000:	SFLAG	FXU			;Set fxu flag
+	SFLAG				;*Reset fxu flag
+	JSP	.+1			;*Store fxu flag in the ac
+	TLNE	FXU			;Pass if fxu is reset in the ac
+	STOP
+
+;**********
+
+;This test verifies that jrst 2, can set dck and jsp can save dck in the ac.
+;First, dck is set via jrst 2, ;then jsp is executed.  the ac is checked
+;For dck.  if dck is set, this test passes, otherwise jrst 2, or jsp failed.
+
+C14100:	SFLAG	DCK			;*Set dck flag
+	JSP	.+1			;*Store fxu flag in ac
+	TLNN	DCK			;Pass if fxu is set in the ac
+	STOP
+
+;**********
+;This test verifies that jrst 2, can reset dck and jsp can save dck in the ac.
+;First, fxu is set; then, dck is reset via jrst 2,.  next, jsp is expected; and
+;The ac is checked for dck reset.  if dck is reset in the ac, this test passes;
+;Otherwise, jrst 2, failed to clear dck or jsp stored dck incorrectly.
+
+C14200:	SFLAG	DCK			;Set dck flag
+	SFLAG				;*Reset dck flag
+	JSP	.+1			;*Store dck flag in the ac
+	TLNE	DCK			;Pass if dck is reset in the ac
+	STOP
+
+;**********
+SUBTTL	TEST OF JUMPX INSTRUCTIONS
+
+;**********
+
+;This test verifies that jumpl is data dependent.  it will jump if and only
+;If c(ac) is negative.  in this test, the ac contains -1,,-1.  hence, jumpl
+;Should jump.  if jumpl jumps, this test passes.
+
+C14500:	SETO				;Preload ac with -1,,-1
+	JUMPL	.+2			;*Jumpl should jump because c(ac) is negative
+	STOP
+
+;**********
+
+;This test verifies that jumpl is data dependent.  it will jump if and only
+;If c(ac) is negative.  in this test, the ac contains 0.  hence, jumpl
+;Should not jump.  if jumpl does not jump, this test passes.
+
+C14600:	SETZ				;Preload ac with 0
+	JUMPL	.+2			;*Jumpl should not jump
+	SKIPA				;Pass if jumpl does not jump
+	STOP
+
+;**********
+
+;This test verifies that jumpe is data dependent.  it will jump if and
+;Only if c(ac)=0.  in this test, the ac contains 0. hence, jumpe should
+;Jump.  if jumpe jumps, this test passes.
+
+C14700:	SETZ				;Preload ac with 0
+	JUMPE	.+2			;*Jumpe should jump
+	STOP
+
+;**********
+;This test verifies that jumpn is data dependent.  it will jump if and
+;Only if c(ac) is non-zero.  in this test, the ac contains 1.  hence,
+;Jumpn should jump.  if jumpn jumps, this test passes.
+
+C15000:	MOVEI	1			;Preload ac with 1
+	JUMPN	.+2			;*Jumpn should jump
+	STOP
+
+;**********
+
+;This test verifies that jumpe is data dependent.  it will jump if and
+;Only if c(ac)=0.  in this test, the ac contains 2.  hence, jumpl should
+;Not jump.  if jumpe does not jump, this test passes.
+
+C15100:	MOVEI	2			;Preload ac with 2
+	JUMPE	.+2			;*Jumpe should not jump
+	SKIPA				;Pass if jumpe did not jump
+	STOP
+
+;**********
+
+;This test verifies that jumpn is data dependent.  it will jump if and
+;Only if c(ac) is non-zero.  in this test, the ac contains 0.  hence,
+;Jumpn should not jump.  if jumpn does not jump, this test passes.
+
+C15200:	SETZ				;Preload ac with 0
+	JUMPN	.+2			;*Jumpn should not jump
+	SKIPA				;Pass if jumpn did not jump
+	STOP
+
+;**********
+;This test verifies that jumpg is data dependent.  it will jump if and 
+;Only if c(ac) is greater than 0.  in this test, the ac contains 1.  hence,
+;Jumpg should jump.  if jumpg jumps, this test passes.
+
+C15300:	MOVEI	1			;Preload  ac with 1
+	JUMPG	.+2			;*Jumpg should jump
+	STOP
+
+;**********
+
+;This test verifies that jumpg is data dependent.  it will jump if and only
+;If c(ac) is greater than 0.  in this test, the ac contains -1,,0.  hence,
+;Jumpg should not jump.  if jumpg does not jump, this test passes.
+
+C15400:	MOVSI	-1			;Preload ac with -1,,0
+	JUMPG	.+2			;*Jumpg should not jump
+	SKIPA				;Pass if jumpg did not jump
+	STOP
+
+;**********
+SUBTTL	TEST OF AOJ AND SOJ INSTRUCTIONS
+
+;**********
+
+;This test verifies that aoj adds 1 to the ac and does not jump.
+;First, the ac is preloaded with 0; then, aoj is executed.  next, the
+;Ac is checked for 1.  if c(ac) is not 1 or aoj skipped, this test fails.
+
+C15500:	SETZ				;Preload ac with 0
+	AOJ	.+2			;*Aoj should add 1 to the ac and not jump
+	CAIE	1			;Pass if c(ac)=1 and aoj did not jump
+	STOP
+
+;**********
+
+;This test verifies that aoj adds 1 to the ac and does not jump.
+;First, the ac is preloaded with -1,,-1; then, aoj is executed.  next, the
+;Ac is checked for 0.  if c(ac) is not 0 or aoj skipped, this test fails.
+
+C15600:	SETO				;Preload ac with 0
+	AOJ	.+2			;*Aoj should add 1 to the ac and not jump
+	CAIE	0			;Pass if c(ac)=1 and aoj did not jump
+	STOP
+
+;**********
+
+;This test verifies that soj subtracts 1 from the ac and does not jump.
+;First, the ac is preloaded with 0; then, soj is executed.  next, the ac
+;Is checked for -1,,-1. if c(ac) is not -1,,-1 or soj skipped, this test fails.
+
+C15700:	SETZ				;Preload ac with 0
+	SOJ	.+2			;*Soj should subtract 1 from the ac and not jump
+	CAME	[-1]			;Pass if c(ac)=-1,,-1 and soj did not jump
+	STOP
+
+;**********
+;This test verifies that soj subtracts 1 from the ac and does not jump.
+;First, the ac is preloaded with -1,,-1; then, soj is executed.  next, the ac
+;Is checked for -1,,-2. if c(ac) is not -1,,-2 or soj skipped, this test fails.
+
+C16000:	SETO				;Preload ac with -1,,-1
+	SOJ	.+2			;*Soj should subtract 1 from the ac and not jump
+	CAME	[-2]			;Pass if c(ac)=-1,,-2 and soj did not jump
+	STOP
+
+;**********
+
+;This test verifies that soj subtracts 1 from the ac and does not jump.
+;First, the ac is preloaded with 0,,1; then, soj is executed.  next, the
+;Ac is checked for 0.  if c(ac) is not 0 or soj skipped, this test fails.
+
+C16100:	MOVEI	1			;Preload ac with 1
+	SOJ	.+2			;*Soj should subtract 1 from the ac and not jump
+	CAIE	0			;Pass if c(ac)=0 and soj did not jump
+	STOP
+
+;**********
+;This test verifies that soj ac, followed by aoj ac, has no net effect on c(ac).
+;In this case, the ac is preloaded with 0; then, soj ac, followed by aoj. 
+;Ac, is repeated 7 times.  the ac is then checked for its original contents, 0.
+;If c(ac)=0, this test passes; otherwise aoj or soj failed.
+
+C16200:	AC=17
+	SETZ	AC,			;Preload ac with 0
+	REPEAT	^D10,<
+	SOJ	AC,.			;*Soj should subtract 1 from the ac
+	AOJ	AC,.			;*Aoj should add 1 to the ac>
+	SKIPE	AC			;Pass if c(ac) is unchanged. i.e. c(ac)=0
+	STOP
+
+;**********
+;This test verifies that soj sets cry0/1 flags if c(e) is a non-zero number
+;Other  than  400000,,0.   in  this case, c(e)=1.  first the flags are reset.
+;Then soj is executed.  the  flags are checked.  if cry0 and cry1 are set and
+;Arov and fov are reset, this test passes.
+
+C16201:	JFCL	17,.+1			;Reset arithmetic flags
+	MOVEI	1			;Preload e with 1
+	SOJ				;*Soj should set cry0/1
+	JCRY0	.+2			;Pass if cry0 is set
+	STOP
+	JCRY1	.+2			;Pass if cry1 is set
+	STOP
+	JOV	.+2			;Pass if arov is reset
+	SKIPA
+	STOP
+	JFOV	.+2			;Pass if fov is reset
+	SKIPA
+	STOP
+
+;**********
+;This test verifies that aoj sets cry0 and cry1 flag if c(e) is -1,,-1.
+;First the flags are reset; then aoj is executed.  the flags are checked.
+;If cry0 and cry1 are set and arov and fov are reset, this test passes.
+
+C16202:	JFCL	17,.+1			;Reset arithmetic flags
+	SETO				;Preload e with 1
+	AOJ				;*Aoj should set cry0 and cry1
+	JCRY0	.+2			;Pass if cry0 is set
+	STOP
+	JCRY1	.+2			;Pass if cry1 is set
+	STOP
+	JOV	.+2			;Pass if arov is reset
+	SKIPA
+	STOP
+	JFOV	.+2			;Pass if fov is reset
+	SKIPA
+	STOP
+
+;**********
+SUBTTL	TEST OF MEMORY, BOTH AND SELF MODE INSTRUCTIONS
+
+;**********
+
+;This test verifies that addm does not modify c(ac)
+;Both ac and e are preloaded with -1,,-1.  then addm is executed.
+;This test passes if c(ac) are unchanged.
+
+C16400:	SETOB	1			;Preload ac, e with -1,,-1
+	ADDM	1			;*Addm should not affect c(ac)
+	CAME	[-1]			;Pass if c(ac) is unmodified by addm
+	STOP
+
+;**********
+
+;This test verifies that hrrem does not modify c(ac)
+;The ac is preloaded with 0,,-1.  then hrrm is executed.
+;This test passes if c(ac) are unchanged.
+
+C16500:	MOVEI	-1			;Preload ac with 0,,-1
+	HRREM	1			;*Hrrm should not affect c(ac)
+	CAIE	-1			;Pass if c(ac) is unmodified by hrrm
+	STOP
+
+;**********
+;This test verifies that movsm does not modify c(ac).
+;The ac is preloaded with 0,,-1.  then movsm is executed.
+;This test passes if c(ac) are unchanged.
+
+C16600:	MOVEI	-1			;Preload ac with 0,,-1
+	MOVSM	1			;*Movsm should not affect c(ac)
+	CAIE	-1			;Pass if c(ac) is unmodified by movsm
+	STOP
+
+;**********
+
+;This test verifies that xorm does not modify c(ac).
+;Both ac and e are preloaded with -1,,-1.  then xorm is executed.
+;This test passes if c(ac) are unchanged.
+
+C16700:	SETOB	1			;Preload ac, e with -1,,-1
+	XORM	1			;*Xorm should not affect c(ac)
+	CAME	[-1]			;Pass if c(ac) is unmodified by xorm
+	STOP
+
+;**********
+;This test verifies that addb adds c(ac) to c(e) and places the result
+;In both ac and e. in this test, both ac and e are preloaded with -1,,-1,
+;Then, addb is executed.  c(ac) is  then  compared  to c(e) and c(ac) is
+;Compared to -2.  if both of these comparisons succeed, this test passes.
+;Otherwise, addb failed.
+
+C17000:	SETOB	1			;Preload ac, e with -1,,-1
+	ADDB	1			;*Addb should add c(ac) to c(e) and place result
+					;Into both ac and e
+	CAME	1			;Pass if c(ac)=c(e)
+	STOP
+	CAME	[-2]			;Pass if c(ac)=-2
+	STOP
+
+;**********
+
+;This test verifies that addm adds c(ac) to c(e) and places the result in e
+;In this case, ac, e are both preloaded with -1; then, addm is executed. e is
+;Then checked for -2.  if c(e)=-2, this test passes; otherwise, addm failed.
+
+C17100:	SETOB	1			;Preload ac, e with -1,,-1
+	ADDM	1			;*Addm should add c(ac) to c(e)
+	CAME	1,[-2]			;Pass if c(e)=-2
+	STOP
+
+;**********
+;This test verifies that hllos places ones on the right half of e
+;But does not affect the left half of e.  in this case,
+;E is preloaded with 0; the, hllos is executed.  the result
+;In e should be 0,,-1.  if c(e)=0,,-1, this test passes.
+
+C17200:	SETZM	1			;Preload e with 0
+	HLLOS	1			;*Hllos should place 0,,-1 into e
+	CAIE	1,-1			;Pass if c(e)=0,,-1
+	STOP
+
+;**********
+
+;This test verifies that movss swaps boths halves of e and
+;Places the result in e.  in this case, e is preloaded with
+;-1,,0; Then, movss is executed.  the result in e should be 0,,-1.
+;If c(e)=0,,-1, this test passes.
+
+C17300:	MOVSI	1,-1			;Preload e with -1,,0
+	MOVSS	1			;*Movss should place 0,,-1 into e
+	CAIE	1,-1			;Pass if c(e)=0,,-1
+	STOP
+
+;**********
+;This test verifies that aos adds one to memory but does not skip.  first,
+;E is preloaded with -1,-1; then, aos is executed.  next, e is checked for 0.
+;If c(e) is not 0 or aos skipped, this test fails.
+
+C17400:	SETOB	1			;Preload e with -1,,-1
+	AOS	1			;*Aos should add to c(e) and not skip
+	CAIE	1,0			;Pass if c(e)=0,,0 and aos did not skip
+	STOP
+
+;**********
+
+;This test verifies that hrlm places c(ac-right) into e-left and does not
+;Modify e-right.  in this case, ac is preloaded with 0 and e is preloaded
+;With -1,,-1.  then, hrlm is executed.  e is then checked for 0,,-1.  if
+;C(e)=0,,-1, this test passes.
+
+C17500:	SETZ				;Preload ac with 0
+	SETO	1,			;Preload e with -1,,-1
+	HRLM	1			;*Hrlm should place 0,,-1 into e
+	CAIE	1,-1			;Pass if c(e)=0,,-1
+	STOP
+
+;**********
+;This test verifies that hrrs does not modify e.  e is preloaded
+;With 0 and ac is preloaded with -1,,-1.  hrrs is executed; then
+;E is checked.  if c(e) does not change, this test passes.
+
+C17600:	SETO				;Preload ac with -1,,-1
+	SETZ	1,			;Preload e with 0,,0
+	HRRS	1			;*Hrrs should place 0,,0 into e
+	SKIPE	1
+	STOP
+
+;**********
+
+;This test verifies that hrrzm places c(ac-right) into e-right and places
+;Zeros into e-left.  in this case, ac=e=ac1 and c(ac)=c(e)=-1,,0.  hrrzm
+;Is executed and ac1 is checked for 0.  if ac1=0, this test passes.
+
+C17700:	SETO				;Preload ac0 with -1,,-1
+	MOVSI	1,-1			;Preload ac1 with -1,,0
+	HRRZM	1,1			;*Hrrzm should place 0 into ac1
+	SKIPE	1			;Pass if c(ac1)=0
+	STOP
+
+;**********
+;This test verifies that jfcl 17,.+1 never jumps and does not modify c(ac0).
+;First, ac0 is preloaded; then, jfcl is executed.  if ac0 is modified or
+;Jfcl skips, this test fails.
+
+C20000:	SETZ				;Clear ac0
+	JFCL	17,.+1			;*Jfcl should not jump or modify c(ac0).
+	SKIPE				;Pass if c(ac0)=0 and jfcl did not jump
+	STOP
+
+;**********
+
+;This test verifies that xorm performs the logical exclusive or function
+;Between c(ac) and c(e) and places the result into e.  in this case,
+;Ac and e are preloaded with -1,,-1; then, xorm is executed.  if the
+;Result in e is 0, the test passes.
+
+C20100:	SETOB	1			;Preload ac,e with -1,,-1
+	XORM	1			;*Xorm should place 0 into e
+	CAIE	1,0			;Pass if c(e)=0
+	STOP
+
+;**********
+;This test verifies that setzb places zeros into both ac and e.
+;After setzb is executed, both ac and e are checked for 0.  if
+;Either ac or e contains any ones, this test fails.
+
+C20200:	SETZB	1			;*Setzb should place zeroes in both ac and e
+	CAMN	[0]			;Fail if c(ac) is non-zero
+	CAME	1			;Fail if c(e) is non-zero
+	STOP
+
+;**********
+
+;This test verifies that setab places c(ac) into both ac and e.
+;First, ac is preloaded with -1,,-1 and e is preloaded with 0;
+;Then, setab is executed.  both ac and e are checked for -1,,-1
+;If either ac or e contain any zeros, this test fails.
+
+C20300:	SETZ	1,			;Preload e with 0
+	SETO				;Preload ac with -1,,-1
+	SETAB	1			;*Setab should place -1,,-1 into both ac and e
+	CAMN	[-1]			;Fail if c(ac) is not -1,-1
+	CAME	1			;Fail if c(e) is not -1,,-1
+	STOP
+
+;**********
+SUBTTL	XCT INSTRUCTION - BASIC TESTS
+
+;**********
+
+;This test verifies that xct will execute the instruction specified by c(e).
+;In this case, c(e) specifies a movei instruction.  after executing movei,
+;Control should return to the next sequential instruction following xct. this
+;Test passes if control returns to the next sequential instruction following xct.
+
+C20400:	SETZB	1			;Clear ac0 and ac1
+	XCT	[MOVEI 1,.+2]		;*Xct should return control to next instruction
+	SKIPA
+	STOP
+
+;**********
+
+;This test verifies that xct will execute the instruction specified by c(e)
+;In this case, c(e) specifies a movei instruction. after executing movei,
+;The ac specified by movei is checked for 0,,1 (the expected result).  if
+;C(ac)=0,,1, this test passes.
+
+C20500:	SETZB	1			;Clear ac
+	XCT	[MOVEI 1,1]		;*Xct of movei should place 1 in the ac
+	CAIE	1,1			;Pass if c(ac)=1
+	STOP
+
+;**********
+;This test verifies that a nest of xct instructions will execute the
+;Instruction specified by the most nested xct and return control to the
+;Next sequential instruction following the first xct. in this case, the
+;Executed instruction is movei.  after executing the movei, c(ac) is
+;Checked for 0,,-1 (the expected result).  if c(ac)=0,,-1, this test passes.
+
+C20600:	SETZB	1			;Clear ac
+	XCT	[XCT[XCT[XCT[XCT[MOVEI 1,-1]]]]] ;*Nested xct of movei
+					;Should place 0,,-1 into ac
+	CAIE	1,-1			;Pass if c(ac)=0,,-1
+	STOP
+
+;**********
+
+;This test verifies that xct will not modify an ac which is not specified by
+;The executed instruction.  in this case, ac0 is cleared and then checked for
+;Zero after the xct instruction is executed.  ac0 should not be modified.
+
+C20700:	SETZB	1			;Clear ac0,ac1
+	XCT	[MOVE 1,[-1]]		;*Xct should not modify ac0
+	SKIPE				;Pass if ac0 was not modified
+	STOP
+
+;**********
+
+;This test verifies that xct of skipa should return control to
+;The second sequential instruction following xct.
+
+C21000:	XCT	[SKIPA]			;Xct of skipa should return control to .+2
+	STOP
+SUBTTL	INDIRECT ADDRESSING - BASIC TESTS
+
+;**********
+
+;This test verifies that indirect addressing works when both e and @e
+;Are within the ac range.  the instruction specifying indirect addressing
+;Is a move.  after move is executed, c(ac) is checked for 0, the  initial
+;Contents of the indirect address.
+
+C21100:	SETOM	1			;Preload ac with -1,,-1
+	MOVEI	7,3			;Setup direct address with indirect address
+	SETZM	3			;Preload indirect address with 0
+	MOVE	1,@7			;*Fwt from indirect addresss should
+					;Place 0 into the ac
+	SKIPE	1			;Pass if c(ac)=0
+	STOP
+
+;**********
+
+;This test verifies that indirect addressing works when both e and @e
+;Are within the ac range. the instruction specifying indirect addressing
+;Is a move.  after move is executed, c(ac) is checked for -1,,-1, the
+;Initial contents of the indirect address.
+
+C21200:	SETZM	1			;Preload ac with -1,,-1
+	MOVEI	7,3			;Setup direct address with indirect address
+	SETOM	3			;Preload indirect address with -1,,-1
+	MOVE	1,@7			;*Fwt from indirect address should
+					;Place -1,,-1 into the ac
+	CAME	1,[-1,,-1]		;Pass if c(ac)=-1,,-1
+	STOP
+
+;**********
+;This test verifies that indirect addressing works when both e and @e
+;Are within the ac range. the instruction specifying indirect addressing
+;Is a move. after move is executed, c(ac) is checked for 707070,,707070,
+;The initial contents of the indirect address.
+
+C21300:	SETZM	1			;Preload ac with 0
+	MOVEI	7,3			;Setup direct address with indirect address
+	MOVE	3,[707070,,707070] ;Preload indirect address with 707070,,707070
+	MOVE	1,@7			;*Fwt from indirect address should
+					;Place 707070,,707070 into the ac
+	CAME	1,[707070,,707070]	;Pass if c(ac)=707070,,707070
+	STOP
+
+;**********
+
+;This test verifies that indirect addressing works when e is within the ac
+;Range and @e is beyond the ac range.  the instruction specifying indirect
+;Addressing is a move.  after move is executed, c(ac) is checked for
+;707070,,707070, The initial contents of the indirect address.
+
+C21400:	JRST	.+2
+	XWD	707070,707070		;Indirect address and its data
+	SETZM	1			;Preload ac with 0
+	MOVEI	7,C21400+1		;Setup direct address with indirect address
+	MOVE	1,@7			;*Fwt from indirect address should
+					;Place 707070,,707070 into ac
+	CAME	1,C21400+1		;Pass if c(ac)=707070,,707070
+	STOP
+
+;**********
+;This test verifies that indirect addressing works when both e and @e
+;Are beyond the ac range. the instruction specifying indirect addressing
+;Is a move. after move is executed, c(ac) is checked for 202020,,202020,
+;The initial contents of the indirect address.
+
+C21500:	JRST	.+3
+		.+1			;Direct address and its data
+	XWD	202020,202020		;Indirect address and its data
+	SETZM	1			;Preload ac with 0
+	MOVE	1,@C21500+1		;*Fwt from indirect address should
+					;Place 202020,,202020 into ac
+	CAME	1,C21500+2		;Pass if c(ac)=202020,,202020
+	STOP
+
+;**********
+
+;This test verifies that indirect addressing works when both e and @e
+;Are beyond the ac range.  the instruction specifying indirect
+;Addressing is a came.
+
+C21600:	JRST	.+3
+		.+1			;Direct address and its data
+	XWD	272727,272727		;Indirect address and its data
+	MOVE	1,C21600+2		;Preload ac
+	CAME	1,@C21600+1		;*Came of data from indirect address - non-ac range
+	STOP
+
+;**********
+
+;This test verifies that indirect addressing works when e is within the ac
+;Range and @e is beyond the ac range.  the instruction specifying indirect
+;Addressing is a came. 
+
+C21700:	JRST	.+2
+	XWD	252525,252525		;Indirect address and its data
+	MOVEI	7,C21700+1		;Setup direct address with indirect address
+	MOVE	1,C21700+1		;Setup ac
+	CAME	1,@7			;*Came if data from indirect address - ac range
+	STOP
+SUBTTL	TEST INDIRECT ADDRESSING WITH INDEXING
+
+;Setup index registers
+
+	MOVEI	1,-4
+	MOVEI	3,2
+	MOVEI	4,10
+	MOVEI	5,1
+	MOVEI	6,5
+	MOVEI	7,7
+	MOVEI	10,4
+	MOVEI	11,-6
+	MOVEI	12,5
+	MOVEI	13,2
+
+	JRST	C22000			;Resume test
+
+;Indirect addressing/indexing test table
+
+;;;;;;;;;;;          ;;;;;;;;;;          ;;;;;;;;;;
+
+;Do not modify this table or tests c21700 thru c22600 independently !
+
+;;;;;;;;;;          ;;;;;;;;;;          ;;;;;;;;;;
+
+E217:		E217A(3)
+E220:		@E220A
+E220B:	220220,,220220
+E217A:		@E221A			;E221-4
+E221B:	221221,,221221
+E222A:	217217,,217217			;E217a+2
+E220A:		E220B
+E221:		E221
+E221A:		E221B
+E222:		E221
+E223A:	223223,,223223
+E224A:		E224A(4)		;E223-6
+	222222,,222222			;E222a+7
+E225:		E225
+		E222A(7)		;E222+5
+		@E225A			;E225+2
+E225B:	225225,,225225
+E223:		E223
+E225A:		E225B
+	224224,,224224			;E224a+10
+E226B:	226226,,226226
+		E223A			;E223+4
+E226A:		@E226A(5)		;E223+5
+		E226B			;E226a+1
+;This test verifies that indirect addressing in combination with indexing
+;Functions correctly.  in  this  case, move 2,@e217  is  tested  where
+;C(e217)=e217a(3) and c(3)=0,,2.  hence, the result in the ac should be
+;C(e217a+2)=217217,,217217 .
+
+C22000:	SETOM	2			;Initialize ac
+	MOVE	2,@E217			;Test indirect addressing with indexing
+	CAME	2,E217A+2		;Pass if c(ac)=217217,,217217
+	STOP
+
+;**********
+
+;This test verifies that indirect addressing in combination with indexing
+;Functions  correctly.   in  this  case,  move 2,@e220  is tested where
+;C(e220)=@e220a and c(e220a)=e220b.  hence, the result in the ac should
+;Be c(e220b)=220220,,220220 .
+
+C22100:	SETZM	2			;Initialize ac
+	MOVE	2,@E220			;Test indirect addressing with indexing
+	CAME	2,E220B			;Pass if c(ac)=220220,,220220
+	STOP
+
+;**********
+;This test verifies that indirect addressing in combination with indexing
+;Functions correctly.  in this case,e221(1) 2,@e217 is tested where c(1)=-4
+;And e221-4=e217a.  hence, the result in the ac should be
+;C(e217a)=@e221a=20,,e221a .
+
+C22200:	SETOM	2			;Initialize ac
+	MOVE	2,E221(1)		;Test indirect addressing with indexing
+	CAME	2,E217A			;Pass if c(ac)=@e221a=20,,e221a
+	STOP
+
+;**********
+
+;This test verifies that indirect addressing in combination with indexing
+;Functions correctly. in this case, move 2,e222(6) is tested where c(6)=5
+;Hence, the result in the ac should be c(e222+5)=e222a(7)=7,,e222a .
+
+C22300:	SETZM	2			;Initialize ac
+	MOVE	2,E222(6)		;Test indirect addressing with indexing
+	CAME	2,E222+5		;Pass if c(ac)=e222a(7)=7,,e222a
+	STOP
+
+;**********
+;This test verifies that indirect addressing in combination with indexing
+;Functions correctly. in this case, move 2,@e223(10) is tested where c(10)=4
+;And c(e223+4)=e223a.  hence, the result in the ac should be
+;C(e223a)=223223,,223223 .
+
+C22400:	SETOM	2			;Initialize ac
+	MOVE	2,@E223(10)		;Test indirect addressing with indexing
+	CAME	2,E223A			;Pass if c(ac)=223223,,223223
+	STOP
+
+;**********
+
+;This test verifies that indirect addressing in combination with indexing
+;Functions correctly.  in this case, move 2,@e223(11) is tested where
+;C(11)=-6, c(e223-6)=e224a(4) and c(4)=10.  hence, the result in the ac
+;Should be c(e224a+10)=224224,,224224 .
+
+C22500:	SETZM	2			;Initialize ac
+	MOVE	2,@E223(11)		;Test indirect addressing with indexing
+	CAME	2,E224A+10		;Pass if c(ac)=224224,,224224
+	STOP
+
+;**********
+;This test verifies that indirect addressing in combination with indexing
+;Functions correctly.  in this case, move 2,@e225(13) is tested where c(13)=2,
+;C(e225+2)=@e225a and c(e225a)=e225b.  hence, the result in the ac should be
+;C(e225b)=225225,,225225.
+
+C22600:	SETOM	2			;Initialize ac
+	MOVE	2,@E225(13)		;Test indirect addressing with indexing
+	CAME	2,E225B			;Pass if c(ac)=225225,,225225
+	STOP
+
+;**********
+
+;This test verifies that indirect addressing in combination with indexing
+;Functions correctly.  in this case, move 2,@e223(12) is tested where
+;C(12)=5, c(e223+5)=@e226a(5), c(5)=1 and c(e226a+1)=e226b.  hence, the
+;Result in the ac should be c(e226b)=226226,,226226.
+
+C22700:	SETZM	2			;Initialize ac
+	MOVE	2,@E223(12)		;Test indirect addressing with indexing
+	CAME	2,E226B			;Pass if c(ac)=226226,,226226
+	STOP
+
+;**********
+
+
+ENDIT:	SETZM	TNUMB#
+	JRST	BEGEND
+   

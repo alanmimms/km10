@@ -1,0 +1,2622 @@
+SUBTTL	INITIALIZATION SECTION
+
+LALL					;EXPAND MACROS
+
+PGMNAM:	ASCIZ/
+DECSYSTEM KL10 ADVANCED INSTRUCTION DIAGNOSTIC #2 [DFKCB]
+DOUBLE PRECISION INSTRUCTIONS
+/
+	NUM=123456765432
+
+; A MACRO TO REPORT AN ERROR AND LOOP
+;	THIS IS REDEFINED HERE TO CHANGE THE LISTING CONTROL STATEMENTS
+
+DEFINE	ERROR	(ADR,FORMAT,CORECT,ACTUAL,F,D,ERR)<SALL
+	ERUUO	FORMAT,[T,,[SIXBIT\F'_\]
+		   CORECT,,ACTUAL
+		   [SIXBIT\D'_\],,ERR]
+									LALL
+	ERLOOP	ADR			;IF ERROR, LOOP TO ADR
+>
+
+START:	PGMINT				;INITIALIZE PROGRAM
+STARTA:
+SUBTTL	DADD - TEST A
+									SALL
+T=SIXBTZ<DADD TEST>
+									LALL
+; **********************************************************************
+;*DADD - TEST A
+;*
+;*	0,# + 0,0 = 0,#		SIMPLE TESTS TO SEE IF DADD
+;*	#,0 + 0,0 = #,0		WORKS AT ALL.
+;*	#,# + 0,0 = #,#
+;*	0,0 + 0,# = 0,#
+;*	0,0 + #,0 = #,0
+;*	0,0 + #,# = #,#
+;*	0,0 + 0,0 = 0,0
+; **********************************************************************
+
+; **********************************************************************
+; ----------  DADD (0,#) + (0,0) = (0,#)  ----------
+; **********************************************************************
+
+ATEST1:	MOVE	SCR3,[[EXP 0,NUM],,[EXP 0,0]] ;ADDR FOR APRINT
+	DMOVE	AC1,[EXP 0,NUM]		;INIT AUGEND TO (0,#)
+	DADD	AC1,[EXP 0,0]		;ADD (0,#)+(0,0)
+	CHECKA	(ATEST1,A1,0,NUM)
+
+; **********************************************************************
+; ----------  DADD (#,0) + (0,0) = (#,0)  ----------
+; **********************************************************************
+
+ATEST2:	MOVE	SCR3,[[EXP NUM,0],,[EXP 0,0]] ;ADDR FOR APRINT
+	DMOVE	AC1,[EXP NUM,0]		;INIT AUGEND TO (#,0)
+	DADD	AC1,[EXP 0,0]		;ADD (#,0)+(0,0)
+	CHECKA	(ATEST2,A2,NUM,0)
+
+; **********************************************************************
+; ----------  DADD (#,#) + (0,0) = (#,#)  ----------
+; **********************************************************************
+
+ATEST3:	MOVE	SCR3,[[EXP NUM,NUM],,[EXP 0,0]] ;ADDR FOR APRINT
+	DMOVE	AC1,[EXP NUM,NUM]	;INIT AUGEND TO (#,#)
+	DADD	AC1,[EXP 0,0]		;ADD (#,#)+(0,0)
+	CHECKA	(ATEST3,A3,NUM,NUM)
+
+; **********************************************************************
+; ----------  DADD (0,0) + (0,#) = (0,#)  ----------
+; **********************************************************************
+
+ATEST4:	MOVE	SCR3,[[EXP 0,0],,[EXP 0,NUM]] ;ADDR FOR APRINT
+	SETZB	AC1,AC1+1		;INIT AUGEND TO (0,0)
+	DADD	AC1,[EXP 0,NUM]		;ADD (0,0) + (0,#)
+	CHECKA	(ATEST4,A4,0,NUM)
+
+; **********************************************************************
+; ----------  DADD (0,0) + (#,0) = (#,0)  ----------
+; **********************************************************************
+
+ATEST5:	MOVE	SCR3,[[EXP 0,0],,[EXP NUM,0]] ;ADDR FOR APRINT
+	SETZB	AC1,AC1+1		;INIT AUGEND TO (0,0)
+	DADD	AC1,[EXP NUM,0]		;ADD (0,0) + (#,0)
+	CHECKA	(ATEST5,A5,NUM,0)
+
+; **********************************************************************
+; ----------  DADD (0,0) + (#,#) = (#,#)  ----------
+; **********************************************************************
+
+ATEST6:	MOVE	SCR3,[[EXP 0,0],,[EXP NUM,NUM]] ;ADDR FOR APRINT
+	SETZB	AC1,AC1+1		;INIT AUGEND TO (0,0)
+	DADD	AC1,[EXP NUM,NUM]	;ADD (0,0)+(#,#)
+	CHECKA	(ATEST6,A6,NUM,NUM)
+
+; **********************************************************************
+; ----------  DADD (0,0) + (0,0) = (0,0)  ----------
+; **********************************************************************
+
+ATEST7:	MOVE	SCR3,[[EXP 0,0],,[EXP 0,0]] ;ADDR FOR APRINT
+	SETZB	AC1,AC1+1		;INIT AUGEND TO (0,0)
+	DADD	AC1,AC1			;ADD (0,0) + (0,0)
+	CHECKA	(ATEST7,A7,0,0)
+SUBTTL	DADD - TEST B
+
+; **********************************************************************
+;DADD - TEST B
+;*
+;*	FLOATING 1 + 0 = FLOATING 1	THESE TESTS ARE DONE FOR A 1 OR
+;*	0 + FLOATING 1 = FLOATING 1	A 0 IN BITS 0,34,36,70 OF THE
+;*	FLOATING 0 + 0 = FLOATING 0	DOUBLEWORD ADDEND OR AUGEND.
+;*	0 + FLOATING 0 = FLOATING 0	THIS WILL TEST THE WORD BOUND- 
+;*					ARY INTEGRITY OF THE DADD
+;*					INSTRUCTION.
+; **********************************************************************
+
+; **********************************************************************
+;*	REPEAT THE FOLLOWING BLOCK OF CODE 8 TIMES TO STEP DOWN A LIST
+;*	OF TEST CASES.  THE TEST CASES CONSIST OF 8 DOUBLEWORDS - THE
+;*	FIRST 4 FLOAT A 1 ACROSS IN BITS 0,34,36,70; THE SECOND 4 FLOAT
+;*	A 0 ACROSS IN BITS 0,34,36,70.  THE RESULT SHOULD BE ACS WITH
+;*	CONTENTS EQUAL TO THE FLOATING 1/0.
+; **********************************************************************
+
+	REP=0
+	REPP=0
+
+	REPEAT	^D8,<
+;   ************************************************
+
+	REP=REP+1
+	LOC=.				;ERROR LOOP RETURN ADDRESS
+	ALEFT=0+IFE REP-3,<1>+IFE REP-4,<1B1>
+	ARIGHT=0+IFE REP-1,<1>+IFE REP-2,<1B1>
+	IFE	REPP-1,<ALEFT=^-ALEFT
+			ARIGHT=^-ARIGHT>
+
+	MOVE	SCR3,[[EXP ALEFT,ARIGHT],,[EXP 0,0]] ;ADDR FOR APRINT
+	DMOVE	AC1,[EXP ALEFT,ARIGHT]	;INIT AUGEND TO FLOATING 1/0
+	DADD	AC1,[EXP 0,0]		;ADD FLOATING 1/0 + (0,0)
+	CHECKA	(LOC,B1,ALEFT,ARIGHT)
+
+	LOC=.				;ERROR LOOP RETURN ADDRESS
+	SETZB	AC1,AC1+1		;INIT AUGEND TO (0,0)
+	MOVE	SCR3,[[EXP 0,0],,[EXP ALEFT,ARIGHT]] ;ADDR FOR APRINT
+	DADD	AC1,[EXP ALEFT,ARIGHT]	;ADD (0,0) + FLOATING 1/0
+	CHECKA	(LOC,B2,ALEFT,ARIGHT)
+
+	IFE	REP-4,<REPP=1
+		       REP=0>
+;   ************************************************
+>
+AENDB:
+SUBTTL	DADD - TEST C
+
+; **********************************************************************
+;DADD - TEST C
+;*
+;*	FLOATING 1 + FLOATING 1 = FLOATING 1 SHIFTED LEFT ONE BIT AT
+;*	A TIME ACROSS THE DOUBLEWORD EXCLUDING SIGN BITS AND THE MOST
+;*	SIGNIFICANT BIT (WE'RE NOT TESTING OVERFLOW CONDITIONS). THIS
+;*	TEST VERIFIES THE ABILITY OF THE DADD TO HANDLE A SINGLE CARRY
+;*	PROPAGATED 1 BIT WHETHER IT CROSSES A WORD BOUNDARY OR NOT.
+; **********************************************************************
+
+; **********************************************************************
+;DADD FLOATING 1 + FLOATING 1 = FLOATING 1 * 2
+; **********************************************************************
+
+	SETZ	CNT,			;COUNT FROM 0 TO 68
+	DMOVE	AC1,[EXP 0,1]		;SET UP OPERANDS - AUGEND,ADDEND - EACH
+					;  WILL BE THE DOUBLEWORD - AC1,AC1+1
+ALOOP:	DPB	CNT,ASHIFT		;SET UP ASHC TO CALCULATE OPERANDS
+	XCT	ASHIFT			;DO THE SHIFT - RESULT IS A DOUBLEWORD
+					;  FLOATING 1 IN AC1,AC1+1
+	DMOVEM	AC1,ADATA		;SAVE THE ARGUMENTS FOR ADDL PRINT
+	MOVE	SCR3,[ADATA,,ADATA]	;  ROUTINE & PUT INTO SCR3
+	ASHC	AC1,1			;CALCULATED EXPECTED RESULT
+	DMOVEM	AC1,TEMP		;SAVE RESULTS
+	DMOVE	AC1,ADATA		;GET BACK ORIGINAL AUGEND
+
+	DADD	AC1,AC1			;ADD FLOATING 1 + FLOATING 1
+
+	SETZ	SCR1,			;POINTER TO WHICH WORD IN ERROR
+	CAME	AC1,TEMP		;RESULT - AC1 SHOULD = TEMP
+	JRST	AERR			;NOT CORRECT - DO ERROR HANDLING
+	MOVEI	SCR1,1			;POINTER ADJUSTED TO NEXT WORD
+	CAMN	AC1+1,TEMP+1		;RESULT - AC1+1 SHOULD = TEMP+1
+	JRST 	AERRC+1			;NO ERRORS - DO ERLOOP ANYWAY
+
+AERR:	MOVE	SCR2,TEMP(SCR1)		;GET CORRECT DATA
+	MOVE	SCR1,AC1(SCR1)		;GET ACTUAL DATA
+AERRC:	ERROR	(LOC,14,SCR2,SCR1,,TEST C - RESULT INCORRECT,APRINT)
+
+	AOS	CNT			;INCREMENT SHIFT COUNT
+	CAIE	CNT,^D69		;ARE WE DONE WITH 69 ITERATIONS?
+	JRST	ALOOP			;  NO - REPEAT THIS TEST
+	JRST	ADADDI+1		;  YES - GO ON TO NEXT TEST
+
+ADATA:	BLOCK 2				;DADD OPERANDS
+TEMP:	BLOCK	2			;TEMPORARY STORAGE FOR RESULT
+ASHIFT:	POINT	8,ADADDI,0		;FOR CALCULATING OPERANDS
+ADADDI:	ASHC	AC1,0			;CALCULATE DOUBLEWORD FLOATING 1
+SUBTTL	DADD - TEST D
+
+; **********************************************************************
+;*DADD - TEST D
+;*
+;*	0,-1 + 0,1 = 1,0		ADDITIONAL TEST TO SEE THAT A
+;*	0,1 + 0,-1 = 1,0		CARRY IS PROPAGATED ACROSS WORD
+;*					BOUNDARIES.
+; **********************************************************************
+
+; **********************************************************************
+; ----------  DADD (0,-1) + (0,1) = (1,0)  ----------
+; **********************************************************************
+
+ATSTD1:	MOVE	SCR3,[[EXP 0,-1],,[EXP 0,1]] ;ADDR FOR APRINT
+	DMOVE	AC1,[EXP 0,-1]		;INIT AUGEND TO (0,-1)
+	DADD	AC1,[EXP 0,1]		;ADD (0,-1) + (0,1)
+	CHECKA	(ATSTD1,D1,1,0)
+
+; **********************************************************************
+; ----------  DADD (0,1) + (0,-1) = (1,0)  ----------
+; **********************************************************************
+
+ATSTD2:	MOVE	SCR3,[[EXP 0,1],,[EXP 0,-1]] ;ADDR FOR APRINT
+	DMOVE	AC1,[EXP 0,1]		;INIT AUGEND TO (0,1)
+	DADD	AC1,[EXP 0,-1]		;ADD (0,1) + (0,-1)
+	CHECKA	(ATSTD2,D2,1,0)
+SUBTTL	DADD - TEST E
+
+; **********************************************************************
+;*DADD - TEST E
+;*
+;*	FLOATING 0 + 1 = 11111000..	
+;*	1 + FLOATING 0 = 11111000..	
+; **********************************************************************
+
+; **********************************************************************
+;*	THE NEXT 6 TESTS VERIFY THAT A CARRY IS PROPERLY PROPAGATED
+;*	  DOWN A WORD.   A 1 IS ADDED TO A  FLOATING 0  CAUSING THE
+;*	  CARRY TO RIPPLE DOWN THE WORD.  THE RESULT IS VERIFIED AS
+;*	  1111..110000....  THE FLOATING 0 IS LOCATED IN BITS 34,36,
+;*	  71 FOR NEGATIVE NUMBERS AND BITS 33,36,70 FOR POSITIVE
+;*	  NUMBERS.  CARRY FLAGS ARE VERIFIED IN ADDITION.
+; **********************************************************************
+
+	CNUM=ACONE-4
+
+	REPEAT	6,<
+;   ************************************************
+
+	LOC=.
+	CNUM=CNUM+4
+	DMOVE	AC1,CNUM		;INIT AUGEND TO FLOATING 0
+	JFCL	17,.+1			;CLEAR PC FLAGS
+	HRLI	SCR3,CNUM		;SCR3 - ADDRESS OF OPERANDS FOR
+	HRRI	SCR3,[EXP 0,1]		; ADDL ERROR PRINT ROUTINE
+	DADD	AC1,[EXP 0,1]		;ADD - FLOATING 0 + 1
+	PCSAVE
+	CHECKB	(LOC,E,CNUM+2)
+	TFLAG	([0],E)
+;   ************************************************
+>
+	JRST	AENDD			;SKIP OVER DATA
+
+ACONE:	EXP	-1,577777777777,-1,^B11B1
+	EXP	-2,-1,-1,1B0
+	EXP	577777777777,-1,^B11B1,1B0
+	EXP	377777777777,177777777777,377777777777,1B1
+	EXP	377777777776,377777777777,377777777777,0
+	EXP	177777777777,377777777777,1B1,0
+AENDD:
+SUBTTL	DADD - TEST F
+
+; **********************************************************************
+;*DADD - TEST F
+;*
+;*	THE FOLLOWING TESTS VERIFY THAT THE DADD INSTRUCTION HANDLES
+;*	  THE SIGN OF THE RESULT PROPERLY (COPYING THE SIGN INTO THE
+;*	  HIGH ORDER BIT OF EACH WORD OF THE DOUBLEWORD RESULT.  THE
+;*	  TESTS ADD VARIOUS COMBINATIONS OF INCONSISTENT SIGNS IN THE
+;*	  ADDEND AND AUGEND AND VERIFY THAT THE SIGNS OF THE RESULT
+;*	  ARE CORRECT.
+;*
+;*	THERE ARE 5 SETS OF TEST: (1) 0 + P/N = P/N
+;*				  (2) N + N = N
+;*				  (3) P + P = P
+;*				  (4) N + P = N
+;*				  (5) N + P = P
+;*				WHERE N-NEGATIVE NUMBER
+;*				      P-POSITIVE NUMBER
+; **********************************************************************
+
+; **********************************************************************
+; ----------  DADD - TEST F-1:  0 + P/N = P/N  ----------
+; **********************************************************************
+
+	CNUM=ACONF1-4
+	REP=0				;RESULT FOR FIRST 3 TESTS
+
+	REPEAT	6,<
+;   ************************************************
+
+	LOC=.				;ERROR RETURN ADDRESS
+	REP=REP+1			;REP - REPETITION COUNT
+	CNUM=CNUM+4			;ADDRESS OF TEST DATA
+	MOVE	SCR3,[CNUM,,CNUM+2]	;SCR3 - ADDR FOR ADDL ERROR PRINT
+	DMOVE	AC1,CNUM		;INIT AUGEND
+	JFCL	17,.+1			;CLEAR PC FLAGS
+	DADD	AC1,CNUM+2		;ADD N + P = 0,1
+	PCSAVE
+	RLEFT=0-IFG REP-3,<1>		;LEFT WORD OF RESULT
+	RRIGHT=1-IFG REP-3,<2>		;RIGHT WORD OF RESULT
+	CHECKA	(LOC,F1,RLEFT,RRIGHT)
+	TFLAG	([0],F1)
+;   ************************************************
+>
+; **********************************************************************
+; ----------  DADD - TEST F-2:  N + N = N  ----------
+; **********************************************************************
+
+	CNUM=ACONF2-4
+
+	REPEAT	6,<
+;   ************************************************
+
+	LOC=.				;ERROR RETURN ADDRESS
+	CNUM=CNUM+4			;ADDRESS OF TEST DATA
+	MOVE	SCR3,[CNUM,,CNUM+2]	;SCR3 - ADDR OF ADDL ERROR PRINT
+	DMOVE	AC1,CNUM		;INIT AUGEND
+	JFCL	17,.+1			;CLEAR PC FLAGS
+	DADD	AC1,CNUM+2		;ADD N + N = 77..76,77..76
+	PCSAVE
+	CHECKA	(LOC,F2,777777777776,777777777776)
+	TFLAG	([^B0110B3],F2)
+;   ************************************************
+>
+; **********************************************************************
+; ----------  DADD - TEST F-3:  P + P = P  ----------
+; **********************************************************************
+
+	CNUM=ACONF3-4
+
+	REPEAT	6,<
+;   ************************************************
+
+	LOC=.				;ERROR RETURN ADDRESS
+	CNUM=CNUM+4			;ADDRESS OF TEST DATA
+	MOVE	SCR3,[CNUM,,CNUM+2]	;SCR3 - ADDR OF ADDL ERROR PRINT
+	DMOVE	AC1,CNUM		;INIT AUGEND
+	JFCL	17,.+1			;CLEAR PC FLAGS
+	DADD	AC1,CNUM+2		;ADD N + P = 1,1
+	PCSAVE
+	CHECKA	(LOC,F3,1,1)
+	TFLAG	([0],F3)
+;   ************************************************
+>
+; **********************************************************************
+; ----------  DADD - TEST F-4:  N + P = -1,-1  ----------
+; **********************************************************************
+
+	CNUM=ACONF4-4
+
+	REPEAT	6,<
+;   ************************************************
+
+	LOC=.				;ERROR RETURN ADDRESS
+	CNUM=CNUM+4			;ADDRESS OF TEST DATA
+	MOVE	SCR3,[CNUM,,CNUM+2]	;SCR3 - ADDR OF ADDL ERROR PRINT
+	DMOVE	AC1,CNUM		;INIT AUGEND
+	JFCL	17,.+1			;CLEAR PC FLAGS
+	DADD	AC1,CNUM+2		;ADD N + P = -1,-1
+	PCSAVE
+	CHECKA	(LOC,F4,-1,-1)
+	TFLAG	([0],F4)
+;   ************************************************
+>
+; **********************************************************************
+; ----------  DADD - TEST F-5:  N + P = 0,1  ----------
+; **********************************************************************
+
+	CNUM=ACONF5-4
+
+	REPEAT	6,<
+;   ************************************************
+
+	LOC=.				;ERROR RETURN ADDRESS
+	CNUM=CNUM+4			;ADDRESS OF TEST DATA
+	MOVE	SCR3,[CNUM,,CNUM+2]	;SCR3 - ADDR OF ADDL ERROR PRINT
+	DMOVE	AC1,CNUM		;INIT AUGEND
+	JFCL	17,.+1			;CLEAR PC FLAGS
+	DADD	AC1,CNUM+2		;ADD N + P = 0,1
+	PCSAVE
+	CHECKA	(LOC,F5,0,1)
+	TFLAG	([^B0110B3],F5)
+;   ************************************************
+>
+	JRST	AENDF			;SKIP OVER DATA
+
+ACONF1:	EXP	0,0,0,1B0+1
+	EXP	0,1B0,0,1
+	EXP	0,1B0,0,1B0+1
+	EXP	0,0,-1,377777777777
+	EXP	0,1B0,-1,377777777777
+	EXP	0,1B0,-1,-1
+ACONF2:	EXP	-1,377777777777,-2,-1
+	EXP	-1,377777777777,-2,377777777777
+	EXP	-1,-1,-2,377777777777
+	EXP	-2,-1,-1,377777777777
+	EXP	-2,377777777777,-1,377777777777
+	EXP	-2,377777777777,-1,-1
+
+ACONF3:	EXP	0,1B0+1,1,0
+	EXP	0,1B0+1,1,1B0
+	EXP	0,1,1,1B0
+	EXP	1,0,0,1B0+1
+	EXP	1,1B0,0,1B0+1
+	EXP	1,1B0,0,1
+ACONF4:	EXP	-1,377777777776,0,1
+	EXP	-1,377777777776,0,1B0+1
+	EXP	-1,-2,0,1B0+1
+	EXP	0,1,-1,377777777776
+	EXP	0,1B0+1,-1,377777777776
+	EXP	0,1B0+1,-1,-2
+
+ACONF5:	EXP	-1,377777777777,0,2
+	EXP	-1,377777777777,0,1B0+2
+	EXP	-1,-1,0,1B0+2
+	EXP	0,2,-1,377777777777
+	EXP	0,1B0+2,-1,377777777777
+	EXP	0,1B0+2,-1,-1
+AENDF:
+SUBTTL	DADD - TEST G
+
+; **********************************************************************
+;*DADD - TEST G
+;*
+;*	2**N + (2**70 - 2**N) = 1000... (AROV & CARRY 1 SET)
+;*	(2**70 - 2**N) + 2**N = 1000... (AROV & CARRY 1 SET)
+;*	-2**N + (-2**70 + 2**N - 1) = 0111... (AROV & CARRY 0 SET)
+;*	(-2**70 + 2**N - 1) + -2**N = 0111... (AROV & CARRY 0 SET)
+;*
+;*	THEST TESTS CHECK THE SETTING OF AROV & CARRY 1 AND AROV &
+;*	CARRY 0 FLAGS.  CHECKED FOR BITS 0,34,36,70.
+; **********************************************************************
+
+; **********************************************************************
+;*	THE FOLLOWING SECTION OF CODE IS REPEATED 8 TIMES.  THE FIRST
+;*	  4 TESTS FLOAT A 1 ACROSS A  DOUBLEWORD  IN BITS 0,35,36,71.
+;*	  THIS NUMBER IS THEN ADDED TO THE SMALLEST  POSITIVE INTEGER
+;*	  WHICH WILL PRODUCE AN OVERFLOW - THE RESULT IS A DOUBLEWORD
+;*	  OF 0S WITH 1 IN THE SIGN BIT - WITH OVERFLOW & CARRY 1 SET.
+;*	  THE NEXT 4 TESTS FLOAT A 0 ACROSS A  DOUBLEWORD  IN BITS 1,
+;*	  35,36,71 (A NEGATIVE NUMBER).   THIS NUMBER IS ADDED TO THE
+;*	  SMALLEST  NEGATIVE INTEGER WHICH WILL PRODUCE AN OVERFLOW -
+;*	  THE RESULT IS A DOUBLEWORD OF 1S WITH A 0 IN THE SIGN BIT -
+;*	  WITH OVERFLOW AND CARRY 0 SET.
+;*	  THE DOUBLEWORDS  USED IN THIS  TEST ARE LOCATED IN THE LIST
+;*	  'CONST2'.
+; **********************************************************************
+
+	CNUM=ACONG-6			;POINTER TO THE DOUBLEWORDS IN
+					;  THE RESULT
+	FLAGS=^B1010B3			;AROV,CRY0,CRY1,FOV
+
+	REPEAT	^D8,<
+;   ************************************************
+
+	CNUM=CNUM+6			;CNUM POINTS TO THE TEST DATA
+	LOC=.				;ERROR LOOP RETURN ADDRESS
+	IFE	ACONG-CNUM+^D24,<FLAGS=^B1100B3>  ;FLAGS FOR SECOND 4 CASES
+	MOVE	SCR3,[CNUM,,CNUM+2]	;SCR3 - ADDR OF ADDL ERROR PRINT
+	DMOVE	AC1,CNUM		;INIT AUGEND TO FLOATING 0/1
+	JFCL	17,.+1			;CLEAR PC FLAGS
+	DADD	AC1,CNUM+2		;MAKE IT OVERFLOW (POS OR NEG)
+	PCSAVE
+	CHECKB	(LOC,G,CNUM+4)
+	TFLAG	([FLAGS],G)
+;   ************************************************
+>
+	JRST	AENDG			;SKIP OVER DATA
+
+; **********************************************************************
+;	8 SETS OF 3 DOUBLEWORDS (AUDEND,ADDEND,RESULT)
+; **********************************************************************
+
+ACONG:	EXP	1B1,0,1B1,0,1B0,1B0
+	EXP	1,0,377777777777,0,1B0,1B0
+	EXP	0,1B1,377777777777,1B1,1B0,1B0
+	EXP	0,1,377777777777,377777777777,1B0,1B0
+	EXP	1B0,1B0,-1,-1,377777777777,377777777777
+	EXP	1B0,-1,-1,1B0,377777777777,377777777777
+	EXP	1B0+1,1B0,-2,1B0,377777777777,0
+	EXP	-1,-1,1B0,1B0,377777777777,377777777777
+AENDG:
+SUBTTL	DSUB - TEST A
+									SALL
+	T=SIXBTZ<DSUB TEST>
+									LALL
+; **********************************************************************
+;*DSUB - TEST A
+;*
+;*	0,# - 0,0 = 0,#			GENERAL TESTING TO SEE THAT
+;*	#,0 - 0,0 = #,0			DSUB CAN HANDLE DOUBLEWORDS
+;*	#,# - 0,0 = #,#
+;*	0,0 - 0,# = -(0,#)
+;*	0,0 - #,0 = -(#,0)
+;*	0,0 - #,# = -(#,#)
+; **********************************************************************
+
+; **********************************************************************
+; ----------  DSUB (0,#) - (0,0) = (0,#)  ----------
+; **********************************************************************
+
+STEST1:	MOVE	SCR3,[[EXP 0,NUM],,[EXP 0,0]] ;ADDR FOR SPRINT
+	DMOVE	AC1,[EXP 0,NUM]		;INIT MINUEND TO (0,#)
+	DSUB	AC1,[EXP 0,0]		;SUB (0,#)-(0,0)
+	CHECKS	(STEST1,A1,0,NUM)
+
+; **********************************************************************
+; ----------  DSUB (#,0) - (0,0) = (#,0)  ----------
+; **********************************************************************
+
+STEST2:	MOVE	SCR3,[[EXP NUM,0],,[EXP 0,0]] ;ADDR FOR SPRINT
+	DMOVE	AC1,[EXP NUM,0]		;INIT MINUEND TO (#,0)
+	DSUB	AC1,[EXP 0,0]		;SUB (#,0)-(0,0)
+	CHECKS	(STEST2,A2,NUM,0)
+
+; **********************************************************************
+; ----------  DSUB (#,#) - (0,0) = (#,#)  ----------
+; **********************************************************************
+
+STEST3:	MOVE	SCR3,[[EXP NUM,NUM],,[EXP 0,0]] ;ADDR FOR SPRINT
+	DMOVE	AC1,[EXP NUM,NUM]	;INIT MINUEND TO (#,#)
+	DSUB	AC1,[EXP 0,0]		;SUB (#,#)-(0,0)
+	CHECKS	(STEST3,A3,NUM,NUM)
+
+; **********************************************************************
+; ----------  DSUB (0,0) - (0,#) = (-1,-#)  ----------
+; **********************************************************************
+
+STEST4:	MOVE	SCR3,[[EXP 0,0],,[EXP 0,NUM]] ;ADDR FOR SPRINT
+	SETZB	AC1,AC1+1		;INIT MINUEND TO (0,0)
+	DSUB	AC1,[EXP 0,NUM]		;SUB (0,0) - (0,#)
+	CHECKS	(STEST4,A4,-1,-NUM)
+
+; **********************************************************************
+; ----------  DSUB (0,0) - (#,0) = (-#,0)  ----------
+; **********************************************************************
+
+STEST5:	MOVE	SCR3,[[EXP 0,0],,[EXP NUM,0]] ;ADDR FOR SPRINT
+	SETZB	AC1,AC1+1		;INIT MINUEND TO (0,0)
+	DSUB	AC1,[EXP NUM,0]		;SUB (0,0) - (#,0)
+	CHECKS	(STEST5,A5,-NUM,400000000000)
+
+; **********************************************************************
+; ----------  DSUB (0,0) - (#,#) = -(#,#)  ----------
+; **********************************************************************
+
+STEST6:	MOVE	SCR3,[[EXP 0,0],,[EXP NUM,NUM]] ;ADDR FOR SPRINT
+	SETZB	AC1,AC1+1		;INIT MINUEND TO (0,0)
+	DSUB	AC1,[EXP NUM,NUM]	;SUB (0,0)-(#,#)
+	CHECKS	(STEST6,A6,-NUM-1,-NUM)
+SUBTTL	DSUB - TEST B
+
+; **********************************************************************
+;*DSUB - TEST B
+;*
+;*	TEST ALL PERMUTATIONS OF 0,1,-1 IN THE MINUEND AND
+;*	SUBTRAHEND -- TEST:
+;*	0,0 - 0,0	0,1 - 0,0	0,-1 - 0,0	....
+;*	0,0 - 0,1	0,1 - 0,1	0,-1 - 0,1	....
+;*	0,0 - 0,-1	0,1 - 0,-1	0,-1 - 0,-1	....
+;*	0,0 - 1,0	  ....		   ....		....
+;*	0,0 - 1,1	  ....		   ....		....
+;*	0,0 - 1,-1	  ....		   ....		....
+;*	0,0 - -1,0	  ....		   ....		....
+;*	0,0 - -1,1	  ....		   ....		....
+;*	0,0 - -1,-1	  ....		   ....		....
+; **********************************************************************
+
+; **********************************************************************
+;*     THESE  COMBINATIONS TEST THE ABILITY OF THE  DSUB  TO HANDLE
+;*	BORROWS FROM THE NEXT WORD AND SIGNS CHANGING.  THE RESULT
+;*	IS VERIFIED AND THE PC FLAGS ARE CHECKED TO SEE THAT THEY
+;*	ARE SET PROPERLY.
+; **********************************************************************
+
+; **********************************************************************
+;*PROCEDURE - (1) SET UP A POINTER 'MINU' TO SEQUENCE THE MINUEND
+;*	     (2) LOOP ON MINUEND
+;*	     (3) SET UP A POINTER 'SUBTR' TO SEQUENCE THE SUBTRAHEND
+;*	     (4) LOOP ON SUBTRAHEND
+;*	     (5) CALCULATE THE EXPECTED RESULT OF THE DSUB
+;*	     (6) DO DSUB
+;*	     (7) COMPARE RESULTS - ACTUAL VS. EXPECTED
+;*	     (8) TEST FLAGS
+;*	     (9) CONTINUE AT (4)
+; **********************************************************************
+
+	MINU=AC1+2			;MINU - POINTS TO MINUEND
+	SUBTR=MINU+1			;SUBTR - POINTS TO SUBTRAHEND
+	SCR0=SCR0			;SCR0 - SCRATCH ACS
+
+; **********************************************************************
+;INITIALIZE LOOPS - OUTERMOST ON MINUEND
+;		    INNERMOST ON SUBTRAHEND
+; **********************************************************************
+
+	MOVE	MINU,[-^D10,,SUBT-2]	;LEFT HALF - # WORDS IN LIST + 1
+					;RIGHT HALF - ADDRESS OF LIST
+OLOOP:	AOS	MINU			;ADD 2 TO ADDRESS (DOUBLEWORD)
+	AOBJP	MINU,BDONE		;ALL DONE WHEN COUNT = 0
+	HRRZM	MINU,IMINU		;SET UP MINU INDIRECT ADDR
+	MOVE	SUBTR,[-^D10,,SUBT-2]	;LEFT HALF - # WORDS IN LIST + 1
+					;RIGHT HALF - ADDRESS OF LIST
+ILOOP:	AOS	SUBTR			;ADD 2 TO ADDRESS (DOUBLEWORD)
+	AOBJP	SUBTR,OLOOP		;DONE WITH INNER LOOP WHEN COUNT
+					; REACHES 0 - BACK TO OUTER LOOP
+	HRRZM	SUBTR,ISUBTR		;SET UP SUBTR INDIRECT ADDR
+	HRLZ	SCR3,MINU		;SCR3 - ADDR FOR ADDL ERROR PRINT
+	HRR	SCR3,SUBTR		;  (MINU,,SUBTR)
+
+; **********************************************************************
+;ACTUAL TEST SECTION (STEPS 1-7 OF ABOVE DESCRIPTION)
+; **********************************************************************
+
+BTESTB:	DMOVE	AC1,@IMINU		;GET MINUEND
+	DMOVE	SCR0,@ISUBTR		;GET SUBTRAHEND TO CALC EXPECTED
+	SETCA	SCR0,			;1-S COMPLEMENT OF LEFT WORD
+	SETCA	SCR1,			;1-S COMPLEMENT OF RIGHT WORD
+	DADD	SCR0,AC1		;RESULT-1 (USED 1'S COMPLEMENT)
+	DADD	SCR0,[EXP 0,1]		;GET RESULT
+	JFCL	17,.+1			;CLEAR PC FLAGS
+	SETZ	SCR2,			;POINTER TO INCORRECT WORD IN RESULT
+
+	DSUB	AC1,@ISUBTR		;DO THE SUBTRACTION
+
+	PCSAVE
+	CAME	AC1,SCR0		;LEFT WORD CORRECT?
+	JRST	BERROR
+	MOVEI	SCR2,1			;POINTER TO INCORRECT WORD IN RESULT
+	CAMN	AC1+1,SCR1		;RIGHT WORD CORRECT?
+	JRST	BFLAG			;YES - NOW TEST PC FLAGS
+
+BERROR:	MOVE	SCR0,SCR0(SCR2)		;GET CORRECT RESULT FOR ADDL PRINT
+	MOVE	SCR1,AC1(SCR2)		;GET ACTUAL (INCORRECT) RESULT
+	ERROR	(BTESTB	,14,SCR0,SCR1,,TEST B - RESULT INCORRECT,SPRINT)
+
+BFLAG:	HRRZ	SCR2,FLAGL		;SCR2 - PC WITH 0000 FLAGS
+	DMOVE	SCR0,@ISUBTR		;GET SUBTRAHEND
+	EQV	SCR0,@IMINU		;LEFT BIT IS 1 IF SIGNS SAME
+	TLNE	SCR0,400000		;IS LEFT BIT A 1? (SIGNS SAME)
+	JRST	BSAME			;YES - GO COMPARE MINU VS. SUBTR
+	SKIPL	@IMINU			;NO - IS MINUEND < 0
+	JRST	BDONEI			;NO - CORRECT FLAGS ARE 0000
+
+BFSET:	HRLI	SCR2,300000		;YES - CORRECT FLAGS ARE 0110
+	JRST	BDONEI			;CORRECT FLAGS CALC IS DONE
+
+BSAME:	DMOVE	SCR0,@IMINU		;SIGNS ARE SAME - GET MINUEND
+	CAMGE	SCR0,@ISUBTR		;MINUEND >= SUBTRA? (LEFT WORD)
+	JRST	BDONEI			;NO - FLAGS ARE 0000
+	CAME	SCR0,@ISUBTR		;MINUEND = SUBTRA? (LEFT WORD)
+	JRST	BFSET			;NO - MIN > SUBTR - FLAGS 0110
+	AOS	ISUBTR			;1ST WORDS ARE = SO LOOK AT 2ND
+	CAML	SCR1,@ISUBTR		;MINUEND < SUBTRAHEND?
+	JRST	BFSET			;NO - FLAGS ARE 0110
+
+BDONEI:	TFLAG	(SCR2,B,SPRINT,BTESTB)
+	JRST	ILOOP			;END OF TEST - GOTO NEXT ONE
+
+SUBT:	EXP	0,0,0,1,0,377777777777
+	EXP	1,0,1,1,1,377777777777
+	EXP	-1,1B0,-1,1B0+1,-1,-1
+IMINU:	0
+ISUBTR:	0
+BDONE:
+SUBTTL	DSUB - TEST C
+
+; **********************************************************************
+;*DSUB - TEST C
+;*
+;*	THE FOLLOWING TESTS VERIFY THAT THE DSUB INSTRUCTION HANDLES
+;*	  THE SIGN OF THE RESULT PROPERLY (COPYING THE SIGN INTO THE
+;*	  HIGH ORDER BIT OF EACH WORD OF THE DOUBLEWORD RESULT.  THE
+;*	  TESTS SUBTRACT VARIOUS COMBINATIONS OF INCONSISTENT  SIGNS
+;*	  IN THE SUBTRAHEND AND MINUEND AND VERIFY THAT THE SIGNS OF
+;*	  THE RESULT ARE CORRECT.
+;*
+;*	THERE ARE 5 SETS OF TEST: (1) 0 - P/N = N/P
+;*				  (2) N - N = P/N
+;*				  (3) P - P = N/P
+;*				  (4) N - P = N/P
+;*				  (5) N - P = N/P
+;*				WHERE N-NEGATIVE NUMBER
+;*				      P-POSITIVE NUMBER
+; **********************************************************************
+
+; **********************************************************************
+; ----------  DSUB - TEST C-1:  0 - P/N = N/P  ----------
+; **********************************************************************
+
+	CNUM=SCONC1-6
+
+	REPEAT	6,<
+;   ************************************************
+
+	LOC=.				;ERROR RETURN ADDRESS
+	CNUM=CNUM+6			;ADDRESS OF TEST DATA
+	MOVE	SCR3,[CNUM,,CNUM+2]	;ADDRESS OF ADDL ERROR PRINT
+	DMOVE	AC1,CNUM		;INIT MINUEND
+	DSUB	AC1,CNUM+2		;SUB N - P
+	CHECKT	(LOC,C1,CNUM+4)
+;   ************************************************
+>
+; **********************************************************************
+; ----------  DSUB - TEST C-2:  N - N = P/N  ----------
+; **********************************************************************
+
+	CNUM=SCONC2-6
+
+	REPEAT	6,<
+;   ************************************************
+
+	LOC=.				;ERROR RETURN ADDRESS
+	CNUM=CNUM+6			;SUBRESS OF TEST DATA
+	MOVE	SCR3,[CNUM,,CNUM+2]	;ADDRESS OF ADDL ERROR PRINT
+	DMOVE	AC1,CNUM		;INIT MINUEND
+	DSUB	AC1,CNUM+2		;SUB N - N
+	CHECKT	(LOC,C2,CNUM+4)
+;   ************************************************
+>
+; **********************************************************************
+; ----------  DSUB - TEST C-3:  P - P = N/P  ----------
+; **********************************************************************
+
+	CNUM=SCONC3-6
+
+	REPEAT	6,<
+;   ************************************************
+
+	LOC=.				;ERROR RETURN ADDRESS
+	CNUM=CNUM+6			;SUBRESS OF TEST DATA
+	MOVE	SCR3,[CNUM,,CNUM+2]	;ADDRESS OF ADDL ERROR PRINT
+	DMOVE	AC1,CNUM		;INIT MINUEND
+	DSUB	AC1,CNUM+2		;SUB N - P
+	CHECKT	(LOC,C3,CNUM+4)
+;   ************************************************
+>
+; **********************************************************************
+; ----------  DSUB - TEST C-4:  N - P = -3  ----------
+; **********************************************************************
+
+	CNUM=SCONC4-4
+
+	REPEAT	6,<
+;   ************************************************
+
+	LOC=.				;ERROR RETURN ADDRESS
+	CNUM=CNUM+4			;SUBRESS OF TEST DATA
+	MOVE	SCR3,[CNUM,,CNUM+2]	;ADDRESS OF ADDL ERROR PRINT
+	DMOVE	AC1,CNUM		;INIT MINUEND
+	DSUB	AC1,CNUM+2		;SUB N - P = -3
+	CHECKS	(LOC,C4,-1,-3)
+;   ************************************************
+>
+; **********************************************************************
+; ----------  DSUB - TEST C-5:  P - N = 3  ----------
+; **********************************************************************
+
+	CNUM=SCONC5-4
+
+	REPEAT	6,<
+;   ************************************************
+
+	LOC=.				;ERROR RETURN ADDRESS
+	CNUM=CNUM+4			;SUBRESS OF TEST DATA
+	MOVE	SCR3,[CNUM,,CNUM+2]	;ADDRESS OF ADDL ERROR PRINT
+	DMOVE	AC1,CNUM		;INIT MINUEND
+	DSUB	AC1,CNUM+2		;SUB N - P = 3
+	CHECKS	(LOC,C5,0,3)
+;   ************************************************
+>
+	JRST	SENDC			;SKIP OVER DATA
+
+SCONC1:	EXP	0,0,0,1B0,0,0
+	EXP	0,1B0,0,1,-1,-1
+	EXP	0,1B0,0,1B0+1,-1,-1
+	EXP	0,0,-1,377777777777,0,1
+	EXP	0,1B0,-1,377777777777,0,1
+	EXP	0,1B0,-1,-1,0,1
+
+SCONC2:	EXP	-1,377777777777,-2,-1,1,0
+	EXP	-1,377777777777,-2,377777777777,1,0
+	EXP	-1,-1,-2,377777777777,1,0
+	EXP	-2,-1,-1,377777777777,-1,1B0
+	EXP	-2,377777777777,-1,377777777777,-1,1B0
+	EXP	-2,377777777777,-1,-1,-1,1B0
+
+SCONC3:	EXP	0,1B0+1,1,0,-1,1B0+1
+	EXP	0,1B0+1,1,1B0,-1,1B0+1
+	EXP	0,1,1,1B0,-1,1B0+1
+	EXP	1,0,0,1B0+1,0,377777777777
+	EXP	1,1B0,0,1B0+1,0,377777777777
+	EXP	1,1B0,0,1,0,377777777777
+
+SCONC4:	EXP	-1,377777777776,0,1
+	EXP	-1,377777777776,0,1B0+1
+	EXP	-1,-2,0,1B0+1
+	EXP	-1,377777777777,0,2
+	EXP	-1,377777777777,0,1B0+2
+	EXP	-1,-1,0,1B0+2
+SCONC5:	EXP	0,1,-1,377777777776
+	EXP	0,1B0+1,-1,377777777776
+	EXP	0,1B0+1,-1,-2
+	EXP	0,2,-1,377777777777
+	EXP	0,1B0+2,-1,377777777777
+	EXP	0,1B0+2,-1,-1
+SENDC:
+SUBTTL	DSUB - TEST D
+
+; **********************************************************************
+;*DSUB - TEST D
+;*
+;*	2**N - (-2**70 + 2**N) = 1000... (AROV & CARRY 1 SET)
+;*	(-2**70 + 2**N) - 2**N = 1000... (AROV & CARRY 1 SET)
+;*	-2**N - (2**70 - 2**N + 1) = 0111... (AROV & CARRY 0 SET)
+;*	(2**70 - 2**N + 1) - -2**N = 0111... (AROV & CARRY 0 SET)
+; **********************************************************************
+
+; **********************************************************************
+;*	THE FOLLOWING SECTION OF CODE IS REPEATED 8 TIMES.  THE FIRST
+;*	  4 TESTS FLOAT A 1 ACROSS A  DOUBLEWORD  IN BITS 1,35,37,71.
+;*	  FROM THIS NUMBER IS SUBTRACTED THE SMALLEST (MAGNITUDE)
+;*	  NEGATIVE INTEGER WHICH WILL PRODUCE AN OVERFLOW - THE RESULT
+;*	  IS A DOUBLEWORD OF 0'S WITH 1 IN THE SIGN BIT - WITH OVERFLOW
+;*	  & CARRY 1 SET.  THE NEXT 4 TESTS FLOAT A 0 ACROSS A DOUBLE-
+;*	  WORD IN BITS 1,35,37,71 (A NEG NUMBER). FROM THIS NUMBER IS
+;*	  SUBTRACTED THE SMALLEST POSITIVE INTEGER WHICH WILL PRODUCE
+;*	  AN OVERFLOW - THE RESULT IS A DOUBLEWORD OF 1S WITH A 0 IN
+;*	  THE SIGN BIT - WITH OVERFLOW AND CARRY 0 SET.
+;*	  THE DOUBLEWORDS  USED IN THIS  TEST ARE LOCATED IN THE LIST
+;*	  'SCOND'.
+; **********************************************************************
+
+	CNUM=SCOND-4			;POINTER TO THE DOUBLEWORDS TO
+					;  BE SUBTRACTED
+	REP=0				;REPETITION COUNT
+	RESULT=1B0			;1B0 FOR 1ST 4 / 377.. FOR 2ND 4
+	FLAGS=^B1010B3			;AROV,CRY0,CRY1,FOV
+
+	REPEAT	^D8,<
+;   ************************************************
+
+	LOC=.				;ERROR LOOP RETURN ADDRESS
+	CNUM=CNUM+4			;POINT TO THE TEST CASE
+	REP=REP+1			;REPETITION COUNT
+	IFG REP-4,<FLAGS=^B1100B3	;FLAGS FOR SECOND 4 CASES
+		RESULT=377777777777>	;LARGEST POSITIVE NUMBER
+	MOVE	SCR3,[CNUM,,CNUM+2]	;ADDRESS OF ADDL ERROR PRINT
+	DMOVE	AC1,CNUM		;INIT MINUEND TO FLOATING 0/1
+	JFCL	17,.+1			;CLEAR PC FLAGS
+	DSUB	AC1,CNUM+2		;MAKE IT OVERFLOW (POS OR NEG)
+	PCSAVE
+	CHECKS	(LOC,D,RESULT,RESULT)
+	MOVE	SCR3,[CNUM,,CNUM+2]	;SCR3 - ADDR OF ADDL ERROR PRINT
+	TFLAG	([FLAGS],D,SPRINT)
+;   ************************************************
+>
+	JRST	SENDD			;SKIP OVER DATA
+
+; **********************************************************************
+;	8 SETS OF 3 DOUBLEWORDS (MINUEND,SUBTRAHEND,RESULT)
+; **********************************************************************
+
+SCOND:	EXP	1B1,0,^B11B1,0
+	EXP	1,0,1B0+1,0
+	EXP	0,1B1,1B0,1B1
+	EXP	0,1,1B0,1
+	EXP	577777777777,-1,1B1,0
+	EXP	777777777776,-1,377777777777,0
+	EXP	-1,577777777777,377777777777,^B11B1
+	EXP	-1,-2,377777777777,-1
+SENDD:
+SUBTTL	DMUL - TEST A
+									SALL
+	T=SIXBTZ<DMUL TEST>
+									LALL
+; **********************************************************************
+;*DMUL - TEST A
+;*
+;*	0,# * 0 = 0	0 * 0,# = 0	THESE ARE GENERAL TESTS TO
+;*	#,0 * 0 = 0	0 * #,0 = 0	ASCERTAIN THAT THE DMUL CAN
+;*	#,# * 0 = 0	0 * #,# = 0	HANDLE DOUBLEWORDS.  THE ACS
+;*      -1,-# * 0 = 0	0 * -1,-# = 0	WILL CONTAIN THE RESULT ARE
+;*      -#,0 * 0 = 0	0 * -#,0 = 0	FILLED WITH GARBAGE AND THE
+;*      -#,-# * 0 = 0	0 * -#,-# = 0	RESULT IS CHECKED TO SEE THAT
+;*	0,0 * 0 = 0			DMUL PRODUCES A 4-WORD LONG
+;*					RESULT IN THE ACS.
+; **********************************************************************
+
+; **********************************************************************
+; ----------  DMUL - TEST A  -  # * 0 = 0  ----------
+; **********************************************************************
+
+	MULT	(A,0,NUM)
+
+; **********************************************************************
+; ----------  DMUL - TEST A  -  # * 0 = 0  ----------
+; **********************************************************************
+
+	MULT	(A,NUM)
+
+; **********************************************************************
+; ----------  DMUL - TEST A  -  # * 0 = 0  ----------
+; **********************************************************************
+
+	MULT	(A,NUM,NUM)
+
+; **********************************************************************
+; ----------  DMUL - TEST A  -  # * 0 = 0  ----------
+; **********************************************************************
+
+	MULT	(A,0,0,0,NUM)
+
+; **********************************************************************
+; ----------  DMUL - TEST A  -  # * 0 = 0  ----------
+; **********************************************************************
+
+	MULT	(A,0,0,NUM)
+
+; **********************************************************************
+; ----------  DMUL - TEST A  -  # * 0 = 0  ----------
+; **********************************************************************
+
+	MULT	(A,0,0,NUM,NUM)
+
+; **********************************************************************
+; ----------  DMUL - TEST A  -  # * 0 = 0  ----------
+; **********************************************************************
+
+	MULT	(A,-1,-NUM)
+
+; **********************************************************************
+; ----------  DMUL - TEST A  -  # * 0 = 0  ----------
+; **********************************************************************
+
+	MULT	(A,-NUM,-1)
+
+; **********************************************************************
+; ----------  DMUL - TEST A  -  # * 0 = 0  ----------
+; **********************************************************************
+
+	MULT	(A,-NUM,-NUM)
+
+; **********************************************************************
+; ----------  DMUL - TEST A  -  # * 0 = 0  ----------
+; **********************************************************************
+
+	MULT	(A,0,0,-1,-NUM)
+
+; **********************************************************************
+; ----------  DMUL - TEST A  -  # * 0 = 0  ----------
+; **********************************************************************
+
+	MULT	(A,0,0,-NUM,-1)
+
+; **********************************************************************
+; ----------  DMUL - TEST A  -  # * 0 = 0  ----------
+; **********************************************************************
+
+	MULT	(A,0,0,-NUM,-NUM)
+
+; **********************************************************************
+; ----------  DMUL - TEST A  -  # * 0 = 0  ----------
+; **********************************************************************
+
+	MULT
+SUBTTL	DMUL - TEST B
+
+; **********************************************************************
+;*DMUL - TEST B
+;*
+;*	0,# * 1 = 0,#		THESE TEST THE DMUL ON A SLIGHTLY
+;*	#,0 * 1 = #,0		STEEPER GRADIENT.  THIS WILL VERIFY
+;*	#,# * 1 = #,#		THAT THE DMUL HANDLES DOUBLEWORDS AND
+;*	-1,-# * 1 = -1,-#	A NON-ZERO MULTIPLIER.  THESE TESTS ARE
+;*	-#,-1 * 1 = -#,-1	REPEATED WITH THE MULTIPLICAND AND THE
+;*	-#,-# * 1 = -#,-#	MULTIPLIER REVERSED.
+; **********************************************************************
+
+; **********************************************************************
+; ----------  DMUL - TEST B  -  # * 1 = 1  ----------
+; **********************************************************************
+
+	MULT	(B,0,NUM,0,1,0,0,0,NUM)
+
+; **********************************************************************
+; ----------  DMUL - TEST B  -  # * 1 = 1  ----------
+; **********************************************************************
+
+	MULT	(B,NUM,0,0,1,0,0,NUM)
+
+; **********************************************************************
+; ----------  DMUL - TEST B  -  # * 1 = 1  ----------
+; **********************************************************************
+
+	MULT	(B,NUM,NUM,0,1,0,0,NUM,NUM)
+
+; **********************************************************************
+; ----------  DMUL - TEST B  -  # * 1 = 1  ----------
+; **********************************************************************
+
+	MULT	(B,0,1,0,NUM,0,0,0,NUM)
+
+; **********************************************************************
+; ----------  DMUL - TEST B  -  # * 1 = 1  ----------
+; **********************************************************************
+
+	MULT	(B,0,1,NUM,0,0,0,NUM)
+
+; **********************************************************************
+; ----------  DMUL - TEST B  -  # * 1 = 1  ----------
+; **********************************************************************
+
+	MULT	(B,0,1,NUM,NUM,0,0,NUM,NUM)
+
+; **********************************************************************
+; ----------  DMUL - TEST B  -  # * 1 = 1  ----------
+; **********************************************************************
+
+	MULT	(B,-1,-NUM,0,1,-1,-1,-1,-NUM)
+
+; **********************************************************************
+; ----------  DMUL - TEST B  -  # * 1 = 1  ----------
+; **********************************************************************
+
+	MULT	(B,-NUM,-1,0,1,-1,-1,-NUM,-1)
+
+; **********************************************************************
+; ----------  DMUL - TEST B  -  # * 1 = 1  ----------
+; **********************************************************************
+
+	MULT	(B,-NUM,-NUM,0,1,-1,-1,-NUM,-NUM)
+
+; **********************************************************************
+; ----------  DMUL - TEST B  -  # * 1 = 1  ----------
+; **********************************************************************
+
+	MULT	(B,0,1,-1,-NUM,-1,-1,-1,-NUM)
+
+; **********************************************************************
+; ----------  DMUL - TEST B  -  # * 1 = 1  ----------
+; **********************************************************************
+
+	MULT	(B,0,1,-NUM,-1,-1,-1,-NUM,-1)
+
+; **********************************************************************
+; ----------  DMUL - TEST B  -  # * 1 = 1  ----------
+; **********************************************************************
+
+	MULT	(B,0,1,-NUM,-NUM,-1,-1,-NUM,-NUM)
+SUBTTL	DMUL - TEST C
+
+; **********************************************************************
+;*DMUL - TEST C
+;*
+;*	0,1777.. * 2		THESE TESTS VERIFY THAT BITS ARE
+;*	0,3777.. * 2		SHIFTED ACROSS WORD BOUNDARIES. A WORD
+;*	1777..,3777.. * 2	OF ONES IS MULTIPLIED BY A FLOATING 1
+;*	3777..,3777.. * 2	WHICH WILL CAUSE A SHIFT ACROSS WORD
+;*	0,3777.. * 1,0		BOUNDARIES OR NOT. THE TEST VERIFIES
+;*	1,3777.. * 1,0		THAT THE SHIFT IS DONE PROPERLY FOR
+;*	3777..,3777.. * 1,0	BOUNDARY CONDITIONS.
+;*	0,1777.. * 2,0		IN EACH TEST THE PC FLAGS ARE TESTED
+;*	0,3777.. * 2,0		SINCE THERE ARE NO OVERFLOW CONDITIONS
+;*	3777..,3777.. * 2,0	THE LEFTMOST BIT OF THE PC SHOULD BE
+;*				0 (NO AROV).
+;*				THESE TESTS ARE REPEATED WITH MULT-
+;*				PLICAND AND MULTIPLIER REVERSED.
+; **********************************************************************
+
+; **********************************************************************
+; ----------  DMUL - TEST C  -  SHIFT 1'S ACROSS WORD BOUNDARIES  ----------
+; **********************************************************************
+
+	MULTF	(C,0,177777777777,0,2,0,0,0,377777777776)
+
+; **********************************************************************
+; ----------  DMUL - TEST C  -  SHIFT 1'S ACROSS WORD BOUNDARIES  ----------
+; **********************************************************************
+
+	MULTF	(C,0,377777777777,0,2,0,0,1,377777777776)
+
+; **********************************************************************
+; ----------  DMUL - TEST C  -  SHIFT 1'S ACROSS WORD BOUNDARIES  ----------
+; **********************************************************************
+
+	MULTF	(C,177777777777,377777777777,0,2,0,0,377777777777,377777777776)
+
+; **********************************************************************
+; ----------  DMUL - TEST C  -  SHIFT 1'S ACROSS WORD BOUNDARIES  ----------
+; **********************************************************************
+
+	MULTF	(C,377777777777,377777777777,0,2,0,1,377777777777,377777777776)
+
+; **********************************************************************
+; ----------  DMUL - TEST C  -  SHIFT 1'S ACROSS WORD BOUNDARIES  ----------
+; **********************************************************************
+
+	MULTF	(C,0,377777777777,1,0,0,0,377777777777)
+
+; **********************************************************************
+; ----------  DMUL - TEST C  -  SHIFT 1'S ACROSS WORD BOUNDARIES  ----------
+; **********************************************************************
+
+	MULTF	(C,1,377777777777,1,0,0,1,377777777777)
+
+; **********************************************************************
+; ----------  DMUL - TEST C  -  SHIFT 1'S ACROSS WORD BOUNDARIES  ----------
+; **********************************************************************
+
+	MULTF	(C,377777777777,377777777777,1,0,0,377777777777,377777777777)
+
+; **********************************************************************
+; ----------  DMUL - TEST C  -  SHIFT 1'S ACROSS WORD BOUNDARIES  ----------
+; **********************************************************************
+
+	MULTF	(C,0,177777777777,2,0,0,0,377777777776)
+
+; **********************************************************************
+; ----------  DMUL - TEST C  -  SHIFT 1'S ACROSS WORD BOUNDARIES  ----------
+; **********************************************************************
+
+	MULTF	(C,0,377777777777,2,0,0,1,377777777776)
+
+; **********************************************************************
+; ----------  DMUL - TEST C  -  SHIFT 1'S ACROSS WORD BOUNDARIES  ----------
+; **********************************************************************
+
+	MULTF	(C,377777777777,377777777777,2,0,1,377777777777,377777777776)
+
+; **********************************************************************
+; ----------  DMUL - TEST C  -  SHIFT 1'S ACROSS WORD BOUNDARIES  ----------
+; **********************************************************************
+
+	MULTF	(C,0,2,0,177777777777,0,0,0,377777777776)
+
+; **********************************************************************
+; ----------  DMUL - TEST C  -  SHIFT 1'S ACROSS WORD BOUNDARIES  ----------
+; **********************************************************************
+
+	MULTF	(C,0,2,0,377777777777,0,0,1,377777777776)
+
+; **********************************************************************
+; ----------  DMUL - TEST C  -  SHIFT 1'S ACROSS WORD BOUNDARIES  ----------
+; **********************************************************************
+
+	MULTF	(C,0,2,177777777777,377777777777,0,0,377777777777,377777777776)
+
+; **********************************************************************
+; ----------  DMUL - TEST C  -  SHIFT 1'S ACROSS WORD BOUNDARIES  ----------
+; **********************************************************************
+
+	MULTF	(C,0,2,377777777777,377777777777,0,1,377777777777,377777777776)
+
+; **********************************************************************
+; ----------  DMUL - TEST C  -  SHIFT 1'S ACROSS WORD BOUNDARIES  ----------
+; **********************************************************************
+
+	MULTF	(C,1,0,0,377777777777,0,0,377777777777)
+
+; **********************************************************************
+; ----------  DMUL - TEST C  -  SHIFT 1'S ACROSS WORD BOUNDARIES  ----------
+; **********************************************************************
+
+	MULTF	(C,1,0,1,377777777777,0,1,377777777777)
+
+; **********************************************************************
+; ----------  DMUL - TEST C  -  SHIFT 1'S ACROSS WORD BOUNDARIES  ----------
+; **********************************************************************
+
+	MULTF	(C,1,0,377777777777,377777777777,0,377777777777,377777777777)
+
+; **********************************************************************
+; ----------  DMUL - TEST C  -  SHIFT 1'S ACROSS WORD BOUNDARIES  ----------
+; **********************************************************************
+
+	MULTF	(C,2,0,0,177777777777,0,0,377777777776)
+
+; **********************************************************************
+; ----------  DMUL - TEST C  -  SHIFT 1'S ACROSS WORD BOUNDARIES  ----------
+; **********************************************************************
+
+	MULTF	(C,2,0,0,377777777777,0,1,377777777776)
+
+; **********************************************************************
+; ----------  DMUL - TEST C  -  SHIFT ACROSS WORD BOUNDARIES  ----------
+; **********************************************************************
+
+	MULTF	(C,2,0,377777777777,377777777777,1,377777777777,377777777776)
+SUBTTL	DMUL - TEST D
+
+; **********************************************************************
+;*DMUL - TEST D
+;*
+;*	7777..,6000.. * 2	THESE TESTS VERIFY THAT BITS ARE
+;*	7777..,4000.. * 2	SHIFTED ACROSS WORD BOUNDARIES. A WORD
+;*	6000..,4000.. * 2	OF ONES IS MULTIPLIED BY A FLOATING 1
+;*	4000..,4000.. * 2	WHICH WILL CAUSE A SHIFT ACROSS WORD
+;*	777..,400.. * 1,0	BOUNDARIES OR NOT. THE TEST VERIFIES
+;*	..776,400.. * 1,0	THAT THE SHIFT IS DONE PROPERLY FOR
+;*	400..,400.. * 1,0	BOUNDARY CONDITIONS.
+;*	777..,600.. * 2,0	IN EACH TEST THE PC FLAGS ARE TESTED
+;*	777..,400.. * 2,0	SINCE THERE ARE NO OVERFLOW CONDITIONS
+;*	400..,400.. * 2,0	THE LEFTMOST BIT OF THE PC SHOULD BE
+;*				0 (NO AROV).
+;*				THESE TESTS ARE REPEATED WITH MULT-
+;*				PLICAND AND MULTIPLIER REVERSED.
+; **********************************************************************
+
+; **********************************************************************
+; ----------  DMUL - TEST D  -  SHIFT 0'S ACROSS WORD BOUNDARIES  ----------
+; **********************************************************************
+
+	MULTF	(D,-1,600000000000,0,2,-1,-1,-1,400000000000)
+
+; **********************************************************************
+; ----------  DMUL - TEST D  -  SHIFT 0'S ACROSS WORD BOUNDARIES  ----------
+; **********************************************************************
+
+	MULTF	(D,-1,400000000000,0,2,-1,-1,-2,400000000000)
+
+; **********************************************************************
+; ----------  DMUL - TEST D  -  SHIFT 0'S ACROSS WORD BOUNDARIES  ----------
+; **********************************************************************
+
+	MULTF	(D,600000000000,400000000000,0,2,-1,-1,400000000000,400000000000)
+
+; **********************************************************************
+; ----------  DMUL - TEST D  -  SHIFT 0'S ACROSS WORD BOUNDARIES  ----------
+; **********************************************************************
+
+	MULTF	(D,400000000000,400000000000,0,2,-1,-2,400000000000,400000000000)
+
+; **********************************************************************
+; ----------  DMUL - TEST D  -  SHIFT 0'S ACROSS WORD BOUNDARIES  ----------
+; **********************************************************************
+
+	MULTF	(D,-1,400000000000,1,0,-1,-1,400000000000,400000000000)
+
+; **********************************************************************
+; ----------  DMUL - TEST D  -  SHIFT 0'S ACROSS WORD BOUNDARIES  ----------
+; **********************************************************************
+
+	MULTF	(D,-2,400000000000,1,0,-1,-2,400000000000,400000000000)
+
+; **********************************************************************
+; ----------  DMUL - TEST D  -  SHIFT 0'S ACROSS WORD BOUNDARIES  ----------
+; **********************************************************************
+
+	MULTF	(D,400000000000,400000000000,1,0,-1,400000000000,400000000000,400000000000)
+
+; **********************************************************************
+; ----------  DMUL - TEST D  -  SHIFT 0'S ACROSS WORD BOUNDARIES  ----------
+; **********************************************************************
+
+	MULTF	(D,-1,600000000000,2,0,-1,-1,400000000000,400000000000)
+
+; **********************************************************************
+; ----------  DMUL - TEST D  -  SHIFT 0'S ACROSS WORD BOUNDARIES  ----------
+; **********************************************************************
+
+	MULTF	(D,-1,400000000000,2,0,-1,-2,400000000000,400000000000)
+
+; **********************************************************************
+; ----------  DMUL - TEST D  -  SHIFT 0'S ACROSS WORD BOUNDARIES  ----------
+; **********************************************************************
+
+	MULTF	(D,400000000000,400000000000,2,0,-2,400000000000,400000000000,400000000000)
+
+; **********************************************************************
+; ----------  DMUL - TEST D  -  SHIFT 0'S ACROSS WORD BOUNDARIES  ----------
+; **********************************************************************
+
+	MULTF	(D,0,2,-1,600000000000,-1,-1,-1,400000000000)
+
+; **********************************************************************
+; ----------  DMUL - TEST D  -  SHIFT 0'S ACROSS WORD BOUNDARIES  ----------
+; **********************************************************************
+
+	MULTF	(D,0,2,-1,400000000000,-1,-1,-2,400000000000)
+
+; **********************************************************************
+; ----------  DMUL - TEST D  -  SHIFT 0'S ACROSS WORD BOUNDARIES  ----------
+; **********************************************************************
+
+	MULTF	(D,0,2,600000000000,400000000000,-1,-1,400000000000,400000000000)
+
+; **********************************************************************
+; ----------  DMUL - TEST D  -  SHIFT 0'S ACROSS WORD BOUNDARIES  ----------
+; **********************************************************************
+
+	MULTF	(D,0,2,400000000000,400000000000,-1,-2,400000000000,400000000000)
+
+; **********************************************************************
+; ----------  DMUL - TEST D  -  SHIFT 0'S ACROSS WORD BOUNDARIES  ----------
+; **********************************************************************
+
+	MULTF	(D,1,0,-1,400000000000,-1,-1,400000000000,400000000000)
+
+; **********************************************************************
+; ----------  DMUL - TEST D  -  SHIFT 0'S ACROSS WORD BOUNDARIES  ----------
+; **********************************************************************
+
+	MULTF	(D,1,0,-2,400000000000,-1,-2,400000000000,400000000000)
+
+; **********************************************************************
+; ----------  DMUL - TEST D  -  SHIFT 0'S ACROSS WORD BOUNDARIES  ----------
+; **********************************************************************
+
+	MULTF	(D,1,0,400000000000,400000000000,-1,400000000000,400000000000,400000000000)
+
+; **********************************************************************
+; ----------  DMUL - TEST D  -  SHIFT 0'S ACROSS WORD BOUNDARIES  ----------
+; **********************************************************************
+
+	MULTF	(D,2,0,-1,600000000000,-1,-1,400000000000,400000000000)
+
+; **********************************************************************
+; ----------  DMUL - TEST D  -  SHIFT 0'S ACROSS WORD BOUNDARIES  ----------
+; **********************************************************************
+
+	MULTF	(D,2,0,-1,400000000000,-1,-2,400000000000,400000000000)
+
+; **********************************************************************
+; ----------  DMUL - TEST D  -  SHIFT 0'S ACROSS WORD BOUNDARIES  ----------
+; **********************************************************************
+
+	MULTF	(D,2,0,400000000000,400000000000,-2,400000000000,400000000000,400000000000)
+SUBTTL	DMUL - TEST E (OVERFLOW)
+
+; **********************************************************************
+;*DMUL - TEST E
+;*
+;*  -2^70 * -2^70	THIS IS THE ONLY CASE THAT CAN SET
+;*			THE AROV FLAG.  THIS TEST VERIFIES THE
+;*			RESULT AND CHECKS THE SETTING OF THE
+;*			AROV FLAG.
+;*
+;* ------- MULTIPLICAND = (4000...,4000...)
+;* ------- MULTIPLIER === (4000...,4000...)
+;* ------- RESULT ======= (4000...,4000...,4000...,4000...)
+; **********************************************************************
+
+	LOC=.
+
+	DMOVE	AC1,[EXP 1B0,1B0] 	;INIT MULTIPLICAND
+	DMOVE	AC1+2,[EXP 525252525252,252525252525] ;PUT GARBAGE IN
+					;  RIGHT HALF OF RESULT
+	SETZ	SCR1,			;POINTER TO WHICH WORD INCORRECT
+	JFCL	17,.+1			;CLEAR FLAGS
+	DMUL	AC1,AC1			;MULTIPLY
+	PCSAVE
+	CAME	AC1,[1B0]		;1ST WORD OF RESULT OK?
+	JRST	MOVERR			;NO - GO DO ERROR PRINTOUT
+	MOVEI	SCR1,1			;POINT TO 2ND WORD
+	CAME	AC1+1,[1B0]		;2ND WORD OF RESULT OK?
+	JRST	MOVERR			;NO - GO DO ERROR PRINTOUT
+	MOVEI	SCR1,2			;POINT TO 3RD WORD
+	CAME	AC1+2,[1B0]		;3RD WORD OF RESULT OK?
+	JRST	MOVERR			;NO - GO DO ERROR PRINTOUT
+	MOVEI	SCR1,3			;POINT TO 4TH WORD
+	CAMN	AC1+3,[1B0]		;4TH WORD OF RESULT OK?
+	JRST	MOVOK			;YES - GO CHECK AROV FLAGS
+MOVERR:	MOVE	SCR1,AC1(SCR1)		;GET INCORRECT WORD
+	ERROR	(LOC,13,[1B0],SCR1,,TEST E - RESULT INCORRECT,MPRINT)
+MOVOK:	JOV	MOVRR+1			;TEST OVERFLOW - SHOULD BE ON
+	MOVEI	SCR3,[EXP 1B0,1B0]	;ADDRESS OF OPERANDS FOR ADDL
+	HRL	SCR3,SCR3		;  ERROR PRINT ROUTINE
+MOVRR:	ERROR	(LOC,13,AC1,FLAGL,,TEST E - PC FLAGS INCORRECT - LEFT 4 BITS,MPRINT)
+SUBTTL	DMUL - TEST F - TEST NEGATIVE OPERANDS
+
+; **********************************************************************
+;*DMUL - TEST F
+;*
+;*       -2 * -3		THESE TESTS VERIFY THAT THE DMUL HANDLES
+;*       -2,0 * -3		THE SIGNS PROPERLY WHEN MULTIPLYING 
+;*       -2 * -3,0		OPERANDS WHICH ARE BOTH NEGATIVE.  TESTS
+;*       -2,0 * -3,0		B,C,D TESTED THE COMBINATIONS POS*POS,
+;*				POS*NEG AND NEG*POS BUT NOT NEG*NEG. THE
+;*				AROV FLAG IS ALSO TESTED TO ASCERTAIN 
+;*				THAT IT WAS NOT SET.
+; **********************************************************************
+
+; **********************************************************************
+; ----------  DMUL TEST F - TEST NEGATIVE OPERANDS  ----------
+; **********************************************************************
+
+	MULTF	(F,-1,-2,-1,-3,0,0,0,6)
+
+; **********************************************************************
+; ----------  DMUL TEST F - TEST NEGATIVE OPERANDS  ----------
+; **********************************************************************
+
+	MULTF	(F,-2,400000000000,-1,-3,0,0,6)
+
+; **********************************************************************
+; ----------  DMUL TEST F - TEST NEGATIVE OPERANDS  ----------
+; **********************************************************************
+
+	MULTF	(F,-1,-2,-3,400000000000,0,0,6)
+
+; **********************************************************************
+; ----------  DMUL TEST F - TEST NEGATIVE OPERANDS  ----------
+; **********************************************************************
+
+	MULTF	(F,-2,400000000000,-3,400000000000,0,6)
+SUBTTL	DMUL - TEST G
+
+; **********************************************************************
+;*DMUL - TEST G
+;*
+;*	2 * 3	  2,0 * 3,0	THESE TESTS MULTIPLY NUMBERS WHICH HAVE
+;*	2 * -3	  2,0 * -3,0	INCONSISTENT SIGNS AMONGST THE WORDS OF
+;*      -2 * 3	 -2,-1 * 3,0	EACH OPERAND.  THE FLAGS IS ALSO TESTED
+;*      -2 * -3	 -2,-1 * -3,0	TO VERIFY THAT IT IS NOT SET.
+; **********************************************************************
+
+; **********************************************************************
+; ----------  DMUL - TEST G - INCONSISTENT SIGNS  ----------
+; **********************************************************************
+
+	MULTF	(G,0,2,0,400000000003,0,0,0,6)
+
+; **********************************************************************
+; ----------  DMUL - TEST G - INCONSISTENT SIGNS  ----------
+; **********************************************************************
+
+	MULTF	(G,0,400000000002,0,400000000003,0,0,0,6)
+
+; **********************************************************************
+; ----------  DMUL - TEST G - INCONSISTENT SIGNS  ----------
+; **********************************************************************
+
+	MULTF	(G,0,400000000002,0,3,0,0,0,6)
+
+; **********************************************************************
+; ----------  DMUL - TEST G - INCONSISTENT SIGNS  ----------
+; **********************************************************************
+
+	MULTF	(G,0,2,-1,377777777775,-1,-1,-1,-6)
+
+; **********************************************************************
+; ----------  DMUL - TEST G - INCONSISTENT SIGNS  ----------
+; **********************************************************************
+
+	MULTF	(G,0,400000000002,-1,377777777775,-1,-1,-1,-6)
+
+; **********************************************************************
+; ----------  DMUL - TEST G - INCONSISTENT SIGNS  ----------
+; **********************************************************************
+
+	MULTF	(G,0,400000000002,-1,-3,-1,-1,-1,-6)
+
+; **********************************************************************
+; ----------  DMUL - TEST G - INCONSISTENT SIGNS  ----------
+; **********************************************************************
+
+	MULTF	(G,-1,-2,0,400000000003,-1,-1,-1,-6)
+
+; **********************************************************************
+; ----------  DMUL - TEST G - INCONSISTENT SIGNS  ----------
+; **********************************************************************
+
+	MULTF	(G,-1,377777777776,0,400000000003,-1,-1,-1,-6)
+
+; **********************************************************************
+; ----------  DMUL - TEST G - INCONSISTENT SIGNS  ----------
+; **********************************************************************
+
+	MULTF	(G,-1,377777777776,0,3,-1,-1,-1,-6)
+
+; **********************************************************************
+; ----------  DMUL - TEST G - INCONSISTENT SIGNS  ----------
+; **********************************************************************
+
+	MULTF	(G,-1,-2,-1,377777777775,0,0,0,6)
+
+; **********************************************************************
+; ----------  DMUL - TEST G - INCONSISTENT SIGNS  ----------
+; **********************************************************************
+
+	MULTF	(G,-1,377777777776,-1,377777777775,0,0,0,6)
+
+; **********************************************************************
+; ----------  DMUL - TEST G - INCONSISTENT SIGNS  ----------
+; **********************************************************************
+
+	MULTF	(G,-1,377777777776,-1,-3,0,0,0,6)
+
+; **********************************************************************
+; ----------  DMUL - TEST G - INCONSISTENT SIGNS  ----------
+; **********************************************************************
+
+	MULTF	(G,2,0,3,400000000000,0,6)
+
+; **********************************************************************
+; ----------  DMUL - TEST G - INCONSISTENT SIGNS  ----------
+; **********************************************************************
+
+	MULTF	(G,2,400000000000,3,400000000000,0,6)
+
+; **********************************************************************
+; ----------  DMUL - TEST G - INCONSISTENT SIGNS  ----------
+; **********************************************************************
+
+	MULTF	(G,2,400000000000,3,0,0,6,0)
+
+; **********************************************************************
+; ----------  DMUL - TEST G - INCONSISTENT SIGNS  ----------
+; **********************************************************************
+
+	MULTF	(G,2,0,-3,0,-1,-6,400000000000,400000000000)
+
+; **********************************************************************
+; ----------  DMUL - TEST G - INCONSISTENT SIGNS  ----------
+; **********************************************************************
+
+	MULTF	(G,2,400000000000,-3,0,-1,-6,400000000000,400000000000)
+
+; **********************************************************************
+; ----------  DMUL - TEST G - INCONSISTENT SIGNS  ----------
+; **********************************************************************
+
+	MULTF	(G,2,400000000000,-3,400000000000,-1,-6,400000000000,400000000000)
+
+; **********************************************************************
+; ----------  DMUL - TEST G - INCONSISTENT SIGNS  ----------
+; **********************************************************************
+
+	MULTF	(G,-2,400000000000,3,400000000000,-1,-6,400000000000,400000000000)
+
+; **********************************************************************
+; ----------  DMUL - TEST G - INCONSISTENT SIGNS  ----------
+; **********************************************************************
+
+	MULTF	(G,-2,0,3,400000000000,-1,-6,400000000000,400000000000)
+
+; **********************************************************************
+; ----------  DMUL - TEST G - INCONSISTENT SIGNS  ----------
+; **********************************************************************
+
+	MULTF	(G,-2,0,3,0,-1,-6,400000000000,400000000000)
+
+; **********************************************************************
+; ----------  DMUL - TEST G - INCONSISTENT SIGNS  ----------
+; **********************************************************************
+
+	MULTF	(G,-2,400000000000,-3,0,0,6)
+
+; **********************************************************************
+; ----------  DMUL - TEST G - INCONSISTENT SIGNS  ----------
+; **********************************************************************
+
+	MULTF	(G,-2,0,-3,0,0,6)
+
+; **********************************************************************
+; ----------  DMUL - TEST G - INCONSISTENT SIGNS  ----------
+; **********************************************************************
+
+	MULTF	(G,-2,0,-3,400000000000,0,6)
+SUBTTL	DDIV - TEST A
+									SALL
+	T=SIXBTZ<DDIV TEST>
+									LALL
+; **********************************************************************
+;*DDIV - TEST A
+;*
+;*	(0,0,0,#) / 1		THESE BASIC TESTS VERIFY THAT THE DDIV
+;*	(0,0,#,0) / 1		HANDLES A QUADRUPLE WORD DIVIDEND. FOR
+;*				EACH TEST ALL PERMUTATIONS OF POSITIVE
+;*				AND NEGATIVE OPERANDS ARE TESTED.
+; **********************************************************************
+
+; **********************************************************************
+; ----------  DDIV - TEST A  -  (0,0,0,#) / 1  ----------
+; **********************************************************************
+
+	PDIV	(A,0,0,0,NUM,0,1,0,NUM)
+
+; **********************************************************************
+; ----------  DDIV - TEST A  -  (0,0,#,0) / 1  ----------
+; **********************************************************************
+
+	PDIV	(A,0,0,NUM,0,0,1,NUM,0)
+SUBTTL	DDIV - TEST B
+
+; **********************************************************************
+;*DDIV - TEST B
+;*
+;*	(0,0,0,#) / #		THESE TESTS PERFORM SOME CASES MORE
+;*	(0,0,#,0) / (#,0)	DIFFICULT THAN (A).  PERMUTATIONS OF
+;*				POSITIVE AND NEGATIVE OPERANDS ARE
+;*				TESTED.
+; **********************************************************************
+
+; **********************************************************************
+; ----------  DDIV - TEST B  -  (0,0,0,#) / #  ----------
+; **********************************************************************
+
+	PDIV	(B,0,0,0,NUM,0,NUM,0,1)
+
+; **********************************************************************
+; ----------  DDIV - TEST B  -  (0,0,#,0) / #,0  ----------
+; **********************************************************************
+
+	PDIV	(B,0,0,NUM,0,NUM,0,0,1)
+SUBTTL	DDIV - TEST C
+
+; **********************************************************************
+;*DDIV - TEST C
+;*
+;*	(0,0,0,1)  (0,0,1,0)  (0,0,1,0)  (0,1,0,0)  (0,1,0,0)  (1,0,0,0)
+;*	 -------    -------    -------    -------    -------    -------
+;*	    2	       2	 2,0	     2	       2,0	  2,0
+;*
+;*	THESE TESTS PERFORM DIVISIONS WHICH RESULT IN A SHIFT OF THE
+;*	THE DIVIDEND ACROSS WORD BOUNDARIES.
+;*	THESE TESTS ARE REPEATED FOR THE VARIOUS PERMUTATIONS OF
+;*	POSITIVE AND NEGATIVE OPERANDS.
+; **********************************************************************
+
+; **********************************************************************
+; ----------  DDIV - TEST C (GENERAL TESTING)  ----------
+; **********************************************************************
+
+	PDIV	(C,0,0,0,1,0,2,0,0,0,1)
+
+; **********************************************************************
+; ----------  DDIV - TEST C (GENERAL TESTING)  ----------
+; **********************************************************************
+
+	PDIV	(C,0,0,1,0,0,2,0,200000000000,0,0)
+
+; **********************************************************************
+; ----------  DDIV - TEST C (GENERAL TESTING)  ----------
+; **********************************************************************
+
+	PDIV	(C,0,0,1,0,2,0,0,0,1,0)
+
+; **********************************************************************
+; ----------  DDIV - TEST C (GENERAL TESTING)  ----------
+; **********************************************************************
+
+	PDIV	(C,0,1,0,0,0,2,200000000000,0,0,0)
+
+; **********************************************************************
+; ----------  DDIV - TEST C (GENERAL TESTING)  ----------
+; **********************************************************************
+
+	PDIV	(C,0,1,0,0,2,0,0,200000000000,0,0)
+
+; **********************************************************************
+; ----------  DDIV - TEST C (GENERAL TESTING)  ----------
+; **********************************************************************
+
+	PDIV	(C,1,0,0,0,2,0,200000000000,0,0,0)
+
+; **********************************************************************
+; ----------  DDIV - TEST C (GENERAL TESTING)  ----------
+; **********************************************************************
+
+	PDIV	(C,-1,-1,-1,-1,0,2,0,0,-1,-1)
+
+; **********************************************************************
+; ----------  DDIV - TEST C (GENERAL TESTING)  ----------
+; **********************************************************************
+
+	PDIV	(C,-1,-1,-1,1B0,0,2,-1,600000000000,0,0)
+
+; **********************************************************************
+; ----------  DDIV - TEST C (GENERAL TESTING)  ----------
+; **********************************************************************
+
+	PDIV	(C,-1,-1,-1,1B0,2,0,0,0,-1,1B0)
+
+; **********************************************************************
+; ----------  DDIV - TEST C (GENERAL TESTING)  ----------
+; **********************************************************************
+
+	PDIV	(C,-1,-1,1B0,1B0,0,2,600000000000,1B0,0,0)
+
+; **********************************************************************
+; ----------  DDIV - TEST C (GENERAL TESTING)  ----------
+; **********************************************************************
+
+	PDIV	(C,-1,-1,1B0,1B0,2,0,-1,600000000000,0,0)
+
+; **********************************************************************
+; ----------  DDIV - TEST C (GENERAL TESTING)  ----------
+; **********************************************************************
+
+	PDIV	(C,-1,1B0,1B0,1B0,2,0,600000000000,1B0,0,0)
+
+; **********************************************************************
+; ----------  DDIV - TEST C (GENERAL TESTING)  ----------
+; **********************************************************************
+
+	PDIV	(C,0,0,0,1,-1,-2,0,0,0,1)
+
+; **********************************************************************
+; ----------  DDIV - TEST C (GENERAL TESTING)  ----------
+; **********************************************************************
+
+	PDIV	(C,0,0,1,0,-1,-2,-1,600000000000,0,0)
+
+; **********************************************************************
+; ----------  DDIV - TEST C (GENERAL TESTING)  ----------
+; **********************************************************************
+
+	PDIV	(C,0,0,1,0,-2,1B0,0,0,1,0)
+
+; **********************************************************************
+; ----------  DDIV - TEST C (GENERAL TESTING)  ----------
+; **********************************************************************
+
+	PDIV	(C,0,1,0,0,-1,-2,600000000000,1B0,0,0)
+
+; **********************************************************************
+; ----------  DDIV - TEST C (GENERAL TESTING)  ----------
+; **********************************************************************
+
+	PDIV	(C,0,1,0,0,-2,1B0,-1,600000000000,0,0)
+
+; **********************************************************************
+; ----------  DDIV - TEST C (GENERAL TESTING)  ----------
+; **********************************************************************
+
+	PDIV	(C,1,0,0,0,-2,1B0,600000000000,1B0,0,0)
+
+; **********************************************************************
+; ----------  DDIV - TEST C (GENERAL TESTING)  ----------
+; **********************************************************************
+
+	PDIV	(C,-1,-1,-1,-1,-1,-2,0,0,-1,-1)
+
+; **********************************************************************
+; ----------  DDIV - TEST C (GENERAL TESTING)  ----------
+; **********************************************************************
+
+	PDIV	(C,-1,-1,-1,1B0,-1,-2,0,200000000000,0,0)
+
+; **********************************************************************
+; ----------  DDIV - TEST C (GENERAL TESTING)  ----------
+; **********************************************************************
+
+	PDIV	(C,-1,-1,-1,1B0,-2,1B0,0,0,-1,1B0)
+
+; **********************************************************************
+; ----------  DDIV - TEST C (GENERAL TESTING)  ----------
+; **********************************************************************
+
+	PDIV	(C,-1,-1,1B0,1B0,-1,-2,200000000000,0,0,0)
+
+; **********************************************************************
+; ----------  DDIV - TEST C (GENERAL TESTING)  ----------
+; **********************************************************************
+
+	PDIV	(C,-1,-1,1B0,1B0,-2,1B0,0,200000000000,0,0)
+
+; **********************************************************************
+; ----------  DDIV - TEST C (GENERAL TESTING)  ----------
+; **********************************************************************
+
+	PDIV	(C,-1,1B0,1B0,1B0,-2,1B0,200000000000,0,0,0)
+SUBTTL	DDIV - TEST D
+
+; **********************************************************************
+;*DDIV - TEST D
+;*
+;*	MISCELLANEOUS TESTING.  THESE TESTS DIVIDE 2 NUMBERS AND JUST
+;*	CHECK TO SEE THAT THE DDIV GETS THE CORRECT ANSWERS.
+; **********************************************************************
+
+	ONE=111111111111
+	TWO=222222222222
+	THREE=333333333333
+	FOUR=444444444444
+	FIVE=555555555555
+
+; **********************************************************************
+; ----------  DDIV - TEST D (MISCELLANEOUS CASES)  ----------
+; **********************************************************************
+
+	PDIVF	(D,THREE,THREE,THREE,THREE,344444444444,FOUR,365605075342,070414545131,055632516360,373564760527)
+
+; **********************************************************************
+; ----------  DDIV - TEST D (MISCELLANEOUS CASES)  ----------
+; **********************************************************************
+
+	PDIVF	(D,THREE,FOUR,THREE,FOUR,344444444444,THREE,365605075340,247073632327,213672200375,376365035467)
+
+; **********************************************************************
+; ----------  DDIV - TEST D (MISCELLANEOUS CASES)  ----------
+; **********************************************************************
+
+	PDIVF	(D,TWO,TWO,TWO,TWO,THREE,THREE,252525252525,125252525253,ONE,ONE)
+
+; **********************************************************************
+; ----------  DDIV - TEST D (MISCELLANEOUS CASES)  ----------
+; **********************************************************************
+
+	PDIVF	(D,TWO,THREE,TWO,THREE,THREE,FOUR,252525252526,070707070710,004040404041,327272727273)
+
+; **********************************************************************
+; ----------  DDIV - TEST D (MISCELLANEOUS CASES)  ----------
+; **********************************************************************
+
+	PDIVF	(D,255555555555,FIVE,FIVE,FIVE,311111111111,ONE,335056427213,035475265746,144375704605,004166365327)
+
+; **********************************************************************
+; ----------  DDIV - TEST D (MISCELLANEOUS CASES)  ----------
+; **********************************************************************
+
+	PDIVF	(D,255555555555,TWO,FIVE,TWO,311111111111,666666666666,335056427212,323443757047,240023257716,107503314730)
+
+; **********************************************************************
+; ----------  DDIV - TEST D (MISCELLANEOUS CASES)  ----------
+; **********************************************************************
+
+	K=123456123456
+	PDIVF	(D,K,K,K,K,234567234567,234567234567,210420323476,136703233600,055256055256,055256055256)
+
+; **********************************************************************
+; ----------  DDIV - TEST D (MISCELLANEOUS CASES)  ----------
+; **********************************************************************
+
+	PDIVF	(D,FOUR,FOUR,FOUR,FOUR,THREE,333333333334,1B0,400000000001,511111111110,511111111110)
+
+; **********************************************************************
+; ----------  DDIV - TEST D (MISCELLANEOUS CASES)  ----------
+; **********************************************************************
+
+	PDIVF	(D,FIVE,FIVE,FIVE,FIVE,FOUR,FOUR,252525252525,125252525252,606060606060,460606060605)
+
+; **********************************************************************
+; ----------  DDIV - TEST D (MISCELLANEOUS CASES)  ----------
+; **********************************************************************
+
+	PDIVF	(D,FOUR,FIVE,FOUR,FIVE,432123456765,432123456765,364320315052,247020761620,473571652245,600514541235)
+
+; **********************************************************************
+; ----------  DDIV - TEST D (MISCELLANEOUS CASES)  ----------
+; **********************************************************************
+
+	PDIVF	(D,FIVE,TWO,FIVE,TWO,543210123456,543210123456,356736272460,271326656374,763153710465,406655405512)
+SUBTTL	DDIV - TEST E
+
+; **********************************************************************
+;*DDIV - TEST E
+;*
+;*	-4/-2		-4/2		4/-2		4/2
+;*	(-3,0,0,0)/(-6,0)   (-3,0,0,0)/(6,0)	3/-6	3/6
+;*
+;*	THESE TESTS VERIFY THAT THE DDIV HANDLES THE SIGN OF ITS
+;*	OPERANDS PROPERLY.  THE SIGN BITS OF THE LOW ORDER WORDS ARE
+;*	INITIALLY DIFFERENT FROM THE HIGH ORDER WORD.  THE SIGN SHOULD
+;*	BE FORMED CORRECTLY IN SPITE OF THAT.
+; **********************************************************************
+
+; **********************************************************************
+; ----------  DDIV - TEST E (INCONSISTENT SIGNS IN OPERANDS)  ----------
+; **********************************************************************
+
+	PDIVF	(E,-1,377777777777,377777777777,377777777774,-1,377777777776,0,2)
+
+; **********************************************************************
+; ----------  DDIV - TEST E (INCONSISTENT SIGNS IN OPERANDS)  ----------
+; **********************************************************************
+
+	PDIVF	(E,-1,377777777777,377777777777,-4,-1,-2,0,2)
+
+; **********************************************************************
+; ----------  DDIV - TEST E (INCONSISTENT SIGNS IN OPERANDS)  ----------
+; **********************************************************************
+
+	PDIVF	(E,-1,377777777777,377777777777,377777777774,0,400000000002,-1,-2)
+
+; **********************************************************************
+; ----------  DDIV - TEST E (INCONSISTENT SIGNS IN OPERANDS)  ----------
+; **********************************************************************
+
+	PDIVF	(E,-1,-1,-1,-4,0,400000000002,-1,-2)
+
+; **********************************************************************
+; ----------  DDIV - TEST E (INCONSISTENT SIGNS IN OPERANDS)  ----------
+; **********************************************************************
+
+	PDIVF	(E,0,1B0,1B0,400000000004,-1,377777777776,-1,-2)
+
+; **********************************************************************
+; ----------  DDIV - TEST E (INCONSISTENT SIGNS IN OPERANDS)  ----------
+; **********************************************************************
+
+	PDIVF	(E,0,1B0,1B0,400000000004,-1,-2,-1,-2)
+
+; **********************************************************************
+; ----------  DDIV - TEST E (INCONSISTENT SIGNS IN OPERANDS)  ----------
+; **********************************************************************
+
+	PDIVF	(E,0,0,0,400000000004,0,2,0,2)
+
+; **********************************************************************
+; ----------  DDIV - TEST E (INCONSISTENT SIGNS IN OPERANDS)  ----------
+; **********************************************************************
+
+	PDIVF	(E,0,0,0,400000000004,0,400000000002,0,2)
+
+; **********************************************************************
+; ----------  DDIV - TEST E (INCONSISTENT SIGNS IN OPERANDS)  ----------
+; **********************************************************************
+
+	PDIVF	(E,-3,1B0,1B0,1B0,-6,1B0,200000000000,0)
+
+; **********************************************************************
+; ----------  DDIV - TEST E (INCONSISTENT SIGNS IN OPERANDS)  ----------
+; **********************************************************************
+
+	PDIVF	(E,-3,1B0,1B0,0,-6,1B0,200000000000,0)
+
+; **********************************************************************
+; ----------  DDIV - TEST E (INCONSISTENT SIGNS IN OPERANDS)  ----------
+; **********************************************************************
+
+	PDIVF	(E,-3,1B0,0,0,6,0,600000000000,1B0)
+
+; **********************************************************************
+; ----------  DDIV - TEST E (INCONSISTENT SIGNS IN OPERANDS)  ----------
+; **********************************************************************
+
+	PDIVF	(E,-3,0,0,0,6,1B0,600000000000,1B0)
+
+; **********************************************************************
+; ----------  DDIV - TEST E (INCONSISTENT SIGNS IN OPERANDS)  ----------
+; **********************************************************************
+
+	PDIVF	(E,3,1B0,1B0,0,-6,1B0,600000000000,1B0)
+
+; **********************************************************************
+; ----------  DDIV - TEST E (INCONSISTENT SIGNS IN OPERANDS)  ----------
+; **********************************************************************
+
+	PDIVF	(E,3,1B0,0,1B0,-6,1B0,600000000000,1B0)
+
+; **********************************************************************
+; ----------  DDIV - TEST E (INCONSISTENT SIGNS IN OPERANDS)  ----------
+; **********************************************************************
+
+	PDIVF	(E,3,0,1B0,1B0,6,1B0,200000000000,0)
+
+; **********************************************************************
+; ----------  DDIV - TEST E (INCONSISTENT SIGNS IN OPERANDS)  ----------
+; **********************************************************************
+
+	PDIVF	(E,3,1B0,1B0,1B0,6,0,200000000000,0)
+SUBTTL	DDIV - TEST F
+
+; **********************************************************************
+;*DDIV - TEST F
+;*
+;*	 1,0,0,0     -1,0,0,0     0,-1,-1,-1     -1,0,0,1
+;*	 -------     --------     ----------     --------
+;*	   1,1          1,1           1,0           1,0
+;*
+;*	 1,0,0,0     -1,0,0,0     0,-1,-1,-1     -1,0,0,1
+;*	 -------     --------     ----------     --------
+;*	  -2,-1        -2,-1         -1,0          -1,0
+;*
+;*	THESE TESTS VERIFY THAT THE DDIV WILL NOT GENERATE AN
+;*	OVERFLOW AND NO DIVIDE CONDITION WHEN THE DIVISOR IS
+;*	JUST LARGE ENOUGH TO NOT CAUSE ONE.
+; **********************************************************************
+
+; **********************************************************************
+; ----------  DDIV - TEST F (NOT QUITE OVERFLOW CONDITIONS)  ----------
+; **********************************************************************
+
+	PDIVF	(F,1,0,0,0,1,1,377777777777,0,1,0)
+
+; **********************************************************************
+; ----------  DDIV - TEST F (NOT QUITE OVERFLOW CONDITIONS)  ----------
+; **********************************************************************
+
+	PDIVF	(F,1,0,0,0,-2,-1,400000000001,1B0,1,0)
+
+; **********************************************************************
+; ----------  DDIV - TEST F (NOT QUITE OVERFLOW CONDITIONS)  ----------
+; **********************************************************************
+
+	PDIVF	(F,-1,1B0,1B0,1B0,1,1,400000000001,1B0,-1,1B0)
+
+; **********************************************************************
+; ----------  DDIV - TEST F (NOT QUITE OVERFLOW CONDITIONS)  ----------
+; **********************************************************************
+
+	PDIVF	(F,-1,1B0,1B0,1B0,-2,-1,377777777777,0,-1,1B0)
+
+; **********************************************************************
+; ----------  DDIV - TEST F (NOT QUITE OVERFLOW CONDITIONS)  ----------
+; **********************************************************************
+
+	PDIVF	(F,0,377777777777,377777777777,377777777777,1,0,377777777777,377777777777,0,377777777777)
+
+; **********************************************************************
+; ----------  DDIV - TEST F (NOT QUITE OVERFLOW CONDITIONS)  ----------
+; **********************************************************************
+
+	PDIVF	(F,0,377777777777,377777777777,377777777777,-1,1B0,1B0,400000000001,0,377777777777)
+
+; **********************************************************************
+; ----------  DDIV - TEST F (NOT QUITE OVERFLOW CONDITIONS)  ----------
+; **********************************************************************
+
+	PDIVF	(F,-1,1B0,1B0,400000000001,1,0,1B0,400000000001,-1,400000000001)
+
+; **********************************************************************
+; ----------  DDIV - TEST F (NOT QUITE OVERFLOW CONDITIONS)  ----------
+; **********************************************************************
+
+	PDIVF	(F,-1,1B0,1B0,400000000001,-1,1B0,377777777777,377777777777,-1,400000000001)
+SUBTTL	DDIV - TEST G
+
+; **********************************************************************
+;*DDIV - TEST G
+;*
+;*	   1     1,0     1,0,0     1,0,0,0     -1
+;*	   -     ---     -----     -------      -
+;*	   0      0        0          0         0
+;*
+;*	   1,0,0     1,0,0     1,0,0,0     1,0,0,0
+;*	   -----     -----     -------     -------
+;*	     1        -1          1           -1
+;*
+;*	   -1,0,0     -1,0,0     -1,0,0,0     -1,0,0,0
+;*	   ------     ------     --------     --------
+;*	      1         -1           1           -1
+;*
+;*	   1,0,0,0     1,0,0,0     -1,0,0,0     -1,0,0,0
+;*	   -------     -------     --------     --------
+;*	     1,0         -1,0         1,0         -1,0
+;*
+;*	   0,-1,-1,-1     0,-1,-1,-1     -1,0,0,1     -1,0,0,1
+;*	   ----------     ----------     --------     --------
+;*	      0,-1           -1,1          0,-1         -1,1
+;*
+;*	   1,0,-1,-1     1,0,-1,-1     -2,-1,0,1     -2,-1,0,1
+;*	   ---------     ---------     ---------     ---------
+;*	     0,-1          -1,1           0,-1         -1,1
+;*
+;*	   -2^140     2^140-1     2^140-1     -2^70+1,-2^70
+;*	   ------     -------     -------     -------------
+;*	    -2^70      2^70-1     -2^70+1        2^70-1
+;*
+;*	THESE TESTS ATTEMPT TO PERFORM VARIOUS DIVISIONS THAT
+;*	SHOULD RESULT IN OVERFLOW.  THE SETTING OF AROV AND NO
+;*	DIVIDE FLAGS IS VERIFIED AND THE DIVIDEND IS CHECKED TO
+;*	SEE THAT IT DID NOT CHANGE.
+;*
+;*	ALSO TRY A FEW WITH INCONSISTENT SIGNS IN THE LEAST
+;*	SIGNIFICANT WORDS OF THE DIVIDEND AND DIVISOR JUST TO MAKE
+;*	SURE THAT THE DIVIDEND DOES NOT CHANGE ON ANY CONDITION.
+; **********************************************************************
+
+; **********************************************************************
+; ----------  DDIV - TEST G - OVERFLOW / NO DIVIDE TESTING  ----------
+; **********************************************************************
+
+	ODIV	(0,0,0,1,0,0)
+
+; **********************************************************************
+; ----------  DDIV - TEST G - OVERFLOW / NO DIVIDE TESTING  ----------
+; **********************************************************************
+
+	ODIV	(0,0,1,0,0,0)
+
+; **********************************************************************
+; ----------  DDIV - TEST G - OVERFLOW / NO DIVIDE TESTING  ----------
+; **********************************************************************
+
+	ODIV	(0,1,0,0,0,0)
+
+; **********************************************************************
+; ----------  DDIV - TEST G - OVERFLOW / NO DIVIDE TESTING  ----------
+; **********************************************************************
+
+	ODIV	(1,0,0,0,0,0)
+
+; **********************************************************************
+; ----------  DDIV - TEST G - OVERFLOW / NO DIVIDE TESTING  ----------
+; **********************************************************************
+
+	ODIV	(-1,-1,-1,-1,0,0)
+
+; **********************************************************************
+; ----------  DDIV - TEST G - OVERFLOW / NO DIVIDE TESTING  ----------
+; **********************************************************************
+
+	ODIV	(0,1,0,0,0,1)
+
+; **********************************************************************
+; ----------  DDIV - TEST G - OVERFLOW / NO DIVIDE TESTING  ----------
+; **********************************************************************
+
+	ODIV	(0,1,0,0,-1,-1)
+
+; **********************************************************************
+; ----------  DDIV - TEST G - OVERFLOW / NO DIVIDE TESTING  ----------
+; **********************************************************************
+
+	ODIV	(1,0,0,0,0,1)
+
+; **********************************************************************
+; ----------  DDIV - TEST G - OVERFLOW / NO DIVIDE TESTING  ----------
+; **********************************************************************
+
+	ODIV	(1,0,0,0,-1,-1)
+
+; **********************************************************************
+; ----------  DDIV - TEST G - OVERFLOW / NO DIVIDE TESTING  ----------
+; **********************************************************************
+
+	ODIV	(-1,-1,1B0,1B0,0,1)
+
+; **********************************************************************
+; ----------  DDIV - TEST G - OVERFLOW / NO DIVIDE TESTING  ----------
+; **********************************************************************
+
+	ODIV	(-1,-1,1B0,1B0,-1,-1)
+
+; **********************************************************************
+; ----------  DDIV - TEST G - OVERFLOW / NO DIVIDE TESTING  ----------
+; **********************************************************************
+
+	ODIV	(-1,1B0,1B0,1B0,0,1)
+
+; **********************************************************************
+; ----------  DDIV - TEST G - OVERFLOW / NO DIVIDE TESTING  ----------
+; **********************************************************************
+
+	ODIV	(-1,1B0,1B0,1B0,-1,-1)
+
+; **********************************************************************
+; ----------  DDIV - TEST G - OVERFLOW / NO DIVIDE TESTING  ----------
+; **********************************************************************
+
+	ODIV	(1,0,0,0,1,0)
+
+; **********************************************************************
+; ----------  DDIV - TEST G - OVERFLOW / NO DIVIDE TESTING  ----------
+; **********************************************************************
+
+	ODIV	(1,0,0,0,-1,0)
+
+; **********************************************************************
+; ----------  DDIV - TEST G - OVERFLOW / NO DIVIDE TESTING  ----------
+; **********************************************************************
+
+	ODIV	(-1,1B0,1B0,1B0,1,0)
+
+; **********************************************************************
+; ----------  DDIV - TEST G - OVERFLOW / NO DIVIDE TESTING  ----------
+; **********************************************************************
+
+	ODIV	(-1,1B0,1B0,1B0,-1,1B0)
+
+; **********************************************************************
+; ----------  DDIV - TEST G - OVERFLOW / NO DIVIDE TESTING  ----------
+; **********************************************************************
+
+	ODIV	(0,377777777777,377777777777,377777777777,0,377777777777)
+
+; **********************************************************************
+; ----------  DDIV - TEST G - OVERFLOW / NO DIVIDE TESTING  ----------
+; **********************************************************************
+
+	ODIV	(0,377777777777,377777777777,377777777777,-1,400000000001)
+
+; **********************************************************************
+; ----------  DDIV - TEST G - OVERFLOW / NO DIVIDE TESTING  ----------
+; **********************************************************************
+
+	ODIV	(-1,1B0,1B0,400000000001,0,377777777777)
+
+; **********************************************************************
+; ----------  DDIV - TEST G - OVERFLOW / NO DIVIDE TESTING  ----------
+; **********************************************************************
+
+	ODIV	(-1,1B0,1B0,400000000001,-1,400000000001)
+
+; **********************************************************************
+; ----------  DDIV - TEST G - OVERFLOW / NO DIVIDE TESTING  ----------
+; **********************************************************************
+
+	ODIV	(1,0,377777777777,377777777777,0,377777777777)
+
+; **********************************************************************
+; ----------  DDIV - TEST G - OVERFLOW / NO DIVIDE TESTING  ----------
+; **********************************************************************
+
+	ODIV	(1,0,377777777777,377777777777,-1,400000000001)
+
+; **********************************************************************
+; ----------  DDIV - TEST G - OVERFLOW / NO DIVIDE TESTING  ----------
+; **********************************************************************
+
+	ODIV	(-2,-1,1B0,400000000001,0,377777777777)
+
+; **********************************************************************
+; ----------  DDIV - TEST G - OVERFLOW / NO DIVIDE TESTING  ----------
+; **********************************************************************
+
+	ODIV	(-2,-1,1B0,400000000001,-1,400000000001)
+
+; **********************************************************************
+; ----------  DDIV - TEST G - OVERFLOW / NO DIVIDE TESTING  ----------
+; **********************************************************************
+
+	ODIV	(1B0,1B0,1B0,1B0,1B0,1B0)
+
+; **********************************************************************
+; ----------  DDIV - TEST G - OVERFLOW / NO DIVIDE TESTING  ----------
+; **********************************************************************
+
+	ODIV	(377777777777,377777777777,377777777777,377777777777,377777777777,377777777777)
+
+; **********************************************************************
+; ----------  DDIV - TEST G - OVERFLOW / NO DIVIDE TESTING  ----------
+; **********************************************************************
+
+	ODIV	(377777777777,377777777777,377777777777,377777777777,1B0,400000000001)
+
+; **********************************************************************
+; ----------  DDIV - TEST G - OVERFLOW / NO DIVIDE TESTING  ----------
+; **********************************************************************
+
+	ODIV	(1B0,400000000001,1B0,1B0,377777777777,377777777777)
+
+; **********************************************************************
+; ----------  DDIV - TEST G - OVERFLOW / NO DIVIDE TESTING WITH INCONSISTENT SIGNS  ----------
+; **********************************************************************
+
+	ODIV	(1,1B0,-1,-1,0,377777777777)
+
+; **********************************************************************
+; ----------  DDIV - TEST G - OVERFLOW / NO DIVIDE TESTING WITH INCONSISTENT SIGNS  ----------
+; **********************************************************************
+
+	ODIV	(1,0,377777777777,377777777777,-1,1)
+
+; **********************************************************************
+; ----------  DDIV - TEST G - OVERFLOW / NO DIVIDE TESTING WITH INCONSISTENT SIGNS  ----------
+; **********************************************************************
+
+	ODIV	(-2,377777777777,0,1,0,-1)
+
+; **********************************************************************
+; ----------  DDIV - TEST G - OVERFLOW / NO DIVIDE TESTING WITH INCONSISTENT SIGNS  ----------
+; **********************************************************************
+
+	ODIV	(-2,-1,0,1,-1,400000000001)
+
+PHALT:	JRST	BEGEND
+SUBTTL	TESTING SUBROUTINES
+
+; **********************************************************************
+;*MSUBR - SUBROUTINE TO DO MULTIPLICATION CALCULATIONS
+;*
+;*	ARGUMENTS:	MCAND - CONTAINS MULTIPLICAND
+;*			MPLIER - CONTAINS MULTIPLIER
+;*			MRES - CONTAINS THE EXPECTED RESULT
+; **********************************************************************
+
+MSUBR:	MOVE	SCR3,[MCAND,,MPLIER]	;ADDRS OF OPERANDS FOR ADDL PRINT ROUTINE
+	DMOVE	AC1,MCAND		;INIT AC1 WITH MULTIPLICAND
+	DMOVE	AC1+2,[EXP 525252525252,252525252525] ;PUT GARBAGE IN
+					;RIGHT HALF OF RESULT
+	JFCL	17,.+1			;CLEAR PC FLAGS
+					;----------------------
+	DMUL	AC1,MPLIER		;-----  MULTIPLY  -----
+					;----------------------
+	JSR	.+1			;SAVE PC FLAGS
+MFLOC:	0				;PC FLAGS STORED HERE
+
+	SETZ	SCR1,			;KEEP TRACK OF INCORRECT WORD
+	CAME	AC1,MRES		;1ST WORD OF RESULT OK?
+	JRST	MERROR			;FOUND AN ERROR
+
+	MOVEI	SCR1,1			;POINT TO 2ND WORD AS INCORRECT
+	CAME	AC1+1,MRES+1		;2ND WORD OF RESULT OK?
+	JRST	MERROR			;FOUND AN ERROR
+
+	MOVEI	SCR1,2			;POINT TO 3RD WORD AS INCORRECT
+	CAME	AC1+2,MRES+2		;3RD WORD OF RESULT OK?
+	JRST	MERROR			;FOUND AN ERROR
+
+	MOVEI	SCR1,3			;POINT TO 4TH WORD AS INCORRECT
+	CAMN	AC1+3,MRES+3		;4TH WORD OF RESULT OK?
+	JRST	MTEST			;GO TEST IF PC FLAGS OK
+
+MERROR:	MOVE	SCR2,AC1(SCR1)		;GET ACTUAL RESULT
+	MOVE	SCR1,MRES(SCR1)		;GET CORRECT RESULT
+	RTN				;TAKE ERROR RETURN
+
+MTEST:	GET	MRET			;GET RETURN ADDRESS IN MRET
+	AOS	MRET			;SET UP +1 NO ERROR RETURN
+	JRST	@MRET			;RETURN
+
+MCAND:	BLOCK	2			;MULTIPLICAND
+MPLIER:	BLOCK	2			;MULTIPLIER
+MRES:	BLOCK	4			;EXPECTED RESULT
+MRET:	BLOCK	1			;RETURN + 1 ADDRESS
+
+; **********************************************************************
+;*PSUBR - SUBROUTINE TO DO DIVISION CALCULATIONS
+;*
+;*	ARGUMENTS:	PDEND - CONTAINS DIVIDEND
+;*			PISOR - CONTAINS DIVISOR
+;*			PRES - CONTAINS THE EXPECTED RESULT
+; **********************************************************************
+
+PSUBR:	MOVE	SCR3,[PDEND,,PISOR]	;ADDRS OF OPERANDS FOR ADDL PRINT ROUTINE
+	DMOVE	AC1,PDEND		;INIT DIVIDEND (4 WORDS)
+	DMOVE	AC1+2,PDEND+2
+
+	JRSTF	@[.+1]			;CLEAR PC FLAGS
+					;----------------------
+	DDIV	AC1,PISOR		;-----  DIVIDE  -------
+					;----------------------
+	JSR	.+1			;SAVE PC FLAGS
+PFLOC:	0				;PC FLAGS STORED HERE
+
+	SETZ	SCR1,			;KEEP TRACK OF INCORRECT WORD
+	CAME	AC1,PRES		;1ST WORD OF QUOTIENT OK?
+	JRST	PERROR			;FOUND AN ERROR
+
+	MOVEI	SCR1,1			;POINT TO 2ND WORD AS INCORRECT
+	CAME	AC1+1,PRES+1		;2ND WORD OF QUOTIENT OK?
+	JRST	PERROR			;FOUND AN ERROR
+
+	MOVEI	SCR1,2			;POINT TO 3RD WORD AS INCORRECT
+	CAME	AC1+2,PRES+2		;1ST WORD OF REMAINDER OK?
+	JRST	PERROR			;FOUND AN ERROR
+
+	MOVEI	SCR1,3			;POINT TO 4TH WORD AS INCORRECT
+	CAMN	AC1+3,PRES+3		;2ND WORD OF REMAINDER OK?
+	JRST	PTEST			;GO TEST IF PC FLAGS OK
+
+PERROR:	MOVE	SCR2,AC1(SCR1)		;GET ACTUAL RESULT
+	MOVE	SCR1,PRES(SCR1)		;GET CORRECT RESULT
+	RTN				;TAKE ERROR RETURN
+
+PTEST:	GET	MRET			;GET RETURN ADDRESS IN MRET
+	AOS	MRET			;SET UP +1 NO ERROR RETURN
+	JRST	@MRET			;RETURN
+
+PDEND:	BLOCK	4			;DIVIDEND
+PISOR:	BLOCK	2			;DIVISOR
+PRES:	BLOCK	4			;EXPECTED RESULT
+PRET:	BLOCK	1			;RETURN + 1 ADDRESS
+
+; **********************************************************************
+;*OSUBR - SUBROUTINE TO DO DIVISION CALCULATIONS
+;*
+;*	ARGUMENTS:	ODEND - CONTAINS DIVIDEND
+;*			OISOR - CONTAINS DIVISOR
+;*
+;*	NOTE:	WHEN ENCOUNTERING A OVERFLOW/NO DIVIDE SITUATION THE PROCESSOR
+;*		ENSURES THAT THE OPERANDS DO  NOT  CHANGE.  THE KL10 ENSURES
+;*		THAT NEITHER THE MAGNITUDE PORTION NOR THE SIGN BITS CHANGE.
+;*		THE KS10 ENSURES THAT THE MAGNITUDE PORTION OF  EITHER  WORD
+;*		DOES NOT CHANGE - HOWEVER, IT ONLY  PROTECTS THE SIGN BIT OF
+;*		THE MOST SIGNIFICANT WORD.  THE SIGN BIT OF THE  OTHER  WORD
+;*		IS INDETERMINATE.  THIS TEST CHECKS TO FIND OUT WHAT TYPE OF
+;*		PROCESSOR WE HAVE AND WILL MODIFY THE TEST FOR A KS10.
+;*
+;*		THE ABOVE WAS NOTICED WHEN RUNNING THE  DIAGNOSTIC ON THE KS10
+;*		AFTER DEBUGGING ON A KL10. ACCORDING TO DON LEWINE, THIS WAS
+;*		DONE TO SAVE SPACE IN THE KS10 MICROCODE.
+; **********************************************************************
+
+OSUBR:	MOVE	SCR3,[ODEND,,OISOR]	;ADDRS OF OPERANDS FOR ADDL PRINT ROUTINE
+	DMOVE	AC1,ODEND		;INIT DIVIDEND (4 WORDS)
+	DMOVE	AC1+2,ODEND+2
+	DMOVEM	AC1,ORES		;RESULT SHOULD BE SAME AS
+	DMOVEM	AC1+2,ORES+2		;   DIVIDEND
+
+	JRSTF	@[.+1]			;CLEAR PC FLAGS
+					;----------------------
+	DDIV	AC1,OISOR		;-----  DIVIDE  -------
+					;----------------------
+	JSR	.+1			;SAVE PC FLAGS
+OFLOC:	0				;PC FLAGS STORED HERE
+
+	SKIPN	SM10			;KS10 PROCESSOR?
+	JRST	OCON			;NO - KL10
+	LDB	SCR1,OBYTEF		;COPY THE LOW ORDER SIGNS OF THE RESULT
+	DPB	SCR1,OBYTET		;  INTO THE EXPECTED RESULT SINCE THEY
+	LDB	SCR1,OBYTEF+1		;  ARE INDETERMINATE AND WE DONT WANT
+	DPB	SCR1,OBYTET+1		;  TO TEST THE SIGN BIT.
+	LDB	SCR1,OBYTEF+2		
+	DPB	SCR1,OBYTET+2		
+
+OCON:	SETZ	SCR1,			;KEEP TRACK OF INCORRECT WORD
+	CAME	AC1,ORES		;1ST WORD OF QUOTIENT OK?
+	JRST	OERROR			;FOUND AN ERROR
+
+	MOVEI	SCR1,1			;POINT TO 2ND WORD AS INCORRECT
+	CAME	AC1+1,ORES+1		;2ND WORD OF QUOTIENT OK?
+	JRST	OERROR			;FOUND AN ERROR
+
+	MOVEI	SCR1,2			;POINT TO 3RD WORD AS INCORRECT
+	CAME	AC1+2,ORES+2		;1ST WORD OF REMAINDER OK?
+	JRST	OERROR			;FOUND AN ERROR
+
+	MOVEI	SCR1,3			;POINT TO 4TH WORD AS INCORRECT
+	CAMN	AC1+3,ORES+3		;2ND WORD OF REMAINDER OK?
+	JRST	OTEST			;GO TEST IF PC FLAGS OK
+
+OERROR:	MOVE	SCR2,AC1(SCR1)		;GET ACTUAL RESULT
+	MOVE	SCR1,ORES(SCR1)		;GET CORRECT RESULT
+	RTN				;TAKE ERROR RETURN
+
+OTEST:	GET	MRET			;GET RETURN ADDRESS IN MRET
+	AOS	MRET			;SET UP +1 NO ERROR RETURN
+	JRST	@MRET			;RETURN
+
+OBYTEF:	POINT	1,AC1+1,0		;BYTE POINTERS FOR GETTING SIGN
+	POINT	1,AC1+2,0		;  FROM AC1+1,+2,+3 (ACTUAL RESULT)
+	POINT	1,AC1+3,0
+OBYTET:	POINT	1,ORES+1,0		;BYTE POINTERS FOR PUTTING SIGN
+	POINT	1,ORES+2,0		;  INTO ORES+1,+2,+3 (EXPECTED RESULT)
+	POINT	1,ORES+3,0
+
+ODEND:	BLOCK	4			;DIVIDEND
+OISOR:	BLOCK	2			;DIVISOR
+ORES:	BLOCK	4			;EXPECTED RESULT
+ORET:	BLOCK	1			;RETURN + 1 ADDRESS
+SUBTTL	ADDL ERROR PRINT ROUTINES
+									SALL
+; **********************************************************************
+;*APRINT - ADDITION ERROR PRINTER
+; **********************************************************************
+
+APRINT:	PMSG	(AUGEND:  )  
+
+	HLRZ	SCR1,SCR3		;GET ADDR OF AUGEND
+	MOVE	0,@SCR1			;GET AUGEND (LEFT WORD)
+	PNTOCT
+
+	AOJ	SCR1,			;POINT TO RIGHT WORD
+	MOVE	0,@SCR1			;GET AUGEND (RIGHT WORD)
+	PNTOCT
+
+	PCRL				;PRINT OUT A CRLF
+	PMSG	(ADDEND:  )  
+
+	HRRZ	SCR1,SCR3		;GET ADDR OF ADDEND
+	MOVE	0,@SCR1			;GET ADDEND (LEFT WORD)
+	PNTOCT
+
+	AOJ	SCR1,			;POINT TO RIGHT WORD
+	MOVE	0,@SCR1			;GET ADDEND (RIGHT WORD)
+	PNTOCT
+
+	PCRL				;PRINT OUT A CRLF
+	PMSG	(RESULT:  )
+
+	MOVE	0,AC1			;GET LEFT WORD OF RESULT
+	PNTOCT
+
+	MOVE	0,AC1+1			;GET RIGHT WORD OF RESULT
+	PNTOCT
+
+	PCRL				;PRINT OUT A CRLF
+	RTN
+
+; **********************************************************************
+;*SPRINT - SUBTRACTION ERROR PRINTER
+; **********************************************************************
+
+SPRINT:	PMSG	(MINUEND:     )  
+
+	HLRZ	SCR1,SCR3		;GET ADDR OF MINUEND
+	MOVE	0,@SCR1			;GET MINUEND (LEFT WORD)
+	PNTOCT
+
+	AOJ	SCR1,			;POINT TO RIGHT WORD
+	MOVE	0,@SCR1			;GET MINUEND (RIGHT WORD)
+	PNTOCT
+
+	PCRL				;PRINT OUT A CRLF
+	PMSG	(SUBTRAHEND:  )  
+
+	HRRZ	SCR1,SCR3		;GET ADDR OF SUBTRAHEND
+	MOVE	0,@SCR1			;GET SUBTRAHEND (LEFT WORD)
+	PNTOCT
+
+	AOJ	SCR1,			;POINT TO RIGHT WORD
+	MOVE	0,@SCR1			;GET SUBTRAHEND (RIGHT WORD)
+	PNTOCT
+
+	PCRL				;PRINT OUT A CRLF
+	PMSG	(RESULT:      )
+
+	MOVE	0,AC1			;GET LEFT WORD OF RESULT
+	PNTOCT
+
+	MOVE	0,AC1+1			;GET RIGHT WORD OF RESULT
+	PNTOCT
+
+	PCRL				;PRINT OUT A CRLF
+	RTN
+
+; **********************************************************************
+;*MPRINT - MULTIPLICATION ERROR PRINTER
+; **********************************************************************
+
+MPRINT:	PMSG	(MULTIPLICAND:  )  
+
+	HLRZ	SCR1,SCR3		;GET ADDR OF MULTIPLICAND
+	MOVE	0,@SCR1			;GET MULTIPLICAND (LEFT WORD)
+	PNTOCT
+
+	AOJ	SCR1,			;POINT TO RIGHT WORD
+	MOVE	0,@SCR1			;GET MULTIPLICAND (RIGHT WORD)
+	PNTOCT
+
+	PCRL				;PRINT OUT A CRLF
+	PMSG	(MULTIPLIER:    )  
+
+	HRRZ	SCR1,SCR3		;GET ADDRESS OF MULTIPLIER
+	MOVE	0,@SCR1			;GET LEFT WORD OF MULTIPLIER
+	PNTOCT
+
+	AOJ	SCR1,			;POINT TO RIGHT WORD
+	MOVE	0,@SCR1			;GET RIGHT WORD OF MULTIPLIER
+	PNTOCT
+
+	PCRL				;PRINT OUT A CRLF
+	PMSG	(RESULT:        )
+
+	MOVE	0,AC1			;GET RESULT WORD 1
+	PNTOCT
+
+	MOVE	0,AC1+1			;GET RESULT WORD 2
+	PNTOCT
+
+	MOVE	0,AC1+2			;GET RESULT WORD 3
+	PNTOCT
+
+	MOVE	0,AC1+3			;GET RESULT WORD 4
+	PNTOCT
+
+	PCRL				;PRINT OUT A CRLF
+	RTN
+
+; **********************************************************************
+;*DPRINT - DIVIDE ERROR PRINTER
+; **********************************************************************
+
+DPRINT:	PMSG	(DIVIDEND:  )  
+
+	HLRZ	SCR1,SCR3		;GET ADDR OF DIVIDEND
+	MOVE	0,@SCR1			;GET DIVIDEND (WORD 1)
+	PNTOCT
+
+	AOJ	SCR1,			;POINT TO 2ND WORD
+	MOVE	0,@SCR1			;GET DIVIDEND (WORD 2)
+	PNTOCT
+
+	AOJ	SCR1,			;POINT TO 3RD WORD
+	MOVE	0,@SCR1			;GET DIVIDEND (WORD 3)
+	PNTOCT
+
+	AOJ	SCR1,			;POINT TO 4TH WORD
+	MOVE	0,@SCR1			;GET DIVIDEND (WORD 4)
+	PNTOCT
+
+	PCRL				;PRINT OUT A CRLF
+	PMSG	(DIVISOR:   )  
+
+	HRRZ	SCR1,SCR3		;GET ADDRESS OF DIVISOR
+	MOVE	0,@SCR1			;GET LEFT WORD OF DIVISOR
+	PNTOCT
+
+	AOJ	SCR1,			;POINT TO RIGHT WORD
+	MOVE	0,@SCR1			;GET RIGHT WORD OF DIVISOR
+	PNTOCT
+
+	PCRL				;PRINT OUT A CRLF
+	PMSG	(QUOTIENT:  )
+
+	MOVE	0,AC1			;GET LEFT WORD OF QUOTIENT
+	PNTOCT
+
+	MOVE	0,AC1+1			;GET RIGHT WORD OF QUOTIENT
+	PNTOCT
+
+	PMSG	(  REMAINDER:  )
+
+	MOVE	0,AC1+2			;GET LEFT WORD OF REMAINDER
+	PNTOCT
+
+	MOVE	0,AC1+3			;GET RIGHT WORD OF REMAINDER
+	PNTOCT
+
+	PCRL				;PRINT OUT A CRLF
+	RTN
+
+  

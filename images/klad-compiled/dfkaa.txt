@@ -1,38 +1,192 @@
-õLËà∞÷±`[4∏(+™X®(h°°CE(h§¢Ñâì,Íâ1§√Ç©&|·°BDâZZµj’•´V≠ZZµh—A¢Üä°J|J®uCûâ–ô®2gDäÜµã®ë•¡Ç[	lA°CE	†•>%Xjà'AöäËLH®tÏ”®ã5ã
-(-b`Ç\∆&!A¶ìh°!"dŒ¶©J¨:â3Á àì<ÈÍu$√@P≈H—A¢Ñ∆™ù§ôÈŒÑ¬Çß&	)‘ÍR™áRL˘ cEZ-*i3Á:`πê—A¢ÑƒÇ©(©ë`”äàËL®)’`“≤@Õä∆'-€ç(Lÿ)3™Aíù"K.ÑƒíÉt˙jía†äùLË®¥§ŒéAî˙™E≠I	Ùù	ï>D‰
-KêKí•D¯»√Eá>ÖöI1‰TPÜ•&ÌV1rn‹h®â1‰‘ÇòÇ-©4&≈ú®Ç˙JÈA®ì>p—I∞iLÑüJzƒ	∞i”\@¡ãv¶CE©"M4
-s„TÆÉJ*	*h#U§ù&úà®à*ŒàãI	ía≈úßiÍH*”äA>tÀ!¢ßŒ@ÇÇúô»Û"†Üü6ÖZà¥êS≤ßR,‘3¢ öÉe(§Á–íã˘…ñPWí© h™âPIúá2≠9)ÛêOåARDT0ß÷äA}*Rc»®A:}I(qW @©"M4
-s„TÆÉJ*¡°SÈ Çùe˙âi ÜüBLZd$E§ã>2ƒ	∞l†úüQ(§)O¨ì,D	ÙêO®ëïy*qFäöÉ**–dÃÇÖ2*
-âË Œ≤A>§à™H(E§ß>r´a–®A}$
-¥‚†ûúÇùXi)Ÿ¶©h—H3¢ ®ûÇ|Ë§‰O@ÉîX™h*O@©"-8§$√äùN*
-à¥¶”\@Ç§öâëPTûAtA°SÎŒä•NDö„ ®ë9Ë’+¡§äÇúà)ìA®Adƒ
-íf≈¶AJ,ÿ)3êIúA,5¡¢Üä®ëô»”ÈMÇ©&|‰	3êTêìMIËuf≈ú®ÇM4
-uaJäáQI‰‰Aúèy*í'’®*t˙â0‚†Çù9	ıfD@ù>¢H®!œúßRïX®à ”@ÇÇ˘©≤jMäùQ+$$«í©`—H¥j…†õuDsÈPû•§ôÈÀÜä,44È’öãMÈ‰¢”†ü:úòI3$‘≤A}$
-í"†™ß˙D¢ÃíÉ
-L…*ñPOåA&•1°TÁ∆®ØîT	ÛêE¢´&Ñÿ©’WêìB	*h'O®AN≠
-	íbƒ@ÖeH®kÜä$Hë!"f¡íù,5¶,ƒåó
-Íãä$Hë!4 «ä@»h°°CE	R)à®'∆@á>uH©’)ç$J’•´V≠ZZµj’•´V≠Z(h¶%Ã¡ÑßRîjÉEdπÄöH¥j…§ã6,ÍäcEdπàò™5d–öã:†—A¢ô.dN§˙H1‚ç)íÊa4)Eòì6LË*VPP§üî™cEfπÄö
-S„“ÇöÇÖ)ËqbU§ãLh°°L◊1ô>I)—–P§ü,J™QFäÕs!*u “®ì::
+MAINDEC-10-DFKAA.TXT
 
-S·≈à´J(—A¢ôÆf>ÑZH5$ŒéABî¯h±*“ä(h¶ÖÃ≈§•>ï1°CE5\`&MH™PjIûúÇ˙©’"“4Se∆aŸÜôI)±Fä›s)Ù"“Ç©&|Ë)à+A§ì§ôÈ‘∆ä·s)≤i√äô2Ë©ıiç) Ê3$”®ì:8—AÇDâ$Lÿ)3¢EÜZ≈Çÿà“‡¡\©b†—A"Dâ&ÑË®ç(h¶%Ã¡ÑßRîjÉERDöd"PZb¡πÜ,BÇß&	)‘ÍR™áRL˘ƒ$¡éù>ùI(h$”@©"*…4©‘@ì9°Bi≈§ìö	Ë»(D†Z≈Ç	iåX †•>ZjsÈ àì<ÈÍu$√¶\ÅöÑi†®ëŸÍuäÖúòd„ ®ë
-I‚”¶üII(1ÁO¶©&5ƒ*Hí¶Ç$ò(Ûß”®ìh°(4È’öãMI®$Aò®ÇLÍjî™√®ì>r)—TêäÇ˘™jE§A|ÍiÛ"çRzH®'–ä•§ö»´ê í®Çlh¥–NûA≠*âi ÇßN¨⁄
-ígŒ¶Aƒ8™ä©"D	5I¶A2|à±Iú©=ÿ©≥ÈY@á>ï(®u&Y\(h°*í"†àì<ÈÍu$√@©ùJd$E@Öúòd™ŒÜ©&|Ë)íjY@üI®(Rûáù9ÍCE	ÇùŸ(tß≠Üü*·°CE2\`&îZ*≤iEöã:•1°CE2\b&-©4&≈ú®4P—A1d‘êãI¯«CE	ÇAB%¶,Kòb¡y*íA@õ&tô™≥POå@Õî¥	ÒêMäõ>ïë°CE	Üü:ú˘à®(Rûáù9ÍCE	Üü:ú˘à®*EòãRÕ°¢Üäd\»M:âÙ†«ä(h°*í"††•>=()®)Uú¶Çºöâg fe-¯ƒbÕû•ep—A¢ô.fBîYâ3dŒÇ•e
-IÒÈAö¶4P—A0ÁŒ¶ü2* ≥°‘íü:ö
-ÈÙ•…úéÇÖ)ÍiL≤(`ë!"DâõLËà∞÷±`[4∏(+™X®(Hë!"Dâ†É*Å¢ÜäÕs*ß«§É5
-I‚ƒ™•ò—A¢ôÆb2|â3£††•>Xä¥¢ç(L…Ë1VíÇÇ˘ sÊE@°J|8™tÁ“4S5∆Bi‘Ç•RLË‰)OÜã≠(°¢ÜäßRËÖ∞fOúäÇùH*U$ŒéA$JH¥È†í¶Åõ(Lòƒ$E@â&y…ÙÍIÜAôäh*O@ßR*ÑÁ“§ã§À$)Y@ßR*â3£†Ç®Ç§à°¢Ñ∆í•N¢
-à¥Í íùN§X(à'∆@ÉQI®!Eéì:tô»Ë'∆@©"*iÛ™RûòÇúZ*±gCä\4Pï
-qb†òìN§ô»ÍW)öÊa3ËE§ÉRLË‰)OÜã≠(°¢Üäü:T
-u “®ãI®(RûèJ‘
-ÚfL@áf»§ÁŒ®ì:¨âñPUú©&b
-jìËPäà4PôÍH Œ@ãJî˙D·√™•Mp—A¢ö.`ï)ÍT∆ä&-*IÙ©†Ç•ôƒ$E@ç>î‘	ÒêHÇôQô u)UÜ©&|Íe»TêäÇdöjígG&úâÍ≥" ÑäÇ˘ ufTäàÇ§ÙëjE§õ&tT
-í"†ÜÉVúT	ÒêTêäÇ-*IÙó @Ç4Pô…Ë'–ä•§ôÈ»J™õAJ	)‘ÍR™áRL˘ƒßÃòü^ö®0‰ êÉ2¢‰$I¶(Lÿ+(!E@´N,j©à$Œ@á>u:äUa‘íù
-pÁ–äA2|˙'†Ü≥dT	ÛêTêä4Pò»2fIúéÇLÍjî™√®ì>r·°CE5\`&MH™PjIûúÇ˙©’"“4PöâPI®ãJI)ÛêCû´:¢	Ë»*HäABî¯ÍPf†í¶ÇÖ))’"ƒ@ÖeI®!œúß>dQ°BhRûáù9ÍKÜäŸs(vaÃäARLÿ°¢Üä©"*k0ÊE@©&lT	ÒêTêäÇÖ)ËÙ†Õ@ìMôƒ$E@õ&d…*qaœúàÇî»ÒPAúà4Pô*h*Hä•4˙H®)’í©»§ß“@©\ô»Ë&¡§è&u5Ñ§¬§ÉRL˘ƒ"”®¶±ZàkÜä0Hë!"DâöÉ&tH®kX∞Zâ\%’,T$Hë!"D–ÇèQ°CEnπÄôÍiA®ì>tÑ†“íÉRL˘ cErí`«úüN§òdgŒí©>ê—A¢Ñ†@@Ç§à§)Oé•j	*h*”ÇÖ2*
-È5$ ®ëI(1ÁO¶©&	©Û§‘û§Ç§Ù
-ß≠%§ƒäAJ,…(0§Ãí©eH™u)¨@ÉZ
-êgCäAR-:äkAúàæ}$
-ì–P§û¥h°$ ¨ì*$j…ÜñÇlZâ‚ ûåÇM9ÈêjIûúÇ|d(#A™ôQI‰PPÇ•RL:©êiÅ4¢¡@üI®(Rûáù9ÍKê ÜãJ§)»(Rûá%ZH¥–A§äÇ≠8®à+»äú4PîTêäÇÖ)ËÙ†Õ@ìMZh±IúARDöd`ŒúãIr
-í"Ÿ@ÉJ+°°CE	@@Åƒ*HäALÈ”È‘íÜÇl˘…5'“@©JÍh—iS@á>uJIÛTûARDT
-ß≠$LzH3PAúàÇùH*U)†í®ÇD	ì·¡®ì>rf2\(h°$ d\ÅŸÈ–ÍL@ZÇd¯h5$œú@ÕÉÜh$”@´N,D4–TêäÇ$ò(Ûß”®ìŸÈÀFä&§˙DÁŒ®•>b…êc†ÆüJ"·°CE	Ñ\ÅZh¥êMûâh°°BP @ARDT
-ß«§É5y)ìO†ãJH§g ™ßí	©Ò"†ÇùdÍ√êABî˙…1"”%i”™•t8§$A®ARDT
-ß√äßN}$	4–Pä•})©3£†Çô1j©–ÍIûùLh°$ ÜüJîXjì,Æ@AVúZDgƒäAN§JígG@É%(™t–I¶@ÕÉÜä&‰Ï”®ã5[¥°…¶ãHh°°BP @AN§JígG@É%(™t–I¶@ÕÉkê úûÇ$à()◊í©DZdiE@´N,DVFä@Å
-âi††•>=()´Üä·s)≤i√äô2Ë©ıiç(LÈÈ—FäÂs)íi‘íùh°Ä
+
+
+
+
+
+ 
+			IDENTIFICATION
+			--------------
+
+
+	PRODUCT CODE:	MAINDEC-10-DFKAA-B-D
+
+	PRODUCT NAME:	DECSYSTEM10 PDP-10 KL10 BASIC
+			INSTRUCTION DIAGNOSTIC (1)
+
+	FUNCTION:	BASIC INSTRUCTIONS
+
+	VERSION:	0.2
+
+	DATE RELEASED:	JANUARY 31,1977
+
+	MAINTAINED BY:	DIAGNOSTIC ENGINEERING GROUP
+
+	AUTHOR:		JOHN R. KIRCHOFF
+
+COPYRIGHT(C) 1975,1977
+DIGITAL EQUIPMENT CORPORATION
+MARLBORO, MASS. 01752
+
+THIS SOFTWARE IS FURNISHED UNDER A LICENSE FOR USE ONLY
+ON A SINGLE COMPUTER SYSTEM AND MAY BE COPIED ONLY WITH
+THE INCLUSION OF THE ABOVE COPYRIGHT NOTICE.  THIS SOFTWARE,
+OR ANY OTHER COPIES THEREOF, MAY NOT BE PROVIDED OR OTHERWISE
+MADE AVAILABLE TO ANY OTHER PERSON EXECPT FOR USE ON SUCH SYSTEM
+AND TO ONE WHO AGREES TO THESE LICENSE TERMS.  TITLE TO AND
+OWNERSHIP OF THE SOFTWARE SHALL AT ALL TIMES REMAIN IN DEC.
+
+THE INFORMATION IN THIS DOCUMENT IS SUBJECT TO CHANGE WITHOUT
+NOTICE AND SHOULD NOT BE CONSTRUED AS A COMMITMENT BY DIGITAL
+EQUIPMENT CORPORATION.
+
+DEC ASSUMES NO RESPONSIBILITY FOR THE USE OR RELIABILITY OF ITS
+SOFTWARE ON EQUIPMENT WHICH IS NOT SUPPLIED BY DEC.
+							MAINDEC-10-DFKAA.TXT
+							PAGE 2
+
+
+			TABLE OF CONTENTS
+			-----------------
+
+1.0	ABSTRACT
+
+2.0	REQUIREMENTS
+
+2.1	EQUIPMENT
+
+2.2	STORAGE
+
+2.3	PRELIMINARY PROGRAMS
+
+3.0	PROGRAM PROCEDURES
+
+3.1	LOADING PROCEDURE
+
+3.2	STARTING PROCEDURE
+
+3.3	OPERATING PROCEDURE
+
+4.0	ERRORS
+
+5.0	ITERATION COUNTER
+
+6.0	CYCLE TIME
+
+7.0	OPERATIONAL VARIATIONS
+
+8.0	MISCELLANEOUS
+
+9.0	LISTING
+							MAINDEC-10-DFKAA.TXT
+							PAGE 3
+
+
+1.0	ABSTRACT
+
+	THIS PDP-10 KL10 BASIC INSTRUCTION DIAGNOSTIC IS THE FIRST IN A
+	SERIES OF PDP-10 KL10 PROCESSOR DIAGNOSTICS.  IT IS THE MOST
+	BASIC OF THE PROCESSOR DIAGNOSTICS.  THIS DIAGNOSTIC
+	ASSUMES THE HALT INSTRUCTION AND THE COMPUTER CONSOLE
+	TO BE OPERATIVE.  IT MAKES NO FURTHER ASSUMPTIONS EXCEPT
+	THAT IT IS LOADED INTO MEMORY CORRECTLY.
+
+	THE DIAGNOSTIC TESTS THE BASIC FUNCTIONALITY OF THE PROCESSOR
+	AND MICRO-CODE.
+
+2.0	REQUIREMENTS
+
+2.1	EQUIPMENT
+
+	EITHER OF:
+	A PDP-10 KL10 WITH A MINIMUM OF 32K OF MEMORY
+
+	CONSOLE PROCESSOR
+	CONSOLE TELETYPE
+
+2.2	STORAGE
+
+	THE PROGRAM RUNS WITHIN 32K OF MEMORY.
+
+2.3	PRELIMINARY PROGRAMS
+
+	CONSOLE FUNCTIONS WORKING PROPERLY
+							MAINDEC-10-DFKAA.TXT
+							PAGE 4
+
+
+3.0	PROGRAM PROCEDURES
+
+3.1	LOADING PROCEDURE
+
+	LOAD VIA CONSOLE PROCESSOR
+
+3.2	STARTING PROCEDURE
+
+	STAND-ALONE STARTING ADDRESS IS 30000.
+
+	IF THE DIAGNOSTIC FAILS TO START CORRECTLY TRY STARTING AT THE
+	FIRST TEST INSTEAD OF AT THE BEGINNING OF THE CONTROL SEQUENCE.
+	(SEE LISTING).
+
+3.3	OPERATING PROCEDURE
+
+	ONCE STARTED THE PROGRAM WILL CYCLE CONTINUALLY UNTIL STOPPED
+	OR AN ERROR OCCURS.
+
+4.0	ERRORS
+
+	ERRORS ARE IN THE FORM OF HALT INSTRUCTIONS.  THE LISTING
+	SHOULD BE CONSULTED TO DETERMINE THE CAUSE OF THE ERROR.  A
+	NO OPERATION (JUMP) INSTRUCTION FOLLOWS EACH HALT.  THIS
+	MAY BE USEFUL IN CONSTRUCTING A SCOPE LOOP TO CYCLE ON THE
+	FAILING INSTRUCTION.
+
+5.0	ITERATION COUNTER
+
+	THE ITERATION COUNT OF THE PROGRAM IS PRINTED BY THE CONSOLE
+	PROCESSOR.
+
+6.0	CYCLE TIME
+
+	THE CYCLE TIME OF THE PROGRAM IS IN THE MILLISECOND RANGE AND
+	IS THEREFORE SUITABLE FOR TAKING MARGINS, VIBRATION TESTS, ETC.
+
+							MAINDEC-10-DFKAA.TXT
+							PAGE 5
+
+
+7.0	OPERATIONAL VARIATIONS
+
+	A.  DIAGNOSTIC MONITOR
+
+	    THE PROGRAM IS USABLE WITH THE DIAGNOSTIC MONITOR TO PRO-
+	    VIDE RELIABILITY TESTS, ACCEPTANCE TESTS, AND/OR TO PRO-
+	    VIDE A QUICK METHOD OF ISOLATION OF A FAULT TO A PARTICULAR
+	    AREA OF THE PROCESSOR.  CERTAIN PROCEDURES ARE USED WHEN
+	    THE PROGRAM IS USED IN THIS MANNER.  THEY ARE:
+
+	    1.  THE DIAGNOSTIC MONITOR TRANSFERS CONTROL TO THE PRO-
+		GRAM AND STARTS IT AT LOCATION 30002.
+
+	    2.  MONCTL - LOCATION 30043 IS USED AS THE DIAGNOSTIC MON-
+		ITOR CONTROL FLAG WORD.
+
+	B.  USER MODE
+
+	    THE PROGRAM WILL OPERATE IN USER MODE AND AS SUCH PROVIDES
+	    ASSURANCE THAT THE PROCESSOR IS PERFORMING ALL FUNCTIONS
+	    CORRECTLY.  USER MODE STARTING ADDRESS IS 30000.
+
+	C.  SYSTEM EXERCISER
+
+	    STARTING ADDRESS IS 30003.  NO DATA SWITCHES ARE USED BY
+	    THIS PROGRAM.
+
+8.0	MISCELLANEOUS
+
+	NONE
+
+9.0	LISTING
+

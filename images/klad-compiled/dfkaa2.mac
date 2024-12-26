@@ -1,580 +1,1742 @@
-ßVJâÇjE¶®Ç|d
-í"†Çâô u)UÜ©&|·°CE;®ë&ö
-à¥Í ¨ãJLi(¥–TêÉQy≥êTêäÇHÑgS®•VI)ÛêI¶AVúXÅ¢ù‘ûA$D('Oú[j-)‰™ÕÑãI9È’ …úãôƒPTûAr(h!œú©LÈ)—–AòòÇ‘ZIÙ÷wRDT
-Qi’ò®ÇM4('Oú[j-)‰™ÕÑãIôƒ$E@Ér“iS®XÇ§à§a†í¶Ç»®4¢ƒv)›I≥ñ Çù>r€H¥ß††üNMI*—PN™õ
--$	4–Aàâ"
-âË*HäA
-™rgG@©"*(ëw&u:äUa‘íü9r
-í"†ÇÜÇM4
-í"Œ@á",9h±Fû§ÇMJdÁŒ®ã:•4	”Á-¥ãJx—A¢Ñ¡b`—ÉA3g÷ämÖ—!.ËRäß¢(h*O@É2bH¥ß”&HÅ6ÿ≤fh’≥v∆≠≤∫ÌTàà'∆@ÇÇt˘≈∂¢“ûA:¨ÿH¥êTûAr(h'∆@É2`—A"Dâvµî˙d‰O™ô(™ufT$Hë'rg ÇúÇ4sÁTÇì:LË‰PNûú∂‘ZIË'UöÖê—A4Â…†ú$Hóji”@©ùD	1êCPÉJ	*h'Oú[j-)·¢Ñ”®ü@h°°N‡ƒ@É"h1!±∫XÇD1" äúÇ‹àln¨Ó2k0–AÜ®Ç,‰(-∆b∫±Ñ¶†VA-Hi"Œ@ÇÇ‹à‘.¨Ó2k0–AÜ®Ç,‰v„1∫XÇM$1)’ÑAnM&+´I§±aπ*Lnç)⁄•EJï*TT©P—A¢ù‘êìMH™uVä•&4ò™h*HÇ®Çºà©»*HäA$D	3©‘§´§ôÈ»$”@´N,D
-ì–Aàà4S∏$Á“àA>2)ìZä•>ö
-âË Œ@É9È’ …úì::$ßŒZµîÙ
-È…®ìZ*	 ≥aE§XÇ§à°¢ù“äßVeD	4–A@ù>r€H¥ß††üNMI*—PN™õ
--$	3êTêäÇ5ƒ#I§ßQb
-âPAÜA&ò—GrgI®ìdõH±Wí©!	”Á-¥ãJz
-	Ù‰‘í≠Í©∞¢“vARDY≈à †ÆüJ"	Ë» ÃòAj-)ÍcE;@ìMàëb ®ûÇ§à§aÆ@ARDT0–I¶ARDYƒ‰EÜó"…ÙêI®¶Ç˘ ëgT¶A:|Â´QiO4T&X0t6}h°6ÿ≤fh’≥v∆≠≤∫ÓÖ(™qj ÇÜÇºöâ †úü9m®™S–N™õ
--!°B`ƒàmÖ—!.’AààÇ|d(+œ§àÇ|d3& ¥ãJ}4
-ì–AúA—A"Dâvá>uH)3§ŒéAÈÈÀmE§ûÇuY®Qi$Hójr'’òàÇîZj≥* íúÇ‰0–CûùRô…3£†ÇA:|Â´QiO@ùVl(™CE	¶ó&Ñ·!"]–ÇßMH™uIåADe($”@ù>r€H¥ßçN§˙¢ÜävÉIÑg ∂ÉJl•à “@ÉYƒP[Ç•6’Ñj2ÜA|dqn¨Ó$1E®dÇ,‰piMÇ∫±öDbS™ÑÇ‹öF7FäÌR•EJï*TT®h°áu$I¶AR-:Ñ¢“íç&-4
-í ‘@Ø",‰
-í"†Çâô u)UÜ©&|‰	4–U¶ãI‰bDÓ
+SUBTTL	TEST OF THE ADD INSTRUCTION
 
-ÈÙ¢ ûåÇ…Ñ¢“û¶Ç§Ù3êAÜA|Íà2gIúéÇ
-	…Ûñ⁄ä•=	ÍrjI¨äÇuY®Qi,@©"(—Gt¢”™ôQödPNûú∂‘ZIË(O¶ìRMh§™ÕÑãIôƒ$E@Ér“iS®XÇ§à§a†í¶4Sπ)“jIÇô&‘XÑ‰‘êAÈÈÀmE§ûÇÑ˙i5$÷äA:¨ÿH¥ù†®ërƒ(+œ§àÇ|d3& ¥ãJ}1°N–I¶A$H®à*O@©"*(kê ®ëdi†®ëriaÀäàÇ4˙DjS@á>uH©’)†úü9m®™S∆äã∆	öüZ(õk‚ bdÕ£V≈å.âv°J-8™à √@Ø&§Ñ('Oú[j-)‰™ÕÑãHh°(1"	∂atHóePbD@ü
-ÛÈD@üâà-E§üMI‰g ÇÜÇ˘ êdŒíùh°!"DªÇA:|Â´QiO@ùVl(™H)»û´2"
-H¥ÍÃ®A&r)» √$Hë'pÁŒ®É&tô»Ë †úü9m®™S–N™õ
--!°BiÀí°8Hë't ”¶AR-:Ñc ÜQî	4–Nûú∂‘ZI„E	¶©>Ä—A¢ù¡§A"©»-¡§õÍƒ4êAàAr$‡“öÉub™å°†å_‹[•ÉE;Ç§ÇDµ äúÇ‹I∞n¨@ìIÑÍ¬@∑&ì°¢ÜävT©R•EJï*4S∫âi†®ãN¢
-»¥§∆íãMI5Wêã9I® ƒàA&u:äUa‘íü9ödi≈àARz(ëävÇÇº˙Hà'∆@É2bH¥ß”@©=ƒa†Üü:§)“gG@ÇÇt˘≈∂¢“ûAB}9*íkE@ùVl(™KTêä4S∫H¥ÍÃ®A&ö$ßŒZµîÙ
-È…®ìZ*	 ≥aE§A&r
-âPAÜ\Åi*TÍ,@©"*(h$”ÓLÈ*í`Ãíµ"
-È5$ ÇA:|Â´QiO@°>úöâ5¢†ú´6ZGh*Häú±
-ÛÈD@üâà-E§üLhßdi†Çâ,D
-ì–TêäÇ5ƒ*HäA	*h*HäúÇà®r‚ƒ@ç>í	*î–CûùR,Íäh'Oú[j-)·¢ÜäÇb¡ªBfœ¨ä&€Fm∂∫ÓÖ(™qj ÇÜÇºöâ †úü9m®™S–N™õ
--!°B`ƒàmÖ—!.’AààÇ|d(+œ§àÇ|d3& ¥ãJ}4
-ì–AúAiÛ™Aíù&tq°BDâwÈÈÀmE§ûÇuY®Qi$Hójr'’òàÇîZj≥* íúÇ‰0–CûùRô…3£†ÇA:|Â´QiO@ùVl(™CE	¶ó&Ñ·!"]–ÇßMH™uI¶ADe($”@ù>r€H¥ßçN§˙¢ÜävT©R•EJï*T(c∫âi†®ãN¢
-»¥§∆íãMI5Wêã9I® ƒàA&u:äUa‘íü9ödi≈àARz(ëävÇÇº˙Hà!œú©LÈ)—–A@ù>r€H¥ß††üNMI*—PN™õ
--$
-ì–AúA	Ë» ÃòAj-)ÍkTêä4S∫H¥ÍÃ®A&ö$ßŒZµîÙ
-È…®ìZ*	 ≥aE§A&r
-âPAÜ\Åi*TÍ,@©"*(h$”ÓLÈ*í`Ãíµ"
-È5$ ÇA^}(Ñ„ Çô1®™SÈ†v©",ÂÑPNûú∂‘ZIË(O¶ìRMh§™ÕÑãHhßi4–Aàâ"
-âË*HäA‰$E@Éöd$EúADXiqb åüIöäh!œú©uJdßŒZµîÒ°CEAbfÕÉA3g÷ämÖ—!.ËRäß¢(h+…®êÇ…Ñ¢“û¶4Pò(ë€bdÕ£V≈ã]v™HÑ„ ÇA:|Â´QiO@ùVl(™H*O@É9dÁŒ®É&tô»Ë ÃòAj-)ÍcE	%›9	ıfD@•ùYäà$Œ@É9dÁŒ®É&tô»Ë †úü9m®™S–N™õ
--!°BiÀí°8Hë't ”¶AR-:Ñc ÜQî	4–Nûú∂‘ZI„E	¶©>Ä—A¢ù™TT©R•EJï)›I	4–TäßQh™RcIä¶Ç§à*à+»äúÇ§à§bD@ì:ùJJ∞ÍIûúÇM4
-¥‚ƒ@©=àÉE;ÇA^}(ÑÁŒ®É&tô»Ë †úü9m®™S–Pûß&§ö»®'UöÖí
-âË Œ@É¯ƒfL@µî˙eà*Hä)›(™ufT@ìM	”Á-¥ãJz
-	Ù‰‘í≠Í©∞¢“@ì9I® √\@Ç4öJu ®ëdiçw&töâ0fI¥ãy*íA@Ø>îD	ÒêAòòÇ‘ZIÙ–;®ërƒ('Oú[j-)‰'”í©&¥T	’f¬ä§4Sπ*h ƒàãI‰$E@Ér
-í"†ÇÜÇM4
-í"Œ@á",9h±Fû§ÇMJdÁŒ®ã:•4	”Á-¥ãJx—A¢†±fh¡É°)≥ÎE∂¬Ëë't)E¶ãQd‰‘êAdƒQiO¶(LàÇm±df—´k°.’AààÇ|d('Oú[j-)‰™ÕÑãII‰g ÇÜÇ˘ êdŒíùâà-E§üLh°!"Dª¶ë>¨»Ñ¢”™ôQôƒg ÇÜÇ˘ êdŒíù	”Á-¥ãJz	 ≥aE§(M9i4'	ÓÑjh*E¶®ÇLdj √RA&ö	…Ûñ⁄ä•<h°*u'–4SµEJï*TT©R°°C¡ààÇ‘ZIË*O@ÇÇîö
-"ƒ@ü:(—A¢©Œzb≈É¢Ñ⁄¥z¿h°°PX±``¡–öH¥"¡®z#6≈ÉE<v©"M4
-ëi‘@á",9jh*Hä@ûHÑË$Œ¶©J¨:â3Á ÇùI® ƒàãI˘ƒP0úä∂öÖ∞j-Ç[RLÿ§†”í¶∏hßh(+œ§àÇ|d3& ¥ãJ}4	4–Aàâ"
-âË ŒÓ4sÁTÇì:LË‰fL@µî˙dlCä°QiÍH †ûùôƒÁE@É:"	È”,†ûù)*ãäv©"*
-H¥ÍÃ®A&ö
-âj ®ëdÁŒ®É&u4
-í"†¶É6*	 ≥aE§A^Dòi+¡¶A&r	*à'“íè&tâñWwRDT0–I¶ARDYƒh’í≠dY»qb ÆìRBeT†ÆëîTj"©zÜ¢5%»TêìM(™ufT@ß"}YàÉE;ÑäÇ…ÑÁE¶\ÅË´ ®ëdi†ä£VMh)ëgCäàÇºöâ †ÆüJ"	Ë» ÃòAj-)ÍkÜäv©"*…3†Ã@•ùYäà)»û´2"H®!®ÇÜ•Îƒ$I¶)›H™uI¶AJ-®5"ƒ@fŸI)±i†¶ûÇ§à*à †ûùÿ+(!E@•&Ö	à±TêüV<Å°N‚÷ä•e)*à'∆@©"*(kÜäv©"*(h$”@á",9h±TûA&u:™QPTêÉQöÑÁŒ®É&u43& ¥ãJ}5¡¢©Œzß9[°BmZzµi]´A¢Ñ…åä&’•áñ≠=b|4Pô©ı¢â∂µjËë's'¡àA
-È5$ ÇAd¯*ígG@ü:(—A0bD∂¬Ëë'j†ƒàA>2H¥ß†®ûÇ4…Ë5$ŒéA>tQ°Bb—¨n’´°"]“äßVeJdg ÜQó®3& ûùò—A1h÷∂¬Ëë't¢”™ôRö	)»!®ÇÜ•Î°BiÀí°Hë't ”¶AR-:Ñc ÜQó¶E	¶©>Ä—A¢ù¡àâa⁄(à “@VÇ,‰pbA†∫±dva†ÇáQYƒm∆b∫∞hßi4êAàâaπ*Ln¨@ìIäua ∂ìIç—°CE;TT©R•EJï*Bx°¢üÓ§â*h*E¶®Ç¥ZI1§≈¶ARDÑ$E@É$öâ3Á ûåÇ
+;THIS TEST VERIFIES THAT WHEN THE ADD INSTRUCTION IS USED
+;TO ADD A NON-ZERO NUMBER CONTAINED IN E TO AN AC CONTAINING ALL ZEROS,
+;THE RESULT IS A NON-ZERO NUMBER IN THE AC.  FIRST, THE AC IS CLEARED;
+;THEN, ANON-ZERO POSITIVE NUMBER IS ADDED TO THE AC USING THE ADD 
+;INSTRUCTION.  THE AC IS THEN CHECKED FOR ITS CONTENTS NON-ZERO
 
-ÈÙ¢ ûåÄhßh3& ¥ãJ}4
-ì–AúA	Ë» ÃòAj-)Íh)E¶´2•4	3ÜävÜ¢5'¨ åìJùD
-í"†ÇÜÇM4s"¡§ã⁄
-âg,@ÇÇº˙HÉE;ûåÇ…Ñ¢“û¶ÇM41"EàARz
-âPAÜ\Ç§à§¢”™ôQô¡¢ù‘êäÇ4	4–Têã99∞Â≈àARz	)‘Í“äARDÑ‘AÜRıÄ—A¢†±bb¡É°)≥ÎE∂¬Ëë't)E¶ãQd'†¥ãJx—A0bD∂¬Ëë'j†ƒàA>2H¥ß†®ûÇ‘ZIË)»û´2"
-H¥ÍÃ®A&rea©z`4PöirhE%›*t–TäßQòƒ‘AÜRıÄ—A4ÍO†(hßh–‚€åcub	*H ƒ@ßVi4ò›ÓD”P+@ã9∏(ë®]XA"…®†äúÇ
-h1#P∫X4S∏ƒÏ√@É¢©»!€åcub	*H ƒ¶´	π*Lnç)⁄•EJï*TT©P—Aé‡ƒàAj-)‰'†ÇAJM
-	ëb ûùh°°TÁ=bf…É°BmZz`4P—H,Y≤``ËM(™`‘ΩõeÅ¢û;®ë&ö
-à¥Í Üë∫d$E@O$D‰gS®•VI)ÛêAúàÇ§à§bDä§Ç|‰(Nä[
-ME®5¡Z©&lTPi…¶\4S∫âË Œ@É	Ë» ÃòAj-)Íh$”@É$XÑFävØ>îDsÁTÇì:LË‰fL@µî˙dlCä°QiÍH †ûùôƒÁE@É:"	È”,†ûù)*ãäv©"*
-H¥ÍÃ®A&ö
-âj ®ëdÁŒ®É&u4
-í"†¶É6*	 ≥aE§A^Dòi+¡¶A$H®à*O@ìQp—Gu$E@Éöd$EúAçY*–fEúá"
-È5$ ÜQJ
-ÈiE@Ü¢*ó®j √R\ÅI	4–RäßVeD
-r'’òà4S∏H® ÃòA>tZe»Nä±Qb
-âPAÜA&ö™5d÷Çôt8®à+…®êÇ
+	A10400:	MOVE	[0]		;PRESET AC TO ALL ZEROS
+	ADD	[123456765432]	;*ADD OF A NON-ZERO NUMBER TO AN AC OF ALL
+				;ZEROS SHOULD RESULT
+				;IN AN AC CONTAINING A NON-ZERO NUMBER
+	SKIPN			;PASS TEST IF C(AC) IS NON-ZERO
+	STOP
 
-ÈÙ¢ ûåÇ…Ñ¢“û¶∏hßjí"†åì:ƒ
-Qi’ò®ÇúâÍ≥" ÑäÇà(j^∞\ARDöa¢ù‘äßQöd¢–äÉR,DmêTíõö
-iË*HÇ®Ç
-	È—PMÇ≤ÇT
-RhPòãI	ıc»Ó-h™VPBí®Ç|d
-í"†ÇÜ∏hßjí"†ÇÜÇM4r"√ñãI‰gS™•I5I®A|Íà2gS@É2bH¥ß”\*úÁ™sï±&’ß´Vï⁄¥(Lò»¢mZXyj”÷'√E	öüZ(õfDâvô>D0–Wí©!âà-E§üLh°(1"	∂µjËë'j†ƒàA>2…ì‡‘íù˘»®*O@µîÒ°Bb—¨n’´°"]“äßVeJdg ÜQó®3& ûùò—A1h÷∂¬Ëë't¢”™ôRö	)»!®ÇÜ•Î°BiÀí°Hë't ”¶AR-:Ñc ÜQó¶E	¶©>Ä—A¢ù™TT©R•EJï|4U(ÒFävÉ"$§–†ô"	È—PTûA)*&EàA>tQ°CESúz≈ã&E	¥¥ıÄ—A¢†±bd¡É°*QhEÇ®&ÙFf´äxwRDöd"”®AZ-)(“b”@©"D
-í"†§ãN¨ Ñ„ ÇâLË‰‘AÜR4S∫âË!®äRÇºà™QPAÜA&öâ1£E§ã:¢ SÊ†äA
-≠Dj √Rz4S∏eTΩÇA>tT	3êOúäÇËÑÁL≤A>tTRj í¶Ç·°N‡√@Ø"}8§ÁŒ®ã:•4	4–Nûú∂‘ZIÎêHäù*ƒ	1êAÓJVPI¶A:}DÒgE§ÉR,D	3êTêäÇHâ5$œúABî¯h¥È†®ëhßjQi’ò®ÇL‰
-í"†ÇÜÇºôâà!E@µîÙ3¢ ®ëH™uävØ&dƒ–dÃ\ARDöd"”®A&ö
-H¥"¡®ã6§$Õä¶4S∫iË*HÇ®Ç
-	È—PWíô1(§¶OÇ©"
-âß’éê4S∏I5)†bARE*§⁄†ûåÇ˙â √@É:"°¢©Œzß9[°BmZzµi]´A¢Ñ…åä&’•áñ≠=b|4Pô©ı¢â∂µjËë't)E¶ãQd‰‘êAiâjIúéÇ|Ë°¢Ñ¡àà&›´K¢DªTÉ"…ì‡‘íù˘»®*O@ßlT
-r'’òàÇîZj≥* íúÇà(jPNûùj-)·¢Ñ≈¢¨&›´Ev≠]ÓîZj≥*S@ì950‘ΩÇô1˘»¥∆äãF∞õfDâv•ùYäî–IúADe/XN\ö¢Dâv°ù4
-ëi‘@ì50‘Ω`(M:âÙäÌR•EJï*TT®hß¡¢ÜSúz≈ã6E	¥¥ıÄ—A6lΩ`(h®&,Y∞`t&îZ∞j	ºà≈¬¡°O‘êìMH™uVä•&4ò™h*HÇ®Ç§à§bDí©&|‰	ÒêTÆûÇuY®QiS@Ø"}8§ÍÕ@ìM$
-Pd”äàÇ§Ù
-í"çvÕµI'◊ä§Çºôâà)E¶´2¢	)»*HäADe/X ¶ì:T
-í$”@ùVl(™H$”@ü:*	à4£≈§)›I3êTêäÅõdRj êÉJ%x*QPOåARDT
-ß√äßN}$	4–Däß&<Ë®à*O@ëtIà´êTêìMH™uävÉ2úÙ
-—iIåìöh4©Y@ètZH5$œúAtD
-ß–Çè§ôÈ»*H§üV<âÍµTêä4S∏(ë"“\ARDöd"”®A&ö
-H¥"¡®ã6ƒ$Õä¶πH™u$ŒéA
-,y)‘–Wí©!…Ë1$ŒéARDQ°N‡√@Ø&§Ñå0``¡ÉAúàÇHâ3£†®ë8)±PN™õ
--$
-ì–I®vÇ§à©Àävá",9i3£†åüI50‘Ω`\ÇL‰
-í"†¶´
-úZ*±gT@f’H™u)¨@©"*	 ≥aE§)‹…Ë1"ƒ@ì:§Ù
-í"†ÇÜÇM4	fVäàÇ,i*IöäÇËÑ‘ERA&ö	®1"†ä£Vƒ
-ì–I®¶4S∏…Ù¶≈§AZ ®®(L™¶Ç§à§Í“§ã:¢ea©Ns⁄i ÿçfÀ€++Ÿj”€KJÏŸ&Lh°6l¨x≥eÎF0|(Lò»¢mZXyj”÷Ü0`|4Pô©ı¢â∂±^"KK]wBîZhµAÜARz$§–†ô"	È—PS®ÉJ§ô»Ë+…®êÇöÑ'”í©&|‰E	ÇâMª
-ÒY≤X¬ËóePbD@üJÈË'UöÖï4
-ìÍAòì::D†…¶ãI‰$E@f⁄§Å°BDâwB}x™H)»û´2"
-H¥ÍÃ®A&rea©z`∏h°*r‰–ä$K∫4È†®ãN¢	(»!®ÇÜ•Î°Bi‘û†4P—Gjï*TT©R•ECE>Bx°¢©Œzb≈£¢Ñ⁄¥z¿h°+6^∞4T&-0tJ-®5ﬁàb·`—GéÍHí¶Ç§Zjà+E§ìLZd$A®ARDT1"I®ì>r	Ë»*WûA:¨ÿH¥©†Æë>úT
-uf†í¶Åí
-H2i≈àARz
-âFävf⁄§Ñ
-È≈§A^L…Ñ¢”™ôQôƒ$E@Ü¢5'¨Síù*
-âi†ú´6ZDi†ûù»*Q‚“Ó§à)»*Hä@Õ≤I5HÇ•ºH®'∆@©"*
+;AD ADD [ADC1], AD ADD EN [ADC1],
+;F CYC ACT EN A [F1], AD FM + FETCH EN A [ADFP],
+;F CYC ACT EN C[F1], IR ADSUB [IR1], IRXX [IR1]
 
-S·≈¶ß>í	*h"E¶ìtXÑ'†êÉ:$»•»*Hí¶Ç§ZjÉE;ÇôNz
-»¥§∆íãM8*T¨†éã:-(*ígŒ@É:"
+;**********
 
-SËAéÉRL˘ƒ$Rû´ED
-í"çw$H®kêTêìMH™uI¶AJ-®5"ƒ@fŸI)±iÆ@©ùI)—–Bäè&u4
-ÚjH@ô>I)—–Têä4S∏(h+…®êÅ£0``¡É3¢ ÇâLË‰$E@ßlT	’f¬ä§Ç§Ù	5†®ër¡°N·»äá.LË‰ß“@Ü¢5'¨ íúÇ§à§Í¬¶ãF¨Y àµ@©ùJeà*HäA:¨ÿH¥Üävô>H®à$Œ®ûÇ§à§a†í¶ÇDä—b äÉB
-â3b†Çù5™PI¶A6|H§h’ÇòÇ§Ù	5)çw})®¥êVÇôV*
-	ïi†®ë:™T¢Œ®ADe#ESú{Nr∂!¢ÑŸ≤{f ˆA¢Ñ⁄¥{j“ª+#E	íçMõ%è,Ÿzh¡ÉÜäì(õKKZ¥z—É	v°J-8™à ¬@©=
-RhPòã˘»®)‘Ç•RLË‰‰‘êA
-MD
-È…®ì>r¢ÑÕû≠Mª
-Ò-bYj’—'j†ƒàA>2
-äÛ–N™õ
--*d'‘Çô&ttH)Aíß"
-âË*Hä@ÕµI¢ÑâÓÑ˙Ë¥êSêüVdD
-Qi’ò®ÇL‰j √Rz¡p—A0bD∑fÕ—!.ËA¶¶Ç§Zjà$∆@Ü¢5'¨äß.M°¢Ñ”®ü@h°°N’*TT©R•EJÜä|(e:®U*LßB,9(3Kíb¡iÍ¥êBí®ÇHà¥êTäßPh°°NÍHí¶Ç§Zjà!»äá.ö
-âPCÇ•J  ≥°‘íü9jIÛPTêäÇl˙jà)…éù&4òh3™ ÑìQ¯ƒPFû´HhßhRj Çâ-$
-ì–TêäÇdX*uSíè:Li(pgT@Ö&¢	Ë»*HäA:-äÑ‰«úìL8)’Fû´I)*à ƒàãIp—GtËEÜìL8)ì,¨@ìQöd¢“íç&,D
-í ‘@É9ôâëc¡òA*K("Oä¶Çt˙Ñ·√™§Ç5)È®!I®@Õö
-âË!I®@Õí·°CEAbf’ÉA3g÷ämkÖãZ›wBîZhµAÜA^MIfL@ü:-4∂!≈†®Ç4˙D§‘@fÃh°(1"	∂ctHóePbD@ß"}Yàà'O®AZh®!¡§•ejIÛPBí®Åõ4
-ì–Bí®Åõ!°Bb—¨mkÖãZ]wJ-:©ïIúAÿ)ìOúãLh°(¥k	∂atHójQi’ò®ÇL‰0ﬁ∞&úπ*DâwB:d"”®A&2ea©z`4PöjìË)⁄•EJï*TT©P—A¢ù‘êìMH™uCêã]4
-í"†ÜÉJïî’gC®ì>r SÊ†®ëŸÍuSíè:Li(pgT@Ö&¢	Ë» †åüVê—Gp§‘@É$ZD'†®ë»®4Í ¶ìtò…0‡Œ®A
-MD	ÒêTêäÇt[
-à)…éù&4òh3™ åüVíI5Aàâí·°NÈ–äá&4òh3&YXA&¢	*h+E§ìLXÑ$A®Ar	)ì"«ÇòÇJVPDûãMÈÍà'√Ü´IjIÛPBí®Åìî
-ì–Bí®ÅìÖ¡¢ÜäÇbÕ≥Bfœ¨ä&⁄÷%ã±`ctK∫
-Qi≈®A
-È5$ Çô1˘»¥–E∞áÖD”È ÑìQ'!¢Ñ¡àà&€°"]™Çâ9	ıfD@ù>¢h5i≈@áï+$©OöA
-MDNPTûA
-MDNäãF∞õe¨V,Zb¡Ö—'t¢”™ôQôƒaΩÇô1˘»¥∆äãF∞õfDâv•ùYäà$Œ@ÉÎ°BiÀí°Hë't ”¶AR-:Ñc ÜQó¶E	¶©>Ä—A¢ù™TT©R•EJï)›I	4–TäßQ9∞Â”@©"*h4©Y@çVt:â3Á å•>j
-âPMûßQ9(Û§∆íáuDRj ûåÇ
-…ıiw
-MD1"E§ARz
-âPLäÉN¢
-i1ÁIåìÍÑ§‘@üI®'E∞®ÇúòÈ“cIÜÉ:¢…ıi ÑìQàëi.Óù®rcIÜÉ2eïÑj í¶Ç¥ZI1§≈àARDÑg íô2,x)à!¡§•eIË¥–Nû®Ç|8j¥êF§ü5)*à5@©=)*à4\(h®&,€∞`t&l˙»¢m≠bX±k&nâv°J-8™à √@Ø&§Ñ3& ûùö´‚–®A}$Rj dj4Pò(ë€b∫$KµH1" ¶ë>¨»Ñß‘@á≠8§‡“§≤Ç5)È®!I®@…™
-âË!I®@…†—A1h÷∂µä≈Ö¨ò0`∫%›(™ufT@ì9g∞fL@ü:-1°Bb—¨mÖ—!.ÈE¶´2¢	)» √z`4PöirhE%›*t–TäßQòƒ‘AÜRıÄ—A4ÍO†(hßeJï*TT©R•A¢Ü;®ë&ö
-à¥Í Üë∫d$E@áï+$™ŒÜ©&|‰‘ßÕ@©"*	©ÙÍ ¶ìtò…0‡Œ®A
-MD	ÒêA@ç>≠!°N·I®A$H™H*O@©"*	à∞i‘@ß&<È(“a¡ú®ÇöÑ„ ®ëË´Síè:Li(pgT@ç>≠$Rj Çâ-%¡¢ù”†ãLi(pfL≤XÇMD	4–Vä•&4ò®à*HÇ®Ç‰	3&EéÉ18*T¨†àüö	…ıOÜáVí SÊ†ÑìQ&$'†ÑìQ&√EÇ≈£ÑÕû≠Mµ¶+-h`¡É°.ËRäß¢(h+…®êÇ…ÑÁE¶Aƒ8™Fû§ÇöÑòç$A+lnâv™HÑ‰O™ôÈÍà!¡™ß8*T¨†å•>jI52bARzI52`(LZ*¬m≠bX±kF]wJ-:©ïIúAÿ)ìOúãLh°(¥k	∂atHójQi’ò®ÇL‰0ﬁ∞&úπ*DâwB:d"”®A&2ea©z`4PöjìË)⁄•EJï*TT©P—A¢ù‘êìMH™uCêã]4
-í"†ÜÉJïî’gC®ì>r SÊ†®ëŸÍuSíè:Li(pgT@Ö&¢	Ë» †åüVê—Gp§‘@É$ZD'†®ë»®4Í ¶ìtò…0‡Œ®A
-MD	ÒêTêäÇt[
-à)…éù&4òh3™ åüVíI5Aàâí·°NÈ–äá&4òh3&YXA&¢	*h+E§ìLXÑ$A®Ar	)ì"«ÇòÇJVPDûãMÈÍà'√Ü´IjIÛPBí®ÅãÑ
-ì–Bí®Åãu¡¢ÜäÇb—ãBfœ¨ä&⁄÷%ã¥``¡É°.ËRäß¢(h+…®êÇ…ÑÁE¶Aƒ8™Fû§ÇöÑ\$A+lnâv™HÑ‰O™ôÈÍà!¡™ß8*T¨†å•>jI51pARzI51n(LZ*¬m≠bX±£]wJ-:©ïIúAÿ)ìOúãLh°(¥k	∂atHójQi’ò®ÇL‰0ﬁ∞&úπ*DâwB:d"”®A&2ea©z`4PöjìË)⁄•EJï*TT©P—A¢ù‘êìMH™uCêã]4
-í"†ÜÉJïî’gC®ì>r SÊ†®ëŸÍuSíè:Li(pgT@Ö&¢	Ë» †åüVê—Gp§‘@É$ZD'†®ë»®4Í ¶ìtò…0‡Œ®A
-MD	ÒêTêäÇt[
-à)…éù&4òh3™ åüVíI5Aàâí·°NÈ–äá&4òh3&YXA&¢	*h+E§ìLXÑ$A®Ar	)ì"«ÇòÇJVPDûãMÈÍà'√Ü´IjIÛPBí®ÅãD
-ì–Bí®Åã5¡¢ÜäÇb—ìBfœ¨ä&⁄÷&+-b∫%›
-H¥‚‘@Éy*íAòòÇ|Ë™h"ÿÜãB¢…ÙêBí®ÅãA°B`ƒàmç—!.’AààÇúâÍ≥" úüQ8*¥‚†ÜÉJïî‘ßÕ@Ö&¢&à*O@Ö&¢&cE	ä£XMµ¶,,`∫%›(™ufT@ì9g∞fL@ü:-1°Bb—¨mÖ—!.ÈE¶´2¢	)» √z`4PöirhE%›*t–TäßQòƒ‘AÜRıÄ—A4ÍO†(hßeJï*TT©R•A¢Ü;®ë&ö
-à¥Í Üë∫d$E@áï+$™ŒÜ©&|‰‘ßÕ@©"*	©ÙÍ ¶ìtò…0‡Œ®A
-MD	ÒêA@ç>≠!°N·I®A$H™H*O@©"*	à∞i‘@ß&<È(“a¡ú®ÇöÑ„ ®ëË´Síè:Li(pgT@ç>≠$Rj Çâ-%¡¢ù”†ãLi(pfL≤XÇMD	4–Vä•&4ò®à*HÇ®Ç‰	3&EéÉ18*T¨†àüö	…ıOÜáVí SÊ†ÑìQ'†ÑìQï¡¢ÜäÇb—õBfœ¨ä&⁄÷FV,ZctK∫
-Qi≈®A
-È5$ Çô1˘»¥–E∞áÖD”È ÑìQ¢Ñ¡àà&€°"]™Çâ9	ıfD@ù>¢h5i≈@áï+$©OöA
-MD,TûA
-MD#E	ä£XMµ¶L,XatK∫H¥ÍÃ®A&r(o`ÃòA>tZa¢Ñ≈¢¨&€°"]“äßVeD	3êAÜz¿h°*r‰–ä$K∫4È†®ãN¢	(»!®ÇÜ•Î°Bi‘û†4P—Gjï*TT©R•ECEwRDöd"”®ADXit–TêäÇJVPF™ù§ôÈ»#RûöÇ§à§g”®ANLy…1§√ÇùQ)*à'∆@ÇÇ4˙™CE;ÑìQàëi ®ûÇ§à§"¡¶®ÇúòÈ“cIÜÉ:¢I5OåARDT	—lT@ß&<È(“a¡ú®Ç4˙™H!I®A$H™KÜävßB,9(“a¡òôeb	*à$”@≠îò…1b ®ë¢)»$ÃòãƒpiR≤A|Zdß‘@üZD©OöA
-MD»*O@Ö&¢•√EÇ≈£FÑÕû≠Mµ¶å1XXµç—'t)E¶ãQd‰‘êAdƒ	Û¢”@ãbZ
-à#O§A
-MD√E	ÇâM∂+¢DªTÉ"
-iÍÃàA:}Dpj”äA*K(#RûöÇöÑêTûA
-MD£E	ä£XMµ¶å0XX¬ËójQi’ò®ÇL‰0ﬁ¡òòÇ|Ë™cE	ä£XM∂¢Dª§ãN¨ Ñg ÇÜıÄ—A4Â…†ä$Hóji”@©ùD	1êCPÉK÷¢Ñ”®ü@h°°N’*TT©R•EJÜäÓ§â*h*E¶®Çà®rÈ†®ë8*T¨†å´:I)ÛêF§ü5I®&œ¶®ÇúòÈ“cIÜÉ:¢I5OåAiÍ¥ÜävÖ&¢(ë"“@©=I®&EÇßQ9(Û§∆íáuDRj ûåÇ§à§¢ÿ®ANLy…1§√ÇùQiÍ¥êBí®ÇHà¥ówNÑXi1§√Çô2 ƒ	5I¶AZ-)(“bƒ@©"D3êIòô<Ñ‡“§≤Ç$¯™h'O®A>:™H#RûöÇöÑêTûA
-MD+ÜäãF¶	öüZ(õe¨X0``≈b≈¶7Dª†•úZÑa†ÆìRB)ìOúãM[qhT@ç>íI52&HÅ6ÿ›ÌTàà)»û´2"	…ıCÇ´N*h4©Y@çJ|‘Rj dARzI51&-¡6÷±``¡ÉÖå.âv•ùYäà$Œ@ÉÏâà'Œä¶4Pò™5Ñ€`∫$K∫H¥ÍÃ®A&r(oXN\ö¢Dâv°ù4
-ëi‘@ì50‘Ω`(M:âÙäÌR•EJï*TT®h°áu$I¶AR-:Ñ‰EÜóMI®!¡§•ej©–ÍIûúÇ5)È®*HäA6}:Ñ‰«úìL8)’Bí®Ç|d(#O™§4S∏I5Aàâí
-âË*HäA2,jà)…éù&4òh3™ ÑìQ¯ƒ$E@ù≈D
-rcŒíç& à#O™§ÇöÑbDä§∏hßjt"√íç&âñV í®ÇM4
-—iIåì"
-âj ÇúÇL…à±‡Ã@áï+$'≈¶A:}D	·’§Aî˘§§‘@bÇ§ÙRj `\4P—H,Z6``ËLŸÍ—D€Zd¡É+-b∫%›
-H¥‚‘@Éy*íAòòÇ|Ë™h"ÿÜãB¢…ÙêBí®Åà—A0bD∂∆Ëë'j†ƒàAND˙©ëNû®Ç™qPCÇ•J  SÊ†ÑìQ
-ì–Bí®ÅÄ—A1h÷∂ŸÉ,`∫%›(™ufT@ì9g∞fL@ü:-1°Bb—¨mÖ—!.ÈE¶´2¢	)» √z`4PöirhE%›*t–TäßQòƒ‘AÜRıÄ—A4ÍO†(hßeJï*TT©R•A¢Üäv©"M4
-ëi‘@á",9jh*HäA*K(#UúáRL˘ƒ©OöARDT	≥È‘@ß&<È(“a¡ú®ÇöÑ„ ÇA}ZA¢ù¬í®ÇHà¥êTûARDT	ë`”®ANLy…1§√ÇùQ)*à'∆@©"*	»∂* ¶ìtò…0‡Œ®A}ZD§‘@É$ZE√E;¶°ò…0‡Ãò≤±öÑi†¨ãJLi(±TêÉQƒfLäèbh4©Y@â>-4	”Í ûá≠$‘ßÕ@Ö&¢¶5'†ÑìQ6•√EÇ≈£vÑÕû≠Mµ¶+-b∫%›
-H¥‚‘@Éy*íAòòÇ|Ë™cE	ÇâM∂+¢DªTÉ"
-iÍÃàA:}Dpj”äA*K(#RûöÇöÑX†®ûÇöÑ⁄çN\ö¢Dâv°ù4
-ëi‘@ì50‘Ω`(M:âÙäÌR•EJï*TT®h°äuaT®ò&§Zjà'∆@ßV)—CûõB(§gS®•VI)Û©ç)›I	4–TäßQh™RcIä¶Ç§à*à$∆@ÇÇt˘ƒ¢“ûAB}9*íkE@ùVl(™H$Œ@äÇM1°NÈ’Ñ©J:à±F§ü5I® √@Ø",‰j √Rz¡b
-âPRäßVeD	3êTêäÇ1°N‰”@ù<â5¢ç*&¨:õ>¥Q+l.âwBîZhµAÜARzH¥ßçN¨!+v+ƒ@`±k°.’S™ÑÇ|d
-È…®ìZ*	…Û≠E§ûÇuY®Qi å•>j(h'∆@É2bH¥ß”$Hë't‰O™ô(™ufT@ì950‘†úãI*—Fäß.M	Å"Dª†ÉNö
-à¥Í íåÇà(jPI¶A:,x*íkE&ùIÍEw"*KPEúA∏(êf›XA;(h √®At$qò›X)‹öDÍ¬∞∑&ì•à$“@ÉùXKri1∫(hßeJï*TT©R•A¢Üäv©"M4
-ëi‘@≠îò…1i†®ë¢	(» †ÆüJ"	Ë» ÃòAj-)Íh$”ÓùXJî†√®ãjIÛPAúA	Ë» ÃòAj-)ÍkTêäÇîZj≥*w&ö)» √@ü®™SÈÆ4T&-ò0t6}h°6ÿ]ÓÖ(™qj ÇÜÇ§ÙQiO&ùXA6ÿ]ÌU:®H'∆@`Ç5)È® ¶ë>¨»Ñ¢”™ôQôƒ‘AÜRıÄ—A4Â…†ä$Hóji”@©ùD	1êCPÉK÷¢Ñ”®ü@hßh1C§≤Åõkh1!“∫XÇ2k0–AÜ®Ç,‰ñ„1∫XÇLd
-uaX@∑&ì°¢ÜävT©R•EJï*T*ÑË£ESúz≈ãvE	¥¥ıÄ—A¢†±bn¡É°*QhEÇ®&ÙFfÀäxwRDöd"”®AZ-)(“b”@©"D	1êA@•&Ö	à±Oúä4Sπ*h)’Ñ©J:à±F§ü5öäqfFXARDT
-Qi’ò®ÇM1°N‡Œ@É¯ƒfL@µî˙e»*Hí¶Ç§Zjà$”@•ÑX*ëb fl4S∫â3b”@ì9˙Hëi ®ûÇ§Zjà Ãò@Õ≤I5)ÆNs⁄i ÿçj”€KJÌZ&Lh°6≠,xµiÎ¡¢ÑÕû≠MªKWDâvô>D0–Wí©!”'¡®ì::	È—FäßVõkVÆâv™ùXD„ åô>I)—–OúäÇ5)È®$‘¶ã22
-iÍÃàAJ-:©ïIúADe/XN\ö¢Dâv°ù4
-ëi‘@ì50‘Ω`(M:âÙäÌR•EJï*TT®hß¡¢®Aéä4S∫âi†®ãN¢
-»¥§∆íãMI5IåAyÍQOåAd¡°NÁŒä¶ÇM4
-uaT§É§XÑ©OöA&•8©ëñ ®ë(™ufTÓL‰
-í"†ÇÜÇM4QiO\(h®&,ò0`t&l˙»¢m≠b∫$K∫
-Qi≈®A
-âË ÃòA>tZa¢Ñ”™Ñ&⁄÷+¢DªTßV	Ë»±@çJ|‘	5)≈òåÇúâÍ≥" §ãN¨ Ñg ÜQó¶E	¶ó&ÑQ!"]–ÇßMH™uIåADe/XN§˙¢ÜävT©R•EJï*T(c∫âi†®ãN¢
-»¥§∆íãMI5CÇõäl”@ß.M
-d$EÓt[
-à$Œ¶©J¨:â3Á íù-©—"Œ®A>2
-âPDÇ©y*íAÜ)‹»à"Æ@©"M4
-ëi‘@çL dc ÜÉ6
-âÒi†úüQ9i4AòØÕ5¡¢ÜäÇb…ãBfœ¨ä&€°"]–§ãN-D0÷ äARzH¥ßçÿ!"DªTál
-r'’òàÇ Ë6i†¶ó&Ç
-âPNä±Qô u)UÜ©&|ÂÅ¢ÑâÓ}I¥´…¶äÇ§â*h*E¶®Ç4)î∆äßR}°CE;ä®¡∏´´E®`Ç,Îh∑V í§Ç‰“f∫±ÑÈY@g‹àtÆ¨Ó4;(h √®ArÑ‡ƒÜ•ub(à!“≤@Õ≤≈Òì”@∑$:K´äv°9âÂ†äúÇ›hwV ä®¡4À„[ä∫±öD‡ÿ∞∑&ì;•ÉE;Çâi9È—P∂É’‘3¢ Çâi9È—Z∂É’—°CE;TT©R•EJï*4S∫âi†®ãN¢
-»¥§∆íãMI5CÇõöd ‘ÇAN,Íi5$÷ä\4Sπ*à)Àí°MI®'E∞®ÇLÍjî™√®ì>r	(» ŒàA>tÀ!¢ù…åADe/a®äRπôƒ$I¶AR-:ÑaΩäz¡»ÉE;ÜQó®j"©z`πà©–‚¨@álT	µi‘Óúπ**HäA:-äÑgS®•VI)ÛÜävì9I	4–TäßPh°°PX≤d`¡–ô©ı¢â∂atHój¢”ä®Ç5ÑPTûAj-)·¢Ñ√ÇõHë'j°¡öäÇúâÍ≥" ¶ó&Ç
-i3°≈@äˆ1°Bi‘û†4P—Gpb åöÅZ©»-¡àçBÍƒ»!ÿÜAD≥°€åcub	*P‡ÿ∞∑&ì;°¢ÜävT©R•EJï*T(c∫âi†®ãN¢
-»¥§∆íãMI5CÇõöd ‘ÇAN,Íi5$÷ä)‹öÑÂ…†¶Ç§à§¢ÿ®A&u:äUa‘íü9¯ƒgD@ü:eî	1ÜävÜ¢5'∞‘ER\ÇL‰
-í$”@©ùDj √R{DU'¨çw
-≠EÑPI¶A:}D
-ÚjHíúÇ§à§a†§É:<U¡¢ù»äù*ƒpf≈@õVùD
-r‰–Ó§à§¢ÿ®A&u:äUa‘íü9ôƒ$I¶AR-:Ö√EÇ≈ì6ÑÕû≠M∂¢DªTálT
-r'’òàÇúπ*+»äúÇà(j^√Pä•Î°Ba¡öä&€°¢Ñ”®ü@h°°N·¡ö∞Èhh∂„1∫XÇM$pfÿ∂ìIç—°CE;TT©R•EJï*4S∫âi†®ãN¢
-»¥§∆íãMI5CÇõöd ‘ÇAN,Íi5$÷ä\4Sπ*à)Àí°MI®'E∞®ÇLÍjî™√®ì>r	(» ŒàA>tÀ$cwDe/a®äRπôƒ$I¶AR-:Ñ‘AÜRıÇ)—ävÜ¢*ó•¨W êã:UÑ‡ÕäAND˙©ëNû®4S∫irh ®ëË´IúßRïXjígŒ@ì9I	4–TäßQp—A¢†±dh¡É°)≥ÎE∂¬Ëë't)E¶ãQd'†¥ãJx—A0‡Õämk°"]™ÜÉ6*
-iÍÃàA:}D
-r‰–@Ö™qPCPÉK÷gDÜQK’°¢Ñ”ñìBë!.ÈÀí†ÇDäà$Œ¶©J¨:â3Á íåÇ®®(A¶ßö
-à¥ÍN§˙¢ÜävÉE®"Œ@∑$´´I§Aã‰“f∫±dva†ÇáQYƒê[åcu`—Gpb Ç§µeË…È†∂É€•à ƒ@É"h1!±∫XÇD”P+@ç§9g ÇAnH Vw;(h √®Ar$„1∫XÇD1" äúÇh1!±∫XÇD1" å_=4pbCb∫4P—Gjï*TT©R•ECE¶´
-•IÅ5"”®A>2iÛhA§äÅD8)∂†íùN•*®u$œú¶4P—Gjï*TT©R•ECEwRDöd"”®AZ-)(“b”@©"DpfÃ@ß.M
-d$E@ù≈D
-qh’äùRLÑgS®•VI)ÛêWêã9»ÉE;ûù2 
-Èg ÜQî	4–LäßMI3êCPä•p—Grg ®ë&ö
-à¥Í,@Ü¢5'´X†Çù5™^∞vA",Ëh´CÇõ19	ıfD@ß.Mƒ'‘êãJºöh´*Hä@4S∫
-S„“ÇöÇDäî◊*ÑÕû≠Mµ¶7Dâv°J,…Ë1AÜA^MIXçŸÅ6ÿ]ÌT8)≥SêüVdD
-r‰–@Ö™qPCPÉJ	*h&E¶¶Ç§à)»!®äR4PöjìË)⁄•EJï @@Åh)3*“äAtã4‰”@@ÅEJï*Óà(lâÜ¢6%"D∆Çì2LË‰‰«úÉ0h°°Nƒâ§0êPÜAp—GbDâãQÉ§sÁD@¢ÈdÊK@ã8h°°N’*TT©R•EJÜäÓ§â*h*E¶®Ç¥ZI1§≈¶ARDÑ‡ÕòAN\ö
-h*HäA:-äÑ‚—™ã:§ò)à$Œ¶©J¨:â3Á Æër)—ävü:eî
-Ú"Œ@Ü¢5$i†òãNö
-âg ÜQJ·°N‰Œ@©"M4pi≈XADe/X Çù5™^≠bvÇDY»qV ÜÉ6b
-iÍÃàA:}D
-r‰–\@Ç}I¥´…¶ä∞hßjí"††•>=()®$Aò©Mp—A¢°2``ËLŸÍ—D€`∫$K∫
-QfOÇàÇ4
-ÚjH@`4Pòh3f	∂Z∆Ëë'j°¡öòÇúâÍ≥" úüQ9i4Bäá≠8°¢ÑâÓà(jPI¶AîX*ëi ®ëreTçN\ö"Dâvß.M	fT@ì:ùJJ∞ÍIûúÇLdpfÃ@°ù8™cE	¶©>Ä—A¢ù™TT©RFÇì2≠(§gAò≥NM4 TT©R°°N·®ÇÜ¡Hë(j √bR$Lh)3$ŒéANLy»3äÏHë!4Î∫@ç(—GbDâç“
-h!»Çù(—A¢ù™TT©R•EJïÓ§â*h*E¶®Ç¥ZI1§≈¶ARDÑ‡ÕòAN\ö
-h*HäA:-äÑ‚—™ã:§ò)à$Œ¶©J¨:â3Á Æër)—ävü:eî
-Ú"Œ@Ü¢5$i†òãNö
-âg ÜQJ·°N‰Œ@©"M4pi≈XADe/Z0``¡Ç≈ÜTêäÇl˙jÉE;úãI*—PN™õ
--%$gD@Ü¢*ó¶m€∑nn±b÷!¢ù®®ëŸÍuPûß&§ö»®'UöÖíód"ŒÜä∞hßhpfÃ@ß"}Yàà)Àí†π	Íí"“ÆìN*ƒ
-í"çwBî¯ÍPf†êÉ2•1°CEBf`¡–ô©ı¢â∂±^"Ü0`X¬Ëój¢ÃûÉd‰‘ê@—É,`(L8)≥€∞Ø6ÊÌ€∑XZ∆ËóeP‡ÕòAND˙©ëSñìA(®pj”äADe($”@ôù4
-í Œ@Ü¢*ë°Bi‘û†4P—Gjï*TTÅ†…ò´J*)–fY¶ìM*TT®hßhj √`R$L50ÿ©ôâ3£†¶ìtÅ¢Üäv$Hò»nêAàA$A°CE;TT©R•EJï*4S∫âi†®ãN¢
-»¥§∆íãMI5CÇõ19i4)†®ëË´Sä£V,Íâ0f íùN•*®u$œúA^DYƒgDÓ|Èã(+»äúÇà(jPI¶A2-:d$AúADU%√E;íúÇ§â*h!¡¶ä±50‘Ωfn›ªvÂã±@QRDT	≥È‘@°>úöâ5¢†ú´6ZE( ŒàADU'≠0``¡b∆
-*HäA6}:Ñ¢«Ç©&¥T	’f¬ä§§hßigCäXÇ©à)»û´2"	…ıSñìAr	ı$E§Ø&úUÑ$E@°J|zH3PHÇôRö·°CEBh`¡–ô©ı¢â∂±^"fÌ€∑nXµç—'t)Eòü"(h+…®êÅõvÊÌ€¨XZƒh°(pfÃ∑bºDå0``±Ö—'j°¡öòÇúâÍ≥" úüQ9i4Bäá≠8°¢ÑâÓà(jPI¶AîX*ëi ®ëreTçN\ö"Dâvß.M	fT@ì:ùJJ∞ÍIûúÇLdpfÃ@°ù8™cE	¶©>Ä—A¢ù™TT©R•EJïÓ§â*h*E¶®Ç¥ZI1§≈¶ARDÑ‡ÕòAN\ö
-h*HäA:-äÑ‚—™ã:§ò)à$Œ¶©J¨:â3Á Æër)—ävü:eî
-Ú"Œ@Ü¢5$i†òãNö
-âg ÜQJ·°N‰Œ@©"M4pi≈XADe/Z0``¡Ç≈ÜTêäÇl˙jà'Eé©&¥T	’f¬ä§•»à!®äRıka¢ù»äù*ƒpfÃ@ß"}Yàà)Àí†π	Íí"“ÆìN*ƒ
-í"††•>=()®$Aò©Lh°°Pö∞`t&l˙»¢mÿÆàÅ£,`∫%›
-H≥'¡àA
-È5$ h`¡ÉãŸÅ6÷±∫%⁄®h3f ¶ë>¨»ÑÂ…†A
-,8*¥‚†ÜQî	4–LäßMI3êCPä§h°*u'–4SµEJï*@@Å»2fU§äÇË)ñi…¶@ÅJï*T)‹50ÿ)Df*DâåÉ&dô»Ë)…éù`—A¢ùâ&47Db åöÅZ©√Ev©R•EJï*TT4P—Gu$I¶AR-:Ñ¢“íç&-4
-í ‘@álƒ
-r‰–¶ARDT	—lT@ßçX©’$¡òA&u:äUa‘íü9y≥êAúà4SπÈ”,†Æërea©@ìM»™t–TêÉ95™Ww&r
-âi†ÜÉN*ƒj √Rz¡»à!®äRıkr"ŒÜä±8)≥SêüVdD	”Í ¶ó&Ç‰ÍHä•^M8•ÉE;®ë
-IÒÈAöA" äkÜä	≥Bi≈®¥$Hój¢ÃûÉd‰‘ê@¿Hë°Ba¡öò&⁄÷+¢DªTálƒ
-r'’òàÇt˙ÑÂ…†A
-,8*¥‚ç$Hóhj √RA&öÍQ`‘ä§Ç§à)»!®äR4PöirhA%›9i4HÇôQô u)UÜ©&|‰	1êCÇõ1*t‚”\(M:âÙäÌR•EJï*TT®h°áu$I¶AR-:Ñ¢“íç&-4
-í ‘@álƒ
-r‰–¶ARDT	—lT@ì:ùJJ∞ÍIûúÇºà©» Œà)‹˘…ñPWêã950‘†í¶ÇdZjh*HÇúÇà•+Üävì9I	4–CÇßbea©z`ÇËÑ‘ERz¡π≥°≈XAŸÑ‰O™ôÈÍà)Àí†π	Íí"“ÆìN*¡°NÍHäABî¯ÍPf†êÉ2•5¡¢ÜäÑn¡É°*qjZ%›
-H≥'¡àAö
-È5$ `$h°(pfÃ∂¬Ëë'j°¡öòÇúâÍ≥" úüQ9i4Bäá≠8§‘AÜRˆà•#E	¶ó&Ñ!"]”ñìAà)ïIúßRïXjígŒ@ì8)≥PÇßN-1°Bi‘û†4P—Gjï*TTÅ†…ò´J*)–fY¶ìM*TT®hßhj √`R$L50ÿ©ôâ3£†¶ìtÅ¢Üäv$Hò»nêAàAïîmÜäÌR•EJï*TT®h°°NÍHí¶Ç§Zjà+E§ìLZd$A®AŸÑÂ…†¶Ç§à§¢ÿ®AN-®≥™IÇòÇLÍjî™√®ì>r
-Èg ÇùhßiÛ¶Y@Ø",‰j √RA&ö	à¥È†®ëreTÆÓL‰
-í$”@áúUÑ‘AÜRıÇ)—CPä•ÎF0XY=äâPMûßQË®jI¨äÇuY®Qi)v)‹à©–‚†ÜÉ6b
-iÍÃàA:}D
-r‰–\@Ç}I¥´…¶ä±I®(RûèJ‘	fT¶\4P—HLX0`t&úZãBDâv°J,…Ë1AÜA^MIäál¡+v+ƒ@h¡É]v™©à)»û´2"	…ıSñìA(®pj”ä(Hë!.·®ÇÜ•ödÈEÇ©í
-âg ÜQH—A4Â…†Ç$Hójr‰–@ëeD	3©‘§´§ôÈ»$∆@álƒ
-i”ä¶4PöjìË)⁄•EJï*TT©P—AéÍHí¶Ç§Zjà+E§ìLZd$A®A‘	4–DÇ©ô»ëhEúâuEƒ$‘@ù¥ZDÂ…†¶4S∫âPNä±Q8™5bŒ®ìb	)‘ÍR™áRL˘¡¢ù…úARDöd‡”äXÇà(j^≠bAtDj"©z`4Sπ(»$‘@â>-4
-r‰–@©"*	»∂* íùN•*®u$œúXÇ§à§)Oé•j	3*S4T&&,:õ>¥Q+kX›ÓÖ(©ì‡ƒ@Éy*í-b4Pòh3D€`∫$KµHpf†¶ë>¨»Ñ¢÷ä§Çúπ*E	¶ó&Ñ!"]”ñìAà)ïIúßRïXjígŒ@ì8)®(A¶ßò—A4ÍO†(hßeJï*TT©R•A¢Üäv©"M4
-ëi‘@≠îò…1i†®ë¢h3c≈@ß.M
-d$E@ù≈D
-qh’äùRLÑgS®•VI)ÛêWêã9»ÉE;ûù2 
-Èg ÜQî	4–G§ã§ZD$AúA>í™5`Ã@©=5™Ww&r
-âi†ÜÉN*ƒj √Rzµä)—CPä•Îd$Eúábh3c≈@ß"}Yàà'O®AN\ö√E;û©"-*È4‚¨@©"*
+;THIS TEST VERIFIES THAT WHEN THE ADD INSTRUCTION IS USED TO ADD
+;A WORD OF ALL ZEROS TO AN AC CONTAINING A NON-ZERO POSITIVE NUMBER, THE
+;RESULT IS A NON-ZERO POSITIVE NUMBER IN THE AC.  FIRST, THE AC IS
+;INITIALIZED WITH A NON-ZERO POSITIVE NUMBER; THEN, A WORD OF ALL ZEROS
+; IS ADDED TO THE AC.  THE AC IS THEN CHECKED FOR ITS CONTENTS NON-ZERO
 
-S„“ÇöÇDäî◊*F	öüZ(õe¨nâwBîYâb ÇÜÇºöâXâ&®ÒD€`∫$KµHpf«äAND˙©ëNû®Çúπ*!EÜÉVúTj √RA&ö	à¥È†®ëreTçN\ö"Dâvß.M	fT@ì:ùJJ∞ÍIûúÇLdpf«äAB:h¥◊N§˙¢ÜävT©R•D @çL ™QPAúÉ2Õ9*h @@©R•ECE;ÜQ!"a®ÇÜ≈Hë(–dÃíù9(Û†Ã4S±!"D∆ÜtÇÑ4r Œéä4S±!"D∆ÜtÇ$
-–Eú(hßeJï*TT©R•A¢Ü;®ë&ö
-à¥Í ¨ãJLi(¥–TêÉQ8)±‚†¶ó&Ö4
-í"†úãb¢
-h¥j≈ú©&ƒ	3©‘§´§ôÈ»+»äúÇËÅ¢ùœúôey≥êCPÉJ	*h#“äÉR-$
-í Œ@üIZ*∞f ®ûÇà•#E;íúÇ§â*h!¡¶ä±50‘Ω`AtDj"©zZ≈⁄	gCäAÿË®)»û´2"
-irh.Ó}Iµ‰”äXÇ§à§)Oé•j	3*S\(h®F,ÿ0tN-KA"Dª†•d¯(à √@Ø&§ÑDçÿË¢m≠b∫$KµHpf«äAND˙©ëSñìA(®pj”äADe($”@èJ,à¥êTêÉ95™FäßR}°CE;TT©R§ åÉ&eZH® ŒÇôfúöd @T©R•A¢ù√PÉÇë!0‘AÜb§Hò»2fIúéÇúòÈ–f)ÿë!"i◊tAQ°Nƒâ£DÁŒàAE“
-h!ÃñAp—A¢ù™TT©R•EJï)›I	4–TäßQh™RcIä¶Ç§à*à!¡öúÇúπ*–TêäÇt[
-à)≈¢´uI(3IúßRïXjígŒ@Ø",‰3¢w>tÀ$‰EúADe($”@ù>¢™5`Ã@©=5™Fävì9I	4–CÇß50‘Ω`AtDj"©zZ≈⁄	gCäAŸƒ‰O™ô9i4w>§à™U‰”äXÇ§à§)Oé•j	3*S4T&&å:ß•°!"]–§ã2|Ña†ÆìRB"Fäál·+kX›ÌT8)≥êSêüVdD
-r‰–@Ö™qPCPÉJ	*h'O®AçX)à*O@Ü¢*ë°Bi‘û†4P—Gjï*TTÅ†…ò´J*)–fY¶ìM*TT®hßhj √`R$L50ÿ©ôâ3£†¶ìtÅ¢Üäv$Hò»n†ƒ@ç5¥≥Üäv$Hò»nêAàAí§gv$Hë(–› ÇàÇ+$€v$Hë(–› ÇàÇHÅ¢ùâ&47Da †ÜÇ,·°Nƒâ£D!†Üô-Y¡¢ÜävT©R•EJï*T(c∫âi†®ãN¢
-»¥§∆íãMI5CÇõ99i4)†®ëË´Sä£V,Íâ0f íùN•*®u$œúA^DYƒgDÓ|Èã(+»äúÇà(jPI¶A:}D¥j¡òARzeTçw&r
-âi†ÜÉN*ƒj √Rz¡»à!®äRıÉ¥"ŒÜäÇ©»)»û´2"	…ıSñìAp—GsÍHä•^M8•à*HäABî¯ÍPf†êÉ2•1°CEBbj¡É°*qjZ%›
-H≥'¡àA
-È5$ `$h°(pfŒ∂¬Ëë'j°¡öúÇúâÍ≥" úüQ9i4Bäá≠8§‘AÜRˆà•+Üäß.M!"Dª¶ó&Ç	3* íùN•*®u$œúA&2h3g †ÉNúZa¢Ñ”®ü@h°°N’*TT©#AíôVîT3†Ã≤ß&ö*TT©P—Gp‘AÜ`§Hòea±R&4)ígG@ß&<Ë)ÉEv$Hë*u› åáhßa"DâåÜÈd‰Aúèh°°N’*TT©R•EJÜäß9Î∆äµiÎ°CEBbl¡É°*QhEÇ®&ÙF'wRDöd"”®AZ-)(“b”@©"DpfŒ@ß.M
-d$E@ù≈D
-qh’äùRLÑgS®•VI)ÛêWêã9»à'Œò≤4S∫Èg ÜQî	4–Nû®Ç-®3TûADU%»I®Ae9‰¢“íç&-4
-í ‘@álQ°NÈÀí°MI®'E∞®ÇúZ*±gTíÉ1ô u)UÜ©&|‰
-Ú"Œ@É:"	È”,†Æëp—Gp‘AÜRˆà•+ê íúÇ˙â!¡¶ãMg±]†@ët8•à!®ÇÜ•Ï5™FävìY*í"“@ál‰	ÙêCÇõh)3)¨@©"*
+A10500:	MOVE	[123456765432]	;PRESET AC WITH A NON-ZERO NUMBER
+	ADD	[0]		;*ADD OF A WORD OF ALL ZEROS TO AN AC
+				;CONTAINING A NON-ZERO NUMBER
+				;SHOULD RESULT IN AN AC CONTAINING A NON-ZERO NUMBER
+	SKIPN			;PASS TEST IF C(AC) IS NON-ZERO
+	STOP
 
-S„“ÇöÇDäî∆äv©"M4
-ëi‘@ìM(™`‘äàÅõd
-íf≈¶A&r	ÍQ"“@©=iâj Ç@≈I
-UPAòòÅõdRjS4U9«¥Á+b(M´G∂≠+¥¥4Pô(—D⁄¥XÚ’ß¶/Üäõ>¥Q+v+ƒ@µjËój¢ÃûÉeëPWí©!”'¡®ì::!¢Ñ√Çõ8Hë'j°¡öúÇúâÈëNû®Çúπ*!EÜÉVúTj √R{DU!"FäálQ!"]™ÜÉ6*
-iÍÃàAN\ö¢√Ç´N*ea©zÜ¢*ë!#E	¶©>Ä—A¢ù™TT©RFÇì2≠(§gAò≥NM4 TT©R°°N·®ÇÜ¡Hë(j √bR$Lh)3$ŒéANLy»3äÏHë!1j0tA|ËÑäÌR•EJï*TT®hß¡¢Ü	¥¥ıÄ—A¢Ñ“ä°A+—∏Xx4S∫âi†®ãN¢
-»¥§∆íãMI5CÇõ99i4)†®ëË´Sä£V,Íâ0f íùN•*®u$œúA^DYƒgD@ü:eë°NÎ»äúÇà(jPI¶A:}D¥j¡òARzeTÆ@A&¢)îÁ†¨ãJLi(¥–TêÉQ8)±Fävß.M
-d$E@ù≈D
-qh’äùRLÑgS®•VI)ÛêWêã9»à'Œò≤Çºà©√E;ÜQó®j"©\@ÇL‰SÍH@áúZdaΩävÅà©–‚¨@Ü¢5'∞‘ER)‹òƒd‘êãI8)≥êO§Aÿ§†…ò¶±I®(RûèJ‘	fT¶)›I	4–TäßQöd¢–äÉR,DmêTíõö	)»'“àãII‰¶OÇ®Ç
-$$R™AdƒmêBí©Lh°°TÁ=¶ú≠à—A6≠=¥¥Æ’°°Bd∆äj“«ãVû±|(LŸÍ—D€∞Ø´Eå.âv°J,…Ë1AÜYy*íA@ç2|â3£†b(L8)≥Ñâv™©»)»ûôÈÍà)Àí†ÇXh5i≈@Ü¢5'∞‘ER$h°(pf≈%⁄®h3b†¶ë>¨»ÑÂ…†A
-,8*¥‚†ÜQó®j"©4PöjìË)⁄•EJï*TT©P—G√E¶úıãvE	¥¥ıÄ—A¢°1n`¡–öH¥"¡®z#6≈èäv©"M4
-ëi‘@≠îò…1i†®ë¢h3g ¶ó&Ö4
-í"†úãb¢	)‘ÍR™áRL˘ƒ‰EúAtA°NÁŒò≤Çºà©»!®ÇÜ•Î3¢ ÜQKÿ…ì‡‘íùƒ$Eúá`—Gp‡ÕúAND˙©ëSñìA⁄	ı$E§Ø&úUÑ$E@°J|zH3PHÇôRò—Gu$I¶AR-:Ñi†§ãB,à±3lARLÿ™h*O@ç2|ÑP1@©"ïT3& flÇöäh'∆@ä4U9«¥Á+b(M´G∂≠+¥¥4Pô(—D⁄¥XÚ’ß¶/Üäß•°!"]–§ã2|Ña†ÆìRB¢Ñ√Çõ8MªKWDâvUŸƒ‰O™ô9i4Bäá≠8§‘AÜRÇM4	”Í ä£Vƒ
-ì–CPä§H—A4ÍO†$h°°N’*TT©R•EJÜä|(e9«¨ò0`(M´G¨ä	ìÑ“ä°A+—∂Xx4S∫âi†®ãN¢
-»¥§∆íãMI5CÇõ99i4)†®ëË´Sä£V,Íâ0f íùN•*®u$œúA^DYƒgDÓ|Èã(+»äúÇà(jPI¶A:}D¥j¡òARzeTÆ@A",Ëh´ävál‰
-r'’òàÇúπ*– û©"-*È4‚†®ë
-IÒÈAöA" äkÜäv©"M4
-ëi‘@ìM(™`‘äàÅõd
-íf≈¶ARz…ì‡‘@ÇÅä
-â™†Çô16ƒ§‘¶A>2
-âPAÜ*úÁ™sï±&’ß´Vï⁄¥(Lò»¢mZXyj”÷'√E	öüZ(õkVÆâwBîYâb ÇÜÇºöâ †åô>I)—–1(L8)≥Ñ€`∫$KµHpfŒ@ß"}Yàà)Àí†ÇXh5i≈@Ü¢5$i†úüQZ*∞f ®ûÇà•"FäßR}°CE;TT©R•EJï*¯h°äuaT®ò&§Zjà'∆@õ>µ4	3©‘§´§ôÈ√Ev©R•EJï*TT4P—Jsû≤b`¿h°+Vû∞4T&F,:•ÑX*ÇoDbp±‡—Gu$I¶AR-:Ñ¢“íç&-4
-í ‘@õ>µ4
-u‡–¶A2,jÑgD@•&<äÑ Ã¨ãM¯ƒPAúà4Sπ©ı¢”@ìQô ì–AÜ\Åôƒ$I¶A8•à †bA&ö
-I4(LäàÇ§äJ®!O®êÇDä—içw>2§·®äRˆ’•Öñ≠ ÆëîTVêI¶AiâjIúéÅç’ƒ*Häú±50‘†í¶Çà®r‚ƒ\)›I	4–TäßQöd¢–äÉR,D.Tíõö
-âË#LûÉQ(*H§™Ç…Ñ\ ÑìRö	Ë»"¡ÜêÇDà√Eß9Ì9≈lFäµiÌ´Ev≠&4Q+Vñ<¥¥ıã·°Bfœ¨¶&›äËà-ZXµjËóeSg÷¶AND˙©ëSÆÉAà)ï¢”@ü5™Fä$K∏)—Mû≠(™ufT@ì:§Ù0∆äálQ+v+ƒ@µie´K¢]–ÇßMH™uIåADe(!œú©LÍd≠,Xµhh°*u'–4P—Gjï*TT©R•ECE>2úÁ¶Lò0&’ß¶EÑ…ìBiE†ã†õ»å\,x)›I	4–TäßQh™RcIä¶Ç§à*à&œ¨¶Çùx*–LäçQ»à)IéëQà)ï¢”@üT3¢w6}h™h$‘@ì:§Ù0◊ @ì9I	4–CÇßb$I¶AJM
-	ëb ®ëJ™Iı$ êÉ2¥Za¢ùœåA∏eTΩ¥¥±e´Eà+»ä•´Di†ÇAd¯*ígG@aur
-í"ŒXADe($”@á",9h±wRDöd"”®A&ö
-H¥"¡®ã$Õä¶Ç§Ù”'¡®A
-í)U@É2b'!I®¶Ç|d∞a»@ëda°CESú{Nr∂!¢Ñ⁄¥{j“ªKJÿç&4Q'ñ≠-b|±Â´G´Y>&l˙ bmÿÆàÇ’•ãVÆâvU6}jd‰O™ô:Ë4HÇôZ-4	ÒêCPä§h°!"DªÇùŸÍ—PRäßVeD	3™O@Éh°(pf≈∑bºDVñZ¥∫%›*t–TäßQòƒa†Üü:§)‘–Z¥X≤’°°Bi‘û†$H—A¢ù™TT©R•EJï|4P iœY3``4PõKOXfÀ÷¢ÜäÑdÕÉA4¢–äÉPMËÜ.<Ó§â*h*E¶®Ç¥ZI1§≈¶ARDÑg÷¶ANº
-h&Eå®ÇËÑ§«ê®ÇDä—i†ûåÇ*)—ävõ>¥Zdj íùRz(kê íúÇ§â*h!¡¶ä±($”@•&Ö	à±Tê•UI®&Eå®ÇDà»'∆@ä4S∏)—A@`ÇM4
-RhPòãI
-UPTêäÇîòÈHÇôhßiÒêE@∑DU'∂≠,X≥eb
-ÈiE@µiödPFòü§ô»Ë†Çùõ$i†ÇAd¯*ígG@aup—Gu$EúXÇà(jPI¶ADXiqb.Ó§â*h*E¶®ÇM4
-QhEÇ©"'*IöãMI‰¶OÇ®Ç
-$$R™Adƒ.Bí©M¯¡¢ù‘êäÇdX à$AòåÇËÑP0@©"ïT3& bpÇöäh'∆@©"*
-I1‰T@ëdd	ÒêE4U9«¥Á+b(M´G∂≠+¥¥4Põ+/lŸV≥e[°Bd∆äj“«ãVû±|(Lò»¢^Y≤Z≈Ú«ã6^≠d|4Pô©ı©â∂±^"KK,Ÿ∫ÌTŸÍ‘–SêüVdD
-u‡–@ëeh™h'∆@Ü¢*ë°BDâwtD	≥ÎE@•ùYäà$Œ®ûÇ1°Ba¡öä&›äËà,ŸXµjËóji”@©ùD	1êAÜA|Íà2gS@≥ebÀKCE	¶©>Äë!¢ÜävT©R•EJï*T)—AîÁ=dh¡Ä—A6≠=`(Mõ'¨ä	ìFÑ“ä°A$¢1pXhßjí$”@©ùD
-—iIåìö
-âj öüZö
-jhS@ô5D3¢ §ìED	fVä¶Ç|d® Œà)‹ŸÍ—i†í®ÇLÍâË √\@ÇL‰
-í$”@áúUÑP0@ìM)*&EàARE*§$E@ô5D	fF@üQ°N‡ŒàA	4–Rí°BdXÑ$R™ARDT
-Rc»®A"»¡¢ùœåA∏eTΩ≤≤±e´Eà+»ä•´Di†ÇAd¯*ígG@bÇËÑl†í¶Ç
-…ì‡‘íù•√E;®ërƒj √RA&öiaÀäà∏hßjí$”@©ùD	4–Rä°H®à∏@©&lZd'†åô>D(†®ëJ™)ì1pA
-MJd„wRDT
-Rc»®A"»ƒgD@ÇÅÇ
-â™†Çô1§‘¶A>2
-âPRíè"¢	3# ûåÇ(—A¢©Œzß9[°BmZzµi]´A¢ÑŸ≤{f ª+*ÿç&4Q+Vñ<¥¥ıã·°Bd∆äÚÕï¶/ñ<≤≤ık'¡¢ÑÕû≠LMª
-ÒY≤Yj’—'j¶œ¨¶ÇúâÍ≥" ¶ØÇ	3+E¶A>2eTç$Hóh3¢ öüZ*
-H¥ÍÃ®A&uI‰açÿ°6ÏWàAj“À+7Dª†ÉNö
-à¥Í íåÇà(j^⁄¥X≤Õë°Bi‘û†$H—A¢ù™TT©R•EJï|4P j∞™TòR-:Ñ„ Üü6ÑH®CÇ±aJ	)‘ÍR™áRL˘ cE
-vT©R•EJï*T(hßjí$”@©ùD
-—iIåìö
-âj ÜÉ&*
-irhS@©"*	»∂* ¶ãF¨Y í`Ã@ì:ùJJ∞ÍIûúÇºà©√E;Çù˘…ñPWêã950‘Ωä)‹ôƒ$I¶A8§‘AÜRˆ+÷hHäù*ƒpd≈@ß"}Yàà)Àí†4SπÍí"“ÆìN*
-âPP§üî§ Ã®¶4P®FMX0tN-KA"Dª†•d¯(à √@©=!#E	ÜÉ&(ë!.’CÇì9	ıfD@ß.MQa¡™ß50‘Ωä(M:âÙäÌR•EJê @@Ç4)ïiE@É:À*ri†@@Å•EJïwDf
-DâÜQ!"cAíô&tt
-rcŒÇò4P—GbDâß]“
-h!»Çù(—GbDâç“(à#M@vÇ,·°Nƒâ§1C§≤Åõa°Nƒâ§0êPÜAp—GbDâãQÉ§sÁD@†ÈdÊK@ã8h°°N’*TT©R•EJÜäÓ§â*h*E¶®Ç¥ZI1§≈¶ARDÑ‡…äAN\ö
-h*HäA:-äÑ‚—™ã:§ò)à$Œ¶©J¨:â3Á Æëp—GpgD@ü:eî
-Ú"Œ@Ü¢5'±Fävì9I	4–CÇß50‘Ωäz≈r	gCäXÇ(®)»û´2"
-irhw>§à™U‰”äARDT
-ß«§É5à)ï)ç*&∆	öüZ(õf7Dâv°J,…Ë1AÜARz!#E	ÜÉ&(ñ!"]™ÜÉ&*
-iÍÃàAN\ö¢√Ç´N*ea©zä4PöjìË)⁄•EJï @@Åh)3*“äAtã4‰”@@ÅEJï*Óà(lâÜ¢6%"D∆Çì2LË‰‰«úÉ0h°°Nƒâ§1A§@µY¡¢ÜävT©R•EJï*T(hßjí$”@©ùD
-—iIåìö
-âj ÜÉ6*
-irhS@©"*	»∂* ¶ãF¨Y í`Ã@ì:ùJJ∞ÍIûúÇºà©√E;Çù˘…ñPWêã950‘ΩÜQH—Grg ®ë&öh4‚†ÜQó®j"©zbÌ	≥°≈XAÿ§‰O™ô9i4ävüRDZJÚi≈@©"*
+;AR AD EN [ARMA], AR AD EN A [ARMA], ET2C F/F [E],
+;AR AD ET2 EN [ARMA], IR ADSUB [IR1]
 
-S„“ÇöÇDäî∆ä	ìvÑÕû≠Hñ!"]–§ã2|Ña†®ûÅàë°Ba¡öä&€°"]™ÜÉ6*
-iÍÃàAN\ö¢√Ç´N*ea©zÜ¢*ë°Bi‘û†4P—Gjï*TT©R•ECE¶´
-•IÅ5"”®A>2IÛÊEÇúÇLÍjî™√®ì>u1°CE;TT©R•EJï*4S∫âi†®ãN¢
-»¥§∆íãMI5Sä©
-	(Ûß“ä¶Ç§à§bD§ãNö…1fD@üI®$Œ¶©VI)ÛêWû•p—Grg ®ë&öh4‚†ÜQó¶-bvÅà©–‚¨@©"*
-H¥ÍÃ®A&r
-âPAÜAND˙©ëBä@µä≈ÜE;íåÇ§à§¢”™ôQôƒ$E@ÉödX¨X`±I®*E¶®ÇÑjqiÆ4T&f:õ>¥Y!+XâwBîYâb ÇÜÇ§Ù-b4Pöhµ!¡∂µç—!.’Sä©
+;**********
+;THIS TEST VERIFIES THAT WHEN THE ADD INSTRUCTION IS USED TO ADD
+;A WORD OF ALL ZEROS TO AN AC CONTAINING A NON-ZERO POSITIVE NUMBER, THE
+;RESULT IS A NON-ZERO POSITIVE NUMBER IN THE AC.  FIRST, THE AC IS
+;INITIALIZED WITH A NON-ZERO POSITIVE NUMBER; THEN, A WORD OF ALL ZEROS
+; IS ADDED TO THE AC.  THE AC IS THEN CHECKED FOR ITS CONTENTS NON-ZERO
 
-iÍÃàAB≠D¨V,`A&uI‰$E@Éh°(pf≈∂µä≈ÜDâv°ù4
-ëi‘@ì50‘ΩZb±c°Bi‘û†4P—Gjï*TT©R•ECEwRDöd"”®AZ-)(“b”@©"D
-qjCÇA|⁄	ëf≈ú©M50‘¨@©",‰
- √ä¶Ç§à°¢ù“äßVeD	3êTêäÇ5¡¢ù…úARDöd‡”äADe/X,XZ≈⁄	gCäXÇ§à§¢”™ôQôƒ$E@É9	ıfD@Ö÷%ãw&2
-âPRäßVeD	3êTêäÇ4	4–-bX±Çƒ
-í"†®ãN¢
-4È≈¶(h®FlX0t6}h©"V±ÓÖ(©ì‡ƒ@ÉI‰,Zb4Pöhµ!¡%⁄™hµ!¡@ß"}Yàà(U®@µä≈Ü$Œ®ûÇ§à§açÿ°6÷±XX¬Ëë't ”¶AR-:Ñc ÜQî´X¨X`4PöjìË)⁄•EJï*TT©P—AéÍHí¶Ç§Zjà+E§ìLZd$A®AN-Hh(!œö°2,ÿ©’)†ÜQïÑ$EúABdh¥–Têä4S∫H¥ÍÃ®A&r
-âPAÜX4Sπ)»*Hí¶Çh®!®ÇÜ•ÎÖå êã:UÑ$E@•ùYäà$Œ@©"*(h)»û´2"H´±ÓLd
-í"†§ãN¨ Ñg ®ëdi†Zb±b÷%à*HäAR-:Ñ ”¶ãLh°°Pô≤``ËLŸÍ—dâ`%›
-H≥'¡àA
-âË,X`4Pöhµ!¡%⁄™hµ!¡@ß"}Yàà(U®@µä≈Ö¨PIú©=I® √&®¢m≠b∫$K∫4È†®ãN¢	(»!®ÇÜ•’¶+-b(M:âÙäÌR•EJê @@Ç4)ïiE@É:À*ri†@@Å•EJïwDf
-DâÜQ!"cAíô&tt
-rcŒÇò4P—Glâ£'Di ÇàÇ,·°CE;TT©R•EJï*4S∫âi†®ãN¢
-»¥§∆íãMI5Sä©
-iÛhLäõuJd‘AÜR±I≥êPòÉ-4
-í"çwJ-:©ïIúARDT0÷w&r
-âi†ÜÉN*ea©zZ≈b≈¶.– êã:UÑ$E@•ùYäà$Œ@©"*(h)»û´2"H®,X`4Sπ(»*HäAJ-:©ïIúARDT0–I¶Aj-)Âà*HäAR-:Ñ ”¶ãLh°°Pô≥``ËLŸÍ—D€ZctHój¢ÃûÉd'†Zb±b÷!#E	¶ãR!"]™¶ãR
-r'’òàÇÖZÑ,`A&uI‰$E@Éh°(pf≈∂¬Ëë't ”¶AR-:Ñc ÜQî	4–Zä•<h°*u'–4SµEJï*@@Å»2fU§äÇË)ñi…¶@ÅJï*T)‹50ÿ)Df*DâåÉ&dô»Ë)…éù`—A¢ù≠bX±k!"D∆ÜtÇD”P-@ã8h°°N’*TT©R•EJÜäwRDöd"”®AZ-)(“b”@©"D
-qjCöA|⁄	ëf≈ú©M5™V ®ër
-	êa≈¶ARDQ°NÈE¶´2¢	)»*HäA·°N‰Œ@©"M4pi≈@ÉÏT3¢ ÜQKÿea©z`±b÷'hHäù*ƒ
-í"†§ãN¨ Ñg ®ëd‰O™ô(§X¨X`4Sπ(»*HäAJ-:©ïIúARDT0–I¶@µä≈ÜTêäÇ§Zjà(A¶ßò—A¢°3j`¡–ô©ı¢…ZƒHój¢ÃûÉd'†`X±k°Bi≈®á4Hë'j©≈®á59	ıfD@°V¢¶+0@ì:§Ù
-í"†ÇÜ4Pòh3bâ∂Z≈b∆¢Dª†ÉNö
-à¥Í íåÇà(jP=Zb±c°Bi‘û†4P—Gjï*TTÅ†…ò´J*)–fY¶ìM*TT®hßhj √`R$L50ÿ©ôâ3£†¶ìtÅ¢ÜävZ≈b≈¶"Dâß]“»qFävZ≈b≈¶"Dâç“(à “@ZÇ,·°Nÿ,XZƒHë!1j2tAí(à"Œ4SµEJï*TT©R°°CE;®ë&ö
-à¥Í ¨ãJLi(¥–TêÉQ8™êÊ†Üü6Ñ»©±gT¶ADU%à*HäúÇÑ»(qi†®ëhßjQi’ò®ÇL‰
-í"†ÇÜ∏hßi3êTêìM8*qPCPä•Í÷%ã±v@ÇDY»qV ®ë(™ufT@ì9I® √@ß"}Yàà!E@`±c°N‰∆@©"*
-H¥ÍÃ®A&r
-âPAÜA&öH¥ß¨®ëH™uPÇßN-1°CEBfl¡É°*qjCömk°"]™¶ãR‘
-r'’òàÇÖZÑIú©=I® √(M9i4"âÓÑjh*E¶®ÇLdj √`RıÄë!¢Ñ”®ü@h°°N’*TT©R•EJÜäwRDöd"”®AZ-)(“b”@©"D
-qjCöA|⁄	ëf≈ú©M5™V ®ër
-	êa≈¶ARDQ°NÈE¶´2¢	)»*HäA·°N‰Œ@©"M4pi≈@Ü¢*ó¶0v@ÇDY»qV ®ë(™ufT@ì9I® √@ß"}Yàà!E@Z≈b≈¶#E;íåÇ§à§¢”™ôQôƒ$E@ÉödX¨XZ≈eI®*E¶®ÇÑjqiç*6Ê	¶ãR—+l.âv™úZàsPSêüVdD
-j Zb±b÷$gTûARDT0ƒçÿ°6÷±∫%›*t–TäßQòƒ‘AÜRıkÖãXâ&ùIÍEv©R•EJï*TT4P«jí$”@©ùD
-—iIåìö
-âj ¶ãRz
-hµ)†ÜQî
-ì–-bX±kƒ)≈®ûÇLy…Ù¢”Ó§à§bD§ãNö…1fD@üI®$Œ¶©J¨:â3Á ÆüJ"·°N„I§ßQ50‘†í¶ÇúZÑ'†`X±É¥
-í"Œ@ß§Ù	4–E∞ã≠H®ãÜäv©"*(h$”@©",‰r"√ñãiÍH ÃòA>tZe»IåADe($”@É2b	È—i¨Ó§à§"”®AB:h¥∆ä	£6ÑÕû≠Hñ"]–§ã2|Ña†ÆìRBãN-I·"DªTß§Ù
-r'’òàÇd¯(à*HäA
-È5$ Zb±b÷!¢Ñ√ÇõMµ¶7Dâv°ù4
-ëi‘@ì50‘ΩZb±b÷!¢Ñ”®ü@h°°N’*TT©#AíôVîT3†Ã≤ß&ö*TT©P—Gp‘AÜ`§Hòea±R&4)ígG@ß&<Ë)ÉEv¿Hë!1j2tAí(à"Œ4SµEJï*TT©R°°C‘êìMH™uVä•&4ò™h*HÇ®Ç}(i®!»Çù-4j √RARz
-âPLûè&Å¢ù…úá2≠9*—PO§A>2ea©@Ø&§Ñ
-í"†Üü6Ñ»©±gT@ü5	±fœ§≤•p—Grg ®ë&öh4‚†ÇÜˆlY©Ù¨ΩÇÜ¡»à!®ÇÜ•Ï5™^∞\)‹à©–‚†®ë(™ufT@ì9I® √@ß"}Yàà!E@É2b	È—iÆÓ§à§a†í¶Çà®r‚ƒ@ç>í	*î–FíùbiÛ™Eú©MÈÈÀmE§û∏hßi1êCPÉJ	*h'O®z¡b
-âPTäßQ*t‚”4T&Üå:õ>¥Y!,âv°J,…Ë1AÜYy*í0&}(i¢DâvU>î9§‰O™ô
-™à ÃòA>tZdgTûA°BiÀí°8Hë't ”¶A&2ea©@ìMÈÈÀmE§û4PöjìË)⁄•EJï*TT©P—A¢ù‘êìMH™uVä•&4ò™h*HÇ®Ç}(i®!»Çù-4j √RARz
-âPLûè&Å¢ù…úá2≠9*—PO§A>2ea©@Ø&§ÑsÊ–òã6,ÍÑ„ ÜQ6,ŸÍVTÆÓL‰
-í$”@áúT0ﬁÕäõ>ïó®0ÿ Çù50‘ΩÜQK÷¢ù»äù*
-âPRäßVeD	3êTêäÇ4
-r'’òàÇT3& ûùö·°NÍHäA	*h!»äá.,D”È í©Mi)–f Üü:§Y î–E¢´b
-âË±XXµà—Grc ÜQ'´X¨XZ≈b
-âPTäßQ*t‚”4T&Ü¨:õ>¥Y!,âv°J,…Ë1AÜYy*í0&}(i¢DâvU>î9§‰O™ô
-™à ÃòA>tZdgTûA°Ba¡öä&⁄÷+¢Dª†ÉNö	(»!®ÇÜ•Í÷%ã±&ùIÍEv©R•EH @Aôä¥¢†Çùeöi4– @@ÅR•EJÜävÜ¢6"D√PÉäë!1†…òì::
-i1ÁAò(hßfDâß]“™åäv`$Hë(–› ÇàÇ$h"ŒÌÄë!"b‘dtÇ$1Eú(hßeJï*TT©R•A¢Ü;®ë&ö
-à¥Í ¨ãJLi(¥–TêÉQ˙HsPCêÉ:<Zd‘AÜRÇ§Ù
-í"†òüL8)ÉE;íùeZi5¢†û§Ç|dj √RA^MIÁÕ†ôlY à'∆@Ü¢lY©Ù¨©\)‹ôƒ$I¶A8§aΩöã6}+'∞a∞@É:"ea©zÜ¢*ó•¨V,Zb4Sπ≥°≈@©"*
-H¥ÍÃ®A&r
-âPAÜAND˙©ëBäAdƒ	Û¢”\)›I® √@ìM9∞Â≈àA}$	5)†åì:ƒsÁTäùRö™5`Ã@©=÷%ã±ÓLdj √`RıkÖãX¨@©"*
-à¥Í †ÉNúZa¢ÜäÑhŸÉA3g÷ämk°"]–§ã2|Ña¨äA^MIX¨XZƒh°)Ù°Õ%⁄©ÍPÊ†¶ë>¨»Ñ*‘@É2b	È—i†íùRz(läálQ+kX›ÓÑjh$∆@Ü¢5'´X¨XZƒh°*u'–4SµEJï*@@Å»2fU§äÇË)ñi…¶@ÅJï*T)‹50ÿ)Df*DâåÉ&dô»Ë)…éù`—A¢ù∞$LhgH ƒ@ç5‘≥Üäv`$Hë(µ:@ÉIÑg)⁄•EJï*TT©P—A¢ù‘êìMH™uVä•&4ò™h*HÇ®Ç}(i®!»Çù-4j √RARz
-âPLûè&Å¢ù…úá2≠9*—PO§A>2ea©@Ø&§ÑsÊ–òã6,ÍÑ„ ÜQ6,ŸÍVTÆÓL‰
-í$”@áúTj √Rz¡»à!®äRıkÖãXª@ët8•à*HäAJ-:©ïävì9I® √@ß"}Yàà!E@`π
-âPAÜA&öiaÀäàÇ4˙DjS@ì:ƒsÁTäùRõ÷√E;íåÇà(j^∞XARDT
-ëi‘@°ù8™cEÑ—ªBfœ¨ã$K!.ËRäô>D0–Wí©!°Bg“Üö&⁄÷+¢DªTüJ‘
-r'’òàÇÑ»(qPAòòÇ‘ZIÙ–Iú©=I® √&úπ*DâwB:dc ÜQó¶0&ùIÍEv©R•EH @Aôä¥¢†Çùeöi4– @@ÅR•EJÜävÜ¢6"D√PÉäë!1†…òì::
-i1ÁAò(hße±DâNª§–‚ç)⁄•EJï*TT©P—AéÍHí¶Ç§Zjà+E§ìLZd$A®A&}$r ŒéãM50‘†®ûÇ§à§'«íá`—GrgCò´NMh§È ûåÇà(jPWí©!5™Ww&r
-âi†ÜÉN*(ob†Çù50‘ΩÜQK÷ã.@A",Ëh®*Hä)›(™ufT@ì9I® √@ß"}Yàà!E@`±c¡¢ù‘êäÇ4	4–Cêã\XÑß“@`±cƒ$∆@Ü¢5'¨,`XÇ§â*h*E¶®ÇÑjqiç*V	öüZ,ë&Dª†•d¯(à √XäÇºöâ,X`4Pô)ÙÑâv™L˙D‰O™ô
-™à íùRz(cE	¶ó&ÑQ!"]–ÇßMH™uIåADe/X,X`4PöjìË)⁄•EJï @@Åh)3*“äAtã4‰”@@ÅEJï*Óà(lâÜ¢6%"D∆Çì2LË‰‰«úÉ0h°°N÷±XXµàë!"i◊tA£°N÷±XXµàë!"b‘`tÇ$1Eú)⁄÷%ã±$LZÜêAàAí§gvµä≈Ö¨Dâ£'Di ÇàÇ,·°CE;TT©R•EJï*4S∫âi†®ãN¢
-»¥§∆íãMI5Iû§Çà)—‚”@Ü¢5$'†®ë…ËÚa¡ò)‹ô»s*”í≠˙D„ ÜQî
-ÚjH@Ü¢*ï¡¢ù…úARDöd‡”äADe/X Çù5™^≠bX±kƒ$Eúáb
-âFäv•ùYäà$Œ@©"*(h)»û´2"H®±XXµä·°NÍHäA	*h!»äá.,D”È Zb±b÷!¢ù…åADe(≠bX±k
-í"†®ãN¢
-4È≈¶\4P—HMX∞`t&l˙»≤D∞ÓÖ(©ì‡ƒ@Éy*í0&L˙A6÷±∫%⁄©)ÙêSêüVdD
-j Zb±b÷$gTûA—A0‡Õämk°"]–ÇßMH™uIåADe(=Zb±b÷!¢Ñ”®ü@h°°N’*TT©#AíôVîT3†Ã≤ß&ö*TT©P—Gp‘AÜ`§Hòea±R&4)ígG@ß&<Ë)ÉEwHë!4Î∫@ç(—Glâ§1A§@µY¡¢ÜävT©R•D @çL ™QPAúÉ2Õ9*h @@©R•ECE;ÜQ!"a®ÇÜ≈Hë(–dÃíù9(Û†Ã4S∂"DâåÜÈÑ¶†ZAp—A¢ßBjf¡ÉßeJï*TT©R•A¢Ü;®ë&ö
-à¥Í ¨ãJLi(¥–TêÉQôÍH!»Çù-4j √RARz
-âPLûè&Å¢ù…úá2≠9*—PO§A>2ea©@Ø&§Ñj"©\)‹ôƒ$I¶A8§‘AÜRıÇ)—CPä•Í÷%ã±\@ÇDY»qV ®ëhßjQi’ò®ÇL‰
-í"†ÇÜÇúâÍ≥" ÑäÅkÖãXçwRDT0–I¶ADXiqb åüIöäh!œú©uJdPAòòÇ|Ë™cE;íåÇà(j^≠bXÇ§à§"”®AB:h¥∆ä	´&Ñ”ä©<Hë't)Eòü"(h+…®êÅkÖãXç&}!+kX›ÌTôÍH)»û´2"
+A10600:	MOVE	[XWD 123456,0]	;PRESET AC WITH A NON-ZERO NUMBER
+	ADD	[0]		;*ADD OF A WORD OF ALL ZEROS TO AN AC CONTAINING
+				;A NON-ZERO NUMBER SHOULD RESULT IN AN AC
+				;CONTAINING A NON-ZERO NUMBER
+	SKIPN			;PASS TEST IF C(AC) IS NON-ZERO
+	STOP
 
-µ-bX±k	3™O@Éh°(pf≈∂µç—!.ËA¶¶Ç§Zjà$∆@Ü¢5'´X¨XZƒh°*u'–4SµEJï*TT©R°°CE;®ë&ö
-à¥Í ¨ãJLi(¥–TêÉQôÍH!»Çù-4j √RARz
-âPLûè&Å¢ù…úá2≠9*—PO§A>2ea©@Ø&§Ñj"©\)‹ôƒ$I¶A8§‘AÜRıÇ)—CPä•Í÷%ã±\@ÇDY»qV ®ëhßjQi’ò®ÇL‰
-í"†ÇÜÇúâÍ≥" ÑäÅkÖãXçwRDT0–I¶ADXiqb åüIöäh!œú©uJdPAòòÇ|Ë™cE;íåÇà(j^≠bX±kÑ$E@©ùD
-i”ä¶4P—HMY∞`t&úZâ‚Dâv°J,…Ë1AÜA^MIX¨XZƒh°)3È	∂atHóeRg“@ß"}Yàà(U®@µä≈Ö¨PIú©=a¢Ñ√ÇõMµ¶7Dâv°ù4
-ëi‘@ì50‘ΩZb±b÷!¢Ñ”®ü@h°°N’*TT©R•EJÜäwRDöd"”®AZ-)(“b”@©"D3¢CöAD»Òi†ÜQî
-ì–TêäÇd¯È0‡Ã@É: —Gs„ ÜQî3¢ ®ë9È¥&Eöã:¢	Ë»!®öã6}+%+Üävì9I	4–CÇß50‘ΩZb±b÷$gD@Ü¢*ó•¨V,`\Åà©–‚¨@©"*
-H¥ÍÃ®@4Sπ)»*HäA
-iÍÃàA
-*ã±Ó§à§a†í¶Çà®r‚ƒ@ç>íã±\@ÇLdj √Rz¡b≈¶+TêäÇ§Zjà(A¶ßò—A¢°5j`¡–öhµ'âÓÖ(©ì‡ƒ@Éy*íAòòÇ|Ë™cE	Çù—+v+ƒ@Z≈c°.’Aúâj
-iÍÃàABdh®,XZ≈ôƒ$E@Éh°(pf≈∂¡b≈¶7Dâvì50‘Ω`X±kÑ$E@©ùD
-i”ä¶4PöjìË)⁄•EJï @@Åh)3*“äAtã4‰”@@ÅEJï*Óà(lâÜ¢6%"D∆Çì2LË‰‰«úÉ0h°°N÷≈$M:ÁH#Cä)⁄÷%ã±$LhgH ƒ@ÉI‘≥ÜävZ≈b∆"Dâä®…“*H ƒ@ã8h°°N’*TT©R•EJÜäÓ§â*h*E¶®Ç¥ZI1§≈¶ARDÑgDÜöÇà)—‚”@Ü¢5$'†®ë…ËÚa¡òAtA°NÁ∆@Ü¢5$gD@©"*iÛhLäõuD	ÒêCPõl˙K*Ww&r
-âi†ÜÉN*(obΩÇÜ¡»à!®ÇÜ•Ï5™^∞\@ÇDY»qVwRDT
-Qi’ò®ÇL‰
-í"†ÇÜÇúâÍ≥" ÑäÅÇ‰$E@Éöd‰EÜó"…Ùê0\)‹òƒ‘AÜRıÇƒ
-í"†®ãN¢
-4È≈¶\4P—HM[0`t&úZâ‚Dâv°J,…Ë1AÜA^MIfL@ü:-1°B`Œàá4Hë'j†Œàá59	ıfD@°28§IúARDT0∆äß.M°"DªíåÇà(j^∞XARDT
-ëi‘@°ù8™kÜäßR}°CE;TT©R•EJï*1›I	4–TäßQh™RcIä¶Ç§à*à Œàá593£≈¶ADe(*O@©"*	âÒ‰√ÇòÇËÅ¢ùœåADe( ŒàARDTsÊ–òã6,ÍÑ„ ÜQ6,ŸÍVTÆÓL‰
-í$”@áúTj √Rzµä≈Ö¨V Çù5™^∞\@ÇDY»qV ®ë(™ufT@ì9I® √ÓúâÍ≥" ÑäÇ…ÑÁE¶\ÅI® √@ìM9∞Â≈àA}$¨V,Zb∏hßi1êCPÉK’¶+-bXÇ§à§"”®AB:h¥∆ä	´vÑ”ä©<Hë't)Eòü"(h+…®êÅÄë!¢Ñ¡úâhõfDâvUtHi®)»û´2"
-	êa≈@Z≈b≈¶($Œ@©"*(cE	ÜÉ6(õe¨nâw&2ea©zZ≈b≈¶+TêäÇ§Zjà(A¶ßò—A4ÍO†(hßeJï*TT©R•A¢Üäv©"M4
-ëi‘@≠îò…1i†®ë¢)—!Õ@á"ËË¥–CPÉJ
-âË*HäA2|y(pf ÇùhßiÒêCPÉJ)—TêäÇ˘™"ÕäùQ¯ƒ‘Mäõ>ïï%√E;íúÇ§â*h!¡¶ä±g±PAúàÇà(j^√Pä•Îƒ$Eúáb
-âPRäßVeD	3êTêäÇ1°NÈ»û´2"H®.@ARDT0–I¶ADXiqb åüI¡¢ù…åADe/X,@©"*
-à¥Í †ÉNúZa¢ÜäÑl¡ÉA3g÷äí%Äë't)Eòü"(h+…®êÅÄë°B`Œàá4Hë'j†Œàá59	ıfD@°28§IúARDT0∆äß.M°"DªíåÇà(j^∞XARDT
-ëi‘@°ù8™kÜäßR}°CE;TT©R§ åÉ&eZH® ŒÇôfúöd @T©R•A¢ù√PÉÇë!0‘AÜb§Hò»2fIúéÇúòÈ–f)⁄÷%ã±$LhgH ƒ@ç5¥≥ÜäÌR•EJï*TT®h°áu$I¶AR-:Ñ¢“íç&-4
-í ‘@É:$9§‰Aúèöea©@©=I®&Oéìƒ3¢w>2ea©@É:"
-âPCûõBdY®≥™ ûåÇâ®≥g“≤R∏hßi3êTêìM8*qPCPÉK÷gD@Ü¢*ó•¨V,Zbπà©–‚¨@©"*
-H¥ÍÃ®A&r
-âPAÜ)›9	ıfD@Öƒ*HäA	*h!»äá.,D”È `\4Sπ(»!®ÇÜ•ÎÑ$E@©ùD
-i”ä¶4P—HMò∞`t&úZãBDâv°J,…Ë1AÜA^MIçtHi¢m≠b∫$KµH3¢CöAND˙©ëPòÉ*g ®ëa#E	¶ó&ÑQ!"]…åADe/X,@©"*
-à¥Í †ÉNúZa¢Ñ”®ü@h°°N’*TT©R•EJÜäwRDöd"”®AZ-)(“b”@©"D3¢CÇAD»Òi†ÜQî
-ì–TêäÇd¯È0‡Ã@É:" ≥°‘íü8hßiÒêTêäÇ˘™"ÕäùQ¯ƒ‘AÜRÇËÑ‘ER\4Sπ)»*Hí¶Çh´CPÉK’¶+0@É:"eTΩ`\Åà©–‚¨@©"*
-H¥ÍÃ®A&r
-âPAÜ)›9	ıfD@Öƒ*HäA	*h!»äá.,D”È ¥ãJz‰c ÜQî	4∆ävãF¨Ñ'†¥ãJzƒ
-í"†®ãN¢
-4È≈¶\4P—HMô0`t&l˙»¢mÿÆàÅkÜDª†•d¯(à √@Ø&§Ñ¨V,`(L»ê‡â∂atHóePgDÜÇÇúâÍ≥" †ôT$Œ@©"*(cE	¶ó&ÑQ!"]…åADe/X,@©"*
-à¥Í †ÉNúZe√E	¶©>Ä—A¢ù™TT©RFÇì2≠(§gAò≥NM4 TT©R°°N·®ÇÜ¡Hë(j √bR$Lh)3$ŒéANLy»3äÓ(ë!"i◊tAQ°Nÿ,XZƒHë!1°∫@ÉD
-–Eú(hßeJï*TT©R•A¢Üäv©"M4
-ëi‘@≠îò…1i†®ë¢)—!¡@á"ËË¥–CPÉJ
-âË*HäA2|y(pf Çùj©–ÍIûú4SπË»*HäA|⁄	ëf≈ú®Ç|dj √RAtDj"©\)‹ôƒ$I¶A8•à!®ÇÜ•Í÷%ã Çù5™^∑`n¡ªÖçÿ7`n¡r	gCäXÇ§à°¢ù“äßVeD	3êTêäÇ4
-r'’òàÇT7`n¡ªƒ*HäA	*h!»äá.,A°N„O§@¡b∆Êÿ7`\Åòƒ‘AÜRıÇ≈ÜÏ∞n`±I®*E¶®ÇÑjqiÆ4T&∆l:õ>¥Q+v+ƒ@Z≈c°.ËRäô>D0–Wí©!÷%ãtHh"m∑`n¡ªÊÿ7`∫%⁄®)—!¡@ß"}Yàà(LÇáÖçÿ7`n¡ôƒ$E@Éh°(pf≈∑bºD∞n`›Ö—'rc ÜQó¶7`n¡ªÑ$E@©ùD
-i”ä¶4PöjìË)⁄•EJï @@Åh)3*“äAtã4‰”@@ÅEJï*Óà(lâÜ¢6%"D∆Çì2LË‰‰«úÉ0h°°N€∞n`›Ç≈ÜÏ∞n`$Hò»nêAàAj§gv›ÉvÏ,n`›Év"D≈®dÈDb äú4P—Gjï*TT©R•ECEv©"M4
-ëi‘@≠îò…1i†®ë¢)—!¡@á"ËË¥–CPÉJ
-âË*HäA2|y(pf Çùj©–ÍIûú4SπË»*HäA|⁄	ëf≈ú®Ç|dj √RAtDj"©\)‹ôƒ$I¶A8§aΩä{3¢ ÜQó®j"©z`πà©–‚¨@©"*
-H¥ÍÃ®)‹ôƒ$E@É9	ıfD@Öƒ*HäA	*h!»äá.,D”È `\Åòƒ‘AÜz¡`—Gu$E@©ùD
-i”ä¶∏h°°Põ4``ËM8™ñÑâwdX*H*HäA)—E4Pò)—!¡%⁄®)—!¡@ß"}Yàà(LÇá	3êTêäÇ1°BiÀí°Hë'rc ÜQó¶TêäÇ§Zjà(A¶ßò—A4ÍO†(hßeJï*TT©R•A¢Üäv©"M4
-ëi‘@≠îò…1i†®ë¢)—!¡@á"ËË¥–CPÉJ
-âË*HäA2|y(pf Çùj©–ÍIûú4SπË»*HäA|⁄	ëf≈ú®Ç|dj √RAtDj"©\)‹ôƒ$I¶A8§‘AÜRıÇ)—CPä•Í÷%ã±\@ÇDY»qV ®ë(™ufT@ì9I® √ÓúâÍ≥" ÑäÅkÖãXÆ@ARDT0–I¶ADXiqb åüIâà'Œä¶∏hßi1êCPÉK’¶+-bXÇ§à§"”®AB:h¥◊*f¶	¶ãR–ë!.·ÃäÉII® √4Pò)—!¡∂µç—!.’Aúâ
+;AR AD EN [ARMA], AR AD EN A [ARMA], ET2C F/F[E],
+;AR AD ET2 EN [ARMA], IR AD SUB [IR1]
 
-iÍÃàABdh® ÃòA>tZdg ®ëa¢Ñ√ÇõMµ¶7Dâvì50‘ΩÇô1˘»¥÷ ®ëH™uPÇßN-5¡¢Ñ”®ü@h°°N’*TT©R•EJÜäwRDöd"”®AZ-)(“b”@©"D3¢CÇAD»Òi†ÜQî
-ì–TêäÇd¯È0‡Ã@É:" ≥°‘íü8hßiÒêTêäÇ˘™"ÕäùQ¯ƒ‘AÜRÇËÑ‘ER\4Sπ)»*Hí¶Çh® √zäˆ6gD@Ü¢5'∞‘ERzµä≈Ö¨W êã:UÑ$E@•ùYäÉE;íúÇ§à§a†¶ë>¨»Ñ¢†`\ÅI® √@ìM9∞Â≈àA}$ê íåÇà(j^∞X)›I®*E¶®ÇÑjqiÆ4T&∆Ã:ß§Ò!"]–§ãN-D0–TûAdƒ	Û¢”4Pò)—!¡%⁄®)—!¡@ß"}Yàà(LÇá	3êTêäÇ1°BiÀí°Hë'rc ÜQó¶TêäÇ§Zjà(A¶ßò—A4ÍO†(hßeJï*TT©R•A¢Üäv©"M4
-ëi‘@≠îò…1i†®ë¢)—!¡@á"ËË¥–CPÉJ
-âË*HäA2|y(pf Çùj©–ÍIûú4SπË»*HäA|⁄	ëf≈ú®Ç|dj √RAtDj"©\)‹ôƒ$I¶A8§‘AÜRıkÖãX†Çù5™^∞\@ÇDY»qV ®ë(™ufT@ì9I® √ÓúâÍ≥" ÑäÅÇ‰$E@Éöd‰EÜó"…Ùê0\@ÇLdj √Rz¡`—Gu$E@©ùD
-i”ä¶∏h°°Põ7``ËM8™ìƒâwBîZhµAÜARz)ìOúãLHë°B`ŒàáM∂¢DªTÉ:$8$‰O™ô	à0‚†`A&r
-âPAÜ(M9i4"âÓLdj √Rz¡b
-âPTäßQ*t‚”\(M:âÙäÌR•EJï*TT®h°áu$I¶AR-:Ñ¢“íç&-4
-í ‘@É:$8D‰Aúèöea©@©=I®&Oéìƒ3¢ å´:I)ÛÜävüI®!œö°2,ÿ©’OåADe( ŒàARDTsÊ–òã6,ÍÑ„ ÜQJ·°N‰Œ@©"M4pi≈@Ü¢5'´X¨X`ÇËÑ‘ERz¡⁄	≥°≈XARDT
-Qi’ò®ÇL‰
-í"†ÇÜ4S∫iÍÃàA
-*ã±\@Ç§à§a†í¶Çà®r‚ƒ@ç>íã±\@ÇLdj √Rz¡b≈¶+äv©"M4
-ëi‘@°ù8™kÜä	ªÑÕû≠Mª
-Ò-bX¬Ëój¢ÃûÉd‰‘ê@µä≈ÜE	Çù!+l.âv™ËàpêSêüVdD
- √ä@¡b≈¶($Œ@©"*(cE	ÜÉ6(õk‚ `Xµç—'t ”¶A&2ea©z`±b÷!¢Ñ”®ü@h°°N’*TT©#AíôVîT3†Ã≤ß&ö*TT©P—Gp‘AÜ`§Hòea±R&4)ígG@ß&<Ë)ÉEv¡b≈®¢Dâß]“»qFävZ≈b≈¶"Dâç“(à#M@ZÇ,·°Nÿ	&-FGH “@ÉY¡¢ÜävT©R•EJï*T(hßjí$”@©ùD
-—iIåìö
-âj Çù$r ŒéãM50‘†®ûÇ§à§'«íáb)—F™ù§ôÈ√E;ûåÇ§à§ÁÕ†ôlY à'∆@Ü¢5$gD@©"*iÛhLäõuD	ÒêCPä•p—Grg ®ë&öh4‚†ÜQó•¨V,`AtDj"©zZ≈b≈¶.–Häù*ƒ
-í"†§ãN¨ Ñg ®ëa¢ù”êüVdDQP0\@Ç§à§a†í¶Çà®r‚ƒ@ç>í»IåADe/X,Ó§â*h*E¶®ÇÑjqiÆ4T&Ê,:õ>¥Q+v+ƒ@Z≈c°.ËRäô>D0–Wí©!÷%ãtHhBm≠b∫$KµH3¢CÑAND˙©ëPòÉ*g ÇÜ4PöirhE%›*t–IåADe/XN§˙¢ÜävT©R•D @çL ™QPAúÉ2Õ9*h @@©R•ECE;ÜQ!"a®ÇÜ≈Hë(–dÃíù9(Û†Ã4S∂ã±$LhgH ƒ@ÉI‘≥ÜäÌR•EJï*TT®h°Å¢ù‘êìMH™uVä•&4ò™h*HÇ®ÇËàpêCêÉ:<Zd‘AÜRÇ§Ù
-í"†òüL8)à ŒàA¨ËjígŒ@ühßjí"†Üü6Ñ»©±gT@ü50‘†ÇùI®!œö°2,ÿ©’OåADU%√E;íúÇ§â*h!¡¶äÇ7®® ŒàADe/a®äRıÇ‰"ŒÜä±I®)E¶´2¢	)»*HäA—Gt‰O™ô(§fL@ü:-5ƒ*HäA	*h!»äá.,D”È Çô1˘»¥◊ @ì50‘ΩZb±b÷%ÉE;®ëH™uPÇßN-5¡¢ÜäÑn…ÉA4‚‘¥$K∫
-QfOÇàÇ5à®+…®êÇ‘ZIÒiçtHhBDâvUtHhH)»û´2"
-	êa≈@É2b	È—i†íúÇ§à§açÿ°6÷±∫%›*t–IåADe($”@É2b	È—içN§˙¢ÜävT©R•EJï*T(hßjí$”@©ùD
-—iIåìö
-âj Çù$r ŒéãM50‘†®ûÇ§à§'«íáb)—F™ù§ôÈ»'∆Ó§à§ÁÕ†ôlY à'∆@Ü¢5$gD@©"*iÛhLäõuD	ÒêCPä•p—Grg ®ë&öh4‚†ÇÜˆ*)—CPÉKÿeTΩZb±b÷%»Häù*
-âPRäßVeD	3êTêäÇ1°NÈ»û´2"H®.@ARDT0–I¶ADXiqb åüIƒ$∆@Ü¢5'¨ ®ëH™uPÇßN-5¡¢ÜäÑnÕÉA4‚‘û$K∫
-QfOÇàÇ5à®+…®êÇ|Ë™cE	Çù!!"]™Çù$
-r'’òàÇÑ»(qPAòòÇ‘ZIÙ–IúARDT0∆äß.M°"Dª†ÉNö	(»!®ÇÜ•Î°Bi‘û†4P—Gjï*TT©R•ECEv©"M4
-ëi‘@≠îò…1i†®ë¢)—!¬@á"ËË¥–CPÉJ
-âË*HäA2|y(pf Çùj©–ÍIûúÇ|a°NÍHäA|⁄	ëf≈ú®Ç|dj √RAtD
-í"†Üü6Ñ»©±gT@ü5™Ww&r
-âi†ÜÉN*ƒj √Rz¡»à!®äRıkÖãXÆ@A",Ëh´TêäÇîZj≥* íúÇ§à§açwND˙©ëBä@¡r
-í"†ÇÜÇM4r"√ñãiÍH.@A&2ea©z`±I®*E¶®ÇÑjqiÆ4T&Êå:ß•°!"]–§ã2|Ña†ÆìRB¢Ñ¡úâõe¨nâv™ËàpêSêüVdD
- √ä@¡ôƒ$E@Éh°(pd≈%›*t–IåADe/XN§˙¢ÜävT©R•EJï*T(hßjí$”@©ùD
-—iIåìö
-âj Çù$r ŒéãM50‘†®ûÇ§à§'«íáb)—F™ù§ôÈ»'∆Ó§à§ÁÕ†ôlY à'∆@Ü¢5$gD@©"*iÛhLäõuD	ÒêCPä•p—Grg ®ë&öh4‚¨@Ü¢5'´X¨XZ≈»à!®äRıkÖãXÆ@A",Ëh´TêäÇîZj≥* íúÇ§à§açwND˙©ëBä@¡r
-í"†ÇÜÇM4r"√ñãiÍH.@A&2ea©z`±I®*E¶®ÇÑjqiÆ4T&Ê¨:ß§Ò!"]–§ã2|Ña†ÆìRB¶+-b(L»ê·	∂atHóePgDÜÑÇúâÍ≥" †ôT$Œ@©"*(cE	ÜÉ&(ë!.ËA¶¶ÇLdj √Rz¿h°*u'–4SµEJï*TT©R°°C‘êìMH™uVä•&4ò™h*HÇ®Ç}(h(!»Çù-4j √RARz
-âPLûè&ÑÈ å´:I)ÛêOå)›I®!œö°2,ÿ©’OåADe( ŒàADU%√E;íúÇ§â*h!¡¶äÇà(j^≠bX±Ç)—CPä•Îƒ$Eúáb
-âPRäßVeD	3êTêäÇ1°NÈ»û´2"H®,XZ≈r
-í"†ÇÜÇM4r"√ñãiÍH,XZ≈r	1êCPÉK÷ã±X)›I	4–TäßQh)3)Æ4T&ÊÃ:õ>¥Q+v+ƒ@Z≈c°.ËRäô>D0–Wí©!÷%ã>î8!6ÿ]ÌT˙HpPSêüVdD
- √ä@¡b≈¶($Œ@©"*(cE	ÜÉ6(õk‚ `Xµç—'t ”¶A&2ea©z`±b÷!¢Ñ”®ü@h°°N’*TT©#AíôVîT3†Ã≤ß&ö*TT©P—Gp‘AÜ`§Hòea±R&4)ígG@ß&<Ë)ÉEvµä≈ÜDâß]“™åävZ≈b∆"DâåÜÈÑi ZAp—Glâ§1Fö@≠Y¡¢ù≠bX±k!"D≈®`ÈDb äú4Sµ¶+-b$Hò™å ÇàÇ$®"ŒÌkÖåâ£'Di ÇàÇ,·°CE;TT©R•EJï*4S∫âi†®ãN¢
-»¥§∆íãMI5O§á93£≈¶ADe(*O@©"*	âÒ‰√ÇòÇ}$’gC®ì>r	Ë√E;®ë9È¥&Eöã:¢	Ë»!®ÇÜ•»à!®äR∏hßi3êTêìM8*qPCPÉK’¶+0@É:"eTΩn`›Évã∞n`›Ç‰"ŒÜä±I®)E¶´2¢	)»*HäA—Gt‰O™ô(§ÿ7`n¡b≈¶+ê ®ëdi†Üë∏®à#O§@µä≈Üê íåÇà(j^≠bX±Ç¡°NÍHí¶Ç§Zjà#AíôMp—A¢°1``¡É°)≥ÎE∑bºD¨V0∫ÓÖ(©ì‡ƒ@Éy*í-bX±Ä—A3ÈCÇmªÊÿ7`n¡ª°.’O§á9	ıfD@°28§ÿ7`n¡b≈¶($Œ@©"*(cE	ÜÉ6(õk‚ n`›ÉvãX›wB:dc ÜQó¶Ï∞n`±b÷!¢Ñ”®ü@h°°N’*TT©#AíôVîT3†Ã≤ß&ö*TT©P—Gp‘AÜ`§Hòea±R&4)ígG@ß&<Ë)ÉEv¡b≈¶"Dâß]“»qFäÌR•EJï*TT®h°áu$I¶AR-:Ñ¢“íç&-4
-í ‘@üJr ŒéãM50‘†®ûÇ§à§'«íáb	ÍH#UúáRL˘ƒ„wRDTsÊ–òã6,ÍÑ„ ÜQî3¢ ÜQJ·°N‰Œ@©"M4pi≈XAÿ§gD@Ü¢5'∞‘ERz¡r	gCäXÇ§à§¢”™ôQôƒ$E@Éhßjr'’òàÇT¨V,Zbπ
-âPAÜA&öiaÀäàÇ4˙DX¨XZ≈r	1êCPÉK’¶+-bXÇ§à§"”®AB:h¥◊*,:ß•°!"]–§ã2|Ña¨äA^MIäüJ!"]™û•
+;*********
 
-iÍÃàABdh®±XXµä	)»*HäA—A0‡Õämk°"]–ÇßMòƒ‘AÜRıkÖãXçN§˙¢ÜävT©R•EJï*T(hßjí$”@©ùD
-—iIåìö
-âj û•
-igGä¶Çà(jPTûARDT	ì„…ÜÉ1¯ƒ™ŒÜ©&|‰	ÒÜäv©"*iÛhLäõuD	ÒêCPÉJ)—CPä•p—Grg ®ë&öh4‚¨@ÉÏT3¢ ÜQó®j"©zZ≈b≈¶+ê êã:UÑ$E@•ùYäà$Œ@©"*(cE;¶ë>¨»Ñ¢†Zb±b÷%»TêäÇ4	4–Cêã\XÑß“@Z≈b≈¶+ê íåÇà(j^≠bX±kÑ$E@©ùD
-i”ä¶∏h°°Pò∞d`¡–öhµ'âÓÖ(©ì‡ƒ@ÉdT
-ÚjH@`4PôÍP‡âÌT˙HpPSêüVdD
- √ä@µä≈Ö¨PIúARDT0∆äálQ+kX›ÓÑjh$∆@Ü¢5'´X¨XZƒh°*u'–4SµEJï*TT©R°°C‘êìMH™uVä•&4ò™h*HÇ®Ç}(h(!»Çù-4j √RARz
-âPLûè&ÑÈ å´:I)ÛêOå)›I®!œö°2,ÿ©’OåADe( ŒàADU%√E;íúÇ§â*h!¡¶äÇà(j^∞@É:"eTΩZb±b÷%»Häù*ƒ
-í"†§ãN≠IÑg ®ëa¢ù”êüVdDQP-bX±kƒ*HäA	*h!»äá.,D”È Zb±b÷%»IåADe/V±XXµäƒ
-í"†®ãN¢
-4È≈¶\4P—HLX3``ËM8™ñÑâwBîYâb ÇÜÇºöâ>î8!6÷±∫%⁄©ÍP‡†¶ë>¨»Ñ&AÜäÅkÖãX†íúÇ§à§açÿ°6÷±∫%›*t–IåADe/V±XXµà—A4ÍO†(hßeJï*TT©R•A¢Üäv©"M4
-ëi‘@≠îò…1i†®ë¢	ÍP‡†Üëtx™h!®ÇÜ•I‰$E@ô><òh3O§A¨ËjígŒ@ühßjí"†Üü6Ñ»©±gT@ü50‘†Çù5™Ww&r
-âi†ÜÉN*ea©zZ≈b≈¶( ŒàADU'¨ @ët8•à*HäAJ-:©ïIúARDT0∆ävß"}Yàà!E@`π
-âPAÜA&öiaÀäàÇ4˙D @ì50‘Ω`XÇ§à§"”®AB:h¥◊*å:ß§Ò!"]–§ã2|Ña†ÆìRB¶+-b(L˙HpD€`∫$KµIÙ°¡@ß"}Yàà(LÇá	3êTêäÇ1°Ba¡íä$Hóji”@ì50‘Ω`(M:âÙäÌR•EJï*TT®h°áu$I¶AR-:Ñ¢“íç&-4
-í ‘@üJ$r ŒéãM50‘†®ûÇ§à§'«íáb	ÍH#UúáRL˘ƒ„wRDTsÊ–òã6,ÍÑ„ ÜQî3¢ ®ë9È¥&Eöã:¢	Ë»!®äR4Sπ)»*Hí¶Çh´CPÉK’¶+0@É:"eTΩn`›Évã∞n`›Ç‰"ŒÜäÇ§à§¢”™ôPhßi3êTêäÇ4ÿ7`n±b÷%»TêäÇ4	4–Cêã\XÑß“@`›ÉvÎ-b\Åòƒ‘AÜRıÉvÏ¨XZ≈`—Gu$I¶AR-:Ñ ”¶ãLh°°Pò∞j`¡–ô©ı¢â∂±^"¶+]wBîYâb ®ëd‰‘ê@µä≈ÜE	û•õfÏ∞n`›ÉvÏ.âvU>î8D‰O™ô	à0‚†`n¡ªÂã±@ì9I® √&®¢mÿÆàÅÉvÏ¨ZctK∫4È†íåÇà(j^∞n`›ÉuÖãXçN§˙¢ÜävT©R•D @çL ™QPAúÉ2Õ9*h @@©R•ECE;ÜQ!"a®ÇÜ≈Hë(–dÃíù9(Û†Ã4Sµ¶+-b$HöjÓêFÜä4S∂Êÿ7`X±Äë!4Î∫@ãQÄ—Gl,Zb$Hë(–› ÇàÇ$h"ŒÌÉvÏ¨X`›Év‚DâåÜÈÑ¶†VAp—Gl∞n`›b∆Ï∞n$LZÜêA§A"©√E;Zb±b÷!"Dâä®¡“(à “@ZÇ,·°N€∞n`›Ç≈ÜDâä®…“*H ƒ@ã8h°°N’*TT©R•EJÜäÓ§â*h*E¶®Ç¥ZI1§≈¶ARDÑÈCÑAD»Òi†ÜQî
-ì–TêäÇd¯È0‡Ã@üIj©–ÍIûúÇ|a°NÍHäA|⁄	ëf≈ú®Ç|dj √RAtD
-í"†Üü6Ñ»©±gT@ü5™Fävì9I	4–CÇßbea©z`±b÷$gD@Ü¢*ó•¨V,Zbπ	≥°≈@©"*
-H¥ÍÃ®)‹ôƒ$E@É÷%ã.@ARDT0–I¶ADXiqb åüI÷%ã.@A&2ea©zZ≈b∆ÉE;®ë&ö
-à¥Í †ÉNúZa¢ÜäÑb¡ªBfœ¨ä&›äËà,ZctK∫
-QfOÇàÇ§à§a†ÆìRBã±&}(hBm≠b∫$KµIÙ°¬@ß"}Yàà(LÇá÷%ã íúÇ§à§açÿ°6ÏWà@µä∆¢]–ÇßMòƒ‘AÜRıkÖåäßR}°CE;TT©R•EJï*1›I	4–TäßQh™RcIä¶Ç§à*à'“ÜÑÇà)—‚”@Ü¢5$'†®ë…ËÚa¡òA>í ≥°‘íü9¯¡¢ù‘êäÇ˘™"ÕäùQ¯ƒ‘AÜRÇËÑ$E@á>m	à≥bŒ®A>2eTÆÓL‰
-í$”@áúUÑ‘AÜRıÇ)—CPä•Îƒ$Eúáb
-âPRäßVeD	3êTêäÇ1°NÈ»û´2"H®±XXµä‰$E@Éöd‰EÜó"…Ùê-bX±kƒ$∆@Ü¢5%¨V,Zb±I®*E¶®ÇÑjqiç*&:ß•°!"]–§ã2|Ña†ÆìRB"FäüJ!+l.âv™}(hH)»û´2"
-	êa≈@Z≈b≈¶($Œ@©"*(cE	ÜÉ6(õe¨nâwB:dc ÜQó•¨V,Zb4PöjìË)⁄•EJï*TT©P—A¢ù‘êìMH™uVä•&4ò™h*HÇ®Ç}(hH!»Çù-4j √RARz
-âPLûè&ÑÈ å´:I)ÛêOå)›I®!œö°2,ÿ©’OåADe( ŒàARDTsÊ–òã6,ÍÑ„ ÜQJ·°N‰Œ@©"M4pi≈XADe/V±XXµä)—CPä•Í÷%ã±\@ÇDY»qV ®ë(™ufT@ì9I® √ÓúâÍ≥" ÑäÅÇ‰$E@Éöd‰EÜó"…Ùê0\@ÇLdj √Rz¡b
-âPTäßQ*t‚”4T&&,X0tN-I·"Dª†•d¯(à √@Ø&§Ñ¨V,Zb4PôÍP·	∂Z∆Ëë'jß“ÜÑÇúâÍ≥" †ôT$Œ@©"*(cE	ÜÉ&(ë!.ËA¶¶ÇLdj √Rz¿h°*u'–4SµEJï*TT©R°°C‘êìMH™uVä•&4ò™h*HÇ®Ç}(hH!»Çù-4j √RARz
-âPLûè&ÑÈ å´:I)ÛêOå)›I®!œö°2,ÿ©’OåADe( ŒàARDTsÊ–òã6,ÍÑ„ ÜQH—Grg ®ë&öh4‚¨@Ü¢5'¨AúàÇà•/V±XXµä‰"ŒÜä±I®)E¶´2¢	)»*HäA—Gt‰O™ô(§X¨XZ≈r
-í"†ÇÜÇM4r"√ñãiÍH±XXµä‰c ÜQó•¨V,Zb±I®*E¶®ÇÑjqiç*&L:ß•°!"]–§ã2|Ña†ÆìRB"FäüJ!+kX›ÌT˙HpêSêüVdD
- √ä@µä≈Ö¨PIúARDT0∆äálQ+kX›ÓÑjh$∆@Ü¢5'´X¨XZƒh°*u'–4SµEJï*TT©R°°CE;®ë&ö
-à¥Í ¨ãJLi(¥–TêÉQ˙HpêCêÉ:<Zd‘AÜRÇ§Ù
-í"†òüL8)à'“@çVt:â3Á ûå4S∫âPCûõBdY®≥™ ûåÇà(jPAúàÇ§à§ÁÕ†ôlY à'∆@Ü¢*ï¡¢ù…úARDöd‡”äXÇà(j^≠bX±k3¢ ÜQK÷»Häù*ƒ
-í"†§ãN¨ Ñg ®ëa¢ù”êüVdDQP-bX±kƒ*HäA	*h!»äá.,D”È Zb±b÷%»IåADe/V±XXµäƒ
-í"†®ãN¢
-4È≈¶(h®F,Y∞`t&úZâ‚Dâv°J,…Ë1AÜA^MIX¨XZƒHë°Bg“ÜÑ&€°"]™û•
-iÍÃàABdh®±XXµä	)»*HäA—A0‡Õämk°"]–ÇßMòƒ‘AÜRıkÖãXçN§˙¢ÜävT©R•EJï*T(e:®U*L©ùD	ÒêMû≠9ô u)UÜ©&|·°CE;TT©R•EJï*4S∫âi†®ãN¢
-»¥§∆íãMI5Mû≠9	à0‚”@©"*	»±‡‘í≠¯ƒ‘ERA&uI‰$E@Éhßi3êTêìM8*qPCPä•Îƒ$Eúáb
-âPRäßVeD	3êTêäÇ4
-r'’òàÇTÜäv©"*(h$”@á",9h±Fû§ÅÇƒ
-í"†úãI*—POå@¡r	1êCPÉK÷à*Hí¶Ç§Zjà(A¶ßò—A¢°1bj¡É°*qjO%›
-H≥'¡àA
-È5$ Zb±b÷!"Fäõ>¥·+l.âv™l˙…»)»û´2"
-	êa≈@`ÇLÍâË*HäA—A4Â…†ä$Hóji”@ì50‘Ω`(M:âÙäÌR•EJê @@Ç4)ïiE@É:À*ri†@@Å•EJïwDf
-DâÜQ!"cAíô&tt
-rcŒÇò4P—GqDâNª§–‚çvµä≈Ö¨Dâ§1Fö@≠Y¡¢ù≠bX±k!"D∆ÜtÇDt¨†fl4P—Gjï*TT©R•ECEwRDöd"”®AZ-)(“b”@©"D	≥ÎN@°28™h*HäA:,x*íkE@ü5™PIú©=I® √\)‹ôƒ$I¶A8§‘ERzµä≈Üê êã:UÑ$E@•ùYäà$Œ@©"*(h)»û´2"H®¨X`4S∫âPAÜA&öiaÀäàÇ4˙DV,`\Åòƒ‘AÜRıä≈ÜTêäÇ§Zjà(A¶ßò—A¢°1bl¡É°)≥ÎE∑bºD¨V0∫ÓÖ(©ì‡ƒ@ÉdT
-ÚjH@Z≈b∆¢ÑÕû≠8Hë'j¶œ¨úÇúâÍ≥" †ôT+0@ì:§Ù
-í"†ÇÜ4Pòh3bâ∂±^"%å.âv°ù4	1êCPÉK÷%ãN§˙¢ÜävT©R•D @çL ™QPAúÉ2Õ9*h @@©R•ECE;ÜQ!"a®ÇÜ≈Hë(–dÃíù9(Û†Ã4S∂"DâåÜÈÑbDÌÄë!"cCtA"…®†äú4S∂"DâåÜÈÑi ZAp—GkX¨X`$Hë(µ:@ÉIÑg)⁄•EJï*TT©P—AéÍHí¶Ç§Zjà+E§ìLZd$A®A6}iƒ&AÜãMI®'EéÉRMh§„ ÜQJ	)’'†®ëe√E;íúÇ§â*h!¡¶äÇà•(∑`n¡ªÖçÿ7`n¡r	gCäXÇ§à§¢”™ôQôƒ$E@É9	ıfD@Öhßfÿ7`n±cÊÿ∞\@Ç§à§a†í¶Çà®r‚ƒ@ç>íÏ∞nX±ÉvÏX.@A&2ea©z)€Êÿ7XX¡ªÊ, ®ëH™uPÇßN-1°CEBbb›ÉA4‚‘¥$K∫
-QfOÇàÇ4
-ÚjH@`$H—A3g÷úmªÊÿ7`n¡ª°.’Mû≠99	ıfD@°28§∞n`›b∆Ï±`A&uI‰$E@Éh°(pf≈∂¡ªÊÿ7`n≈Ö—'t ”¶A&2ea©@`›ÉvÎ0n`›ã°Bi‘û†4P—Gjï*TT©R•ECEwRDöd"”®AZ-)(“b”@©"D	≥ÎN@°28™h*HäA:,x*íkE@ü5™PIú©=I® √ÓL‰
-í$”@áúTj"©zZ≈b≈¶+ê êã:UÑ$E@•ùYäà$Œ@©"*(h)»û´2"H®,Xb∏hßjí"†ÇÜÇM4r"√ñãiÍH,Xb±I®'EéÉRMh§„ Zb±b÷%»IåADe/X¨@©"M4
-ëi‘@°ù8™cEÑ≈ìÑÕû≠8Mµ¶7DâvU6}iƒ‰O™ô	à0‚†`X±ä	)’'†®ëa#E	ÜÉ&(ñ!"]–ÇßM¯ƒ‘AÜRıÇ≈Ü#E	¶©>Ä—A¢ù™TT©R•EJïN¨*äì‘äßQ¯ƒg÷öA&u:äUa‘íü8h°°N’*TT©R•EJÜäÓ§â*h*E¶®Ç¥ZI1§≈¶ARDÑg÷öABdh¥–TêäÇlÈ“jUàäÇ|dj"©@ì:§Ù
-í"†ÇÜ∏hßi3êTêìM8*qV ÜQK÷»Häù*ƒ
-í"†§ãN¨ Ñg ®ëd‰O™ô(§wRDT0–I¶ADXiqb åüIƒ$∆@Ü¢5'¨ ®ë&ö
-à¥Í †ÉNúZa¢ÜäÑb…ìBi≈®û$Hój¢ÃûÉd‰‘ê@µä≈Ö¨Dâ&l˙…¢m∞∫%⁄©©ı¶†¶ë>¨»Ñ&AÜäÅÇ	)’'†®ëa#E	¶ó&ÑQ!"]–ÇßMòƒ‘AÜRıÄ—A4ÍO†(hßeJï*T@Å–dÃ™•»3,”í¶Å
-ï*TT4S∏ea∞R&à(lTâçL…)—–Síè:¡°CE;ä$HöjÓêFÜä4P—Gjï*TT©R•ECEwRDöd"”®AZ-)(“b”@©"D	≥ÎM@°28™h*HäA6y…5*ƒäA>2eT†íùRz
-âPAÜ)‹ôƒ$I¶A8•à!®äRıkÖãXÆ@A",Ëh´TêäÇîZj≥* íúÇ§à§a†¶ë>¨»Ñ¢†`X±ä·°NÍHäA	*h!»äá.,D”È `X±ä‰c ÜQó¶1XARDöd"”®AB:h¥∆ä	ã&f	¶ãR–ë!.ËRäô>D0–Wí©!!#E	öüZhõe¨nâv™l˙…®)»û´2"
-	êa≈@`±c	3™O@©"*(cE	ÜÉ&(ñ!"]–ÇßMòƒ‘AÜRıÇ≈Ü#E	¶©>Ä—A¢ù™TT©RFÇì2≠(§gAò≥NM4 TT©R°°N·®ÇÜ¡Hë(j √bR$Lh)3$ŒéANLy»3äÌÄë!"cCtA"…®†äú4S∂"DâåÜÈÑbDÌÄë!"cCtA"jVP3l)€!"D∆ÜtÇD4ê-@ã8hße¨V,Zb$Hë(µ:@ÉIÑg)⁄•EJï*TT©P—AéÍHí¶Ç§Zjà+E§ìLZd$A®A6}i§&AÜãMI®&¡éù&•Xà®'∆@Ü¢*î	3™O@©"*(cE;íúÇ§â*h!¡¶ä±5™^¥``¡ÉÖå @ët8•à*HäAJ-:©ïIúARDT0–SêüVdDQFävh¡É0\@Ç§à§a†í¶Çà®r‚ƒ@ç>íÜ0`X±Ç·°N‰∆@Ü¢5'≠0``¡b∆à*Hí¶Ç§Zjà(A¶ßö·°CEBbd—ÉA4‚‘¥(LŸÍ”D€∞ØF0XatKµI≥ÎM@ß"}Yàà(LÇáF0XX¡ô ì–TêäÇ1°Ba¡öä&›äËà0``¡Ç∆¢]–ÇßMòƒ‘AÜRı£,X`4PöjìË)⁄•EJï*TT©P—A¢ù‘êìMH™uVä•&4ò™h*HÇ®Çl˙…®(LÇáö
-âPMÇè:MJ®ëPOåADU$gTûARDT0∆ävì9I	4–CÇßbeTΩfn›ªvÂã±\@ÇDY»qV ®ë(™ufT@ì9I® √@ß"}Yàà!EÌõvÊÌ€¨XZ≈r
-í"†ÇÜÇM4r"√ñãiÍH∑nn›∫≈Ö¨Ww&2ea©zf›ªvÊÎ-bXÇ§â*h*E¶®ÇÑjqiÆ4T&&MX0tN-KA"Dª†•d¯(à √@Ø&§ÑE	öüZhõk‚ fn›ªvÂãX›v™l˙…®)»û´2"
-	êa≈@f›ªvÊÎ-bA&uI‰$E@Éh°(pf≈∑bºDm€∑nn±k°.ËA¶¶ÇLdj √RzÕªvÊÌ÷,Zb4PöjìË)⁄•EJï*TT©P—AÉ   
+;THIS TEST VERIFIES THAT WHEN THE ADD INSTRUCTION IS USED TO ADD
+;A WORD OF ALL ZEROS TO AN AC CONTAINING A NON-ZERO POSITIVE NUMBER, THE
+;RESULT IS A NON-ZERO POSITIVE NUMBER IN THE AC.  FIRST, THE AC IS
+;INITIALIZED WITH A NON-ZERO POSITIVE NUMBER; THEN, A WORD OF ALL ZEROS
+; IS ADDED TO THE AC.  THE AC IS THEN CHECKED FOR ITS CONTENTS NON-ZERO
+
+A10700:	MOVE	[123456]	;PRESET AC WITH A NON-ZERO NUMBER
+	ADD	[0]		;*ADD OF A WORD OF ALL ZEROS TO AN AC CONTAINING
+				;A NON-ZERO NUMBER
+				;SHOULD RESULT IN AN AC CONTAINING A NON-ZERO NUMBER
+	SKIPN			;PASS TEST IS C(AC) IS NON-ZERO
+	STOP
+
+;**********
+;THIS TEST VERIFIES THAT WHEN THE ADD INSTRUCTION IS USED TO ADD
+;A WORD CONTAINING A NON-ZERO POSITIVE NUMBER TO AN AC OF ALL ZEROS, THE
+;RESULT IS A NON-ZERO POSITIVE NUMBER IN THE AC.  FIRST, THE AC IS
+;INITIALIZED WITH A WORD OF ALL ZEROS ;THEN, A NON-ZERO POSITIVE NUMBER
+;IS ADDED TO THE AC.  THE AC IS THEN CHECKED FOR ITS CONTENTS NON-ZERO
+
+A13300:	MOVE	[0]		;PRESET AC WITH ALL ZEROS
+	ADD	[123456,,0]	;*ADD OF A NON-ZERO NUMBER TO AN AC CONTAINING ALL ZEROS
+				;SHOULD RESULT IN AN AC CONTAINING A NON-ZERO NUMBER
+	SKIPN			;PASS TEST IF C(AC) IS NON-ZERO
+	STOP
+
+;**********
+
+;THIS TEST VERIFIES THAT WHEN THE ADD INSTRUCTION IS USED TO ADD
+;A WORD CONTAINING A NON-ZERO POSITIVE NUMBER TO AN AC OF ALL ZEROS, THE
+;RESULT IS A NON-ZERO POSITIVE NUMBER IN THE AC.  FIRST, THE AC IS
+;INITIALIZED WITH A WORD OF ALL ZEROS ;THEN, A NON-ZERO POSITIVE NUMBER
+;IS ADDED TO THE AC.  THE AC IS THEN CHECKED FOR ITS CONTENTS NON-ZERO
+
+A13400:	MOVE	[0]		;PRESET AC WITH ALL ZEROS
+	ADD	[123456]	;*ADD OF A NON-ZERO NUMBER TO AN AC CONTAINING ALL ZEROS
+				;SHOULD RESULT IN AN AC CONTAINING A NON-ZERO NUMBER
+	SKIPN			;PASS TEST IF C(AC) IS NON-ZERO
+	STOP
+
+;**********
+;ADD ZERO TO A RIPPLED ONE
+
+SN=11000
+	ZZ=0
+
+A11000:	REPEAT	^D36,
+<;THIS TEST CHECKS THE 'ADD' INSTRUCTION AND THE ADDER ON A 0NE-BIT-AT-A-TIME BASIS.
+;A WORD OF ALL ZEROS IS ADDED TO AN
+;AC CONTAINING ALL ZEROS EXCEPT FOR A ONE IN ONE AND ONLY ONE BIT,
+;THE RESULT IS THAT THE AC CONTAINS THE SAME NUMBER WHICH WAS IN IT ORIGINALLY.
+;THE AC IS THEN EQUIVALENCED WITH C(E) WHERE C(E)=C(AC).  THIS RESULT SHOULD
+;BE ALL ONES.  NEXT, THE AC IS EQUIVALENCED WITH A WORD OF ALL ZEROS.
+;THE FINAL RESULT SHOULD BE C(AC)=0. THIS
+;TEST IS REPEATED 36 TIMES SO THAT A ONE MAY BE RIPPLED THOUGH
+;EVERY BIT OF THE AC.
+;THE AC IS CHECKED TO INSURE THAT IT CONTAINS ALL ZEROS.
+SN=SN+1
+	ZZ=ZZ+ZZ
+	IFE	ZZ,<ZZ=1>
+	MOVE	[ZZ]		;LOAD AC WITH A FLOATING ONE
+	ADD	[0]		;*ADD OF ZERO TO FLOATING ONE
+	EQV	[ZZ]		;RESULTS IN C(AC)=ALL ONES
+	EQV	[0]		;RESULTS IN C(AC)=0
+	SKIPE			;PASS TEST IF C(AC)=0
+	STOP
+
+;ADDX; AD AR + EN [ADAP], F CYC ACT EN A[F1],
+;IR ADDX [IR1], IR ADSUB [IR1]
+
+;**********
+PAGE
+>
+;THIS TEST VERIFIES THAT THE ADDITION OF A WORD OF 
+;ALL ZEROS TO AN AC OF ALL ZEROS RESULTS IN
+;C(AC)=0. FIRST THE AC IS CLEARED; THEN, A WORD
+;OF ALL ZEROS IS ADDED TO THE AC. THE RESULT IN
+;THE AC IS THEN CHECKED TO INSURE THAT C(AC)=0
+
+A11100:	MOVE	[0]		;PRESET AC TO ZERO
+	ADD	[0]		;*ADD OF ZERO TO ZERO SHOULD RESULT IN C(AC)=0
+	SKIPE			;PASS TEST IF C(AC)=0
+	STOP
+
+;FCE[F1], IR AD SUB [IR1]
+;AD FM + EN [ADFP], AD FM + EN A [ADFP],
+;F CYC ACT EN C[F1], IR ADSUB [IR1]
+
+;**********
+;ADD ZERO TO A RIPPLED ONE
+
+SN=13200
+	ZZ=0
+
+A13200:	REPEAT	^D36,
+<;THIS TEST CHECKS THE 'ADD' INSTRUCTION AND THE ADDER ON A 0NE-BIT-AT-A-TIME BASIS.
+;TO AN AC  OF ALL ZEROS IS ADDED A
+;WORD CONTAINING ALL ZEROS EXCEPT FOR A ONE IN ONE AND ONLY ONE BIT,
+;THE RESULT IS THAT THE AC CONTAINS THE SAME NUMBER WHICH WAS ADDED TO IT.
+;THE AC IS THEN EQUIVALENCED WITH C(E) WHERE C(E)=C(AC).  THIS RESULT SHOULD
+;BE ALL ONES.  NEXT, THE AC IS EQUIVALENCED WITH A WORD OF ALL ZEROS.
+;THE FINAL RESULT SHOULD BE C(AC)=0. THIS
+;TEST IS REPEATED 36 TIMES SO THAT A ONE MAY BE RIPPLED THOUGH
+;EVERY BIT OF THE AC.
+;THE AC IS CHECKED TO INSURE THAT IT CONTAINS ALL ZEROS.
+SN=SN+1
+	ZZ=ZZ+ZZ
+	IFE	ZZ,<ZZ=1>
+	MOVE	[0]		;LOAD AC WITH ALL ZEROS
+	ADD	[ZZ]		;*ADD OF FLOATING ONE TO ZERO
+	EQV	[ZZ]		;RESULTS IN C(AC)=ALL ONES
+	EQV	[0]		;RESULTS IN C(AC)=0
+	SKIPE			;PASS TEST IF C(AC)=0
+	STOP
+
+;**********
+>
+PAGE
+;ADD A RIPPLED ONE TO A RIPPLED ONE
+
+SN=11200
+	ZZ=0
+
+A11200:	REPEAT	^D35,
+<;THIS TEST VERIFIES THAT THE RESULT OF ADDING C(AC)
+;TO C(E) WHERE AC IS DIFFERENT FROM E BUT C(AC)=
+;C(E)=A ONE IN ONE AND ONLY ONE BIT IS AN
+;AC WHOSE CONTENTS IS NON-ZERO. HENCE, IF A
+;CARRY IS NOT GENERATED IN THE ADDITION PROCESS THE
+;RESULT IN THE AC WILL BE ZERO AND THE TEST
+;WILL FAIL. THIS TEST IS REPEATED 35 TIMES
+;SO THAT A ONE WILL BE FLOATED THROUGH
+;BITS 1 THRU 35 OF BOTH AC AND E
+SN=SN+1
+	ZZ=ZZ+ZZ
+	IFE	ZZ,<ZZ=1>
+	MOVE	[ZZ]		;PRESET AC WITH A FLOATING ONE
+	ADD	[ZZ]		;*ADD FLOATING ONE TO SAME SHOULD RESULT IN C(AC) NONZERO
+	EQV	[ZZ+ZZ]		;RESULTS IN C(AC)=ALL ONES
+	EQV	[0]		;RESULTS IN C(AC)=0
+	SKIPE			;PASS TEST IF C(AC)=0
+	STOP
+
+;**********
+>
+SN=11300
+	ZZ=0
+	YY=0
+
+A11300:	REPEAT	^D18,
+<;THIS TEST VERIFIES THAT THE ADDITION OF TWO NUMBERS WHOSE SUM IS 2 RAISED TO THE
+;36TH POWER WILL RESULT IN THE C(AC)=0 SINCE THIS NUMBER IS ONE LARGER
+;THAN THE 36 BIT HARDWARE OF THE PROCESSOR IS DESIGNED TO HANDLE. THIS TEST
+;ALSO VERIFIES CARRY GENERATION AND PROPAGATION THROUGHOUT THE
+;ADDER. THIS TEST IS REPEATED 36 TIMES. TESTING BEGINS WITH LOADING THE
+;AC WITH 400000000000 AND ADDING THE SAME NUMBER TO IT; THEN,
+;CHECKING FOR C(AC)=0. IN THE SUBSEQUENT 35 TESTS, THE NUMBER
+;LOADED INTO THE AC IS HALVED EACH TIME AND C(E) IS MADE EQUAL TO ITS
+;FORMER VALUE PLUS THE CURRENT C(AC)
+SN=SN+1
+	YY=YY/2
+	ZZ=ZZ+YY
+	IFE	YY,<YY=400000>
+	IFE	ZZ,<ZZ=400000>
+	MOVE	[XWD ZZ,0]	;PRESET AC TO A RIPPLED ONE STARTING WITH BIT POSITION 0
+	ADD	[XWD YY,0]	;*ADD OF TWO NUMBERS TOTALING 2 RAISED TO THE 36TH
+				;POWER SHOULD RESULT IN C(AC)=0.
+	SKIPE			;PASS TEST IF C(AC)=0
+	STOP
+
+;**********
+>
+PAGE
+SN=11400
+	ZZ=0
+	YY=0
+
+A11400:	REPEAT	^D18,
+<;THIS TEST VERIFIES THAT THE ADDITION OF TWO NUMBERS WHOSE SUM IS 2 RAISED TO THE
+;36TH POSER WILL RESULT IN THE C(AC)=0 SINCE THIS NUMBER IS ONE LARGER
+;THAN THE 36 BIT HARDWARE OF THE PROCESSOR IS DESIGNED TO HANDLE. THIS TEST
+;ALSO VERIFIES CARRY GENERATION AND PROPAGATION THROUGHT THE
+;ADDEC. THIS TEST IS REPEATED 36 TIMES. TESTING BEGINS WITH LOADING THE
+;AC WITH 400000000000 AND ADDING THE SAME NUMBER TO IT; THEN,
+;CHECKING FOR C(AC)=0. IN THE SUBSEQUENT 35 TESTS, THE NUMBER
+;LOADED INTO THE AC IS HALVED EACH TIME AND C(E) IS MODE EQUAL TO ITS
+;FORMER VALUE PLUS THE CURRENT C(AC)
+SN=SN+1
+	YY=YY/2
+	ZZ=ZZ+YY
+	IFE	YY,<YY=400000>
+	IFE	ZZ,<ZZ=400000>	;PRESET AB TO A RIPPLED ONE STARTING WITH BIT POSITION 0
+	MOVE	[XWD -1,ZZ]	;*ADD OF TWO NUMBERS TOTALING 2 RAISED TO THE 36TH
+				;POWER SHOULD RESULT IN C(AC)=0.
+	ADD	[YY]		;PASS TEST IF C(AC)=0
+	SKIPE
+	STOP
+
+;**********
+>
+SUBTTL	SPECIAL KI10 FOUR BIT ADDER TEST
+
+;THIS TEST CHECKS THE CARRY FUNCTION FROM THE MOST SIGNIFICANT BIT OF A FOUR
+;BIT ADDER TO THE LEAST SIGNIFICANT BIT OF THE NEXT SIGNIFICANT FOUR BIT ADDER.
+;SPECIFICALLY, IT IS VERIFIED THAT AN ILLEGAL CARRY DOES NOT OCCUR FROM BIT 33 TO BIT 32.
+
+A13500:	MOVE	[-1,,-5]	;PRESET AC WITH ALL ONES EXCEPT FOR BIT 33
+	ADD	[1]		;*ADD SHOULD NOT CAUSE CARRY FROM BIT 33 TO BIT 32
+	EQV	[-1,,-4]	;RESULT IN AC=ALL ONES
+	EQV	[0]		;RESULT IN AC=0
+	SKIPE			;PASS TEST IF C(AC)=0
+	STOP
+
+;**********
+
+;THIS TEST CHECKS THE CARRY FUNCTION FROM THE MOST SIGNIFICANT BIT OF A FOUR
+;BIT ADDER TO THE LEAST SIGNIFICANT BIT OF THE NEXT SIGNIFICANT FOUR BIT ADDER.
+;SPECIFICALLY, IT IS VERIFIED THAT AN ILLEGAL CARRY DOES NOT OCCUR FROM BIT 29 TO BIT 28.
+
+A13600:	MOVE	[-1,,-101]	;PRESET AC WITH ALL ONES EXCEPT FOR BIT 29
+	ADD	[1]		;*ADD SHOULD NOT CAUSE CARRY FROM BIT 29 TO BIT 28
+	EQV	[-1,,-100]	;RESULT IN AC=ALL ONES
+	EQV	[0]		;RESULT IN AC=0
+	SKIPE			;PASS TEST IF C(AC)=0
+	STOP
+
+;**********
+
+;THIS TEST CHECKS THE CARRY FUNCTION FROM THE MOST SIGNIFICANT BIT OF A FOUR
+;BIT ADDER TO THE LEAST SIGNIFICANT BIT OF THE NEXT SIGNIFICANT FOUR BIT ADDER.
+;SPECIFICALLY, IT IS VERIFIED THAT AN ILLEGAL CARRY DOES NOT OCCUR FROM BIT 25 TO BIT 24.
+
+A13700:	MOVE	[-1,,-2001]	;PRESET AC WITH ALL ONES EXCEPT FOR BIT 25
+	ADD	[1]		;*ADD SHOULD NOT CAUSE CARRY FROM BIT 25 TO BIT 24
+	EQV	[-1,,-2000]	;RESULT IN AC=ALL ONES
+	EQV	[0]		;RESULT IN AC=0
+	SKIPE			;PASS TEST IF C(AC)=0
+	STOP
+
+;**********
+;THIS TEST CHECKS THE CARRY FUNCTION FROM THE MOST SIGNIFICANT BIT OF A FOUR
+;BIT ADDER TO THE LEAST SIGNIFICANT BIT OF THE NEXT SIGNIFICANT FOUR BIT ADDER.
+;SPECIFICALLY, IT IS VERIFIED THAT AN ILLEGAL CARRY DOES NOT OCCUR FROM BIT 21 TO BIT 20.
+
+A14000:	MOVE	[-1,,-40001]	;PRESET AC WITH ALL ONES EXCEPT FOR BIT 21
+	ADD	[1]		;*ADD SHOULD NOT CAUSE CARRY FROM BIT 21 TO BIT 20
+	EQV	[-1,,-40000]	;RESULT IN AC=ALL ONES
+	EQV	[0]		;RESULT IN AC=0
+	SKIPE			;PASS TEST IF C(AC)=0
+	STOP
+
+;**********
+
+;THIS TEST CHECKS THE CARRY FUNCTION FROM THE MOST SIGNIFICANT BIT OF A FOUR
+;BIT ADDER TO THE LEAST SIGNIFICANT BIT OF THE NEXT SIGNIFICANT FOUR BIT ADDER.
+;SPECIFICALLY, IT IS VERIFIED THAT AN ILLEGAL CARRY DOES NOT OCCUR FROM BIT 18 TO BIT 17.
+
+A14100:	MOVE	[-1,,-400001]	;PRESET AC WITH ALL ONES EXCEPT FOR BIT 18
+	ADD	[1]		;*ADD SHOULD NOT CAUSE CARRY FROM BIT 18 TO BIT 17
+	EQV	[-1,,400000]	;RESULT IN AC=ALL ONES
+	EQV	[0]		;RESULT IN AC=0
+	SKIPE			;PASS TEST IF C(AC)=0
+	STOP
+
+;**********
+
+;THIS TEST CHECKS THE CARRY FUNCTION FROM THE MOST SIGNIFICANT BIT OF A FOUR
+;BIT ADDER TO THE LEAST SIGNIFICANT BIT OF THE NEXT SIGNIFICANT FOUR BIT ADDER.
+;SPECIFICALLY, IT IS VERIFIED THAT AN ILLEGAL CARRY DOES NOT OCCUR FROM BIT 14 TO BIT 13.
+
+A14200:	MOVE	[-11,,-1]	;PRESET AC WITH ALL ONES EXCEPT FOR BIT 14
+	ADD	[1]		;*ADD SHOULD NOT CAUSE CARRY FROM BIT 14 TO BIT 13
+	EQV	[-10,,0]	;RESULT IN AC=ALL ONES
+	EQV	[0]		;RESULT IN AC=0
+	SKIPE			;PASS TEST IF C(AC)=0
+	STOP
+
+;**********
+;THIS TEST CHECKS THE CARRY FUNCTION FROM THE MOST SIGNIFICANT BIT OF A FOUR
+;BIT ADDER TO THE LEAST SIGNIFICANT BIT OF THE NEXT SIGNIFICANT FOUR BIT ADDER.
+;SPECIFICALLY, IT IS VERIFIED THAT AN ILLEGAL CARRY DOES NOT OCCUR FROM BIT 10 TO BIT 9.
+
+A14300:	MOVE	[-201,,-1]	;PRESET AC WITH ALL ONES EXCEPT FOR BIT 10
+	ADD	[1]		;*ADD SHOULD NOT CAUSE CARRY FROM BIT 10 TO BIT 9
+	EQV	[-200,,0]	;RESULT IN AC=ALL ONES
+	EQV	[0]		;RESULT IN AC=0
+	SKIPE			;PASS TEST IF C(AC)=0
+	STOP
+
+;**********
+
+;THIS TEST CHECKS THE CARRY FUNCTION FROM THE MOST SIGNIFICANT BIT OF A FOUR
+;BIT ADDER TO THE LEAST SIGNIFICANT BIT OF THE NEXT SIGNIFICANT FOUR BIT ADDER.
+;SPECIFICALLY, IT IS VERIFIED THAT AN ILLEGAL CARRY DOES NOT OCCUR FROM BIT 6 TO BIT 5.
+
+A14400:	MOVE	[-4001,,-1]	;PRESET AC WITH ALL ONES EXCEPT FOR BIT 6
+	ADD	[1]		;*ADD SHOULD NOT CAUSE CARRY FROM BIT 6 TO BIT 5
+	EQV	[-4000,,0]	;RESULT IN AC=ALL ONES
+	EQV	[0]		;RESULT IN AC=0
+	SKIPE			;PASS TEST IF C(AC)=0
+	STOP
+
+;**********
+
+;THIS TEST CHECKS THE CARRY FUNCTION FROM THE MOST SIGNIFICANT BIT OF A FOUR
+;BIT ADDER TO THE LEAST SIGNIFICANT BIT OF THE NEXT SIGNIFICANT FOUR BIT ADDER.
+;SPECIFICALLY, IT IS VERIFIED THAT AN ILLEGAL CARRY DOES NOT OCCUR FROM BIT 2 TO BIT 1.
+
+A14500:	MOVE	[-100001,,-1]	;PRESET AC WITH ALL ONES EXCEPT FOR BIT 2
+	ADD	[1]		;*ADD SHOULD NOT CAUSE CARRY FROM BIT 2 TO BIT 1
+	EQV	[-100000,,0]	;RESULT IN AC=ALL ONES
+	EQV	[0]		;RESULT IN AC=0
+	SKIPE			;PASS TEST IF C(AC)=0
+	STOP
+
+;**********
+;THIS TEST CHECKS THE CARRY FUNCTION FROM THE MOST SIGNIFICANT BIT OF A FOUR
+;BIT ADDER TO THE LEAST SIGNIFICANT BIT OF THE NEXT SIGNIFICANT FOUR BIT ADDER.
+;SPECIFICALLY, IT IS VERIFIED THAT AN ILLEGAL CARRY DOES NOT OCCUR FROM BIT 1 TO BIT 0.
+
+A14600:	MOVE	[-200001,,-1]	;PRESET AC WITH ALL ONES EXCEPT FOR BIT 1
+	ADD	[1]		;*ADD SHOULD NOT CAUSE CARRY FROM BIT 1 TO BIT 0
+	EQV	[600000,,0]	;RESULT IN AC=ALL ONES
+	EQV	[0]		;RESULT IN AC=0
+	SKIPE			;PASS TEST IF C(AC)=0
+	STOP
+
+;**********
+
+;THIS TEST CHECKS THE CARRY FUNCTION FROM THE MOST SIGNIFICANT BIT OF A FOUR
+;BIT ADDER TO THE LEAST SIGNIFICANT BIT OF THE NEXT SIGNIFICANT FOUR BIT ADDER.
+;SPECIFICALLY, IT IS VERIFIED THAT AN ILLEGAL CARRY DOES NOT OCCUR FROM BIT -1TO BIT 35.
+
+A14700:	MOVE	[-1,,-1]	;PRESET AC WITH ALL ONES
+	ADD	[1]		;*ADD SHOULD NOT CAUSE CARRY FROM BIT -1 TO BIT 35
+	SKIPE			;PASS TEST IF C(AC)=0
+	STOP
+
+;**********
+SUBTTL	TEST OF SUB AND COMPARE INSTRUCTIONS
+
+;THIS TEST VERIFIES THAT IF A NON ZERO POSITIVE NUMBER IN E IS
+;SUBTRACTED FROM THE AC WHEN C(AC)=0, THE RESULT IN THE AC
+;IS NEGATIVE
+
+A11500:	MOVE	[0]		;PRESET AC TO ZERO
+	SUB	[XWD 0,-1]	;*SUB OF POSITIVE NONZERO NUMBER FROM AC OF ALL ZEROS
+				;SHOULD RESULT IN C(AC) NEGATIVE
+	SKIPL			;PASS TEST IF C(AC) IS NEGATIVE
+	STOP
+
+;AD AR- EN D [ADAM], F CYC ACT ENB [F1],
+;IR SUBX[IR1], IR ADSUB[IR1]
+
+;**********
+
+;THIS TEST VERIFIES THAT IF A WORD OF ALL ZEROS IS
+;SUBTRACTED FROM AN AC OF ALL ZEROS, THE RESULT
+;IS AN AC OF ZEROS.
+
+A11600:	MOVE	[0]		;PRESET AC TO ZERO
+	SUB	[0]		;*SUB OF 0 FROM 0 SHOULD RESULT IN C(AC)=0
+	SKIPE			;PASS TEST IF C(AC)=0
+	STOP
+;AD CRY 36[ADCR], F CYC ACT EN D[F1], IF SUBX [IR1]
+
+;**********
+PAGE
+SN=11700
+	ZZ=0
+
+A11700:	REPEAT	^D36,
+<;THIS TEST VERIFIES THAT IF A RIPPLED ONE
+;IS SUBTRACTED FROM ITSELF, THE RESULT IS
+;AN AC OF ALL ZEROS. THIS TEST IS REPEATED 36
+;TIMES IN ORDER TO TEST ALL 36 BITS.
+SN=SN+1
+	ZZ=ZZ+ZZ
+	IFE	ZZ,<ZZ=1>
+	MOVE	[ZZ]		;LOAD AC WITH A FLOATING ONE
+	SUB	[ZZ]		;*SUB OF FLOATING ONE FROM ITSELF SHOULD RESULT IN C(AC)=0
+	SKIPE			;PASS TEST IF C(AC)=0
+	STOP
+
+;**********
+>
+PAGE
+;THIS TEST VERIFIES THAT IF A WORD OF ALL
+;ONES IS SUBTRACTED FROM ITSELF, THE RESULT
+;IN THE AC IS ZERO.
+
+A12000:	MOVE	[-1]		;PRESET AC TO ALL ONES
+	SUB	[-1]		;*SUB OF -1 FROM ITSELF SHOULD RESULT IN C(AC)=0
+	SKIPE			;PASS TEST IF C(AC)=0
+	STOP
+
+;**********
+;THIS TEST VERIFIES THAT CAMA ALWAYS SKIPS THE
+;NEXT INSTRUCTION INDEPENDENT OF THE DATA WITH AC
+;AND E. THIS TEST FAILS IF CAMA DOES NOT SKIP ALWAYS.
+
+A12100:	MOVE	[0]		;PRESET AC, E TO ZERO
+	CAMA			;*CAMA SHOULD ALWAYS SKIP THE NEXT INSTRUCTION,
+				;OTHERWISE THIS TEST FAILS
+	STOP
+
+;ET0 [E], ET0 EN[E], IR CAXX[IR3], AD CRY 3C[ADCR],
+;FCYC ACT EN D [ADCR], AD CRY 36 F/F'S [ADCR],
+;PC CLOCK EN [PCC], ET0 C F/F[E], IR CAXX[IR3],
+;ADZ COND P[ADZ] AND ADZ COND Z[ADZ]
+
+;**********
+
+;THIS TEST VERIFIES THAT CAME IS DATA SENSITIVE.
+;IT SKIPS THE NEXT INSTRUCTION IF AND ONLY
+;IF C(AC)=C(E). IN THIS TEST AC=E=0 AND
+;C(AC)=C(E)=0. HENCE, CAME MUST
+;SKIP THE NEXT INSTRUCTION
+;IN THIS TEST
+
+A12200:	MOVE	[0]		;PRESET AC, E TO ZERO
+	CAME			;*CAME SHOULD SKIP SINCE E=AC
+	STOP
+
+;AD FM + EN [ADFP], F CXC ACT ENC[F1], IRCAXX[IR3]
+
+;**********
+;THIS TEST VERIFIES THAT CAME IS DATA SENSITIVE
+;IT SKIPS THE NEXT INSTRUCTION OF AND ONLY IF
+;C(AC)=C(E). IN THIS TEST C(AC)=C(E)=0;
+;BUT, E IS NOT WITHIN THE AC RANGE.
+;HENCE, CAME MUST SKIP
+;THE NEXT INSTRUCTION IN THIS TEST.
+
+A12300:	MOVE	[0]		;*CAME SHOULD SKIP WHEN C(AC)=C(E)=0
+	CAME	[0]
+	STOP
+
+;CAMX: FCE[F1], IR CAMX[IR1]
+
+;**********
+
+;THIS TEST VERIFIES THAT CAME IS DATA SENSITIVE.
+;IT SKIPS THE NEXT INSTRUCTION IF AND ONLY IF
+;C(AC)=C(E). IN THIS TEST C(AC)=0 AND
+;C(E)=-1. HENCE, CAME SHOULD NOT
+;SKIP THE NEXT INSTRUCTION IN THIS TEST.
+
+A12400:	MOVE	[0]		;PRESET AC TO ZERO
+	CAME	[-1]		;*CAME SHOULD NOT SKIP BECAUSE C(AC)=0 ANDC(E)=-
+	SKIPA			;SKIP HALT INSTRUCTION IF CAME PASSES TEST
+	STOP
+
+;AD AR- EN [ADAM], IR CAXX [IR3], F CYC ACT EN B [F1],
+;AD AR- F/F'S [ADAM], AD ADD [ADC1], AD FM + FETCH EN A [ADFP],
+;F CYC ACT EN A [F1], AD ADD EN C [ADC1], AD ADD F/F'S [ADC1]
+
+;**********
+SUBTTL	TEST OF COMPARE (CAMX) INSTRUCTIONS
+
+;**********
+
+;THIS TEST VERIFIES THAT CAML SKIPS THE NEXT SEQUENTIAL INSTRUCTION WHEN AND
+;ONLY WHEN C(AC) IS LESS THAN C(E).
+;IN THIS TEST, C(AC)=-1 AND C(E)=0; HENCE, CAML SHOULD SKIP.  OTHERWISE,THE 
+;PROGRAM HALTS.
+
+B100:	MOVE	[-1]		;PRELOAD AC WITH -1
+	CAML	[0]		;*CAML SHOULD SKIP BECAUSE C(AC) IS LESS THAN C(E)
+	STOP
+
+;*****     FAILURE ANALYSIS     *****
+;C(AC0)		C(AC1)		FAILING SIGNAL
+
+;				FC: AB PC EN
+;				ET0: COND Q: PC CLK EN
+
+;**********
+
+;THIS TEST VERIFIES THAT CAML SKIPS THE NEXT SEQUENTIAL INSTRUCTION WHEN AND
+;ONLY WHEN C(AC) IS LESS THAN C(E).
+;IN THIS CASE, C(AC)=0 AND C(E)=-1; HENCE, CAML SHOULD NOT SKIP.  OTHERWISE,
+;THE PROGRAM HALTS.
+
+B200:	MOVE	[0]		;PRELOAD AC WITH 0
+	CAML	[-1]		;*CAML SHOULD NOT SKIP BECAUSE
+				;C(AC) IS GREATER THAN C(E)
+	SKIPA			;SKIP HALT INSTRUCTION IF CAML PASSES
+	STOP
+
+;*****     FAILURE ANALYSIS     *****
+;C(AC0)		C(AC1)		FAILING SIGNAL
+
+;				SW: FCE
+;				FC: PC CHANGE
+
+;**********
+;THIS TEST VERIFIES THAT CAML SKIPS THE NEXT SEQUENTIAL INSTRUCTION WHEN AND
+;ONLY WHEN C(AC) IS LESS THAN C(E).
+;IN THIS CASE, C(AC)=400000,,0 (THE MOST
+;NEGATIVE NUMBER) AND C(E)=377777,,-1
+;(THE MOST POSITIVE NUMBER); HENCE,
+;CAML SHOULD SKIP.  OTHERWISE, THE
+;PROGRAM HALTS
+
+B300:	MOVE	[XWD 400000,0]	;PRELOAD AC WITH 400000,,0
+	CAML	[XWD 377777,-1]	;*CAML SHOULD SKIP BECAUSE C(AC) IS LESS THAN C(E)
+	STOP
+
+;*****     FAILURE ANALYSIS     *****
+;C(AC0)		C(AC1)		FAILING SIGNAL
+
+;				FC: AD ADD
+
+;**********
+
+;THIS TEST VERIFIES THAT CAML SKIPS THE NEXT SEQUENTIAL INSTRUCTION WHEN AND
+;ONLY WHEN C(AC) IS LESS THAN C(E).
+;IN THIS CASE, C(AC)=377777,,-1 (THE MOST POSITIVE NUMBER) AND C(E)=400000,,0 (THE MOST NEGATIVE NUMBER)
+;HENCE, CAML SHOULD NOT SKIP.  OTHERWISE, THE PROGRAM HALTS.
+
+B400:	MOVE	[XWD 377777,-1]	;PRELOAD AC WITH 377777,,-1
+	CAML	[XWD 400000,0]	;*CAML SHOULD NOT SKIP BECAUSE
+				;C(AC) IS GREATER THAN C(E)
+	SKIPA			;SKIP HALT INSTRUCTION IF CAML PASSES
+	STOP
+
+;**********
+;THIS TEST VERIFIES THAT CAML SKIPS THE NEXT SEQUENTIAL INSTRUCTION WHEN AND
+;ONLY WHEN C(AC) IS LESS THAN C(E).
+;IN THIS CASE, C(AC)=400000,,0 (THE MOST NEGTIVE NUMBER) AND C(E)=-1;
+;HENCE, CAML SHOULD SKIP.  OTHERWISE, THE PROGRAM HALTS
+
+B500:	MOVE	[XWD 400000,0]	;PRELOAD AC WITH 400000,,0
+	CAML	[-1]		;*CAML SHOULD SKIP BECAUSE C(AC) IS LESS THAN C(E)
+	STOP
+
+;*****     FAILURE ANALYSIS     *****
+;C(AC0)		C(AC1)		FAILING SIGNAL
+
+;				FC: AD FM + EN
+
+;**********
+
+;THIS TEST VERIFIES THAT CAML SKIPS THE NEXT SEQUENTIAL INSTRUCTION WHEN AND
+;ONLY WHEN C(AC) IS LESS THAN C(E).
+;IN THIS CASE, C(AC)=0 AND C(E)=-1 ;HENCE, CAML SHOULD NOT SKIP.  OTHERWISE,
+;THE PROGRAM HALTS.
+
+B600:	SETZ			;PRELOAD AC WITH 0		
+	CAML	[-1]		;*CAML SHOULD NOT SKIP BECAUSE
+				;C(AC) IS GREATER THAN C(E)
+	SKIPA			;SKIP HALT INSTRUCTION IF CAML PASSES.
+	STOP
+
+;**********
+;THIS TEST VERIFIES THAT CAML SKIPS THE NEXT INSTRUCTION WHEN AND
+;ONLY WHEN C(AC) IS LESS THAN C(E).
+;IN THIS CASE, C(AC)=0 AND C(E)=0 ;HENCE, CAML SHOULD NOT SKIP.  OTHERWISE,
+;THE PROGRAM HALTS.
+
+B700:	SETZ			;PRELOAD AS WITH 0		
+	CAML	[0]		;*CAML SHOULD NOT SKIP BECAUSE C(AC)=C(E)
+	SKIPA			;SKIP HALT INSTRUCTION IF CAML PASSES
+	STOP
+
+;*****     FAILURE ANALYSIS     *****
+;C(AC0)		C(AC1)		FAILING SIGNAL
+
+;				FC: AD CRY 36
+
+;**********
+
+;THIS TEST VERIFIES THAT CAML SKIPS THE NEXT SEQUENTIAL INSTRUCTION WHEN AND
+;ONLY WHEN C(AC) IS LESS THAN C(E).
+;IN THIS CASE, C(AC)=0 AND C(E)=400000,,O (THE MOST NEGATIVE NUMBER);
+;HENCE CAML SHOULD NOT SKIP.  OTHERWISE, THE PROGRAM HALTS.
+
+B1000:	SETZ			;PRELOAD AC WITH 0
+	CAML	[XWD 400000,0]	;*CAML SHOULD NOT SKIP BECAUSE
+				;C(AC) IS GREATER THAN C(E)
+	SKIPA			;SKIP HALT INSTRUCTION IF CAML PASSES
+	STOP
+
+;**********
+;THIS TEST VERIFIES THAT CAM IS DATA INDEPENDENT.  IT NEVER SKIPS
+;THE NEXT SEQUENTIAL INSTRUCTION
+;IN THIS CASE, C(AC)=-1 AND C(E)=0
+;IF IT DOES SKIP THE NEXT INSTRUCTION, THE PROGRAM HALTS
+
+B1100:	MOVE	[-1]		;PRELOAD AC WITH -1	
+	CAM	[0]		;*CAM SHOULD NEVER SKIP
+	SKIPA			;SKIP HALT INSTRUCTION IF CAM PASSES
+	STOP
+
+;**********
+
+;THIS TEST VERIFIES THAT CAMGE SKIPS THE NEXT SEQUENTIAL INSTRUCTION WHEN AND
+;ONLY WHEN C(AC) IS GREATER THAN OR EQUAL TO C(E).
+;IN THIS CASE, C(AC)=-1 AND C(E)=0;  HENCE, CAMGE SHOULD NOT SKIP.
+;OTHERWISE, THE PROGRAM HALTS.
+
+B1200:	MOVE	[-1]		;PRELOAD AC WITH-1	
+	CAMGE	[0]		;*CAMGE SHOULD NOT SKIP BECAUSE C(AC) IS LESS THAN C(E)
+	SKIPA			;SKIP HALT INSTRUCTION IF CAMGE PASSES.
+	STOP
+
+;*****     FAILURE ANALYSIS     *****
+;C(AC0)		C(AC1)		FAILING SIGNAL
+
+;				FC: PC CHANGE
+;				FC: AB PC EN
+
+;**********
+;THIS TEST VERIFIES THAT CAMGE SKIPS THE NEXT SEQUENTIAL INSTRUCTION WHEN AND
+;ONLY WHEN C(AC) IS GREATER THAN OR EQUAL TO C(E)
+;IN THIS CASE, C(AC)=0 AND C(E)=-1;  HENCE CAMGE SHOULD SKIP.
+;OTHEWISE, THE PROGRAM HALTS.
+
+B1300:	SETZ			;PRELOAD AC WITH 0		
+	CAMGE	[-1]		;*CAMGE SHOULD SKIP BECAUSE C(AC) IS GREATER THAN C(E)
+	STOP
+
+;*****     FAILURE ANALYSIS     *****
+;C(AC0)		C(AC1)		FAILING SIGNAL
+
+;				SW: FCE
+;				ET0: COND Q: PC CLK EN
+
+;**********
+
+;THIS TEST VERIFIES THAT CAMN SKIPS THE NEXT SEQUENTIAL INSTRUCTION WHEN AND
+;ONLY WHEN C(AC) IS NOT EQUAL TO C(E)
+;IN THIS CASE C(AC)=0 AND C(E)=-1;  HENCE CAMN SHOULD SKIP.
+;OTHERWISE, THE PROGRAM HALTS
+
+B1400:	SETZ			;PRELOAD AC WITH 0		
+	CAMN	[-1]		;*CAMN SHOULD SKIP BECAUSE C(AC) IS NOT EQUAL TO C(E)
+	STOP
+
+;*****     FAILURE ANALYSIS     *****
+;C(AC0)		C(AC1)		FAILING SIGNAL
+
+;				FC:AD FM + EN
+;				FC: AD AR - EN
+;				FC: AD CRY 36
+;				FC: AD ADD
+;				FC: AB PC EN
+;				ET0: PC CLK EN
+
+;**********
+;THIS TEST VERIFIES THAT CAMN SKIPS THE NEXT SEQUENTIAL INSTRUCTION WHEN AND
+;ONLY WHEN C(AC) IS NOT EQUAL TO C(E)
+;IN THIS CASE, C(AC)=0 AND C(E)=0;  HENCE CAMN SHOULD NOT SKIP.
+;OTHERWISE, THE PROGRAM HALTS
+
+B1500:	SETZ			;PRELOAD AC WITH 0		
+	CAMN	[0]		;*CAMN SHOULD NOT SKIP BECAUSE C(AC)=C(E).
+	SKIPA			;SKIP HALT INSTRUCTION IF CAMN PASSES
+	STOP
+
+;*****     FAILURE ANALYSIS     *****
+;C(AC0)		C(AC1)		FAILING SIGNAL
+
+;				SW: FCE
+;				FC: PC CHANGE
+
+;**********
+SN=1600
+	ZZ=0
+
+B1600:	REPEAT	^D18,<
+;THIS TEST VERIFIES THAT CAMN SKIPS THE NEXT SEQUENTIAL INSTRUCTION WHEN AND ONLY
+;WHEN C(AC) IS NOT EQUAL TO C(E).  IT ALSO VERIFIES THAT CAME
+;SKIPS THE NEXT SEQUENTIAL INSTRUCTION WHEN AND ONLY WHEN
+;C(AC)=C(E).  IN BOTH CASES AC=E;  HENCE, C(AC)=C(E)
+;IF EITHER CAMN OR CAME FAILS, THE PROGRAM HALTS
+;THIS TEST IS REPEATED 36 TIMES IN ORDER TO FLOAT A 1 THRU ALL 36 BITS
+
+SN=SN+1
+	ZZ=ZZ+ZZ
+	IFE	ZZ,<ZZ=1>
+	MOVE	[XWD ZZ]	;PRELOAD AC,E WITH A FLOATING 1
+	CAMN			;*CAMN SHOLD NOT SKIP BECAUSE C(AC)=C(E)		
+	CAME			;*CAME SHOULD SKIP BECAUSE C(AC)=C(E)		
+	STOP
+
+;*****     FAILURE ANALYSIS     *****
+;C(AC0)		C(AC1)		FAILING SIGNAL
+
+;				ET0: COND P
+
+;**********
+>
+	ZZ=0
+
+	REPEAT	^D18,<
+;THIS TEST VERIFIES THAT CAMN SKIPS THE NEXT SEQUENTIAL INSTRUCTION WHEN AND ONLY
+;WHEN C(AC) IS NOT EQUAL TO C(E).  IT ALSO VERIFIES THAT CAME
+;SKIPS THE NEXT SEQUENTIAL INSTRUCTION WHEN AND ONLY WHEN
+;C(AC)=C(E).  IN BOTH CASES AC=E;  HENCE, C(AC)=C(E)
+;IF EITHER CAMN OR CAME FAILS, THE PROGRAM HALTS
+;THIS TEST IS REPEATED 36 TIMES IN ORDER TO FLOAT A 1 THRU ALL 36 BITS
+
+SN=SN+1
+	ZZ=ZZ+ZZ
+	IFE	ZZ,<ZZ=1>
+	MOVE	[XWD ZZ,0]	;PRELOAD AC,E WITH A FLOATING 1
+	CAMN			;*CAMN SHOLD NOT SKIP BECAUSE C(AC)=C(E)		
+	CAME			;*CAME SHOULD SKIP BECAUSE C(AC)=C(E)		
+	STOP
+
+;**********
+>
+SN=1700
+	ZZ=0
+
+B1700:	REPEAT	^D36,<
+;THIS TEST VERIFIES THAT CAMN SKIPS THE NEXT INSTRUCTION WHEN AND
+;ONLY WHEN C(AC)=0 AND C(E)=FLOATING 1.  HENCE,
+;CAMN SHOULD SKIP;  OTHERWISE, THE PROGRAM HALTS
+;THIS TEST IS REPEATED 36 TIMES TO FLOAT A 1 THRU ALL 36 BITS OF E
+SN=SN+1
+	ZZ=ZZ+ZZ
+	IFE	ZZ,<ZZ=1>
+	SETZ			;PRELOAD AC WITH 0
+	CAMN	[ZZ]		;*CAMN SHOULD SKIP BECAUSE C(AC) IS NOT EQUAL TO C(E)	
+	STOP		
+
+;**********
+>
+SN=2000
+	ZZ=0
+
+B2000:	REPEAT	^D36,<
+;THIS TEST VERIFIES THAT CAMN SKIPS THE NEXT SEQUENTIAL INSTRUCTION WHEN AND
+;ONLY WHEN C(AC) IS NOT EQUAL TO C(E).  HENCE,
+;CAMN SHOULD SKIP;  OTHERWISE THE PROGRAM HALTS.
+;THIS TEST IS REPEATED 36 TIMES TO FLOAT A 1 THRU ALL 36 BITS OF THE AC
+SN=SN+1
+	ZZ=ZZ+ZZ
+	IFE	ZZ,<ZZ=1>
+	MOVE	[ZZ]		;PRELOAD AC WITH A FLOATING 1	
+	CAMN	[0]		;*CAMN SHOULD SKIP BECAUSE C(AC) IS NOT EQUAL TO C(E)	
+	STOP
+
+;**********
+>
+SUBTTL	TEST OF MOVS INSTRUCTION
+
+;**********
+
+SN=2100
+	ZZ=0
+
+B2100:	REPEAT	^D18,<
+;THIS TEST VERIFIES THAT MOVS SWAPS LEFT AND RIGHT HALVES OF E AND
+;MOVES IT INTO AC.  IN THIS CASE, A 1 IS RIPPLED THRU BOTH HALVES
+;OF E [C(E)=ZZ,,ZZ WHERE ZZ IS A FLOATING 1].  THEN, C(AC) IS CHECKED.
+;THIS TEST IS REPEATED 18 TIMES TO FLOAT A 1 THRU ALL 18 BITS OF EACH HALF
+
+SN=SN+1
+	ZZ=ZZ+ZZ
+	IFE	ZZ,<ZZ=1>
+	MOVS	[XWD ZZ,ZZ]	;*MOVS SHOULD SWAP HALVES OF C(E)
+				;AND MOVE RESULT INTO AC
+	CAME	[XWD ZZ,ZZ]	;PASS TEST IF C(AC) CONTAINS ZZ,,ZZ
+	STOP		
+
+;**********
+>
+SN=2200
+	ZZ=0
+
+B2200:	REPEAT	^D18,<
+;THIS TEST VERIFIES THAT MOVS SWAPS LEFT AND RIGHT HALVES OF E AND
+;MOVES IT INTO AC.  IN THIS CASE, A 0 IS RIPPLED THRU BOTH HALVES
+;OF E [C(E)=ZZ,,ZZ, WHERE ZZ IS A FLOATING 0].  THEN, C(AC) IS CHECKED.
+;THIS TEST IS REPEATED 18 TIMES TO FLOAT A 0 THRU ALL 18 BITS OF EACH HALF
+
+SN=SN+1
+	ZZ=ZZ+ZZ+1
+	IFE	<ZZ-1>,<ZZ=-2>
+	MOVS	[XWD ZZ,ZZ]	;*MOVS SHOULD SWAP HALVES OF C(E)
+				;AND MOVE RESULT INTO AC
+	CAME	[XWD ZZ,ZZ]	;PASS TEST IF AC CONTAINS ZZ,,ZZ
+	STOP		
+
+;**********
+>
+SN=2300
+	ZZ=0
+	YY=0
+
+B2300:	REPEAT	^D18,<
+;THIS TEST VERIFIES THAT MOVS SWAPS LEFT AND RIGHT HALVES OF E AND
+;MOVES IT INTO AC.  IN THIS CASE, A 1 IS RIPPLED THRU THE LEFT HALF OF E
+;AND A 0 IS RIPPLED THRU THE RIGHT HALF
+;OF E [C(E)=ZZ,,YY, WHERE ZZ IS A FLOATING 1 AND YY IS A FLOATING 0].
+;THEN, C(AC) IS CHECKED.
+;THIS TEST IS REPEATED 18 TIMES TO FLOAT A 1 THRU ALL 18 BITS OF
+;THE LEFT HALF AND A 0 THRU ALL 18 BITS OF THE RIGHT HALF OF E
+
+SN=SN+1
+	ZZ=ZZ+ZZ
+	YY=YY+YY+1
+	IFE	ZZ,<ZZ=1>
+	IFE	<YY-1>,<YY=-2>
+	MOVS	[XWD ZZ,YY]	;*MOVS SHOULD SWAP HALVES OF C(E)
+				;AND MOVE RESULT INTO AC
+	CAME	[XWD YY,ZZ]	;PASS TEST IF AC CONTAINS YY,,ZZ
+	STOP		
+
+;**********
+>
+SN=2400
+	ZZ=0
+	YY=0
+
+B2400:	REPEAT	 ^D18,<
+;THIS TEST VERIFIES THAT MOVS SWAPS LEFT AND RIGHT HALVES OF E AND
+;MOVES IT INTO AC.  IN THIS CASE, A 0 IS RIPPLED THRU THE LEFT HALF OF E
+;AND A 1 IS RIPPLED THRU THE RIGHT HALF
+;OF E [C(E)=YY,,ZZ, WHERE ZZ IS A FLOATING 1 AND YY IS A FLOATING 0].
+;THEN, C(AC) IS CHECKED.
+;THIS TEST IS REPEATED 18 TIMES TO FLOAT A 1 THRU ALL 18 BITS OF
+;THE RIGHT HALF AND A 0 THRU ALL 18 BITS OF THE RIGHT HALF OF E
+
+SN=SN+1
+	ZZ=ZZ+ZZ
+	YY=YY+YY+1
+	IFE	ZZ,<ZZ=1>
+	IFE	<YY-1>,<YY=-2>
+	MOVS	[XWD YY,ZZ]	;*MOVS SHOULD SWAP HALVES OF C(E)
+				;AND MOVE RESULT INTO AC
+	CAME	[XWD ZZ,YY]	;PASS TEST IF C(AC)=ZZ,,YY
+	STOP		
+
+;**********
+>
+SUBTTL	TEST OF COMPARE (CAXX) INSTRUCTIONS
+
+;**********
+
+;THIS TEST VERIFIES THAT CAIE SKIPS THE NEXT SEQUENTIAL INSTRUCTION WHEN
+;AND ONLY WHEN C(AC)=E
+;IN THIS CASE C(AC)=E=0;  HENCE, CAIE SHOULD SKIP
+;OTHERWISE THE PROGRAM HALTS
+
+B2500:	SETZ			;PRELOAD AC TO 0		
+	CAIE			;*CAIE SHOULD SKIP BECAUSE C(AC)=E
+	STOP
+
+;*****     FAILURE ANALYSIS     *****
+;C(AC0)		C(AC1)		FAILING SIGNAL
+
+;				SW: PC CHANGE
+;				FC: AD FM ; EN
+;				FC: AD CRY 36
+;				FC: AB PC EN
+;				ET0: COND P: PC CLK EN
+
+;**********
+
+;THIS TEST VERIFIES THAT CAIE SKIPS THE NEXT SEQUENTIAL INSTRUCTION WHEN
+;AND ONLY WHEN C(AC)=E
+;IN THIS CASE C(AC)=E=1.  HENCE, CAIE SHOULD SKIP
+;OTHERWISE THE PROGRAM HALTS
+
+B2600:	MOVE	[1]		;PRELOAD AC TO 1	
+	CAIE	1		;*CAIE SHOULD SKIP BECAUSE C(AC)=E
+	STOP
+
+;*****     FAILURE ANALYSIS     *****
+;C(AC0)		C(AC1)		FAILING SIGNAL
+
+;				FC: AD AR - EN
+
+;**********
+
+;THIS TEST VERIFIES THAT CAME SKIPS THE NEXT SEQUENTIAL INSTRUCTION WHEN
+;AND ONLY WHEN C(AC)=C(E)
+;IN THIS CASE C(AC)=C(E)=1;  HENCE, CAME SHOULD SKIP
+;OTHERWISE THE PROGRAM HALTS
+
+B2700:	MOVEI	1		;PRELOAD AC TO 1	
+	CAME	[1]		;*CAME SHOULD SKIP BECAUSE C(AC)=C(E)
+	STOP
+
+;**********
+SUBTTL	TEST OF BOOLEAN INSTRUCTIONS
+
+;**********
+
+;THIS TEST VERIFIES THAT SETCA IGNORES THE ADDRESS FIELD OF THE INSTUCTION WORD.
+;IN THIS CASE C(AC)=0,,-1;  HENCE, THE RESULT IN THE AC SHOULD BE -1,,0
+;IF THE RESULT IN THE AC IS -1,,0, THE TEST PASSES.
+
+B3000:	MOVEI	-1		;PRELOAD AC TO 0,,-1	
+	SETCA	[-1]		;*SETCA SHOULD PUT -1,,0 INTO THE AC
+	CAME	[-1,,0]		;PASS TEST IF C(AC)=-1,,0
+	STOP
+
+;**********
+
+;THIS TEST VERIFIES THAT SETCA COMPLEMENTS C(AC), THEN PLACES THE
+;RESULT IN THE AC.
+;IN THIS CASE C(AC)=0,,-1;  HENCE, THE RESULT IN THE AC SHOULD BE -1,,0
+;IF THE RESULT IN THE AC IS -1,,0, THE TEST PASSES
+
+B3100:	MOVEI	-1		;PRELOAD AC TO 0,,-1
+	SETCA			;*SETCA SHOULD PUT -1,,0 INTO THE AC
+	CAME	[-1,,0]		;PASS TEST IF C(AC) =-1,,0
+	STOP
+
+;**********
+;THIS TEST VERIFIES THAT SETCA COMPLEMENTS C(AC), THEN PLACES THE
+;RESULT IN THE AC,
+;IN THIS CASE C(AC)=0,,0  HENCE, THE RESULT IN THE AC SHOULD BE,-1
+;IF THE RESULT IN THE AC IS -1,,-1, THE TEST PASSES
+
+B3200:	MOVEI	0		;PRELOAD AC TO 0,,0
+	SETCA			;*SETCA SHOULD PUT -1,,-1 INTO THE AC
+	CAME	[-1]		;PASS TEST IF C(AC) =-1,,-1
+	STOP
+
+;*****     FAILURE ANALYSIS     *****
+;C(AC0)		C(AC1)		FAILING SIGNAL
+
+;0				ET2: AR AD EN
+
+;**********
+
+;THIS TEST VERIFIES THAT SETCA COMPLEMENTS C(AC), THEN PLACES THE
+;RESULT IN THE AC,
+;IN THIS CASE C(AC)=-1,,-1;  HENCE, THE RESULT IN THE AC SHOULD BE 0,,0
+;IF THE RESULT IN THE AC IS ZERO, THE TEST PASSES
+
+B3300:	MOVE	[-1]		;PRELOAD AC TO -1,,-1	
+	SETCA			;*SETCA SHOULD PUT 0,,0 INTO THE AC
+	CAME	[0]		;PASS TEST IF C(AC) IS ZERO
+	STOP
+
+;*****     FAILURE ANALYSIS     *****
+;C(AC0)		C(AC1)		FAILING SIGNAL
+
+;-1,,-1				FC: AD FM - EN
+
+;**********
+;THIS TEST VERIFIES THAT SETCM COMPLEMENTS C(E), THEN PLACES THE
+;RESULT IN THE AC.
+;IN THIS CASE AC=E AND C(E)=C(AC)=0,,-1;  HENCE, THE RESULT IN THE AC SHOULD BE -1,,0
+;IF THE RESULT IN THE AC IS -1,,0, THE TEST PASSES
+
+B3500:	MOVEI	-1		;PRELOAD AC TO 0,,-1
+	SETCM			;*SETCM SHOULD PUT -1,,0 INTO THE AC
+	CAME	[-1,,0]		;PASS TEST IF C(AC) =-1,,0
+	STOP
+
+;*****     FAILURE ANALYSIS     *****
+;C(AC0)		C(AC1)		FAILING SIGNAL
+
+;-1,,-1				SW: FCE
+;-1,,-1				FC: AD AR - EN
+;0,,-1				ET2: AR AD EN
+
+;**********
+
+;THIS TEST VERIFIES THAT SETCM COMPLEMENTS C(E), THEN PLACES THE
+;RESULT IN THE AC.
+;IN THIS CASE C(E)=-1,,-1;  HENCE, THE RESULT IN THE AC SHOULD BE 0,,0
+;IF THE RESULT IN THE AC IS ZERO,THE TEST PASSES
+
+B3600:	SETCM	[-1]		;*SETCM SHOULD PUT 0 INTO THE AC	
+	SKIPE			;PASS TEST IF C(AC0)=0		
+	STOP
+
+;**********
+;THIS TEST VERIFIES THAT SETCM COMPLEMENTS C(E), THEN PLACES THE
+;RESULT IN THE AC.
+;IN THIS CASE C(E)=0,,0;  HENCE, THE RESULT IN THE AC SHOULD BE -1,,-1
+;IF THE RESULT IN THE AC IS -1,,-1,THE TEST PASSES
+
+B3700:	SETCM	[0]		;*SETCM SHOULD PUT -1,,-1 INTO THE AC	
+	CAME	[-1]		;PASS TEST IF C(AC)=-1,,-1	
+	STOP
+
+;**********
+;THIS TEST VERIFIES THAT SETO SETS C(AC) TO -1,,-1.  SETO IGNORES
+;THE ADDRESS FIELD OF THE INSTRUCTION WORD.
+;FIRST C(AC) IS SET TO 0,,0; THEN SETO IS EXECUTED.
+;THE AC IS THEN CHECKED FOR ALL ONES.  IF C(AC) IS ALL ONES,
+;THE TEST PASSES
+
+B4300:	MOVEI	0		;PRELOAD AC WITH 0,,0
+	SETO			;*SETO SHOULD LOAD THE AC WITH -1,,-1
+	CAME	[-1]		;PASS TEST IF C(AC)=-1,,-1
+	STOP
+
+;*****     FAILURE ANALYSIS     *****
+;C(AC0)		C(AC1)		FAILING SIGNAL
+
+;0				ET2: AR AD EN
+
+;**********
+;THIS TEST VERIFIES THAT ORCM CHANGES C(AC) TO THE LOGICAL
+;INCLUSIVE OR OF C(AC) WITH THE COMPLEMENT OF C(MEMORY).
+;IN THIS CASE AC=MEMORY=AC0 AND C(AC)=C(E)=0.
+;HENCE THE RESULT IN THE AC SHOULD BE ALL ONES.
+;THE AC IS CHECKED FOR ITS FINAL CONTENTS NON-ZERO.
+;IF C(AC) IS NOT=0, THE TEST PASSES
+
+B4400:	MOVEI	0		;PRELOAD AC,E WITH 0
+	ORCM			;*ORCM SHOULD PUT ALL ONES INTO AC0
+	SKIPN			;PASS IF C(AC) IS NON-ZERO
+	STOP
+
+;**********
+
+;THIS TEST VERIFIES THAT ORCM CHANGES C(AC) TO THE LOGICAL
+;INCLUSIVE OR OF C(AC) WITH COMPLEMENT OF C(MEMORY).
+;IN THIS CASE AC=MEMORY=AC0 AND C(AC)=C(E)=0
+;HENCE THE RESULT IN THE AC SHOULD BE ALL ONES.
+;THE AC IS CHECKED FOR ITS FINAL CONTENTS EQUAL TO -1,,-1
+;IF C(AC0)=-1,,-1, THE TEST PASSES
+
+B4500:	MOVEI	0		;PRELOAD AC,E WITH 0
+	ORCM			;*ORCM SHOULD PUT ALL ONES INTO AC0
+	CAME	[-1]		;PASS IF C(AC)=-1,,-1
+	STOP
+
+;*****     FAILURE ANALYSIS     *****
+;C(AC0)		C(AC1)		FAILING SIGNAL
+
+;0				SW: ET0
+;0				FC: AD AR + EN
+;0				ET2: AR AD EN
+
+;**********
+;THIS TEST VERIFIES THAT ORCM CHANGES C(AC) TO THE LOGICAL
+;INCLUSIVE OR OF C(AC) WITH COMPLEMENT OF C(MEMORY).
+;IN THIS CASE AC=MEMORY=AC0 AND C(AC)=C(E)=-1,,-1
+;HENCE THE RESULT IN THE AC SHOULD BE ALL ONES.
+;THE AC IS CHECKED FOR ITS FINAL CONTENTS EQUAL TO -1,,-1
+;IF C(AC0)=-1,,-1, THE TEST PASSES
+
+B4600:	MOVE	[-1]		;PRELOAD AC,E WITH -1,,-1
+	ORCM			;*ORCM SHOULD PUT ALL ONES INTO AC0
+	CAME	[-1]		;PASS IF C(AC)=-1,,-1
+	STOP
+
+;*****     FAILURE ANALYSIS     *****
+;C(AC0)		C(AC1)		FAILING SIGNAL
+
+;0				FC: AD FM - EN
+;0				ET0: AR AD EN
+
+;**********
+
+;THIS TEST VERIFIES THAT ORCM CHANGES C(AC) TO THE LOGICAL
+;INCLUSIVE OR OF C(AC) WITH COMPLEMENT OF C(MEMORY).
+;IN THIS CASE C(AC)=0 AND C(E)=-1,,-1; HENCE, THE RESULT
+;IN THE AC SHOULD BE 0.  THE AC IS CHECKED FOR ITS INAL CONTENTS=0.
+;IF C(AC)=0, THE TEST PASSES
+
+B4700:	MOVEI	0		;PRELOAD AC WITH 0
+	ORCM	[-1]		;*ORCM SHOULD PLACE ALL ZEROS INTO THE AC
+	SKIPE			;PASS IF C(AC)=0,,0
+	STOP
+
+;*****     FAILURE ANALYSIS     *****
+;C(AC0)		C(AC1)		FAILING SIGNAL
+
+;-E				SW: FCE
+
+;**********
+;THIS TEST VERIFIES THAT IOR CHANGES C(AC) TO THE LOGICAL
+;INCLUSIVE OR OF C(AC) WITH C(E).
+;IN THIS CASE AC=E AND C(AC)=C(E)=0,,0.  HENCE THE
+;RESULT IN THE AC SHOULD BE 0,,0.
+;THE AC IS CHECKED FOR 0,,0.  IF C(AC)=0,,0, THIS TEST PASSES
+
+B5000:	MOVEI	0		;PRELOAD AC,E WITH 0,,0
+	IOR			;*IOR SHOULD PUT 0 INTO AC
+	SKIPE			;PASS TEST IF C(AC)=0,,0
+	STOP
+
+;*****     FAILURE ANALYSIS     *****
+;C(AC0)		C(AC1)		FAILING SIGNAL
+
+;-1,,-1				SW: ET0
+;-1,,-1				ET0: AR AD EN
+;-1,,-1				ET0: AD AR - EN
+;-1,,-1				ET2: AR AD EN
+
+;**********
+
+;THIS TEST VERIFIES THAT IOR CHANGES C(AC) TO THE LOGICAL
+;INCLUSIVE OR OF C(AC) WITH C(E).
+;IN THIS CASE C(AC)=0 AND C(E)=-1,,-1.  HENCE, THE
+;RESULT IN THE AC SHOULD BE -1,,-1.
+;THE AC IS CHECKED FOR -1,,-1
+;IF C(AC) =-1,,-1 THE TEST PASSES.
+
+B5100:	MOVEI	0		;PRELOAD AC WITH 0
+	IOR	[-1]		;*IOR SHOULD PUT -1,,-1 INTO AC
+	CAME	[-1]		;PASS TEST IF C(AC)  =-1,,-1
+	STOP
+
+;*****     FAILURE ANALYSIS     *****
+;C(AC0)		C(AC1)		FAILING SIGNAL
+
+;E				SW: FCE
+;0				FC: AD AR - EN
+
+;*****     FAILURE ANALYSIS     *****
+;C(AC0)		C(AC1)		FAILING SIGNAL
+
+;0				FC: AD FM - EN
+
+NB5300:;**********
+;THIS TEST VERIFIES THAT IOR CHANGES C(AC) TO THE LOGICAL
+;INCLUSIVE OR OF C(AC) WITH C(E).
+;IN THIS CASE C(AC)=0 AND C(E)=-1,,-1.  HENCE, THE
+;RESULT IN THE AC SHOULD BE -1,,-1
+;THE AC IS CHECKED FOR ITS CONTENTS = ALL ONES
+;IF C(AC)=-1, THE TEST PASSES
+
+B5200:	SETO			;PRELOAD AC WITH -1,,-1
+	IOR	[-1]		;*IOR SHOULD PUT -1,,-1 INTO AC
+	CAME	[-1]		;PASS TEST IF C(AC)=-1,,-1
+	STOP
+
+;**********
+
+;THIS TEST VERIFIES THAT IOR CHANGES C(AC) TO THE LOGICAL
+;INCLUSIVE OR OF C(AC) WITH C(E).
+;IN THIS CASE C(AC)=0 AND C(E)=-1,,-1.  HENCE, THE
+;RESULT IN THE AC SHOULD BE -1,,-1
+;THE AC IS CHECKED FOR ITS CONTENTS = ALL ONES
+;IF C(AC)=-1,,-1, THE TEST PASSES
+
+B5300:	SETO			;PRELOAD AC WITH -1,,-1
+	IOR	[0]		;*IOR SHOULD PUT -1,,-1 INTO AC
+	CAME	[-1]		;PASS TEST IF C(AC)=-1,,-1
+	STOP
+
+;**********
+;THIS TEST VERIFIES THAT ANDCM CHANGES C(AC) TO THE LOGICAL AND
+;OF C(AC) AND THE COMPLEMENT OF C(MEMORY).
+;IN THIS CASE C(AC)=-1,,-1 AND C(E)=-1,,0.  HENCE, THE RESULT 
+;IN THE AC SHOULD BE 0,,-1
+;THE AC IS CHECKED FOR 0,,-1.  IF C(AC)=0,,-1, THE TEST PASSES
+
+B5500:	SETO			;PRELOAD AC WITH ALL ONES
+	ANDCM	[XWD -1,0]	;*ANDCM SHOULD PLACE 0,,-1 IN THE AC
+	CAME	[0,,-1]		;IF C(AC)=0,,-1, THE TEST PASSES
+	STOP
+
+;*****     FAILURE ANALYSIS     *****
+;C(AC0)		C(AC1)		FAILING SIGNAL
+
+;-E				SW: FCE
+;-1,,-1				FC: AD AR - EN
+;-1,,0				ET2: AR AD EN
+
+;**********
+
+;THIS TEST VERIFIES THAT ANDCM CHANGES C(AC) TO THE LOGICAL AND
+;OF C(AC) AND THE COMPLEMENT OF C(MEMORY).
+;IN THIS CASE AC=E=AC0 AND C(AC)=C(E)=0.  HENCE,
+;THE RESULT IN THE AC SHOULD BE 0.  THE AC IS CHECKED FOR 0.
+;IF C(AC)=0, THE TEST PASSES.
+
+B5600:	SETO			;PRELOAD AC WITH ALL ONES
+	ANDCM			;*ANDCM SHOULD PLACE 0 IN THE AC
+	SKIPE			;IF C(AC)=0, THE TEST PASSES.
+	STOP
+
+;**********
+;THIS TEST VERIFIES THAT ANDCM CHANGES C(AC) TO THE LOGICAL AND
+;OF C(AC) AND THE COMPLEMENT OF C(MEMORY).
+;IN THIS CASE C(AC)=-1,,-1, AND C(E)=0.  HENCE, THE RESULT IN THE AC
+;SHOULD BE ALL ONES.  THE AC IS CHECKED FOR -1,,-1.
+;IF C(AC)=-1,,-1, THE TEST PASSES
+
+B5700:	SETO			;PRELOAD AC WITH 0		
+	ANDCM	[0]		;*ANDCM SHOULD PLACE -1,,-1 IN THE AC
+	CAME	[-1]		;IF C(AC)=-1,,-1, THE TEST PASSES
+	STOP
+
+;**********
+
+;THIS TEST VERIFIES THAT ANDCM CHANGES C(AC) TO THE LOGICAL AND
+;OF C(AC) AND THE COMPLEMENT OF C(MEMORY).
+;IN THIS CASE, AC=E AND C(AC)=C(E)=0.  HENCE, THE RESULT IN THE AC
+;SHOULD BE 0.  THE AC IS CHECKED FOR 0.
+;IF C(AC)=0, THE TEST PASSES
+
+B6000:	MOVEI	0		;PRELOAD AC WITH 0	
+	ANDCM			;*ANDCM SHOULD PLACE 0 IN THE AC
+	SKIPE			;IF C(AC)=0, THE TEST PASSES.
+	STOP
+
+;*****     FAILURE ANALYSIS     *****
+;C(AC0)		C(AC1)		FAILING SIGNAL
+
+;-1,,-1				FC: AD FM + EN
+
+;**********
+;THIS TEST VERIFIES THAT ANDCM CHANGES C(AC) TO THE LOGICAL AND
+;OF C(AC) AND THE COMPLEMENT OF C(MEMORY).
+;IN THIS CASE C(AC)=0 AND C(E)=-1,,-1. HENCE, THE RESULT IN THE AC
+;SHOULD BE 0.  THE AC IS CHECKED FOR 0.
+;IF C(AC)=0, THE TEST PASSES
+
+B6100:	SETZ			;PRELOAD AC WITH 0	
+	ANDCM	[-1]		;*ANDCM SHOULD PLACE 0 IN THE AC	
+	SKIPE			;IF C(AC)=0, THE TEST PASSES
+	STOP
+
+;**********
+;THIS TEST VERIFIES THAT ANDCA CHANGES C(AC) TO THE LOGICAL AND FUNCTION
+;OF THE COMPLEMENT OF C(AC) AND C(E).
+;IN THIS CASE, C(AC)=-1,,0 AND C(E)=0.  HENCE, THE RESULT IN THE AC
+;SHOULD BE 0.  THE AC IS CHECKED FOR ZERO.  IF C(AC) IS
+;EQUAL TO ZERO, THE TEST PASSES.
+
+B6200:	MOVE	[XWD -1,0]	;PRELOAD AC WITH -1,,0
+	ANDCA	[0]		;*ANDCA SHOULD PLACE 0 IN THE AC
+	SKIPE			;IF C(AC)=0, THE TEST PASSES.
+	STOP
+
+;*****     FAILURE ANALYSIS     *****
+;C(AC0)		C(AC1)		FAILING SIGNAL
+
+;E				SW: FCE
+;0,,-1				FC: AD AR + EN
+
+;**********
+
+;THIS TEST VERIFIES THAT ANDCA CHANGES C(AC) TO THE LOGICAL AND FUNCTION
+;OF THE COMPLEMENT OF C(AC) AND C(E).
+;IN THIS CASE, C(AC)=-1,,0 AND C(E)=707070,,707070.  HENCE, THE
+;RESULT IN THE AC SHOULD BE 0,,707070.  THE AC IS CHECKED
+;FOR 0,,707070.  IF C(AC)=0,,707070, THE TEST PASSES.
+
+B6300:	MOVE	[XWD -1,0]	;PRELOAD AC WITH -1,,0
+	ANDCA	[707070707070]	;*ANDCA SHOULD PLACE 0,,707070 IN THE AC
+	CAME	[XWD 0,707070]	;IF C(AC)=0,,707070, THE TEST PASSES
+	STOP
+
+;*****     FAILURE ANALYSIS     *****
+;C(AC0)		C(AC1)		FAILING SIGNAL
+
+;707070,,707070			FC: AD FM - EN
+;707070,,707070			ET2: AR AD EN
+
+;**********
+;THIS TEST VERIFIES THAT ANDCA CHANGES C(AC) TO THE LOGICAL AND FUNCTION
+;OF THE COMPLEMENT OF C(AC) AND C(E).
+;IN THIS CASE AC=E=AC0 AND C(AC)=C(E)=0. HENCE, THE RESULT
+;IN THE AC SHOULD BE 0.  THE AC IS CHECKED FOR 0.  IF C(AC=0,
+;THE TEST PASSES.
+
+B6400:	SETZ			;CLEAR THE AC AND E		
+	ANDCA			;*ANDCA SHOULD PLACE 0 IN THE AC
+	SKIPE			;IF C(AC)=0, THE TEST PASSES
+	STOP
+
+;**********
+
+;THIS TEST VERIFIES THAT ANDCA CHANGES C(AC) TO THE LOGICAL AND FUNCTION
+;OF THE COMPLEMENT OF C(AC) AND C(E).
+;IN THIS CASE C(AC)=0 AND C(E)=-1,,-1.  HENCE, THE RESULT IN THE AC
+;SHOULD BE -1,,-1.  THE AC IS CHECKED FOR ALL ONES.
+;IF C(AC)=-1,,-1, THE TEST PASSES.
+
+B6500:	SETZ			;CLEAR THE AC		
+	ANDCA	[-1]		;*ANDCA SHOULD PLACE ALL ONES IN THE AC
+	CAME	[-1]		;IF C(AC)=ALL ONES, THE TEST PASSES.
+	STOP
+
+;**********
+;THIS TEST VERIFIES THAT ANDCA CHANGES C(AC) TO THE LOGICAL AND FUNCTION
+;OF THE COMPLEMENT OF C(AC) AND C(E).
+;IN THIS CASE AC=E=AC0 AND C(AC)=C(E)=-1,,-1. HENCE, THE RESULT
+;IN THE AC SHOULD BE 0.  THE AC IS CHECKED FOR 0.  IF C(AC)=0,
+;THE TEST PASSES.
+
+B6600:	SETO			;PRESET AC TO ALL ONES		
+	ANDCA			;*ANDCA SHOULD PLACE 0 IN THE AC
+	SKIPE			;IF C(AC)=0, THE TEST PASSES
+	STOP
+
+;**********
+
+;THIS TEST VERIFIES THAT ANDCA CHANGES C(AC) TO THE LOGICAL AND FUNCTION
+;OF THE COMPLEMENT OF C(AC) AND C(E).
+;IN THIS CASE C(AC)=-1,,-1 AND C(E)=0.  HENCE, THE RESULT IN THE AC
+;SHOULD BE 0.  THE AC IS CHECKED FOR 0.  IF C(AC)=0,
+;THE TEST PASSES.
+
+B6700:	SETO			;PRESET AC TO ALL ONES		
+	ANDCA	[0]		;*ANDCA SHOULD PLACE 0 IN THE AC
+	SKIPE			;IF C(AC)=0, THE TEST PASSES.
+	STOP
+
+;**********
+;THIS TEST VERIFIES THAT ANDCB CHANGES C(AC) TO THE LOGICAL AND FUNCTION
+;OF THE COMPLEMENT OF C(AC) AND THE COMPLEMENT OF C(E).
+;IN THIS CASE C(AC)=-1,,0 AND C(E)=0; HENCE, THE RESULT IN THE AC
+;SHOULD BE 0,,-1.  THE AC IS CHECKED FOR 0,,-1.  IF C(AC)=0,,-1,
+;THIS TEST PASSES.
+
+B7000:	MOVE	[XWD -1,0]	;PRELOAD AC WITH -1,,0
+	ANDCB	[0]		;*ANDCB SHOULD PLACE 0,,-1 IN THE AC
+	CAME	[XWD 0,-1]	;PASS IF C(AC)=0,,-1
+	STOP
+
+;*****     FAILURE ANALYSIS     *****
+;C(AC0)		C(AC1)		FAILING SIGNAL
+
+;0,,-E				SW: FCE
+;-1,,-1				FC: AD FM - EN
+;0				ET2: AR AD EN
+
+;**********
+
+;THIS TEST VERIFIES THAT ANDCB CHANGES C(AC) TO THE LOGICAL AND FUNCTION
+;OF THE COMPLEMENT OF C(AC) AND THE COMPLEMENT OF C(E).
+;IN THIS CASE C(AC)=-1,,0 AND C(E)=-1,,-1; HENCE, THE RESULT IN THE AC
+;SHOULD BE 0.  THE AC IS CHECKED FOR 0.  IF C(AC)=0,
+;THIS TEST PASSES.
+
+B7100:	MOVE	[XWD -1,0]	;PRELOAD AC WITH -1,,0
+	ANDCB	[-1]		;*ANDCB SHOULD PLACE 0 IN AC
+	SKIPE			;PASS IF C(AC)=0
+	STOP
+
+;*****     FAILURE ANALYSIS     *****
+;C(AC0)		C(AC1)		FAILING SIGNAL
+
+;0,,-1				FC: AD AR - EN
+
+;**********
+
+;THIS TEST VERIFIES THAT ANDCB CHANGES C(AC) TO THE LOGICAL AND FUNCTION OF
+;THE COMPLEMENT OF C(AC) AND THE COMPLEMENT OF C(E).
+;IN THIS CASE AC=E AND C(AC)=C(E)=0.  HENCE, THE RESULT IN THE AC
+;SHOULD BE ALL ONES.  THE AC IS CHECKED FOR ALL ONES.  IF C(AC)=-1,,-1,
+;THE TEST PASSES.
+
+B7200:	SETZ			;PRELOAD AC,E WITH ZEROES
+	ANDCB			;*ANDCB SHOULD PLACE ALL ONES IN THE AC
+	CAME	[-1]		;PASS IF C(AC) IS ALL ONES
+	STOP
+
+;**********
+
+;THIS TEST VERIFIES THAT ANDCB CHANGES C(AC) TO THE LOGICAL AND FUNCTION OF
+;THE COMPLEMENT OF C(AC) AND THE COMPLEMENT OF C(E).
+;IN THIS CASE AC=E AND C(AC)=C(E)=-1,,-1.  HENCE THE RESULT IN THE AC
+;SHOULD BE 0.  THE AC IS CHECKED FOR 0.  IF C(AC)=0, THE TEST PASSES.
+
+B7300:	SETO			;PRELOAD AC,E WITH ONES
+	ANDCB			;*ANDCB SHOULD PLACE ALL ZEROS IN THE AC
+	SKIPE			;PASS IF C(AC)=0
+	STOP
+
+;**********
+;THIS TEST VERIFIES THAT ANDCB CHANGES C(AC) TO THE LOGICAL AND FUNCTION OF
+;THE COMPLEMENT OF C(AC) AND THE COMPLEMENT OF C(E).
+;IN THIS CASE, C(AC)=0 AND C(E)=-1,,-1.  HENCE, THE RESULT IN THE AC
+;SHOULD BE 0.  THE AC IS CHECKED FOR 0.  IF C(AC)=0, THE TEST PASSES.
+
+B7400:	SETZ			;PRELOAD AC WITH 0
+	ANDCB	[-1]		;*ANDCB SHOULD PLACE 0 IN THE AC
+	CAIE			;PASS IF C(AC)=0
+	STOP
+
+;**********
+
+;THIS TEST VERIFIES THAT ANDCB CHANGES C(AC) TO THE LOGICAL AND FUNCTION OF
+;THE COMPLEMENT OF C(AC) AND THE COMPLEMENT OF C(E).
+;IN THIS CASE, C(AC)=-1,,-1 AND C(E)=-1,,-1.  HENCE, THE RESULT IN THE AC
+;SHOULD BE 0.  THE AC IS CHECKED FOR 0.  IF C(AC)=0, THE TEST PASSES.
+
+B7500:	SETO			;PRELOAD AC WITH -1,,-1
+	ANDCB	[0]		;*ANDCB SHOULD PLACE 0 IN THE AC
+	CAIE			;PASS IF C(AC)=0
+	STOP
+
+;**********
+;THIS TEST VERIFIES THAT ORCA CHANGES C(AC) TO THE LOGICAL OR FUNCTION OF
+;THE COMPLEMENT OF C(AC) AND C(E).
+;IN THIS CASE C(AC)=-1,,0 AND C(E)=0.  HENCE, THE RESULT IN THE AC
+;SHOULD BE 0,,-1.  THE AC IS CHECKED FOR 0,,-1.  IF C(AC)=0,,-1,
+;THIS TEST FAILS.
+
+B7600:	MOVE	[XWD -1,0]	;PRELOAD AC WITH -1,,0
+	ORCA	[0]		;*ORCA SHOULD PLACE 0,,-1 IN THE AC
+	CAME	[XWD 0,-1]	;PASS IF C(AC)=0,,-1
+	STOP
+
+;*****     FAILURE ANALYSIS     *****
+;C(AC0)		C(AC1)		FAILING SIGNAL
+
+;-1,,0				SW: ET0
+;-1,,0				FC: AD AR - EN
+;0				FC: AD FM + EN
+;-1,,-1				ET0: AR AD EN
+;-1,,-1				ET0: AD AR - EN
+;-1,,0				ET2: AR AD EN
+
+;**********
+
+;THIS TEST VERIFIES THAT ORCA CHANGES C(AC) TO THE LOGICAL OR FUNCTION OF
+;THE COMPLEMENT OF C(AC) AND C(E).
+;IN THIS CASE C(AC)=-1,,0 AND C(E)=707070,,707070.  HENCE, THE RESULT IN THE AC
+;SHOULD BE 707070,,-1.  THE AC IS CHECKED FOR -1,,0.  IF C(AC)=-1,,0,
+;THIS TEST FAILS.
+
+B10000:	MOVE	[XWD -1,0]	;PRELOAD AC WITH -1,,0
+	ORCA	[707070707070]	;*ORCA SHOULD PLACE 707070,,-1 IN THE AC
+	CAME	[XWD 707070,-1]	;PASS IF C(AC)=707070,,-1
+	STOP
+
+;*****     FAILURE ANALYSIS     *****
+;C(AC0)		C(AC1)		FAILING SIGNAL
+
+;0,,-1				SW: FCE
+
+;**********
+;THIS TEST VERIFIES THAT ORCA CHANGES C(AC) TO THE LOGICAL OR FUNCTION OF
+;THE COMPLEMENT OF C(AC) AND C(E).
+;IN THIS CASE, AC=E AND C(AC)=C(E)=0.  HENCE, THE RESULT IN THE AC
+;SHOULD BE -1,,-1.  THE AC IS CHECKED FOR -1,,-1.  IF C(AC)=-1,,-1, THE TEST PASSES.
+
+B10100:	SETZ			;PRELOAD AC,E WITH 0
+	ORCA			;*ORCA SHOULD PLACE -1,,-1 IN THE AC
+	CAME	[-1]		;PASS IF C(AC)=-1,,-1
+	STOP
+
+;**********
+
+;THIS TEST VERIFIES THAT ORCA CHANGES C(AC) TO THE LOGICAL OF FUNCTION OF
+;THE COMPLEMENT OF C(AC) AND C(E).
+;IN THIS CASE, AC=E AND C(AC)=C(E)=-1,,-1.  HENCE, THE RESULT IN THE AC
+;SHOULD BE -1,,-1.  THE AC IS CHECKED FOR -1,,-1.  IF C(AC)=-1,,-1, THE TEST PASSES.
+
+B10200:	SETO			;PRELOAD AC,E WITH 0
+	ORCA			;*ORCA SHOULD PLACE -1,,-1 IN THE AC
+	CAME	[-1]		;PASS IF C(AC)=-1,,-1
+	STOP
+
+;**********
+;THIS TEST VERIFIES THAT ORCA CHANGES C(AC) TO THE LOGICAL OR FUNCTION OF
+;THE COMPLEMENT OF C(AC) AND C(E).
+;IN THIS CASE C(AC)=0 AND C(E)=-1,,-1.  HENCE, THE RESUTL IN THE AC
+;SHOULD BE -1,,-1.  THE AC IS CHECKED FOR -1,,-1.  IF C(AC)=-1,,-1, THE TEST PASSES.
+
+B10300:	SETZ			;PRELOAD AC WITH 0
+	ORCA	[-1]		;*ORCA SHOULD PLACE -1,,-1 IN THE AC
+	CAME	[-1]		;PASS IF C(AC)=-1,,-1
+	STOP
+
+;**********
+
+;THIS TEST VERIFIES THAT ORCA CHANGES C(AC) TO THE LOGICAL OR FUNCTION OF
+;THE COMPLEMENT OF C(AC) AND C(E).
+;IN THIS CASE C(AC)=-1,,-1 AND C(E)=0.  HENCE, THE RESULT IN THE AC
+;SHOULD BE 0.  THE AC IS CHECKED FOR 0.  IF C(AC)=0, THE TEST PASSES.
+
+B10400:	SETO			;PRELOAD AC WITH -1,,-1
+	ORCA	[0]		;*ORCA SHOULD PLACE 0 IN THE AC
+	CAIE			;PASS IF C(AC)=0
+	STOP
+
+;**********
+;THIS TEST VERIFIES THAT ORCB CHANGES C(AC) TO THE LOGICAL OR FUNCTION OF
+;THE COMPLEMENT OF C(AC) AND THE COMPLEMENT OF C(E)
+;IN THIS CASE, C(AC)=-1,,0 AND C(E)=707070,,707070.  HENCE THE RESULT
+;IN THE AC 070707,,-1.  THE AC IS CHECKED FOR 070707,,-1.  IF C(AC)=070707,,-1,
+;THIS TEST PASSES
+
+B10500:	MOVE	[XWD -1,0]	;PRELOAD THE AC WITH -1,,0
+	ORCB	[707070707070]	;*ORCB SHOULD PLACE 070707,,-1 IN THE AC
+	CAME	[XWD 070707,-1]	;PASS IF C(AC)=070707,,-1
+	STOP
+
+;*****     FAILURE ANALYSIS     *****
+;C(AC0)		C(AC1)		FAILING SIGNAL
+
+;-1,,-1				SW: FCE
+;707070,,0			SW: ET0
+;0,,-1				FC: AD AR + EN
+;070707,,070707			FC: AD FM + EN
+;070707,,070707			ET0: AR AD EN
+;-1,,-1				ET0: AD AR - EN
+;707070,,0			ET2: AR AD EN
+
+;**********
+
+;THIS TEST VERIFIES THAT ORCB CHANGES C(AC) TO THE LOGICAL OR FUNCTION OF
+;THE COMPLEMENT OF C(AC) AND THE COMPLEMENT OF C(E)
+;IN THIS CASE, C(AC)=0,,-1 AND C(E)=-1,,-1.  HENCE THE RESULT
+;IN THE AC -1,,0.  THE AC IS CHECKED FOR -1,,0.  IF C(AC)=-1,,0,
+;THIS TEST PASSES
+
+B10700:	MOVE	[XWD 0,-1]	;PRELOAD THE AC WITH 0,,-1
+	ORCB	[-1]		;*ORCB SHOULD PLACE -1,,0 IN THE AC
+	CAME	[XWD -1,0]	;PASS IF C(AC)=-1,,0
+	STOP
+
+;**********
+;THIS TEST VERIFIES THAT ORCB CHANGES C(AC) TO THE LOGICAL OR FUNCTION OF
+;THE COMPLEMENT OF C(AC) AND THE COMPLEMENT OF C(E).
+;IN THIS CASE, C(AC)=0 AND C(E)=0.  HENCE, THE RESULT IN THE AC
+;SHOULD BE -1,,-1.  THE AC IS CHECKED FOR -1,,-1.  IF C(AC)-1,,-1, THE TEST PASSES
+
+B11000:	SETZ			;PRELOAD AC WITH 0		
+	ORCB	[0]		;*ORCB SHOULD PLACE -1,,-1 IN THE AC
+	CAME	[-1]		;PASS IF C(AC)=-1,,-1
+	STOP
+
+;**********
+
+;THIS TEST VERIFIES THAT ORCB CHANGES C(AC) TO THE LOGICAL OR FUNCTION OF
+;THE COMPLEMENT OF C(AC) AND THE COMPLEMENT OF C(E).
+;IN THIS CASE, C(AC)=-1,,-1 AND C(E)=-1,,-1.  HENCE, THE RESULT IN THE AC
+;SHOULD BE 0.  THE AC IS CHECKED FOR 0.  IF C(AC)=0, THE TEST PASSES
+
+B11100:	SETO			;PRELOAD AC WITH -1,,-1
+	ORCB	[-1]		;*ORCB SHOULD PLACE 0 IN THE AC
+	CAIE			;PASS IF C(AC)=0
+	STOP
+
+;**********
+;THIS TEST VERIFIES THAT ORCB CHANGES C(AC) TO THE LOGICAL OR FUNCTION OF
+;THE COMPLEMENT OF C(AC) AND THE COMPLEMENT OF C(E)
+;IN THIS CASE, C(AC)=0 AND C(E)=-1,,-1.  HENCE, THE RESULT IN THE AC
+;SHOULD BE -1,,-1.  THE AC IS CHECKED FOR -1,,-1.  IF C(AC)=-1,,-1, THE TEST PASSES
+
+B11200:	SETZ			;PRELOAD AC WITH 0		
+	ORCB	[-1]		;*ORCB SHOULD PLACE -1,,-1 IN THE AC
+	CAME	[-1]		;PASS IF C(AC)=-1,,-1
+	STOP
+
+;**********
+
+;THIS TEST VERIFIES THAT ORCB CHANGES C(AC) TO THE LOGICAL OR FUNCTION OF
+;THE COMPLEMENT OF C(AC) AND THE COMPLEMENT OF C(E).
+;IN THIS CASE, C(AC)=-1,,-1 AND C(E)=0.  HENCE, THE RESULT IN THE AC
+;SHOULD BE -1,,-1.  THE AC IS CHECKED FOR -1,,-1.  IF C(AC)=-1,,-1, THE TEST PASSES
+
+B11300:	SETO			;PRELOAD AC WITH -1,,-1		
+	ORCB	[0]		;*ORCB SHOULD PLACE -1,,-1 IN THE AC
+	CAME	[-1]		;PASS IF C(AC)=-1,,-1
+	STOP
+
+;**********
+SUBTTL	TEST OF MOVN INSTRUCTION
+
+;**********
+
+;THIS TEST VERIFIES THAT MOVN PLACES THE NEGATIVE OF C(E) INTO THE AC
+;IN THIS CASE C(E)=0.  HENCE, THE RESULT IN THE AC SHOULD BE 0.
+;THE AC IS CHECKED FOR 0, THE NEGATIVE OF 0.  IF C(AC)=0, THIS TEST PASSES
+
+B11500:	SETO			;PRELOAD AC WITH -1,,-1		
+	MOVN	[0]		;*MOVN SHOULD PLACE 0 INTO THE AC
+	SKIPE			;PASS IF C(AC)=0
+	STOP
+
+;*****     FAILURE ANALYSIS     *****
+;C(AC0)		C(AC1)		FAILING SIGNAL
+
+;E				SW: FCE
+;-1,,-1				FC: AD FM + EN
+;-1,,-1				FC: AD CRY 36
+
+;**********
+
+;THIS TEST VERIFIES THAT MOVN PLACES THE NEGATIVE OF C(E) INTO THE AC.
+;IN THIS CASE C(E)=-1,,0.  HENCE, THE RESULT IN THE AC SHOULD BE 1,,0
+;THE AC IS CHECKED FOR 1,,0.  IF C(AC)=1,,0, THE TEST PASSES
+
+B11600:	MOVE	[XWD -1,0]	;PRELOAD AC,E WITH -1,,0
+	MOVN			;*MOVN SHOULD PLACE 1,,0 INTO THE AC
+	CAME	[XWD 1,0]	;PASS IF C(AC)=1,,0
+	STOP
+
+;*****     FAILURE ANALYSIS     *****
+;C(AC0)		C(AC1)		FAILING SIGNAL
+
+;0				FC: AD ADD
+;0				FC: AD FM - EN
+;0				FC: AD AR - EN
+;-1,,0				ET2: AR AD EN
+
+;**********
+;THIS TEST VERIFIES THAT MOVN PLACES THE NEGATIVE OF C(E) INTO THE AC.
+;IN THIS CASE C(E) =707070,,707070.  HENCE, THE RESULT IN THE AC SHOULD BE
+;070707,,070710.  THE AC IS CHECKED FOR 070707,,070710.  IF C(AC)=
+;070707,,070710, THE TEST PASSES
+
+B11700:	SETZ			;PRELOAD AC WITH 0		
+	MOVN	[707070707070]	;*MOVN SHOULD PLACE 070707,,070710 INTO THE AC
+	CAME	[070707070710]	;PASS IF C(AC) 070707,,070710
+	STOP
+
+;**********
+
+;THIS TEST VERIFIES THAT MOVN PLACES THE NEGATIVE OF C(E) INTO THE AC
+;IN THIS CASE C(E)=-1,,-1.  HENCE, THE RESULT IN THE AC SHOULD BE 0,,1.
+;THE AC IS CHECKED FOR 0,,1, THE NEGATIVE OF -1,,-1.  IF C(AC)=1, THIS TEST PASSES
+
+B12100:	MOVN	[-1]		;*MOVN SHOULD PLACE 0,,1 INTO THE AC	
+	CAIE	1		;PASS OF C(AC)=0,,1
+	STOP
+
+;**********
+SUBTTL	TEST OF MOVM INSTRUCTION
+
+;**********
+
+;THIS TEST VERIFIES THAT MOVM PLACES THE MAGNITUDE OF C(E) INTO THE AC.
+;IN THIS CASE, C(E)=0.  HENCE, THE RESULT IN THE AC SHOULD BE 0.
+;THE AC IS CHECKED FOR 0.  IF C(AC)=0, THIS TEST PASSES
+
+B12200:	SETO			;PRELOAD AC WITH -1,,-1		
+	MOVM	[0]		;*MOVM SHOULD PLACE 0 INTO THE AC	
+	SKIPE			;PASS IF C(AC)=0
+	STOP
+
+;*****     FAILURE ANALYSIS     *****
+;C(AC0)		C(AC1)		FAILING SIGNAL
+
+;E				SW: FCE
+
+;**********
+
+;THIS TEST VERIFIES THAT MOVM PLACES THE MAGNITUDE OF C(E) INTO THE AC
+;IN THIS CASE, C(E)=-1,,-1.  HENCE, THE RESULT IN THE AC SHOULD BE 0,,1.
+;THE AC IS CHECKED FOR 0,,1.  IF C(AC)=0,,1, THIS TEST PASSES
+
+B12300:	SETZ			;PRELOAD AC WITH 0		
+	MOVM	[-1]		;*MOVM SHOULD PLACE 0,,1 INTO THE AC
+	CAIE	1		;PASS IF C(AC)=0,,1
+	STOP
+
+;*****     FAILURE ANALYSIS     *****
+;C(AC0)		C(AC1)		FAILING SIGNAL
+
+;0				FC: AD FM + EN
+;0				FC: AD ADD
+;0				FC: AD CRY 36
+;0				FC: AD AR - EN
+;-1,,-1				ET2: AR AD EN
+
+;**********
+;THIS TEST VERIFIES THAT MOVM PLACES THE MAGNITUDE OF C(E) INTO THE AC
+;IN THIS CASE, C(E)=400000,,0.  HENCE, THE RESULT IN THE AC SHOULD BE
+;400000,,0.  THE AC IS CHECKED FOR 400000,,0.
+;IF C(AC)=400000,,0, THIS TEST PASSES.
+
+B12400:	SETZ
+	MOVM	[XWD 400000,0]	;*MOVM SHOULD PLACE 400000,,0 INTO THE AC
+	CAME	[XWD 400000,0]	;PASS IF C(AC)=400000,,0
+	STOP
+
+;**********
+
+;THIS TEST VERIFIES THAT MOVM PLACES THE MAGNITUDE OF C(E) INTO THE AC
+;IN THIS CASE, C(E)=377777,,-1.  HENCE, THE RESULT IN THE AC SHOULD BE
+;377777,,-1.  THE AC IS CHECKED FOR 377777,,-1.
+;IF C(AC)=377777,,-1, THIS TEST PASSES.
+
+B12500:	SETZ			;PRELOAD AC WITH 0
+	MOVM	[XWD 377777,-1]	;*MOVM SHOULD PLACE 377777,,-1 INTO THE AC
+	CAME	[XWD 377777,-1]	;PASS IF C(AC)=377777,,-1
+	STOP
+
+;**********
+   

@@ -1,0 +1,76 @@
+dfkaa.txt:	PRODUCT NAME:	DECSYSTEM10 PDP-10 KL10 BASIC
+dfkaa.txt-			INSTRUCTION DIAGNOSTIC (1)
+dfkaa.txt-
+dfkaa.txt-	FUNCTION:	BASIC INSTRUCTIONS
+dfkaa.txt-
+dfkaa.txt-	VERSION:	0.2
+--
+dfkad.txt:	PRODUCT NAME:	 	DFKADB0 PDP10 KL10 BASIC INSTRUCTION
+dfkad.txt-				DIAGNOSTIC #4
+dfkad.txt-
+dfkad.txt-	VERSION:		0.2
+dfkad.txt-
+dfkad.txt-	DATE RELEASED:		SEPT 1984
+--
+dfkbb.txt:	PRODUCT NAME:	KL10 BASIC INSTRUCTION RELIABILITY TEST (2)
+dfkbb.txt-
+dfkbb.txt-	FUNCTION:	MEMORY AND BOTH MODE
+dfkbb.txt-			CACHE RELIABILITY
+dfkbb.txt-
+dfkbb.txt-	VERSION:	0.2
+--
+dfkca.txt:	PRODUCT NAME:		DFKCAB0 KL10 ADVANCED INSTRUCTION DIAGNOSTIC
+dfkca.txt-
+dfkca.txt-	VERSION:		0.2
+dfkca.txt-
+dfkca.txt-	DATE RELEASED:		APRIL 1979
+dfkca.txt-
+--
+dfkcb.txt:	PRODUCT NAME:		DFKCBA0 DECSYSTEM10 KL10 ADVANCED
+dfkcb.txt-				INSTRUCTION DIAGNOSTIC #2
+dfkcb.txt-				(DOUBLE PRECISION)
+dfkcb.txt-
+dfkcb.txt-	VERSION:		0.1
+dfkcb.txt-
+--
+dfkcc.txt:	PRODUCT NAME:	 	DFKCCA0 DECSYSTEM10 KL10 ADVANCED
+dfkcc.txt-				INSTRUCTION DIAGNOSTIC #3
+dfkcc.txt-				(EXTENDED INSTRUCTION)
+dfkcc.txt-
+dfkcc.txt-	VERSION:		0.2
+dfkcc.txt-
+--
+dfkda.txt:	PRODUCT NAME:	 	DFKDAE0 KL10 ARITHMETIC/RANDOM/INTERRUPT
+dfkda.txt-				/MEMORY RELIABILITY TEST
+dfkda.txt-
+dfkda.txt-	VERSION:		0.5
+dfkda.txt-
+dfkda.txt-	DATE RELEASED:		SEPT 1984
+--
+dfkea.txt:	PRODUCT NAME:		DFKEAE0 KL10 PAGING HARDWARE DIAGNOSTIC
+dfkea.txt-
+dfkea.txt-	VERSION:		0.5
+dfkea.txt-
+dfkea.txt-	DATE RELEASED:		SEPTEMBER 1981
+dfkea.txt-
+--
+dfkebd.txt:	PRODUCT NAME:	 	DFKEBC0 KL10 MONITOR UUO AND MODE DIAGNOSTIC
+dfkebd.txt-
+dfkebd.txt-	VERSION:		0.3
+dfkebd.txt-
+dfkebd.txt-	DATE RELEASED:		APRIL 1985
+dfkebd.txt-
+--
+dfkec.txt:        PRODUCT NAME:           DFKECB0 KL10 PXCT DIAGNOSTIC
+dfkec.txt-
+dfkec.txt-        VERSION:                0.2
+dfkec.txt-
+dfkec.txt-        DATE RELEASED:		SEPTEMBER 1981
+dfkec.txt-
+--
+dfked.txt:	PRODUCT NAME:	 	DFKEDC0 EXTENDED ADDRESSING TEST
+dfked.txt-
+dfked.txt-	VERSION:		0.3
+dfked.txt-
+dfked.txt-	DATE RELEASED:		MAY 1984
+dfked.txt-
