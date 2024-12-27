@@ -12,11 +12,6 @@
 #include <ctime>
 using namespace std;
 
-#if 0
-#include <fmt/core.h>
-using namespace fmt;
-#endif
-
 #include <CLI/CLI.hpp>
 
 #include "km10.hpp"
@@ -373,7 +368,7 @@ void KM10::NoDevice::putConditions(unsigned v) {
 
 
 
-// Loaders
+// Loaders .A10
 /*
   PDP-10 ASCIIZED FILE FORMAT
   ---------------------------
@@ -499,7 +494,9 @@ void KM10::loadA10(const char *fileNameP) {
     addr |= wc & 0xC000;
     wc &= ~0xC000;
 
-    if (logger.load) logger.s << "addr=" << setw(6) << setfill('0') << oct << addr << logger.endl;
+    if (logger.load) logger.s << "addr="
+			      << setw(6) << setfill('0') << oct
+			      << addr << logger.endl;
     if (logger.load) logger.s << "wc=" << wc << logger.endl;
 
     unsigned zeroCount;
@@ -754,6 +751,7 @@ static int loopedMain(int argc, char *argv[]) {
   bool dVal{true};
   //    app.add_option("-d,--debug", dVal, "run the built-in debugger instead of starting execution");
 
+  
   unsigned mVal{4096};
   app.add_option("-m", mVal, "Size (in Kwords) of KM10 main memory")
     ->check([](const string &str) {
@@ -766,13 +764,34 @@ static int loopedMain(int argc, char *argv[]) {
       }
     });
   
-  string lVal{"../images/klad/dfkaa.a10"};
-  app.add_option("-l,--load", lVal, ".A10 or .SAV file to load")
+  //  string lVal{"../images/klad/dfkaa.a10"};
+  string lVal{"../images/klad-compiled/dfkcb.a10"};
+  app.add_option("-l,--load", lVal, ".A10 file to load")
     ->check(CLI::ExistingFile);
 
-  string rVal{"../images/klad/dfkaa.rel"};
+  //  string rVal{"../images/klad/dfkaa.rel"};
+  string rVal{"../images/klad-compiled/dfkcb.rel"};
   app.add_option("-r,--rel", rVal, ".REL file to load symbols from")
     ->check(CLI::ExistingFile);
+
+  string logFileVal;
+  app.add_option("--log-file", logFileVal, "file to log to");
+
+  vector<string> logVal;
+  app.add_option("-L,--log", logVal, "--log=X,Y,Z (ac,io,pc,dte,mem,load,ea,ints)")
+    ->delimiter(',')
+    ->each([](string s) {
+      if (s == "ac")		logger.ac = true;
+      else if (s == "io")	logger.io = true;
+      else if (s == "pc")	logger.pc = true;
+      else if (s == "dte")	logger.dte = true;
+      else if (s == "mem")	logger.mem = true;
+      else if (s == "load")	logger.load = true;
+      else if (s == "ea")	logger.ea = true;
+      else if (s == "ints")	logger.ints = true;
+      else
+	throw CLI::ValidationError(s, "Not a valid logger type flag");
+    });
 
   try {
     app.parse(argc, argv);
@@ -781,15 +800,14 @@ static int loopedMain(int argc, char *argv[]) {
     return app.exit(e);
   }
 
+  if (logFileVal != "") logger.logToFile(logFileVal);
+
   KM10 km10(mVal*1024, aOBPs, aGBPs, aPBPs, eBPs);
   assert(sizeof(*km10.eptP) == 512 * 8);
   assert(sizeof(*km10.uptP) == 512 * 8);
 
   if (lVal.ends_with(".a10")) {
     km10.loadA10(lVal.c_str());
-  } else if (lVal.ends_with(".sav")) {
-    cerr << "ERROR: For now, '--load' option must name a .a10 file" << logger.endl;
-    return -1;
   } else {
     cerr << "ERROR: '--load' option must name a .a10 file" << logger.endl;
     return -1;

@@ -11,7 +11,6 @@ class KM10;
 
 
 struct Logger {
-  bool running;
   bool ac;
   bool io;
   bool pc;
