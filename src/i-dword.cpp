@@ -141,12 +141,71 @@ struct DWordGroup: KM10 {
     acPutN(rem72.lo, iw.ac+3);
     return iNormal;
   }
+
+
+  IResult doDMOVE() {
+    acPutN(memGetN(ea.vma+0), iw.ac+0);
+    acPutN(memGetN(ea.vma+1), iw.ac+1);
+    return iNormal;
+  }
+
+
+  IResult doDMOVN() {
+    W72 v{memGetN(ea.vma+0), memGetN(ea.vma+1)};
+    v.loSign = 0;
+    uint128_t v70 = v.toU70();
+
+    acPutN(v.lo, iw.ac+0);
+    acPutN(v.hi, iw.ac+1);
+
+    if (v70 == W72::bit0) {
+      flags.tr1 = flags.ov = flags.cy1 = 1;
+      return iTrap;
+    } else if (v70 == 0) {
+      flags.cy0 = flags.cy1 = 1;
+      return iNormal;
+    } else {
+      return iNormal;
+    }
+  }
+
+
+  IResult doDMOVNM() {
+    W72 v{acGetN(iw.ac+0), acGetN(iw.ac+1)};
+    v.loSign = 0;
+    uint128_t v70 = v.toU70();
+
+    memPutN(v.lo, ea.vma+0);
+    memPutN(v.hi, ea.vma+1);
+
+    if (v70 == W72::bit0) {
+      flags.tr1 = flags.ov = flags.cy1 = 1;
+      return iTrap;
+    } else if (v.u == 0) {
+      flags.cy0 = flags.cy1 = 1;
+      return iNormal;
+    } else {
+      return iNormal;
+    }
+  }
+
+
+  IResult doDMOVEM() {
+    memPutN(acGetN(iw.ac+0), ea.vma+0);
+    memPutN(acGetN(iw.ac+1), ea.vma+1);
+    return iNormal;
+  }
+
 };
 
 
 void InstallDWordGroup(KM10 &km10) {
-  km10.defOp(0114, "DADD", static_cast<KM10::OpcodeHandler>(&DWordGroup::doDADD));
-  km10.defOp(0115, "DSUB", static_cast<KM10::OpcodeHandler>(&DWordGroup::doDSUB));
-  km10.defOp(0116, "DMUL", static_cast<KM10::OpcodeHandler>(&DWordGroup::doDMUL));
-  km10.defOp(0117, "DDIV", static_cast<KM10::OpcodeHandler>(&DWordGroup::doDDIV));
+  km10.defOp(0114, "DADD",   static_cast<KM10::OpcodeHandler>(&DWordGroup::doDADD));
+  km10.defOp(0115, "DSUB",   static_cast<KM10::OpcodeHandler>(&DWordGroup::doDSUB));
+  km10.defOp(0116, "DMUL",   static_cast<KM10::OpcodeHandler>(&DWordGroup::doDMUL));
+  km10.defOp(0117, "DDIV",   static_cast<KM10::OpcodeHandler>(&DWordGroup::doDDIV));
+  km10.defOp(0120, "DMOVE",  static_cast<KM10::OpcodeHandler>(&DWordGroup::doDMOVE));
+  km10.defOp(0121, "DMOVN",  static_cast<KM10::OpcodeHandler>(&DWordGroup::doDMOVN));
+  km10.defOp(0124, "DMOVEM", static_cast<KM10::OpcodeHandler>(&DWordGroup::doDMOVEM));
+  km10.defOp(0125, "DMOVNM", static_cast<KM10::OpcodeHandler>(&DWordGroup::doDMOVNM));
 }

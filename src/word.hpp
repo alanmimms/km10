@@ -233,7 +233,9 @@ struct W72 {
 
   W72(uint128_t v = 0) : u(v) {}
   W72(W36 aHi, W36 aLo) : lo(aLo.u), hi(aHi.u) {}
-  W72(uint64_t mag0, uint64_t mag1, int isNeg) : lo35(mag1), loSign(isNeg), hi35(mag0), hiSign(isNeg) {}
+  W72(uint64_t mag0, uint64_t mag1, int isNeg)
+    : lo35(mag1), loSign(isNeg), hi35(mag0), hiSign(isNeg)
+  {}
 
   // Factory to take a 70-bit unsigned magnitude and a sign and make a
   // doubleword.
@@ -271,9 +273,9 @@ struct W72 {
     return tDoubleWord(W36::fromMag(v72 >> 36, isNeg), W36::fromMag(v72, isNeg));
   }
 
-    bool isMaxNeg() {
-      return lo == 0400000'000000ull && hi == 0400000'000000ull;
-    }
+  bool isMaxNeg() {
+    return lo == 0400000'000000ull && hi == 0400000'000000ull;
+  }
 
 
   // String formatting
@@ -391,9 +393,9 @@ struct W144 {
     // Since we know we only have 70-bit multiplicands, the result
     // is at most 140 bits and will therefore be found in w[0..4].
     return W144::fromMag(
-      (uint128_t) w[2] >> 6 | (uint128_t) w[3] << 24 | (((uint128_t) w[4] << 56) & 077),
-      (uint128_t) w[0] << 0 | (uint128_t) w[1] << 32 | (((uint128_t) w[2] << 64) & 077),
-      aNeg);
+			 (uint128_t) w[2] >> 6 | (uint128_t) w[3] << 24 | (((uint128_t) w[4] << 56) & 077),
+			 (uint128_t) w[0] << 0 | (uint128_t) w[1] << 32 | (((uint128_t) w[2] << 64) & 077),
+			 aNeg);
   }
 
 

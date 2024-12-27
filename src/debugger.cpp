@@ -61,7 +61,7 @@ Debugger::DebugAction Debugger::debug() {
 
   auto handleBPCommand = [&](unordered_set<unsigned> &s) {
 
-    if (words.size() == 1) {
+    if (words.size() == 1) {	// Display breakpoints
 
       for (auto bp: s) {
 
@@ -72,7 +72,7 @@ Debugger::DebugAction Debugger::debug() {
 	}
       }
 
-    } else if (words.size() > 1) {
+    } else if (words.size() > 1) { // Set or clear breakpoints
 
       if (words[1] == "clear") {
 	s.clear();
