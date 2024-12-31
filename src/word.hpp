@@ -233,6 +233,7 @@ struct W72 {
   using tDoubleWord = W36::tDoubleWord;
 
   W72(uint128_t v = 0) : u(v) {}
+  W72(int128_t v = 0) : s(v) {}
   W72(W36 aHi, W36 aLo) : lo(aLo.u), hi(aHi.u) {}
   W72(uint64_t mag0, uint64_t mag1, int isNeg)
     : lo35(mag1), loSign(isNeg), hi35(mag0), hiSign(isNeg)
@@ -265,7 +266,7 @@ struct W72 {
 
   // Grab the 70-bit unsigned magnitude from the double word
   // represention, cutting out the low word's sign bit.
-  uint128_t toU70() const {return ((uint128_t) hi35 << 35) | lo35;}
+  uint128_t toMag() const {return ((uint128_t) hi35 << 35) | lo35;}
 
   // Convert a 72-bit internal representation to two 35-bit magnitudes
   // with duplicated sign bits.
@@ -280,33 +281,10 @@ struct W72 {
 
 
   // String formatting
-  string fmt72() const {
-    ostringstream ss;
-    ss << W36(hi).fmt36() << ",,," << W36(lo).fmt36();
-    return ss.str();
-  }
+  string fmt72() const;
 
   // Format a 128-bit number as whatever base <= 10.
-  static inline string fmt128(int128_t v128, int base=10) {
-    if (v128 == 0) return "0";
-
-    string s{};
-    s.reserve(40);
-
-    if (v128 < 0) v128 = -v128;
-
-    do {
-      s += '0' + (v128 % base);
-      v128 /= base;
-    } while (v128 != 0);
-
-    if (v128 < 0) {
-      s += "-";
-      v128 = -v128;
-    }
-
-    return string(s.rbegin(), s.rend());
-  }
+  static string fmt128(int128_t v128, int base=10);
 };
 
 

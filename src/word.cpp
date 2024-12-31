@@ -66,6 +66,39 @@ string W36::ascii() const {
 }
 
 
+string W72::fmt72() const {
+  ostringstream ss;
+  ss << W36(hi).fmt36() << ",,," << W36(lo).fmt36();
+  return ss.str();
+}
+
+// Format a 128-bit number as whatever base <= 10.
+string W72::fmt128(int128_t v128, int base) {
+  if (v128 == 0) return "0";
+
+  string s{};
+  s.reserve(40);
+  int digits = 0;
+
+  if (v128 < 0) v128 = -v128;
+
+  do {
+    s += '0' + (v128 % base);
+    ++digits;
+    if (base == 8 && digits % 6 == 0) s += " ";
+    if (base == 8 && digits == 12) s += " ";
+    v128 /= base;
+  } while (v128 != 0);
+
+  if (v128 < 0) {
+    s += "-";
+    v128 = -v128;
+  }
+
+  return string(s.rbegin(), s.rend());
+}
+
+
 // Disassembly of instruction words
 string W36::disasm(Debugger *debuggerP) {
   ostringstream s;
