@@ -361,7 +361,7 @@ public:
   // Used by JRSTF and JEN
   void restoreFlags(W36 ea);
 
-  void loadA10(const char *fileNameP);
+  tuple<unsigned, unsigned> loadA10(const char *fileNameP);
 
 
   // This is how our subclasses (separately compiled) install their

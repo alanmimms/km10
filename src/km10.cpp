@@ -464,17 +464,20 @@ static uint16_t getWord(ifstream &inS, [[maybe_unused]] const char *whyP) {
 }
 
 
-// Load the specified .A10 format file into memory.
-void KM10::loadA10(const char *fileNameP) {
+// Load the specified .A10 format file into memory. Returns lowest
+// loaded address, highest loaded address.
+tuple<unsigned, unsigned> KM10::loadA10(const char *fileNameP) {
   ifstream inS(fileNameP);
   unsigned addr = 0;
   unsigned highestAddr = 0;
   unsigned lowestAddr = 0777777;
+  unsigned lineNum = 0;
 
   for (;;) {
+    ++lineNum;
     char recType = inS.get();
 
-    if (recType == EOF) break;
+    if (recType == EOF || recType == 0) break;
 
     if (logger.load) logger.s << "recType=" << recType << logger.endl;
 
@@ -550,10 +553,13 @@ void KM10::loadA10(const char *fileNameP) {
       
     default:
       logger.s << "ERROR: Unknown record type '" << recType << "' in file '" << fileNameP << "'"
-	       << logger.endl;
+	       << " line " << lineNum
+	       << logger.endl << flush;
       break;      
     }
   }
+
+  return tuple(lowestAddr, highestAddr);
 }
 
 
@@ -765,14 +771,21 @@ static int loopedMain(int argc, char *argv[]) {
     });
   
   //  string lVal{"../images/klad/dfkaa.a10"};
-  string lVal{"../images/klad-compiled/dfkcb.a10"};
-  app.add_option("-l,--load", lVal, ".A10 file to load")
-    ->check(CLI::ExistingFile);
+  vector<string> lVal{
+    //    "../images/klad20-a10s/diamon.a10",
+    "../images/klad20-a10s/subrtn.a10",
+    "../images/klad20-a10s/dfkcb.a10",
+  };
+  app.add_option("-l,--load", lVal, ".A10 file(s) to load (may be used muliple times)")
+    ->delimiter(',')
+    ->expected(0,-1);
 
   //  string rVal{"../images/klad/dfkaa.rel"};
-  string rVal{"../images/klad-compiled/dfkcb.rel"};
-  app.add_option("-r,--rel", rVal, ".REL file to load symbols from")
-    ->check(CLI::ExistingFile);
+  //  string rVal{"../images/klad-compiled/dfkcb.rel"};
+  vector<string> rVal{};
+  app.add_option("-r,--rel", rVal, ".REL file(s) to load symbols from (may be used multiple times)")
+    ->delimiter(',')
+    ->expected(0,-1);
 
   string logFileVal;
   app.add_option("--log-file", logFileVal, "file to log to");
@@ -781,14 +794,14 @@ static int loopedMain(int argc, char *argv[]) {
   app.add_option("-L,--log", logVal, "--log=X,Y,Z (ac,io,pc,dte,mem,load,ea,ints)")
     ->delimiter(',')
     ->each([](string s) {
-      if (s == "ac")		logger.ac = true;
-      else if (s == "io")	logger.io = true;
-      else if (s == "pc")	logger.pc = true;
-      else if (s == "dte")	logger.dte = true;
-      else if (s == "mem")	logger.mem = true;
-      else if (s == "load")	logger.load = true;
-      else if (s == "ea")	logger.ea = true;
-      else if (s == "ints")	logger.ints = true;
+      if (s == "ac")        logger.ac = true;
+      else if (s == "io")   logger.io = true;
+      else if (s == "pc")   logger.pc = true;
+      else if (s == "dte")  logger.dte = true;
+      else if (s == "mem")  logger.mem = true;
+      else if (s == "load") logger.load = true;
+      else if (s == "ea")   logger.ea = true;
+      else if (s == "ints") logger.ints = true;
       else
 	throw CLI::ValidationError(s, "Not a valid logger type flag");
     });
@@ -806,18 +819,15 @@ static int loopedMain(int argc, char *argv[]) {
   assert(sizeof(*km10.eptP) == 512 * 8);
   assert(sizeof(*km10.uptP) == 512 * 8);
 
-  if (lVal.ends_with(".a10")) {
-    km10.loadA10(lVal.c_str());
-  } else {
-    cerr << "ERROR: '--load' option must name a .a10 file" << logger.endl;
-    return -1;
+  for (auto s: lVal) {
+    auto [low, hi] = km10.loadA10(s.c_str());
+    cerr << "[Loaded " << s << "  " << W36(low).fmt18() << " .. " << W36(hi).fmt18();
+    if (km10.pc.u != 0) cerr << "  start=" << km10.pc.fmtVMA();
+    cerr << "]" << logger.endl;
+    
   }
 
-  cerr << "[Loaded " << lVal << "  start=" << km10.pc.fmtVMA() << "]" << logger.endl;
-
-  if (rVal != "none") {
-    km10.debugger.loadREL(rVal.c_str());
-  }
+  for (auto s: rVal) km10.debugger.loadREL(s.c_str());
 
   // Make sure we defined very ops entry.
   if (dVal) for (unsigned op=0; op < 512; ++op) assert(km10.ops[op] != nullptr);
@@ -834,7 +844,7 @@ int main(int argc, char *argv[]) {
   int st;
   
   while ((st = loopedMain(argc, argv)) > 0) {
-    cerr << endl << "[restarting]" << endl;
+    cerr << "[restarting]" << endl;
   }
 
   return st;

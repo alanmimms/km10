@@ -45,8 +45,10 @@ Debugger::DebugAction Debugger::debug() {
 
 
   auto COMMAND = [&](const char *s1, const char *s2, auto handler) {
+    string loweredCmd(words[0]);
+    for (auto& c: loweredCmd) c = tolower(c);
 
-    if (words[0] == s1 || (s2 != nullptr && words[0] == s2)) {
+    if (loweredCmd == s1 || (s2 != nullptr && loweredCmd == s2)) {
       handler();
     }
   };
