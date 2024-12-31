@@ -83,7 +83,7 @@ Debugger::DebugAction Debugger::debug() {
 	try {
 	  // Convert as a signed value since negative numbers are
 	  // addresses of breakpoints to be cleared.
-	  long a = stol(words[1], nullptr, 8);
+	  long a = W36(words[1]);
 
 	  if (a < 0) {
 	    s.erase((unsigned) -a);
@@ -178,8 +178,7 @@ Debugger::DebugAction Debugger::debug() {
 	  }
 
 	  if (words.size() > 2) {
-	    W36 v{stoll(words[2], nullptr, 8)};
-	    km10.acPutN(v, n);
+	    km10.acPutN(W36(words[2]), n);
 	  } else {
 	    dumpAC(n);
 	    cout << logger.endl << flush;
@@ -203,9 +202,9 @@ Debugger::DebugAction Debugger::debug() {
 	if (words.size() > 1) {
 	  string lowered(words[1]);
 	  for (auto& c: lowered) c = tolower(c);
-	  a = (lowered == "pc") ? km10.pc.u :
-	    (lowered == "@") ? km10.iw.y :
-	    stoll(words[1], nullptr, 8);
+	  a = (lowered == "pc") ? km10.pc :
+	    (lowered == "@") ? W36(km10.iw.y) :
+	    W36(words[1]);
 	} else {
 	  a = lastAddr;
 	}
@@ -232,8 +231,8 @@ Debugger::DebugAction Debugger::debug() {
       }
 
       try {
-	W36 a = words[1] == "pc" ? km10.pc.s : stoll(words[1], nullptr, 8);
-	W36 v = stoll(words[2], nullptr, 8);
+	W36 a = words[1] == "pc" ? km10.pc : W36(words[1]);
+	W36 v = W36(words[2]);
 	km10.memPutN(v, a);
 	lastAddr = a;
       } catch (exception &e) {
@@ -348,7 +347,7 @@ Debugger::DebugAction Debugger::debug() {
       } else {
 
 	try {
-	  km10.pc = stoll(words[1], nullptr, 8);
+	  km10.pc = W36(words[1]);
 	} catch (exception &e) {
 	}
       }
@@ -405,6 +404,23 @@ Debugger::DebugAction Debugger::debug() {
       cout << prefix << "Instructions: " << km10.nInsns << logger.endl << flush;
     });
 
+    COMMAND("switch", "sw", [&]() {
+
+      if (words.size() == 1) {
+	cout << prefix
+	     << "Switches: " << km10.dte.switches.fmt36() << logger.endl;
+      } else {
+
+	try {
+	  km10.dte.switches = W36(words[1]);
+	} catch (exception &e) {
+	}
+      }
+
+      cout << flush;
+      action = pcChanged;
+    });
+
     COMMAND("help", "?", [&]() {
       cout << R"(
   gbp [A]       Set address breakpoint after GET access to address A or list breakpoints.
@@ -434,6 +450,7 @@ Debugger::DebugAction Debugger::debug() {
   show apr|pi|flags|devs|counters
                 Display APR, PI state, program flags, or device list.
   stats         Display emulator statistics.
+  switch,sw [N] Display or set the console switches.
   q,quit        Quit the KM10 simulator.
 )"sv.substr(1);	// "" (this helps Emacs parse the syntax properly)
     });

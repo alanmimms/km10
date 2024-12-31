@@ -6,6 +6,20 @@
 #include "debugger.hpp"
 
 
+// Accept an octal string of digits to create a word, optionally
+// including ",," between halves.
+W36::W36(string &s) {
+  size_t commaPos = s.find(",,");
+
+  if (commaPos != std::string::npos) {	// If ",," split the halves.
+    lhu = stoul(s.substr(0, commaPos), nullptr, 8);
+    rhu = stoul(s.substr(commaPos + 2), nullptr, 8);
+  } else {			// Entire string is octal.
+    u = stoull(s, nullptr, 8);
+  }
+}
+
+
 string W36::fmt18() const {
   ostringstream s;
   s << right << setw(6) << setfill('0') << oct << rhu;

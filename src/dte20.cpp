@@ -28,6 +28,7 @@ DTE20::DTE20(unsigned anAddr, KM10 &cpu)
 	   cpu,
 	   true),
     protocolMode(SECONDARY),
+    switches(0),
     genericConditions(0),
     isConnected(false),
     console("/dev/tty"),
@@ -179,7 +180,8 @@ IResult DTE20::doCONO(W36 iw, W36 ea) {
       break;
 
     case getSwitches:
-      cerr << "[Get SWITCHES (NYI)]" << endl;
+      km10.eptP->DTEto10Arg = switches;
+      cerr << "[Get switches " << km10.eptP->DTEto10Arg.fmt36() << "]" << endl;
 
       // Acknowledge the command. (rsxt20.l20:5980)
       km10.eptP->DTEMonitorOpComplete = W36(-2 & 0xFFFF);

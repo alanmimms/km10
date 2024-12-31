@@ -124,6 +124,7 @@ struct W36 {
   // Constructors/factories
   W36(int64_t w = 0) : s(w) {}
   W36(unsigned lh, unsigned rh) : rhu(rh), lhu(lh) {}
+  W36(string &s);
 
   // "Assembler"
   W36(int aOp, int aAC, int aI, int aX, int aY) {
