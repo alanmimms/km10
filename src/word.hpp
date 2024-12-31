@@ -284,7 +284,7 @@ struct W72 {
   string fmt72() const;
 
   // Format a 128-bit number as whatever base <= 10.
-  static string fmt128(int128_t v128, int base=10);
+  static string fmt128(int128_t v128, int base=8);
 };
 
 
