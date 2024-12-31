@@ -4,35 +4,44 @@
 struct DWordGroup: KM10 {
 
   IResult doDADD() {
-    auto a1 = W72{memGetN(ea.u+0), memGetN(ea.u+1)};
-    auto a2 = W72{acGetN(iw.ac+0), acGetN(iw.ac+1)};
+    auto a1 = W72{acGetN(iw.ac+0), acGetN(iw.ac+1)};
+    auto a2 = W72{memGetN(ea.u+0), memGetN(ea.u+1)};
 
-    int128_t s1 = a1.toS70();
-    int128_t s2 = a2.toS70();
-    uint128_t u1 = a1.toU70();
-    uint128_t u2 = a2.toU70();
+    int128_t s1 = a1;
+    int128_t s2 = a2;
+    uint128_t mag1 = a1.toMag();
+    uint128_t mag2 = a2.toMag();
     auto isNeg1 = s1 < 0;
     auto isNeg2 = s2 < 0;
     int128_t sum128 = s1 + s2;
     IResult result = iNormal;
 
-    if (sum128 >= W72::sBit1) {
+    cerr << "DADD: a1=" << a1.fmt72()
+	 << " a2=" << a2.fmt72()
+	 << " sum128=" << W72::fmt128(sum128, 8) << logger.endl;
+
+    if (sum128 > W72::sBit1) {
       flags.cy1 = flags.tr1 = flags.ov = 1;
+      sum128 -= W72::sBit1;
+      sum128 |= W72::bit0;
+      cout << "sum128 > 2^70, new result=" << W72::fmt128(sum128, 8) << logger.endl;
       result = iTrap;
     } else if (sum128 < -W72::sBit1) {
       flags.cy0 = flags.tr1 = flags.ov = 1;
+      cout << "sum128 < 2^70" << logger.endl;
       result = iTrap;
-    } else if ((s1 < 0 && s2 < 0) ||
+    } else if ((isNeg1 && isNeg2) ||
 	       (isNeg1 != isNeg2 &&
-		(u1 == u2 || ((!isNeg1 && u1 > u2) || (!isNeg2 && u2 > u1)))))
-      {
-	flags.cy0 = flags.cy1 = flags.tr1 = flags.ov = 1;
-	result = iTrap;
-      }
+		(mag1 == mag2 || ((!isNeg1 && mag1 > mag2) || (!isNeg2 && mag2 > mag1)))))
+    {
+      flags.cy0 = flags.cy1 = flags.tr1 = flags.ov = 1;
+      cout << "It's complicated: set both carry flags" << logger.endl;
+      result = iTrap;
+    }
 
-    auto [hi36, lo36] = W72::toDW(sum128);
-    acPutN(hi36, iw.ac+0);
-    acPutN(lo36, iw.ac+1);
+    W72 result72{sum128};
+    acPutN(result72.hi, iw.ac+0);
+    acPutN(result72.lo, iw.ac+1);
     return result;
   }
 
@@ -43,8 +52,8 @@ struct DWordGroup: KM10 {
 
     int128_t s1 = a1.toS70();
     int128_t s2 = a2.toS70();
-    uint128_t u1 = a1.toU70();
-    uint128_t u2 = a2.toU70();
+    uint128_t u1 = a1.toMag();
+    uint128_t u2 = a2.toMag();
     auto isNeg1 = s1 < 0;
     auto isNeg2 = s2 < 0;
     int128_t diff128 = s1 - s2;
@@ -73,8 +82,8 @@ struct DWordGroup: KM10 {
   IResult doDMUL() {
     auto a = W72{memGetN(ea.u+0), memGetN(ea.u+1)};
     auto b = W72{acGetN(iw.ac+0), acGetN(iw.ac+1)};
-    const uint128_t a70 = a.toU70();
-    const uint128_t b70 = b.toU70();
+    const uint128_t a70 = a.toMag();
+    const uint128_t b70 = b.toMag();
 
     if (a.isMaxNeg() && b.isMaxNeg()) {
       const W36 big1{0400000,0};
@@ -103,7 +112,7 @@ struct DWordGroup: KM10 {
       acGetN(iw.ac+2),
       acGetN(iw.ac+3)};
     const W72 div72{memGetN(ea.u+0), memGetN(ea.u+1)};
-    auto const div = div72.toU70();
+    auto const div = div72.toMag();
 
     if (den >= div) {
       flags.tr1 = flags.ov = flags.ndv = 1;
@@ -153,7 +162,7 @@ struct DWordGroup: KM10 {
   IResult doDMOVN() {
     W72 v{memGetN(ea.vma+0), memGetN(ea.vma+1)};
     v.loSign = 0;
-    uint128_t v70 = v.toU70();
+    uint128_t v70 = v.toMag();
 
     acPutN(v.lo, iw.ac+0);
     acPutN(v.hi, iw.ac+1);
@@ -173,7 +182,7 @@ struct DWordGroup: KM10 {
   IResult doDMOVNM() {
     W72 v{acGetN(iw.ac+0), acGetN(iw.ac+1)};
     v.loSign = 0;
-    uint128_t v70 = v.toU70();
+    uint128_t v70 = v.toMag();
 
     memPutN(v.lo, ea.vma+0);
     memPutN(v.hi, ea.vma+1);
