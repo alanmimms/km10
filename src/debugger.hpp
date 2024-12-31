@@ -10,19 +10,7 @@ using namespace std;
 
 
 struct Debugger {
-
-  Debugger(KM10 &aKM10)
-    : km10(aKM10),
-      prevLine("help"),
-      lastAddr(0),
-      globalSymbols{},
-      localSymbols{},
-      localInvisibleSymbols{},
-      valueToSymbol{},
-      verboseLoad(false),
-      switches(0)
-  {}
-
+  Debugger(KM10 &aKM10);
   KM10 &km10;
   string prevLine;
   W36 lastAddr;

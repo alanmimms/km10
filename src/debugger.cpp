@@ -30,6 +30,19 @@ using namespace std;
 #include "apr.hpp"
 
 
+Debugger::Debugger(KM10 &aKM10)
+  : km10(aKM10),
+    prevLine("help"),
+    lastAddr(0),
+    globalSymbols{},
+    localSymbols{},
+    localInvisibleSymbols{},
+    valueToSymbol{},
+    verboseLoad(false),
+    switches(W36(02000,0))
+{}
+
+
 static KM10 *cpuForHandlerP;
 
 static void sigintHandler(int signum) {
