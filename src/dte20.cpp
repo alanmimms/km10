@@ -110,19 +110,44 @@ IResult DTE20::doCONO(W36 iw, W36 ea) {
     MonitorCommand mc{km10.eptP->DTEto11Arg.rhu};
 
     if (logger.dte) logger.s << " to11DoorBell arg=" << oct << km10.eptP->DTEto11Arg.rhu
-			     << " data=" << mc.data << " fn=" << mc.fn << endl << flush;
+			     << " data=" << mc.data << " fn=" << mc.fn << endl;
 
     switch (mc.fn) {
+    case clockControl:		// Control/read the 60Hz clock interrupt from FE.
+
+      switch (mc.data) {
+      case 000:
+	cerr << "[Clock is now OFF]" << endl;
+	break;
+
+      case 001:
+	cerr << "[Clock is now ON]" << endl;
+	break;
+
+      case 003:
+	cerr << "[Reading FE 60Hz clock (NYI)]" << endl;
+	break;
+
+      default:
+	cerr << "[unknown clockControl " << oct << mc.data << "]" << endl;
+	break;
+      }
+
+      // Acknowledge the command. (rsxt20.l20:5980)
+      km10.eptP->DTEMonitorOpComplete = W36(-2 & 0xFFFF);
+      break;
+
+    case ctyInputDirect:
     case ctyInput:
 
       if (ctyQ.isEmpty()) {
-	//	  cerr << "ctyIn [empty]" << endl << flush;
+	//	  cerr << "ctyIn [empty]" << endl;
 	km10.eptP->DTEto10Arg.rhu = 0;
       } else {
 	buf = ctyQ.dequeue() & 0177;
 	cerr << "ctyIn [got "
 	     << hex << setw(2) << setfill('0')
-	     << (int) buf << "]" << endl << flush;
+	     << (int) buf << "]" << endl;
 	km10.eptP->DTEto10Arg.rhu = buf;
       }
 
@@ -131,6 +156,7 @@ IResult DTE20::doCONO(W36 iw, W36 ea) {
       break;
 
     default:
+    case ctyForcedOutput:
     case ctyOutput:
       // In RSX-20F this is an ELSE case vs function numbers 13, 12, 11 (rsxt20.l20:6017).
       buf = mc.data;
@@ -144,32 +170,55 @@ IResult DTE20::doCONO(W36 iw, W36 ea) {
 
     case enterSecondaryProtocol:
       cerr << "DTE20 enter secondary protocol command with data " << mc.data << " (ignored)."
-	   << endl << flush;
+	   << endl;
       break;
 
     case enterPrimaryProtocol:
       cerr << "DTE20 enter primary protocol command with data " << mc.data << " (ignored)."
-	   << endl << flush;
+	   << endl;
+      break;
+
+    case getSwitches:
+      cerr << "[Get SWITCHES (NYI)]" << endl;
+
+      // Acknowledge the command. (rsxt20.l20:5980)
+      km10.eptP->DTEMonitorOpComplete = W36(-2 & 0xFFFF);
+      cerr << flush;
       break;
 
     case diagNotice:
 
       switch (mc.data) {
+      case 005:			// Get clock default word
+	cerr << "[Get default clock word (NYI)]" << endl;
+	break;
+
       case 004:			// End of PASS
-	cerr << "[End of diagnostic PASS]" << endl << flush;
+	cerr << "[End of diagnostic PASS]" << endl;
 	break;
 
       case 003:
-	cerr << "[End of diagnostic RUN]" << endl << flush;
+	cerr << "[End of diagnostic RUN]" << endl;
+	break;
+
+      case 002:			// End of PASS HALT
+	cerr << "[End of diagnostic FAIL HALT]" << endl;
+	km10.running = false;
+	break;
+
+      case 001:			// Program error
+	cerr << "[Diagnostic PROGRAM ERROR]" << endl;
+	km10.running = false;
 	break;
 
       default:
-	cerr << "[Unknown diagNotice status=" << oct << mc.data << "]" << endl << flush;
+	cerr << "[Unknown diagNotice status=" << oct << mc.data << "]" << endl;
 	break;
       }
 
       // Acknowledge the command. (rsxt20.l20:5980)
       km10.eptP->DTEMonitorOpComplete = W36(-2 & 0xFFFF);
+      cerr << flush;
       break;
     }
   } else {

@@ -65,6 +65,10 @@ struct DTE20: Device {
   // See klcom.mem p.50
   enum DTECMD {
     diagNotice = 001,
+    clockControl = 002,
+    getSwitches = 003,
+    ctyInputDirect = 005,
+    ctyForcedOutput = 006,
     ctyInput = 007,
     ctyOutput,
     enterSecondaryProtocol,
