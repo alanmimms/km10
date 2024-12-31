@@ -9,7 +9,7 @@ struct AOxSOxGroup: KM10 {
       return iTrap;
     } else if (a.s == -1ll) {
       flags.cy0 = flags.cy1 = 1;
-      return iTrap;
+      return iNormal;
     } else {
       return iNormal;
     }
@@ -52,7 +52,7 @@ struct AOxSOxGroup: KM10 {
       return iTrap;
     } else if (a.u != 0) {
       flags.cy0 = flags.cy1 = 1;
-      return iTrap;
+      return iNormal;
     } else {
       return iNormal;
     }
