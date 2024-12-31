@@ -19,7 +19,8 @@ struct Debugger {
       localSymbols{},
       localInvisibleSymbols{},
       valueToSymbol{},
-      verboseLoad(false)
+      verboseLoad(false),
+      switches(0)
   {}
 
   KM10 &km10;
@@ -32,6 +33,8 @@ struct Debugger {
   map<W36, string> valueToSymbol;
 
   bool verboseLoad;
+
+  W36 switches;
 
   static constexpr size_t pcHistorySize = 1024;
 

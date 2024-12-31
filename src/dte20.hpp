@@ -88,8 +88,6 @@ struct DTE20: Device {
     MonitorCommand(unsigned v) : u(v) {}
   };
 
-  W36 switches;			// Console switches
-
   unsigned genericConditions: 18;
   thread consoleIOThread;
   bool consoleIOThreadDone;

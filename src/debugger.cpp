@@ -408,11 +408,11 @@ Debugger::DebugAction Debugger::debug() {
 
       if (words.size() == 1) {
 	cout << prefix
-	     << "Switches: " << km10.dte.switches.fmt36() << logger.endl;
+	     << "Switches: " << switches.fmt36() << logger.endl;
       } else {
 
 	try {
-	  km10.dte.switches = W36(words[1]);
+	  switches = W36(words[1]);
 	} catch (exception &e) {
 	}
       }
