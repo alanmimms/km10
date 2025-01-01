@@ -331,6 +331,64 @@ uint64_t KM10::getEA(unsigned i, unsigned x, uint64_t y) {
 bool KM10::userMode() {return !!flags.usr;}
 
 
+
+// Given add operands a and b and sum, set flags for an ADD operation.
+IResult KM10::setADDFlags(W36 a, W36 b, W36 sum) {
+  int needTrap = 0;
+
+  if (a.sign) {
+
+    if (b.sign) {
+
+      if (sum.sign)
+	flags.cy0 = flags.cy1 = 1;
+      else
+	needTrap = flags.ov = flags.tr1 = flags.cy0 = 1;
+
+    } else if (!sum.sign) {
+      flags.cy0 = flags.cy1 = 1;
+    }
+  } else {
+
+    if (!b.sign) {
+      if (sum.sign) needTrap = flags.ov = flags.tr1 = flags.cy1 = 1;
+    } else if (!sum.sign) {
+      flags.cy0 = flags.cy1 = 1;
+    }
+  }
+
+  return needTrap ? iTrap : iNormal;
+}
+
+
+// Given add operands a and b and resulting diff, set flags for a SUB operation.
+IResult KM10::setSUBFlags(W36 a, W36 b, W36 diff) {
+  int needTrap = 0;
+
+  if (!a.sign) {
+
+    if (!b.sign) {
+      if (!diff.sign) flags.cy0 = flags.cy1 = 1;
+    } else {
+      if (diff.sign) needTrap = flags.ov = flags.tr1 = flags.cy1;
+    }
+  } else {
+
+    if (!b.sign) {
+
+      if (diff.sign)
+	flags.cy0 = flags.cy1 = 1;
+      else
+	needTrap = flags.cy0 = flags.ov = flags.tr1 = 1;
+    } else {
+      if (!diff.sign) flags.cy0 = flags.cy1 = 1;
+    }
+  }
+
+  return needTrap ? iTrap : iNormal;
+}
+
+
 // This builds and returns a flags word with the specified PC in the
 // RH or VMA.
 W36 KM10::flagsWord(unsigned pc) {

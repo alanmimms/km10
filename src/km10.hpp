@@ -358,6 +358,10 @@ public:
   bool userMode();
   W36 flagsWord(unsigned pc);
 
+  // Fixups for flags for add and subtract operations.
+  IResult setADDFlags(W36 a, W36 b, W36 sum);
+  IResult setSUBFlags(W36 a, W36 b, W36 diff);
+
   // Used by JRSTF and JEN
   void restoreFlags(W36 ea);
 
