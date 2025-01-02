@@ -368,9 +368,7 @@ IResult KM10::setADDFlags(W36 a, W36 b, W36 sum) {
   }
 
   // XXX not sure of this: Apparently OV is NOT a trap in exec mode on a KL10?
-  if (!flags.usr && canTrap) {
-    canTrap = 0;
-  }
+  if (!flags.usr && canTrap) canTrap = 0;
 
   return canTrap ? iTrap : iNormal;
 }
@@ -378,6 +376,7 @@ IResult KM10::setADDFlags(W36 a, W36 b, W36 sum) {
 
 // Given add operands a and b and resulting diff, set flags for a SUB operation.
 IResult KM10::setSUBFlags(W36 a, W36 b, W36 diff) {
+  const int trapAllowed = flags.usr;
   int canTrap = 0;
 
   if (!a.sign) {
@@ -385,7 +384,14 @@ IResult KM10::setSUBFlags(W36 a, W36 b, W36 diff) {
     if (!b.sign) {
       if (!diff.sign) flags.cy0 = flags.cy1 = 1;
     } else {
-      if (diff.sign) canTrap = flags.ov = flags.tr1 = flags.cy1;
+
+      if (diff.sign) {
+
+	if (trapAllowed)
+	  canTrap = flags.ov = flags.tr1 = flags.cy1 = 1;
+	else
+	  flags.cy1 = 1;
+      }
     }
   } else {
 
@@ -393,12 +399,17 @@ IResult KM10::setSUBFlags(W36 a, W36 b, W36 diff) {
 
       if (diff.sign)
 	flags.cy0 = flags.cy1 = 1;
-      else
+      else if (trapAllowed)
 	canTrap = flags.cy0 = flags.ov = flags.tr1 = 1;
+      else
+	flags.cy0 = 1;
     } else {
       if (!diff.sign) flags.cy0 = flags.cy1 = 1;
     }
   }
+
+  // XXX not sure of this: Apparently OV is NOT a trap in exec mode on a KL10?
+  if (!flags.usr && canTrap) canTrap = 0;
 
   return canTrap ? iTrap : iNormal;
 }

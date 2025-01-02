@@ -13,6 +13,7 @@ struct DWordGroup: KM10 {
     int64_t hi64 = (int64_t) aHi.u + (int64_t) bHi.u + (lo64 >> 35);
     IResult result = iNormal;
 
+#if 0
     cout << "DADD " << iw.ac << "," << ea.fmt18() << logger.endl
 	 << "     ac" << (iw.ac+0) << "=" << acGetN(iw.ac+0).fmt36()
 	 << "     ac" << (iw.ac+1) << "=" << acGetN(iw.ac+1).fmt36() << logger.endl
@@ -27,6 +28,7 @@ struct DWordGroup: KM10 {
 	 << " b=" << bHi.fmt36() << " " << bLo.fmt36() << logger.endl
 	 << " lo64=" << oct << setw(13) << setfill('0') << lo64 << logger.endl
 	 << " hi64=" << oct << setw(13) << setfill('0') << hi64 << logger.endl;
+#endif
 
     W36 rHi{hi64};
     W36 rLo{lo64};
@@ -34,41 +36,30 @@ struct DWordGroup: KM10 {
     rLo.sign = rHi.sign;
     acPutN(rHi, iw.ac+0);
     acPutN(rLo, iw.ac+1);
+#if 0
     cout << " sum=" << rHi.fmt36() << " " << rLo.fmt36() << logger.endl;
     cout << " result=" << result << logger.endl;
+#endif
     return result;
   }
 
 
   IResult doDSUB() {
-    auto a1 = W72{memGetN(ea.u+0), memGetN(ea.u+1)};
-    auto a2 = W72{acGetN(iw.ac+0), acGetN(iw.ac+1)};
+    W36 aHi{acGetN(iw.ac+0)};
+    W36 aLo{acGetN(iw.ac+1)};
+    W36 bHi{memGetN(ea.u+0)};
+    W36 bLo{memGetN(ea.u+1)};
 
-    int128_t s1 = a1.toS70();
-    int128_t s2 = a2.toS70();
-    uint128_t u1 = a1.toMag();
-    uint128_t u2 = a2.toMag();
-    auto isNeg1 = s1 < 0;
-    auto isNeg2 = s2 < 0;
-    int128_t diff128 = s1 - s2;
+    int64_t lo64 = (int64_t) aLo.mag - (int64_t) bLo.mag;
+    int64_t hi64 = (int64_t) aHi.u - (int64_t) bHi.u - (lo64 < 0);
     IResult result = iNormal;
 
-    if (diff128 >= W72::sBit1) {
-      flags.cy1 = flags.tr1 = flags.ov = 1;
-      result = iTrap;
-    } else if (diff128 < -W72::sBit1) {
-      flags.cy0 = flags.tr1 = flags.ov = 1;
-      result = iTrap;
-    } else if ((isNeg1 && isNeg2 && u2 >= u1) ||
-	       (isNeg1 != isNeg2 && s2 < 0))
-      {
-	flags.cy0 = flags.cy1 = flags.tr1 = flags.ov = 1;
-	result = iTrap;
-      }
-
-    auto [hi36, lo36] = W72::toDW(diff128);
-    acPutN(hi36, iw.ac+0);
-    acPutN(lo36, iw.ac+1);
+    W36 rHi{hi64};
+    W36 rLo{lo64};
+    result = setSUBFlags(aHi, bHi, rHi);
+    rLo.sign = rHi.sign;
+    acPutN(rHi, iw.ac+0);
+    acPutN(rLo, iw.ac+1);
     return result;
   }
 
