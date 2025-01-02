@@ -104,6 +104,26 @@ string W72::fmt128(int128_t v128, int base) {
 }
 
 
+
+W72 W72::negate() {
+  W36 rLo{-sLo};		// Do this first so we can test for zero mag.
+  W72 result{-sHi - (rLo.mag == 0), rLo};
+  result.loSign = result.hiSign;
+  return result;
+}
+
+
+W144 W144::negate() {
+  W36 r3{-s3};
+  W36 r2{-s2 - (r3.mag == 0)};
+  W36 r1{-s1 - (r2.mag == 0)};
+  W36 r0{-s0 - (r1.mag == 0)};
+  W144 result{r0, r1, r2, r3};
+  result.sign3 = result.sign2 = result.sign1 = result.sign0;
+  return result;
+}
+
+
 // Disassembly of instruction words
 string W36::disasm(Debugger *debuggerP) {
   ostringstream s;

@@ -64,9 +64,21 @@ struct DWordGroup: KM10 {
   }
 
 
+  void acPutQuad(W36::tQuadWord &q) {
+    auto [r0, r1, r2, r3] = q;
+    acPutN(r0, iw.ac+0);
+    acPutN(r1, iw.ac+1);
+    acPutN(r2, iw.ac+2);
+    acPutN(r3, iw.ac+3);
+  }
+
+
+  
+
+
   IResult doDMUL() {
-    auto a = W72{memGetN(ea.u+0), memGetN(ea.u+1)};
-    auto b = W72{acGetN(iw.ac+0), acGetN(iw.ac+1)};
+    auto a = W72{acGetN(iw.ac+0), acGetN(iw.ac+1)};
+    auto b = W72{memGetN(ea.u+0), memGetN(ea.u+1)};
     const uint128_t a70 = a.toMag();
     const uint128_t b70 = b.toMag();
 
@@ -81,11 +93,8 @@ struct DWordGroup: KM10 {
     }
 
     W144 prod{W144::product(a70, b70, (a.s < 0) ^ (b.s < 0))};
-    auto [r0, r1, r2, r3] = prod.toQuadWord();
-    acPutN(r0, iw.ac+0);
-    acPutN(r1, iw.ac+1);
-    acPutN(r2, iw.ac+2);
-    acPutN(r3, iw.ac+3);
+    W144::tQuadWord prodQ = prod.toQuadWord();
+    acPutQuad(prodQ);
     return iNormal;
   }
 

@@ -234,6 +234,7 @@ struct W72 {
 
   W72(uint128_t v = 0) : u(v) {}
   W72(int128_t v = 0) : s(v) {}
+  W72(const W72 &w) : lo(w.lo), hi(w.hi) {}
   W72(W36 aHi, W36 aLo) : lo(aLo.u), hi(aHi.u) {}
   W72(uint64_t mag0, uint64_t mag1, int isNeg)
     : lo35(mag1), loSign(isNeg), hi35(mag0), hiSign(isNeg)
@@ -267,6 +268,8 @@ struct W72 {
   operator uint128_t() {return u;}
   operator int128_t() {return s;}
 
+  W72 negate();
+
   static inline const uint128_t bit0 = ((uint128_t) 1) << 71;
   static inline const int128_t sBit1 = ((int128_t) 1) << 70;
   static inline const uint128_t bit36 = ((uint128_t) 1) << 35;
@@ -294,26 +297,34 @@ struct W72 {
 
 
 // This is a 140-bit word whose internal representation is four copies
-// of the sign bit interspersed with four 35-bit magnitude words.
+// of the sign bit interspersed with four 35-bit magnitude words. the
+// x3s are least-significant word, x0s are most-significant.
 struct W144 {
 
   union {
 
     struct ATTRPACKED {
-      uint128_t w3: 36;
-      uint128_t w2: 36;
-      uint128_t w1: 36;
-      uint128_t w0: 36;
+      uint64_t u3: 36;
+      uint64_t u2: 36;
+      uint64_t u1: 36;
+      uint64_t u0: 36;
     };
 
     struct ATTRPACKED {
-      uint128_t mag3: 35;
+      int64_t s3: 36;
+      int64_t s2: 36;
+      int64_t s1: 36;
+      int64_t s0: 36;
+    };
+
+    struct ATTRPACKED {
+      uint64_t mag3: 35;
       unsigned sign3: 1;
-      uint128_t mag2: 35;
+      uint64_t mag2: 35;
       unsigned sign2: 1;
-      uint128_t mag1: 35;
+      uint64_t mag1: 35;
       unsigned sign1: 1;
-      uint128_t mag0: 35;
+      uint64_t mag0: 35;
       unsigned sign0: 1;
     };
   };
@@ -382,6 +393,8 @@ struct W144 {
 			 aNeg);
   }
 
+
+  W144 negate();
 
   uint128_t lowerU70() const {
     return ((uint128_t) mag2 << 35) | (uint128_t) mag3; 
