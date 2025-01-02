@@ -334,7 +334,8 @@ bool KM10::userMode() {return !!flags.usr;}
 
 // Given add operands a and b and sum, set flags for an ADD operation.
 IResult KM10::setADDFlags(W36 a, W36 b, W36 sum) {
-  int needTrap = 0;
+  const int trapAllowed = flags.usr;
+  int canTrap = 0;
 
   if (a.sign) {
 
@@ -342,8 +343,10 @@ IResult KM10::setADDFlags(W36 a, W36 b, W36 sum) {
 
       if (sum.sign)
 	flags.cy0 = flags.cy1 = 1;
+      else if (trapAllowed)
+	canTrap = flags.ov = flags.tr1 = flags.cy0 = 1;
       else
-	needTrap = flags.ov = flags.tr1 = flags.cy0 = 1;
+	flags.cy0 = 1;
 
     } else if (!sum.sign) {
       flags.cy0 = flags.cy1 = 1;
@@ -351,26 +354,38 @@ IResult KM10::setADDFlags(W36 a, W36 b, W36 sum) {
   } else {
 
     if (!b.sign) {
-      if (sum.sign) needTrap = flags.ov = flags.tr1 = flags.cy1 = 1;
+
+      if (sum.sign) {
+
+	if (trapAllowed)
+	  canTrap = flags.ov = flags.tr1 = flags.cy1 = 1;
+	else
+	  flags.cy1 = 1;
+      }
     } else if (!sum.sign) {
       flags.cy0 = flags.cy1 = 1;
     }
   }
 
-  return needTrap ? iTrap : iNormal;
+  // XXX not sure of this: Apparently OV is NOT a trap in exec mode on a KL10?
+  if (!flags.usr && canTrap) {
+    canTrap = 0;
+  }
+
+  return canTrap ? iTrap : iNormal;
 }
 
 
 // Given add operands a and b and resulting diff, set flags for a SUB operation.
 IResult KM10::setSUBFlags(W36 a, W36 b, W36 diff) {
-  int needTrap = 0;
+  int canTrap = 0;
 
   if (!a.sign) {
 
     if (!b.sign) {
       if (!diff.sign) flags.cy0 = flags.cy1 = 1;
     } else {
-      if (diff.sign) needTrap = flags.ov = flags.tr1 = flags.cy1;
+      if (diff.sign) canTrap = flags.ov = flags.tr1 = flags.cy1;
     }
   } else {
 
@@ -379,13 +394,13 @@ IResult KM10::setSUBFlags(W36 a, W36 b, W36 diff) {
       if (diff.sign)
 	flags.cy0 = flags.cy1 = 1;
       else
-	needTrap = flags.cy0 = flags.ov = flags.tr1 = 1;
+	canTrap = flags.cy0 = flags.ov = flags.tr1 = 1;
     } else {
       if (!diff.sign) flags.cy0 = flags.cy1 = 1;
     }
   }
 
-  return needTrap ? iTrap : iNormal;
+  return canTrap ? iTrap : iNormal;
 }
 
 
@@ -653,8 +668,8 @@ void KM10::emulate() {
       // We have a trap.
       fetchPC = eptAddressFor(flags.tr1 ? &eptP->trap1Insn : &eptP->stackOverflowInsn);
       inInterrupt = true;
-      if (logger.ints) logger.s << ">>>>> trap cycle PC now=" << pc.fmtVMA()
-				<< logger.endl << flush;
+      /* if (logger.ints) */ logger.s << ">>>>> trap cycle PC now=" << pc.fmtVMA()
+				      << logger.endl << flush;
     } else if (W36 vec = pi.setUpInterruptCycleIfPending(); vec != W36(0)) {
       // We have an active interrupt.
       fetchPC = vec;
@@ -763,6 +778,7 @@ void KM10::emulate() {
       break;
 
     case iTrap:			// Advance and THEN handle trap.
+      pcOffset = 1;
       break;
 
     case iMUUO:
@@ -789,12 +805,12 @@ void KM10::emulate() {
       break;
     }
 
-    if (logger.pc || logger.mem || logger.ac || logger.io || logger.dte)
-      logger.s << logger.endl << flush;
-
     // If we get here we just offset the PC by `pcOffset` and loop to
     // fetch next instruction.
     pc.vma = fetchPC.vma = pc.vma + pcOffset;
+
+    if (logger.pc || logger.mem || logger.ac || logger.io || logger.dte)
+      logger.s << logger.endl << flush;
   }
 
   // Restore console to normal

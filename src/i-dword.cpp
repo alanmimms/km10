@@ -13,7 +13,16 @@ struct DWordGroup: KM10 {
     int64_t hi64 = (int64_t) aHi.u + (int64_t) bHi.u + (lo64 >> 35);
     IResult result = iNormal;
 
-    cout << "DADD" << logger.endl
+    cout << "DADD " << iw.ac << "," << ea.fmt18() << logger.endl
+	 << "     ac" << (iw.ac+0) << "=" << acGetN(iw.ac+0).fmt36()
+	 << "     ac" << (iw.ac+1) << "=" << acGetN(iw.ac+1).fmt36() << logger.endl
+	 << " c(ea+0)=" << memGetN(ea.u+0).fmt36()
+	 << " c(ea+1)=" << memGetN(ea.u+1).fmt36() << logger.endl
+	 << " aLo.mag=" << W36(aLo.mag).fmt36() << logger.endl
+	 << " bLo.mag=" << W36(bLo.mag).fmt36() << logger.endl
+	 << " low sum sign=" << (lo64 >> 35) << logger.endl
+	 << " aHi=" << aHi.fmt36() << logger.endl
+	 << " bHi=" << bHi.fmt36() << logger.endl
 	 << " a=" << aHi.fmt36() << " " << aLo.fmt36() << logger.endl
 	 << " b=" << bHi.fmt36() << " " << bLo.fmt36() << logger.endl
 	 << " lo64=" << oct << setw(13) << setfill('0') << lo64 << logger.endl
@@ -25,6 +34,8 @@ struct DWordGroup: KM10 {
     rLo.sign = rHi.sign;
     acPutN(rHi, iw.ac+0);
     acPutN(rLo, iw.ac+1);
+    cout << " sum=" << rHi.fmt36() << " " << rLo.fmt36() << logger.endl;
+    cout << " result=" << result << logger.endl;
     return result;
   }
 
