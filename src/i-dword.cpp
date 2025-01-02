@@ -4,44 +4,27 @@
 struct DWordGroup: KM10 {
 
   IResult doDADD() {
-    auto a1 = W72{acGetN(iw.ac+0), acGetN(iw.ac+1)};
-    auto a2 = W72{memGetN(ea.u+0), memGetN(ea.u+1)};
+    W36 aHi{acGetN(iw.ac+0)};
+    W36 aLo{acGetN(iw.ac+1)};
+    W36 bHi{memGetN(ea.u+0)};
+    W36 bLo{memGetN(ea.u+1)};
 
-    int128_t s1 = a1;
-    int128_t s2 = a2;
-    uint128_t mag1 = a1.toMag();
-    uint128_t mag2 = a2.toMag();
-    auto isNeg1 = s1 < 0;
-    auto isNeg2 = s2 < 0;
-    int128_t sum128 = s1 + s2;
+    int64_t lo64 = (int64_t) aLo.mag + (int64_t) bLo.mag;
+    int64_t hi64 = (int64_t) aHi.u + (int64_t) bHi.u + (lo64 >> 35);
     IResult result = iNormal;
 
-    cerr << "DADD: a1=" << a1.fmt72()
-	 << " a2=" << a2.fmt72()
-	 << " sum128=" << W72::fmt128(sum128, 8) << logger.endl;
+    cout << "DADD" << logger.endl
+	 << " a=" << aHi.fmt36() << " " << aLo.fmt36() << logger.endl
+	 << " b=" << bHi.fmt36() << " " << bLo.fmt36() << logger.endl
+	 << " lo64=" << oct << setw(13) << setfill('0') << lo64 << logger.endl
+	 << " hi64=" << oct << setw(13) << setfill('0') << hi64 << logger.endl;
 
-    if (sum128 > W72::sBit1) {
-      flags.cy1 = flags.tr1 = flags.ov = 1;
-      sum128 -= W72::sBit1;
-      sum128 |= W72::bit0;
-      cout << "sum128 > 2^70, new result=" << W72::fmt128(sum128, 8) << logger.endl;
-      result = iTrap;
-    } else if (sum128 < -W72::sBit1) {
-      flags.cy0 = flags.tr1 = flags.ov = 1;
-      cout << "sum128 < 2^70" << logger.endl;
-      result = iTrap;
-    } else if ((isNeg1 && isNeg2) ||
-	       (isNeg1 != isNeg2 &&
-		(mag1 == mag2 || ((!isNeg1 && mag1 > mag2) || (!isNeg2 && mag2 > mag1)))))
-    {
-      flags.cy0 = flags.cy1 = flags.tr1 = flags.ov = 1;
-      cout << "It's complicated: set both carry flags" << logger.endl;
-      result = iTrap;
-    }
-
-    W72 result72{sum128};
-    acPutN(result72.hi, iw.ac+0);
-    acPutN(result72.lo, iw.ac+1);
+    W36 rHi{hi64};
+    W36 rLo{lo64};
+    result = setADDFlags(aHi, bHi, rHi);
+    rLo.sign = rHi.sign;
+    acPutN(rHi, iw.ac+0);
+    acPutN(rLo, iw.ac+1);
     return result;
   }
 
