@@ -72,15 +72,14 @@ string W72::fmt72() const {
   return ss.str();
 }
 
-// Format a 128-bit number as whatever base <= 10.
-string W72::fmt128(int128_t v128, int base) {
+
+// Format an unsigned 128-bit number as whatever base <= 10.
+string W72::fmt128(uint128_t v128, int base) {
   if (v128 == 0) return "0";
 
   string s{};
-  s.reserve(40);
+  s.reserve(64);
   int digits = 0;
-
-  if (v128 < 0) v128 = -v128;
 
   do {
     s += '0' + (v128 % base);
@@ -90,12 +89,18 @@ string W72::fmt128(int128_t v128, int base) {
     v128 /= base;
   } while (v128 != 0);
 
-  if (v128 < 0) {
-    s += "-";
-    v128 = -v128;
-  }
-
   return string(s.rbegin(), s.rend());
+}
+
+
+// Format a signed 128-bit number as whatever base <= 10.
+string W72::fmt128(int128_t v128, int base) {
+  if (v128 == 0) return "0";
+  bool isNeg = v128 < 0;
+  if (isNeg) v128 = -v128;
+  string s = fmt128((uint128_t) v128, base);
+  if (isNeg) s += "-";
+  return s;
 }
 
 

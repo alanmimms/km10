@@ -245,20 +245,9 @@ struct W72 {
     return W72{(uint64_t) mag, (uint64_t) mag >> 35, !!isNeg};
   }
 
-  operator uint128_t() {return u;}
-  operator int128_t() {return s;}
-
-  static inline const uint128_t bit0 = ((uint128_t) 1) << 71;
-  static inline const int128_t sBit1 = ((int128_t) 1) << 70;
-  static inline const uint128_t bit36 = ((uint128_t) 1) << 35;
-  static inline const uint128_t all1s = (bit0 << 1) - 1;
-
-
-  // Return mask for PDP10 bit number `n`.
-  constexpr static uint128_t bit(unsigned n) {return ((uint128_t) 1) << (71 - n);}
-
-  // Return rightmost `s` bit mask.
-  constexpr static uint128_t rMask(unsigned s) {return (((uint128_t) 1) << (s + 1)) - 1;}
+  inline uint128_t toMag() {
+    return (uint128_t) lo35 | ((uint128_t) hi35 << 35);
+  }
 
   // Grab the 70-bit signed number from the double word represention,
   // cutting out the low word's sign bit.
@@ -275,6 +264,21 @@ struct W72 {
     return tDoubleWord(W36::fromMag(v72 >> 36, isNeg), W36::fromMag(v72, isNeg));
   }
 
+  operator uint128_t() {return u;}
+  operator int128_t() {return s;}
+
+  static inline const uint128_t bit0 = ((uint128_t) 1) << 71;
+  static inline const int128_t sBit1 = ((int128_t) 1) << 70;
+  static inline const uint128_t bit36 = ((uint128_t) 1) << 35;
+  static inline const uint128_t all1s = (bit0 << 1) - 1;
+
+
+  // Return mask for PDP10 bit number `n`.
+  constexpr static uint128_t bit(unsigned n) {return ((uint128_t) 1) << (71 - n);}
+
+  // Return rightmost `s` bit mask.
+  constexpr static uint128_t rMask(unsigned s) {return (((uint128_t) 1) << (s + 1)) - 1;}
+
   bool isMaxNeg() {
     return lo == 0400000'000000ull && hi == 0400000'000000ull;
   }
@@ -284,6 +288,7 @@ struct W72 {
   string fmt72() const;
 
   // Format a 128-bit number as whatever base <= 10.
+  static string fmt128(uint128_t v128, int base=8);
   static string fmt128(int128_t v128, int base=8);
 };
 
