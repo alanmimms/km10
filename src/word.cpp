@@ -194,80 +194,55 @@ struct W64 {
 };
 
 
-// Make a 140-bit product from two 70-bit unsigned magnitudes and a
-// sign (0=>positive, 1=>negative). See _Hacker's Delight_ Second
-// Edition, Chapter 8. We have to do this because there is no
-// 128-bit * 128-bit = 256-bit multiply in GCC.
+static ostream &oct11(ostream &os) {
+  return os << oct << setfill('0') << setw(11);
+}
+
+
+// Do one "digit" of the 70bit*70b multiply (128-bit * 32-bit +
+// carryIn), accumulating the partial product and returning carryOut.
+static uint32_t doDigit(W128 &prod, W128 &a, uint32_t b, uint32_t carryIn) {
+  W64 partial{0};
+
+  partial.u = (uint64_t) a.w3 * (uint64_t) b + (uint64_t) prod.w3 + carryIn;
+  prod.w3 = partial.w1;
+  cout << oct11 << a.w3 << " * " << oct11 << b
+       << " = " << oct11 << prod.w3 << " carry=" << partial.w0
+       << logger.endl;
+
+  partial.u = (uint64_t) a.w2 * (uint64_t) b + (uint64_t) prod.w2 + partial.w0;
+  prod.w2 = partial.w1;
+  cout << oct11 << a.w2 << " * " << oct11 << b << " + " << oct11 << partial.w0
+       << " = " << oct11 << prod.w2 << " carry=" << partial.w0
+       << logger.endl;
+  
+  partial.u = (uint64_t) a.w1 * (uint64_t) b + (uint64_t) prod.w1 + partial.w0;
+  prod.w1 = partial.w1;
+  cout << oct11 << a.w1 << " * " << oct11 << b << " + " << oct11 << partial.w0
+       << " = " << oct11 << prod.w1 << " carry=" << partial.w0
+       << logger.endl;
+  
+  partial.u = (uint64_t) a.w0 * (uint64_t) b + (uint64_t) prod.w0 + partial.w0;
+  prod.w0 = partial.w1;
+  cout << oct11 << a.w0 << " * " << oct11 << b << " + " << oct11 << partial.w0
+       << " = " << oct11 << prod.w0 << " carry=" << partial.w0
+       << logger.endl;
+  return partial.w0;
+}
+
+
+// Make a 140-bit product from two 70-bit unsigned and a sign.
 W144 W144::product(uint128_t a, uint128_t b) {
   W128 a128{a};
   W128 b128{b};
-
-  // The 128-bit product where we build our product. At the end, we
-  // have the uppermost 32-bits in (partial.u >> 32).
   W128 prod128{0};
+  uint32_t carry = 0;
 
-  // Partial product whose upper 32-bits is the carry to next "digit".
-  W64 partial{0};
-
-  // First column.
-  partial.u = (uint64_t) a128.w3 * (uint64_t) b128.w3;
-  prod128.w3 = partial.w1;
-  cout << oct << setfill('0') << setw(12) << a128.w3
-       << " * "
-       << oct << setfill('0') << setw(12) << b128.w3
-       << " = "
-       << oct << setfill('0') << setw(12) << prod128.w3
-       << " carry=" << partial.w0
-       << logger.endl;
-
-  partial.u = (uint64_t) a128.w3 * (uint64_t) b128.w2 + partial.w0;
-  prod128.w2 = partial.w1;
-  cout << oct << setfill('0') << setw(12) << a128.w3
-       << " * "
-       << oct << setfill('0') << setw(12) << b128.w2
-       << " = "
-       << oct << setfill('0') << setw(12) << prod128.w2
-       << " carry=" << partial.w0
-       << logger.endl;
-  
-  partial.u = (uint64_t) a128.w3 * (uint64_t) b128.w1 + partial.w0;
-  prod128.w1 = partial.u;
-  cout << oct << setfill('0') << setw(12) << a128.w3
-       << " * "
-       << oct << setfill('0') << setw(12) << b128.w1
-       << " + " << oct << setfill('0') << setw(12) << partial.w0
-       << " = "
-       << oct << setfill('0') << setw(12) << prod128.w1
-       << " carry=" << partial.w0
-       << logger.endl;
-  
-  // Second column.
-  partial.u = (uint64_t) a128.w2 * (uint64_t) b128.w3 + (uint64_t) prod128.w3;
-  prod128.w3 = partial.w1;
-
-  partial.u = (uint64_t) a128.w2 * (uint64_t) b128.w2 + (uint64_t) prod128.w2 + partial.w0;
-  prod128.w2 = partial.w1;
-  
-  partial.u = (uint64_t) a128.w2 * (uint64_t) b128.w1 + (uint64_t) prod128.w1 + partial.w0;
-  prod128.w1 = partial.w1;
-
-  partial.u = (uint64_t) prod128.w0 + partial.w0;
-  prod128.w0 = partial.w1;
-
-  // Third column.
-  partial.u = (uint64_t) a128.w1 * (uint64_t) b128.w3 + (uint64_t) prod128.w3;
-  prod128.w3 = partial.w1;
-
-  partial.u = (uint64_t) a128.w1 * (uint64_t) b128.w2 + (uint64_t) prod128.w2 + partial.w0;
-  prod128.w2 = partial.w1;
-  
-  partial.u = (uint64_t) a128.w1 * (uint64_t) b128.w1 + (uint64_t) prod128.w1 + partial.w0;
-  prod128.w1 = partial.w1;
-
-  partial.u = (uint64_t) prod128.w0 + partial.w0;
-  prod128.w0 = partial.w1;
-
-  return W144{prod128.w0, prod128.w1, prod128.w2, prod128.w3, partial.w0};
+  carry = doDigit(prod128, a128, b128.w3, carry);
+  carry = doDigit(prod128, a128, b128.w2, carry);
+  carry = doDigit(prod128, a128, b128.w1, carry);
+  carry = doDigit(prod128, a128, b128.w0, carry);
+  return W144{carry, prod128.w0, prod128.w1, prod128.w2, prod128.w3};
 }
 
 

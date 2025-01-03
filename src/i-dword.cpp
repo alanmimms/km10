@@ -81,19 +81,11 @@ struct DWordGroup: KM10 {
     auto b = W72{memGetN(ea.u+0), memGetN(ea.u+1)};
 
     cout << "DMUL"
-	 << " a=" << W36(a.hi).fmt36()
-	 << "  "
-	 << " b=" << W36(b.hi).fmt36()
+	 << "  a=" << W36(a.hi).fmt36()
+	 << " " << W36(a.lo).fmt36()
+	 << "  b=" << W36(b.hi).fmt36()
+	 << " " << W36(b.lo).fmt36()
 	 << logger.endl;
-
-    // Normalize signs, but remember...
-    int aSign = a.hiSign;
-    if (aSign) a = a.negate();
-    int bSign = b.hiSign;
-    if (bSign) b = b.negate();
-
-    const uint128_t a70 = a.toMag();
-    const uint128_t b70 = b.toMag();
 
     if (a.isMaxNeg() && b.isMaxNeg()) {
       const W36 big1 = W36::fromMag(0, 1);
@@ -103,13 +95,22 @@ struct DWordGroup: KM10 {
       acPutN(big1, iw.ac+2);
       acPutN(big1, iw.ac+3);
       return flags.usr ? iTrap : iNormal;
-    }
+    } else {
+      // Normalize signs, but remember...
+      int aSign = a.hiSign;
+      if (aSign) a = a.negate();
+      int bSign = b.hiSign;
+      if (bSign) b = b.negate();
+      const uint128_t a70 = a.toMag();
+      const uint128_t b70 = b.toMag();
+      int sign = aSign ^ bSign;
+      if (a70 == 0 || b70 == 0) sign = 0;
 
-    int sign = aSign ^ bSign;
-    cout << "DMUL aSign=" << aSign << " bSign=" << bSign << " sign=" << sign << logger.endl;
-    W144::tQuadWord prodQ = W144::product(a70, b70).toQuadWord(sign);
-    acPutQuad(prodQ);
-    return iNormal;
+      cout << "DMUL aSign=" << aSign << " bSign=" << bSign << " sign=" << sign << logger.endl;
+      W144::tQuadWord prodQ = W144::product(a70, b70).toQuadWord(sign);
+      acPutQuad(prodQ);
+      return iNormal;
+    }
   }
 
 

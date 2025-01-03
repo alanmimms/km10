@@ -233,9 +233,13 @@ struct W72 {
   using tDoubleWord = W36::tDoubleWord;
 
   W72(uint128_t v = 0) : u(v) {}
+
   W72(int128_t v = 0) : s(v) {}
+
   W72(const W72 &w) : lo(w.lo), hi(w.hi) {}
+
   W72(W36 aHi, W36 aLo) : lo(aLo.u), hi(aHi.u) {}
+
   W72(uint64_t mag0, uint64_t mag1, int isNeg)
     : lo35(mag1), loSign(isNeg), hi35(mag0), hiSign(isNeg)
   {}
@@ -246,27 +250,16 @@ struct W72 {
     return W72{(uint64_t) mag, (uint64_t) mag >> 35, !!isNeg};
   }
 
-  inline uint128_t toMag() {
-    return (uint128_t) lo35 | ((uint128_t) hi35 << 35);
-  }
-
   // Grab the 70-bit signed number from the double word represention,
   // cutting out the low word's sign bit.
-  int128_t toS70() const {return ((int128_t) sHi << 35) | lo35;}
+  inline int128_t toS70() const {return ((int128_t) sHi << 35) | lo35;}
 
   // Grab the 70-bit unsigned magnitude from the double word
   // represention, cutting out the low word's sign bit.
-  uint128_t toMag() const {return ((uint128_t) hi35 << 35) | lo35;}
+  inline uint128_t toMag() const {return ((uint128_t) hi35 << 35) | lo35;}
 
-  // Convert a 72-bit internal representation to two 35-bit magnitudes
-  // with duplicated sign bits.
-  static inline auto toDW(int128_t v72) {
-    const int isNeg = v72 < 0;
-    return tDoubleWord(W36::fromMag(v72 >> 36, isNeg), W36::fromMag(v72, isNeg));
-  }
-
-  operator uint128_t() {return u;}
-  operator int128_t() {return s;}
+  inline operator uint128_t() {return u;}
+  inline operator int128_t() {return s;}
 
   W72 negate();
 
@@ -282,7 +275,7 @@ struct W72 {
   // Return rightmost `s` bit mask.
   constexpr static uint128_t rMask(unsigned s) {return (((uint128_t) 1) << (s + 1)) - 1;}
 
-  bool isMaxNeg() {
+  inline bool isMaxNeg() {
     return lo == 0400000'000000ull && hi == 0400000'000000ull;
   }
 
@@ -347,7 +340,8 @@ struct W144 {
   // highest order word.
   W144(W36 a0, W36 a1, W36 a2, W36 a3);
 
-  // Build an unsigned value up from five 32-bit values.
+  // Build an unsigned value up from five 32-bit values. NOTE MSW is
+  // first!
   W144(uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4);
 
   // Factory to make a W144 from two 70-bit magnitudes and a sign.
