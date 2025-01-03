@@ -124,6 +124,182 @@ W144 W144::negate() {
 }
 
 
+W144::W144(W36 a0, W36 a1, W36 a2, W36 a3) {
+  mag0 = a0.mag;
+  sign0 = a0.sign;
+  mag1 = a1.mag;
+  sign1 = a0.sign;
+  mag2 = a2.mag;
+  sign2 = a0.sign;
+  mag3 = a3.mag;
+  sign3 = a0.sign;
+}
+
+
+W144 W144::fromMag(uint128_t aMag0, uint128_t aMag1, int aNeg) {
+  aNeg = !!aNeg;
+
+  cout << "fromMag sign=" << aNeg << logger.endl;
+
+  return W144{
+    W36::fromMag((uint64_t) ((aMag1 >> 105) | aMag0), aNeg),
+    W36::fromMag((uint64_t) (aMag1 >> 70), aNeg),
+    W36::fromMag((uint64_t) (aMag1 >> 35), aNeg),
+    W36::fromMag((uint64_t) aMag1, aNeg)};
+}
+
+
+W144::W144(uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4) {
+  w4 = a4;
+  w3 = a3;
+  w2 = a2;
+  w1 = a1;
+  w0 = a0;
+}
+
+
+// This is to simplify conversions from 128-bit to and from pieces we
+// can manage.
+struct W128 {
+
+  union {
+
+    struct ATTRPACKED {
+      uint32_t w3;
+      uint32_t w2;
+      uint32_t w1;
+      uint32_t w0;
+    };
+
+    uint128_t u;
+  };
+  
+  W128(uint128_t value) : u(value) {}
+};
+
+
+// Same for 64-bit.
+struct W64 {
+
+  union {
+    struct ATTRPACKED {
+      uint32_t w1;
+      uint32_t w0;
+    };
+
+    uint64_t u;
+  };
+
+  W64(uint64_t value) : u(value) {}
+};
+
+
+// Make a 140-bit product from two 70-bit unsigned magnitudes and a
+// sign (0=>positive, 1=>negative). See _Hacker's Delight_ Second
+// Edition, Chapter 8. We have to do this because there is no
+// 128-bit * 128-bit = 256-bit multiply in GCC.
+W144 W144::product(uint128_t a, uint128_t b) {
+  W128 a128{a};
+  W128 b128{b};
+
+  // The 128-bit product where we build our product. At the end, we
+  // have the uppermost 32-bits in (partial.u >> 32).
+  W128 prod128{0};
+
+  // Partial product whose upper 32-bits is the carry to next "digit".
+  W64 partial{0};
+
+  // First column.
+  partial.u = (uint64_t) a128.w3 * (uint64_t) b128.w3;
+  prod128.w3 = partial.w1;
+  cout << oct << setfill('0') << setw(12) << a128.w3
+       << " * "
+       << oct << setfill('0') << setw(12) << b128.w3
+       << " = "
+       << oct << setfill('0') << setw(12) << prod128.w3
+       << " carry=" << partial.w0
+       << logger.endl;
+
+  partial.u = (uint64_t) a128.w3 * (uint64_t) b128.w2 + partial.w0;
+  prod128.w2 = partial.w1;
+  cout << oct << setfill('0') << setw(12) << a128.w3
+       << " * "
+       << oct << setfill('0') << setw(12) << b128.w2
+       << " = "
+       << oct << setfill('0') << setw(12) << prod128.w2
+       << " carry=" << partial.w0
+       << logger.endl;
+  
+  partial.u = (uint64_t) a128.w3 * (uint64_t) b128.w1 + partial.w0;
+  prod128.w1 = partial.u;
+  cout << oct << setfill('0') << setw(12) << a128.w3
+       << " * "
+       << oct << setfill('0') << setw(12) << b128.w1
+       << " + " << oct << setfill('0') << setw(12) << partial.w0
+       << " = "
+       << oct << setfill('0') << setw(12) << prod128.w1
+       << " carry=" << partial.w0
+       << logger.endl;
+  
+  // Second column.
+  partial.u = (uint64_t) a128.w2 * (uint64_t) b128.w3 + (uint64_t) prod128.w3;
+  prod128.w3 = partial.w1;
+
+  partial.u = (uint64_t) a128.w2 * (uint64_t) b128.w2 + (uint64_t) prod128.w2 + partial.w0;
+  prod128.w2 = partial.w1;
+  
+  partial.u = (uint64_t) a128.w2 * (uint64_t) b128.w1 + (uint64_t) prod128.w1 + partial.w0;
+  prod128.w1 = partial.w1;
+
+  partial.u = (uint64_t) prod128.w0 + partial.w0;
+  prod128.w0 = partial.w1;
+
+  // Third column.
+  partial.u = (uint64_t) a128.w1 * (uint64_t) b128.w3 + (uint64_t) prod128.w3;
+  prod128.w3 = partial.w1;
+
+  partial.u = (uint64_t) a128.w1 * (uint64_t) b128.w2 + (uint64_t) prod128.w2 + partial.w0;
+  prod128.w2 = partial.w1;
+  
+  partial.u = (uint64_t) a128.w1 * (uint64_t) b128.w1 + (uint64_t) prod128.w1 + partial.w0;
+  prod128.w1 = partial.w1;
+
+  partial.u = (uint64_t) prod128.w0 + partial.w0;
+  prod128.w0 = partial.w1;
+
+  return W144{prod128.w0, prod128.w1, prod128.w2, prod128.w3, partial.w0};
+}
+
+
+uint128_t W144::lowerU70() const {
+  return ((uint128_t) mag2 << 35) | (uint128_t) mag3; 
+}
+
+uint128_t W144::upperU70() const {
+  return ((uint128_t) mag0 << 35) | (uint128_t) mag1;
+}
+
+
+// Compare this 140-bit magnitude against the specified 70-bit
+// magnitude return true if this >= a70.
+bool W144::operator >= (const uint128_t a70) const {return upperU70() != 0 || lowerU70() >= a70;}
+
+
+// Accessors/converters
+W144::tQuadWord W144::toQuadWord(const int sign) const {
+  uint64_t const signBit = sign ? W36::bit0 : 0;
+
+  cout << "toQuadWord sign=" << sign << logger.endl;
+
+  return tQuadWord{
+    mag0 | signBit,
+    mag1 | signBit,
+    mag2 | signBit,
+    mag3 | signBit
+  };
+}
+
+
 // Disassembly of instruction words
 string W36::disasm(Debugger *debuggerP) {
   ostringstream s;

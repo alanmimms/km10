@@ -317,6 +317,15 @@ struct W144 {
       int64_t s0: 36;
     };
 
+    // 32-bit access is useful for multiplication.
+    struct ATTRPACKED {
+      uint32_t w4;
+      uint32_t w3;
+      uint32_t w2;
+      uint32_t w1;
+      uint32_t w0;
+    };
+
     struct ATTRPACKED {
       uint64_t mag3: 35;
       unsigned sign3: 1;
@@ -336,89 +345,27 @@ struct W144 {
 
   // Build one up from four W36s. This only uses the sign from the
   // highest order word.
-  W144(W36 a0, W36 a1, W36 a2, W36 a3) {
-    mag0 = a0.mag;
-    sign0 = a0.sign;
-    mag1 = a1.mag;
-    sign1 = a0.sign;
-    mag2 = a2.mag;
-    sign2 = a0.sign;
-    mag3 = a3.mag;
-    sign3 = a0.sign;
-  }
+  W144(W36 a0, W36 a1, W36 a2, W36 a3);
 
+  // Build an unsigned value up from five 32-bit values.
+  W144(uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4);
 
-  static inline W144 fromMag(uint128_t aMag0, uint128_t aMag1, int aNeg) {
-    aNeg = !!aNeg;
+  // Factory to make a W144 from two 70-bit magnitudes and a sign.
+  static W144 fromMag(uint128_t aMag0, uint128_t aMag1, int aNeg);
 
-    return W144{
-      W36::fromMag((uint64_t) ((aMag1 >> 105) | aMag0), aNeg),
-      W36::fromMag((uint64_t) (aMag1 >> 70), aNeg),
-      W36::fromMag((uint64_t) (aMag1 >> 35), aNeg),
-      W36::fromMag((uint64_t) aMag1, aNeg)};
-  }
-
-  // Make a 140-bit product from two 70-bit unsigned magnitudes and a
-  // sign (0=>positive, 1=>negative). See _Hacker's Delight_ Second
-  // Edition, Chapter 8.
-  static inline W144 product(uint128_t a, uint128_t b, int aNeg) {
-    array<uint32_t,3>u{(uint32_t) a, (uint32_t) (a >> 32), (uint32_t) (a >> 64)};
-    array<uint32_t,3>v{(uint32_t) b, (uint32_t) (b >> 32), (uint32_t) (b >> 64)};
-    array<uint32_t,6>w{};
-
-    for (unsigned j=0; j < v.size(); ++j) {
-      // The carry into the current column from the previous one.
-      uint32_t carry = 0;
-
-      // Process columns, accumulating partial product and providing
-      // carry out to the next one.
-      for (unsigned i=0; i < u.size(); ++i) {
-	// The explicitly wider accumulator into which the partial
-	// product is accumulated. This will be truncated into our
-	// current w[i+j]. The high order bits saved as the carry into
-	// the next column to the left.
-	uint64_t accum = (uint64_t) u[i] * (uint64_t) v[j] + w[i+j] + carry;
-	w[i+j] = (uint32_t) accum;
-	carry = (uint32_t) (accum >> 32);
-      }
-
-      w[j+u.size()] = carry;
-    }
-
-    // Since we know we only have 70-bit multiplicands, the result
-    // is at most 140 bits and will therefore be found in w[0..4].
-    return W144::fromMag(
-			 (uint128_t) w[2] >> 6 | (uint128_t) w[3] << 24 | (((uint128_t) w[4] << 56) & 077),
-			 (uint128_t) w[0] << 0 | (uint128_t) w[1] << 32 | (((uint128_t) w[2] << 64) & 077),
-			 aNeg);
-  }
-
+  // Factory to make a 140-bit unsigned product from two 70-bit
+  // unsigned magnitudes.
+  static W144 product(uint128_t a, uint128_t b);
 
   W144 negate();
 
-  uint128_t lowerU70() const {
-    return ((uint128_t) mag2 << 35) | (uint128_t) mag3; 
-  }
-
-  uint128_t upperU70() const {
-    return ((uint128_t) mag0 << 35) | (uint128_t) mag1;
-  }
-
+  uint128_t lowerU70() const;
+  uint128_t upperU70() const;
 
   // Compare this 140-bit magnitude against the specified 70-bit
   // magnitude return true if this >= a70.
-  bool operator >= (const uint128_t a70) const {return upperU70() != 0 || lowerU70() >= a70;}
-
+  bool operator >= (const uint128_t a70) const;
 
   // Accessors/converters
-  tQuadWord toQuadWord() const {
-    auto const signBit = sign ? W36::bit0 : 0ull;
-
-    return tQuadWord{
-      mag0 | signBit,
-      mag1 | signBit,
-      mag2 | signBit,
-      mag3 | signBit
-    };
-  }
+  tQuadWord toQuadWord(const int sign) const;
 };

@@ -79,21 +79,35 @@ struct DWordGroup: KM10 {
   IResult doDMUL() {
     auto a = W72{acGetN(iw.ac+0), acGetN(iw.ac+1)};
     auto b = W72{memGetN(ea.u+0), memGetN(ea.u+1)};
+
+    cout << "DMUL"
+	 << " a=" << W36(a.hi).fmt36()
+	 << "  "
+	 << " b=" << W36(b.hi).fmt36()
+	 << logger.endl;
+
+    // Normalize signs, but remember...
+    int aSign = a.hiSign;
+    if (aSign) a = a.negate();
+    int bSign = b.hiSign;
+    if (bSign) b = b.negate();
+
     const uint128_t a70 = a.toMag();
     const uint128_t b70 = b.toMag();
 
     if (a.isMaxNeg() && b.isMaxNeg()) {
-      const W36 big1{0400000,0};
-      flags.tr1 = flags.ov = 1;
+      const W36 big1 = W36::fromMag(0, 1);
+      if (!flags.usr) flags.tr1 = flags.ov = 1;
       acPutN(big1, iw.ac+0);
       acPutN(big1, iw.ac+1);
       acPutN(big1, iw.ac+2);
       acPutN(big1, iw.ac+3);
-      return iTrap;
+      return flags.usr ? iTrap : iNormal;
     }
 
-    W144 prod{W144::product(a70, b70, (a.s < 0) ^ (b.s < 0))};
-    W144::tQuadWord prodQ = prod.toQuadWord();
+    int sign = aSign ^ bSign;
+    cout << "DMUL aSign=" << aSign << " bSign=" << bSign << " sign=" << sign << logger.endl;
+    W144::tQuadWord prodQ = W144::product(a70, b70).toQuadWord(sign);
     acPutQuad(prodQ);
     return iNormal;
   }
