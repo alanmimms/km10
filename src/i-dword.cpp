@@ -73,9 +73,6 @@ struct DWordGroup: KM10 {
   }
 
 
-  
-
-
   IResult doDMUL() {
     auto a = W72{acGetN(iw.ac+0), acGetN(iw.ac+1)};
     auto b = W72{memGetN(ea.u+0), memGetN(ea.u+1)};
@@ -95,20 +92,27 @@ struct DWordGroup: KM10 {
       acPutN(big1, iw.ac+2);
       acPutN(big1, iw.ac+3);
       return flags.usr ? iTrap : iNormal;
+    } else if ((a.lo35 == 0 && a.hi35 == 0) || (b.lo35 == 0 && b.hi35 ==0)) {
+      acPutN(0, iw.ac+0);
+      acPutN(0, iw.ac+1);
+      acPutN(0, iw.ac+2);
+      acPutN(0, iw.ac+3);
+      return iNormal;
     } else {
       // Normalize signs, but remember...
       int aSign = a.hiSign;
       if (aSign) a = a.negate();
       int bSign = b.hiSign;
       if (bSign) b = b.negate();
-      const uint128_t a70 = a.toMag();
-      const uint128_t b70 = b.toMag();
       int sign = aSign ^ bSign;
-      if (a70 == 0 || b70 == 0) sign = 0;
 
+      W144 prod = W144::product(a, b);
       cout << "DMUL aSign=" << aSign << " bSign=" << bSign << " sign=" << sign << logger.endl;
-      W144::tQuadWord prodQ = W144::product(a70, b70).toQuadWord(sign);
-      acPutQuad(prodQ);
+      prod.setSign(sign);
+      acPutN(prod.u0, iw.ac+0);
+      acPutN(prod.u1, iw.ac+1);
+      acPutN(prod.u2, iw.ac+2);
+      acPutN(prod.u3, iw.ac+3);
       return iNormal;
     }
   }

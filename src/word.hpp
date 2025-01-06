@@ -310,15 +310,6 @@ struct W144 {
       int64_t s0: 36;
     };
 
-    // 32-bit access is useful for multiplication.
-    struct ATTRPACKED {
-      uint32_t w4;
-      uint32_t w3;
-      uint32_t w2;
-      uint32_t w1;
-      uint32_t w0;
-    };
-
     struct ATTRPACKED {
       uint64_t mag3: 35;
       unsigned sign3: 1;
@@ -340,18 +331,17 @@ struct W144 {
   // highest order word.
   W144(W36 a0, W36 a1, W36 a2, W36 a3);
 
-  // Build an unsigned value up from five 32-bit values. NOTE MSW is
-  // first!
-  W144(uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4);
-
   // Factory to make a W144 from two 70-bit magnitudes and a sign.
   static W144 fromMag(uint128_t aMag0, uint128_t aMag1, int aNeg);
 
   // Factory to make a 140-bit unsigned product from two 70-bit
   // unsigned magnitudes.
-  static W144 product(uint128_t a, uint128_t b);
+  static W144 product(W72 a, W72 b);
 
   W144 negate();
+
+  // Set sign of all four words to aSign.
+  void setSign(const int aSign);
 
   uint128_t lowerU70() const;
   uint128_t upperU70() const;

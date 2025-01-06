@@ -149,100 +149,161 @@ W144 W144::fromMag(uint128_t aMag0, uint128_t aMag1, int aNeg) {
 }
 
 
-W144::W144(uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4) {
-  w4 = a4;
-  w3 = a3;
-  w2 = a2;
-  w1 = a1;
-  w0 = a0;
-}
+union W140 {
 
-
-// This is to simplify conversions from 128-bit to and from pieces we
-// can manage.
-struct W128 {
-
-  union {
-
-    struct ATTRPACKED {
-      uint32_t w3;
-      uint32_t w2;
-      uint32_t w1;
-      uint32_t w0;
-    };
-
-    uint128_t u;
+  struct ATTRPACKED {
+    uint128_t u3: 35;
+    uint128_t u2: 35;
+    uint128_t u1: 35;
+    uint128_t u0: 35;
   };
-  
-  W128(uint128_t value) : u(value) {}
+
+  struct ATTRPACKED {
+    uint128_t lo70: 70;
+    uint128_t hi70: 70;
+  };
+
+  struct ATTRPACKED {
+    uint128_t lo35: 35;
+    uint128_t mid70: 70;
+    uint128_t hi35: 35;
+  };
+
+  W140() : lo70(0), hi70(0) {}
 };
 
 
-// Same for 64-bit.
-struct W64 {
+struct W256 {
+  uint128_t lo;
+  uint128_t hi;
 
-  union {
-    struct ATTRPACKED {
-      uint32_t w1;
-      uint32_t w0;
-    };
+  W256() : lo(0), hi(0) {}
+  W256(uint128_t vLo, uint128_t vHi=0) : lo(vLo), hi(vHi) {}
 
-    uint64_t u;
-  };
+  // NOTE this takes arguments in MSW .. LSW order.
+  W256(uint64_t v3, uint64_t v2, uint64_t v1, uint64_t v0)
+    : lo(((uint128_t) v1 << 64) | v0),
+      hi(((uint128_t) v3 << 64) | v2)
+  {}
 
-  W64(uint64_t value) : u(value) {}
+
+  W256 operator+(const W256 &a) const {
+    W256 r;
+    r.lo = lo + a.lo;
+    r.hi = hi + a.hi + (r.lo < lo); // Carry
+    return r;
+  }
+
+
+  W256 operator+=(const W256 &a) const {
+    return W256(*this + a);
+  }
+
+
+  string toOct128(uint128_t t) const {
+    string result;
+
+    while (t > 0) {
+      result.insert(result.begin(), '0' + (t & 7));
+      t >>= 3;
+    }
+
+    if (result.length() == 0) result = "0";
+    return result;
+  }
+
+
+  W256 &operator<<=(const int n) {
+
+    if (n >= 128) {
+      hi = lo << (n - 128);
+      lo = 0;
+    } else if (n != 0) {
+      hi = (hi << n) | (lo >> (128 - n));
+      lo <<= n;
+    }
+
+    return *this;
+  }
+
+
+  W256 &operator>>=(const int n) {
+
+    if (n >= 128) {
+      lo = hi >> (n - 128);
+      hi = 0;
+    } else if (n != 0) {
+      lo = (lo >> n) | (hi << (128 - n));
+      hi >>= n;
+      cout << "operator>>=" << n << " lo=" << oct << toOct128(lo) << " hi=" << oct << toOct128(hi) << endl;
+    }
+
+    return *this;
+  }
+
+
+  uint128_t operator>>(const int n) const {
+    W256 result = *this;
+    result >>= n;
+    return result;
+  }
+
+
+  uint128_t operator<<(const int n) const {
+    W256 result = *this;
+    result <<= n;
+    return result;
+  }
+
+
+  bool operator==(const W256 &a) {
+    return lo == a.lo && hi == a.hi;
+  }
+
+
+  bool operator!=(const W256 &a) {
+    return lo != a.lo || hi != a.hi;
+  }
+
+
+  operator uint128_t() const { return lo; }
+
+  W140 to140() const {
+    W140 r;
+    r.lo70 = lo;
+    r.hi70 = *this >> 70;
+    return r;
+  }
+
+
+  // Format in octal (yech).
+  string toOct() const {
+    if (lo == 0 && hi == 0) return "0";
+
+    string s{};
+    s.reserve(128);
+    W256 value = *this;
+
+    do {
+      s += '0' + (value.lo & 7);
+      value >>= 3;
+    } while (value.lo != 0 || value.hi != 0);
+
+    return string(s.rbegin(), s.rend());
+  }
 };
 
 
-static ostream &oct11(ostream &os) {
-  return os << oct << setfill('0') << setw(11);
-}
-
-
-// Do one "digit" of the 70bit*70b multiply (128-bit * 32-bit +
-// carryIn), accumulating the partial product and returning carryOut.
-static uint32_t doDigit(W128 &prod, W128 &a, uint32_t b, uint32_t carryIn) {
-  W64 partial{0};
-
-  partial.u = (uint64_t) a.w3 * (uint64_t) b + (uint64_t) prod.w3 + carryIn;
-  prod.w3 = partial.w1;
-  cout << oct11 << a.w3 << " * " << oct11 << b
-       << " = " << oct11 << prod.w3 << " carry=" << partial.w0
-       << logger.endl;
-
-  partial.u = (uint64_t) a.w2 * (uint64_t) b + (uint64_t) prod.w2 + partial.w0;
-  prod.w2 = partial.w1;
-  cout << oct11 << a.w2 << " * " << oct11 << b << " + " << oct11 << partial.w0
-       << " = " << oct11 << prod.w2 << " carry=" << partial.w0
-       << logger.endl;
-  
-  partial.u = (uint64_t) a.w1 * (uint64_t) b + (uint64_t) prod.w1 + partial.w0;
-  prod.w1 = partial.w1;
-  cout << oct11 << a.w1 << " * " << oct11 << b << " + " << oct11 << partial.w0
-       << " = " << oct11 << prod.w1 << " carry=" << partial.w0
-       << logger.endl;
-  
-  partial.u = (uint64_t) a.w0 * (uint64_t) b + (uint64_t) prod.w0 + partial.w0;
-  prod.w0 = partial.w1;
-  cout << oct11 << a.w0 << " * " << oct11 << b << " + " << oct11 << partial.w0
-       << " = " << oct11 << prod.w0 << " carry=" << partial.w0
-       << logger.endl;
-  return partial.w0;
-}
 
 
 // Make a 140-bit product from two 70-bit unsigned and a sign.
-W144 W144::product(uint128_t a, uint128_t b) {
-  W128 a128{a};
-  W128 b128{b};
-  W128 prod128{0};
-  uint32_t carry = 0;
-
-  carry = doDigit(prod128, a128, b128.w3, carry);
-  carry = doDigit(prod128, a128, b128.w2, carry);
-  carry = doDigit(prod128, a128, b128.w1, carry);
-  carry = doDigit(prod128, a128, b128.w0, carry);
-  return W144{carry, prod128.w0, prod128.w1, prod128.w2, prod128.w3};
+W144 W144::product(W72 a, W72 b) {
+  W256 p256;
+  p256  = W256(a.lo * b.lo) <<  0;
+  p256 += W256(a.hi * b.lo) << 35;
+  p256 += W256(a.lo * b.hi) << 35;
+  p256 += W256(a.hi * b.hi) << 70;
+  return W144::fromMag(p256.hi, p256.lo, 0);
 }
 
 
@@ -272,6 +333,12 @@ W144::tQuadWord W144::toQuadWord(const int sign) const {
     mag2 | signBit,
     mag3 | signBit
   };
+}
+
+
+// Set sign of all four words to aSign.
+void W144::setSign(const int aSign) {
+  sign3 = sign2 = sign1 = sign0 = aSign;
 }
 
 

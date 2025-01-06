@@ -78,3 +78,32 @@
 // interrupted program takes place. If the skip is not satisfied, the
 // instruction in 41 + 2n is executed instead of the return.
 
+# Long multiplication
+
+		1234567
+			567
+		=======
+        8641969
+	   7407402
+      6172835
+	 ==========
+	  699999489
+
+        67 x
+        12 y
+     =====
+	    14  (2*7*1)   x.lo*y.lo*1
+	   120  (2*6*10)  x.hi*y.lo*10
+	    70  (1*7*10)  x.lo*y.hi*10
+	   600  (1*6*100) x.hi*y.hi*100
+	 =====
+	   804
+
+        67 x
+        12 y
+     =====
+	   134  (2*67)
+	   670  (10*67)
+	 =====
+	   804
+
