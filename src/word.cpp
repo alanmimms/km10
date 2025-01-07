@@ -6,6 +6,11 @@
 #include "debugger.hpp"
 
 
+W36 W36::negate() const {
+  return W36(-s);
+}
+
+
 // Accept an octal string of digits to create a word, optionally
 // including ",," between halves.
 W36::W36(string &s) {

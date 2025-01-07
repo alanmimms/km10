@@ -165,6 +165,8 @@ struct W36 {
   int64_t ext64() const {return s < 0 ? (int64_t) s | ~0ll << 36 : s;}
   bool operator==(const W36 &other) const {return u == other.u;}
 
+  W36 negate() const;
+
 
   // For googletest stringification
   friend void PrintTo(const W36& w, std::ostream* os) {
