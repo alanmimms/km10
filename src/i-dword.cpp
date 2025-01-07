@@ -78,9 +78,9 @@ struct DWordGroup: KM10 {
     auto b = W72{memGetN(ea.u+0), memGetN(ea.u+1)};
 
     cout << "DMUL"
-	 << "  a=" << W36(a.hi).fmt36()
+	 << " a=" << W36(a.hi).fmt36()
 	 << " " << W36(a.lo).fmt36()
-	 << "  b=" << W36(b.hi).fmt36()
+	 << " b=" << W36(b.hi).fmt36()
 	 << " " << W36(b.lo).fmt36()
 	 << logger.endl;
 
@@ -101,13 +101,20 @@ struct DWordGroup: KM10 {
     } else {
       // Normalize signs, but remember...
       int aSign = a.hiSign;
-      if (aSign) a = a.negate();
       int bSign = b.hiSign;
-      if (bSign) b = b.negate();
       int sign = aSign ^ bSign;
+
+      if (aSign) a = a.negate();
+      if (bSign) b = b.negate();
 
       W144 prod = W144::product(a, b);
       cout << "DMUL aSign=" << aSign << " bSign=" << bSign << " sign=" << sign << logger.endl;
+      cout << "     prod="
+	   << W36(prod.u0).fmt36() << " "
+	   << W36(prod.u1).fmt36() << " "
+	   << W36(prod.u2).fmt36() << " "
+	   << W36(prod.u3).fmt36() << logger.endl;
+
       prod.setSign(sign);
       acPutN(prod.u0, iw.ac+0);
       acPutN(prod.u1, iw.ac+1);

@@ -139,8 +139,6 @@ W144::W144(W36 a0, W36 a1, W36 a2, W36 a3) {
 W144 W144::fromMag(uint128_t aMag0, uint128_t aMag1, int aNeg) {
   aNeg = !!aNeg;
 
-  cout << "fromMag sign=" << aNeg << logger.endl;
-
   return W144{
     W36::fromMag((uint64_t) ((aMag1 >> 105) | aMag0), aNeg),
     W36::fromMag((uint64_t) (aMag1 >> 70), aNeg),
@@ -188,15 +186,16 @@ struct W256 {
 
 
   W256 operator+(const W256 &a) const {
-    W256 r;
-    r.lo = lo + a.lo;
-    r.hi = hi + a.hi + (r.lo < lo); // Carry
+    W256 r = *this;
+    r += a;
     return r;
   }
 
 
-  W256 operator+=(const W256 &a) const {
-    return W256(*this + a);
+  W256 &operator+=(const W256 &a) {
+    lo = lo + a.lo;
+    hi = hi + a.hi + (lo < a.lo); // Carry
+    return *this;
   }
 
 
@@ -235,7 +234,6 @@ struct W256 {
     } else if (n != 0) {
       lo = (lo >> n) | (hi << (128 - n));
       hi >>= n;
-      cout << "operator>>=" << n << " lo=" << oct << toOct128(lo) << " hi=" << oct << toOct128(hi) << endl;
     }
 
     return *this;
@@ -298,12 +296,38 @@ struct W256 {
 
 // Make a 140-bit product from two 70-bit unsigned and a sign.
 W144 W144::product(W72 a, W72 b) {
+  cout << "W144::product"
+       << " a=" << W36(a.hi).fmt36() << " " << W36(a.lo).fmt36() << " "
+       << " b=" << W36(b.hi).fmt36() << " " << W36(b.lo).fmt36()
+       << logger.endl;
+
   W256 p256;
-  p256  = W256(a.lo * b.lo) <<  0;
-  p256 += W256(a.hi * b.lo) << 35;
-  p256 += W256(a.lo * b.hi) << 35;
-  p256 += W256(a.hi * b.hi) << 70;
-  return W144::fromMag(p256.hi, p256.lo, 0);
+  p256  = W256((uint128_t) a.lo * (uint128_t) b.lo) <<  0;
+  cout << "  1:   " << W36(a.lo).fmt36() << " * " << W36(b.lo).fmt36() << "=" 
+       << p256.toOct() << "   (lo*lo)<< 0" << logger.endl;
+
+  p256 += W256((uint128_t) a.hi * (uint128_t) b.lo) << 35;
+  cout << "  2: + " << W36(a.hi).fmt36() << " * " << W36(b.lo).fmt36() << "=" 
+       << p256.toOct() << "   (hi*lo)<<35" << logger.endl;
+
+  p256 += W256((uint128_t) a.lo * (uint128_t) b.hi) << 35;
+  cout << "  3: + " << W36(a.lo).fmt36() << " * " << W36(b.hi).fmt36() << "=" 
+       << p256.toOct() <<  "   (lo*hi)<<35" << logger.endl;
+
+  p256 += W256((uint128_t) a.hi * (uint128_t) b.hi) << 70;
+  cout << "  4: + " << W36(a.hi).fmt36() << " * " << W36(b.hi).fmt36() << "=" 
+       << p256.toOct() << "   (hi*hi)<<70" << logger.endl;
+
+  cout << "p256=" << p256.toOct() << logger.endl;
+
+  uint128_t hi70 = (uint128_t) (p256 >> 70);
+  uint128_t lo70 = (uint128_t) p256 & (W72::all1s >> 2);
+  cout << "hi70=" << W72::fmt128(hi70) << "  lo70=" << W72::fmt128(lo70) << logger.endl;
+
+  W256 z = W256((uint128_t) a.hi * (uint128_t) b.lo);
+  cout << "a.hi*b.lo=" << z.toOct() << logger.endl;
+
+  return W144::fromMag(hi70, lo70, 0);
 }
 
 
@@ -324,8 +348,6 @@ bool W144::operator >= (const uint128_t a70) const {return upperU70() != 0 || lo
 // Accessors/converters
 W144::tQuadWord W144::toQuadWord(const int sign) const {
   uint64_t const signBit = sign ? W36::bit0 : 0;
-
-  cout << "toQuadWord sign=" << sign << logger.endl;
 
   return tQuadWord{
     mag0 | signBit,
