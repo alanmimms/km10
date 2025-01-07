@@ -77,6 +77,7 @@ struct DWordGroup: KM10 {
     auto a = W72{acGetN(iw.ac+0), acGetN(iw.ac+1)};
     auto b = W72{memGetN(ea.u+0), memGetN(ea.u+1)};
 
+    cout << logger.endl;
     cout << "DMUL"
 	 << " a=" << W36(a.hi).fmt36()
 	 << " " << W36(a.lo).fmt36()
@@ -109,13 +110,21 @@ struct DWordGroup: KM10 {
 
       W144 prod = W144::product(a, b);
       cout << "DMUL aSign=" << aSign << " bSign=" << bSign << " sign=" << sign << logger.endl;
+
+      if (sign) {
+	// NOTE have to do these in reverse order for the zero test to work.
+	prod.u3 = W36(prod.u3).negate();
+	prod.u2 = prod.u0 == 0 && prod.u1 == 0 && prod.u2 == 0 ? W36(-1) : W36(prod.u2).negate();
+	prod.u1 = prod.u0 == 0 && prod.u1 == 0 ? W36(-1) : W36(prod.u1).negate();
+	prod.u0 = prod.u0 == 0 ? W36(-1) : W36(prod.u0).negate();
+      }
+
       cout << "     prod="
 	   << W36(prod.u0).fmt36() << " "
 	   << W36(prod.u1).fmt36() << " "
 	   << W36(prod.u2).fmt36() << " "
 	   << W36(prod.u3).fmt36() << logger.endl;
 
-      prod.setSign(sign);
       acPutN(prod.u0, iw.ac+0);
       acPutN(prod.u1, iw.ac+1);
       acPutN(prod.u2, iw.ac+2);
