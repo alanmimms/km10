@@ -112,11 +112,8 @@ struct DWordGroup: KM10 {
       cout << "DMUL aSign=" << aSign << " bSign=" << bSign << " sign=" << sign << logger.endl;
 
       if (sign) {
-	// NOTE have to do these in reverse order for the zero test to work.
-	prod.u3 = W36(prod.u3).negate();
-	prod.u2 = prod.u0 == 0 && prod.u1 == 0 && prod.u2 == 0 ? W36(-1) : W36(prod.u2).negate();
-	prod.u1 = prod.u0 == 0 && prod.u1 == 0 ? W36(-1) : W36(prod.u1).negate();
-	prod.u0 = prod.u0 == 0 ? W36(-1) : W36(prod.u0).negate();
+	prod.setSign(1);
+	prod.negate();
       }
 
       cout << "     prod="
