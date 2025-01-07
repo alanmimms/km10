@@ -329,9 +329,6 @@ W144 W144::product(W72 a, W72 b) {
   uint128_t lo70 = (uint128_t) p256 & (W72::all1s >> 2);
   cout << "hi70=" << W72::fmt128(hi70) << "  lo70=" << W72::fmt128(lo70) << logger.endl;
 
-  W256 z = W256((uint128_t) a.hi * (uint128_t) b.lo);
-  cout << "a.hi*b.lo=" << z.toOct() << logger.endl;
-
   return W144::fromMag(hi70, lo70, 0);
 }
 
