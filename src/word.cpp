@@ -118,13 +118,39 @@ W72 W72::negate() {
 }
 
 
+// Octal 12 digit number iomanip settings thingie.
+static ostream &oct12(ostream &os) {
+  return os << oct << setfill('0') << setw(12);
+}
+
+
+// This leaves the sign bit wrong in some cases, so be sure to
+// setSign() after.
 W144 W144::negate() {
-  W36 r3{-s3};
-  W36 r2{-s2 - (r3.mag == 0)};
-  W36 r1{-s1 - (r2.mag == 0)};
-  W36 r0{-s0 - (r1.mag == 0)};
+  // Complement each (unsigned) word.
+  W36 r3, r2, r1, r0;
+
+  r3.u = ~mag3;
+  r2.u = ~mag2;
+  r1.u = ~mag1;
+  r0.u = ~mag0;
+
+  // Add one, propagating carry.
+  if (++r3.mag == 0) {
+    if (++r2.mag == 0) {
+      if (++r1.mag == 0) {
+	++r0.mag;
+      }
+    }
+  }
+  
+  cout << "W144::negate mag="
+       << oct12 << mag0 << " " << oct12 << mag1 << " " << oct12 << mag2 << " " << oct12 << mag3
+       << logger.endl
+       << "               r="
+       << oct12 <<   r0 << " " << oct12 <<   r1 << " " << oct12 <<   r2 << " " << oct12 <<   r3
+       << logger.endl;
   W144 result{r0, r1, r2, r3};
-  result.sign3 = result.sign2 = result.sign1 = result.sign0;
   return result;
 }
 

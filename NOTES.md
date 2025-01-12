@@ -78,6 +78,9 @@
 // interrupted program takes place. If the skip is not satisfied, the
 // instruction in 41 + 2n is executed instead of the return.
 
+
+----------------------------------------------------------------
+
 # Long multiplication
 
 		1234567
@@ -107,3 +110,8 @@
 	 =====
 	   804
 
+
+## DMUL implementation possibilities
+1. Use 64bit multiply of 35bit values with 128bit result (35+35 > 64).
+   a. Can only work for unsigned? Or can this be done on signed
+   operands if sign is propagated to LSWs?

@@ -112,8 +112,8 @@ struct DWordGroup: KM10 {
       cout << "DMUL aSign=" << aSign << " bSign=" << bSign << " sign=" << sign << logger.endl;
 
       if (sign) {
-	prod.setSign(1);
 	prod.negate();
+	prod.setSign(1);
       }
 
       cout << "     prod="
