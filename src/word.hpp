@@ -168,6 +168,9 @@ struct W36 {
   W36 negate() const;
 
 
+  // Increment magnitude in lower 35 and return true if overflow.
+  bool incMag();
+
   // For googletest stringification
   friend void PrintTo(const W36& w, std::ostream* os) {
     *os << w.fmt36();

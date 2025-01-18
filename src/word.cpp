@@ -11,6 +11,13 @@ W36 W36::negate() const {
 }
 
 
+bool W36::incMag() {
+  uint64_t incremented = (uint64_t) mag + 1;
+  mag = incremented;
+  return (incremented >> 35) != 0;
+}
+
+
 // Accept an octal string of digits to create a word, optionally
 // including ",," between halves.
 W36::W36(string &s) {
@@ -127,6 +134,7 @@ static ostream &oct12(ostream &os) {
 // This leaves the sign bit wrong in some cases, so be sure to
 // setSign() after.
 W144 W144::negate() {
+
   // Complement each (unsigned) word.
   W36 r3, r2, r1, r0;
 
@@ -136,10 +144,10 @@ W144 W144::negate() {
   r0.u = ~mag0;
 
   // Add one, propagating carry.
-  if (++r3.mag == 0) {
-    if (++r2.mag == 0) {
-      if (++r1.mag == 0) {
-	++r0.mag;
+  if (r3.incMag()) {
+    if (r2.incMag()) {
+      if (r1.incMag()) {
+	(void) r0.incMag();
       }
     }
   }
