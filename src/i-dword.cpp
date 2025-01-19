@@ -93,30 +93,15 @@ struct DWordGroup: KM10 {
       acPutN(big1, iw.ac+2);
       acPutN(big1, iw.ac+3);
       return flags.usr ? iTrap : iNormal;
-    } else if ((a.lo35 == 0 && a.hi35 == 0) || (b.lo35 == 0 && b.hi35 ==0)) {
+    } else if ((a.lo35 == 0 && a.hi35 == 0) || (b.lo35 == 0 && b.hi35 == 0)) {
       acPutN(0, iw.ac+0);
       acPutN(0, iw.ac+1);
       acPutN(0, iw.ac+2);
       acPutN(0, iw.ac+3);
       return iNormal;
     } else {
-      // Normalize signs, but remember...
-      int aSign = a.hiSign;
-      int bSign = b.hiSign;
-      int sign = aSign ^ bSign;
-
-      if (aSign) a = a.negate();
-      if (bSign) b = b.negate();
-
       W144 prod = W144::product(a, b);
-      cout << "DMUL aSign=" << aSign << " bSign=" << bSign << " sign=" << sign << logger.endl;
-
-      if (sign) {
-	prod.negate();
-	prod.setSign(1);
-      }
-
-      cout << "     prod="
+      cout << "DMUL prod="
 	   << W36(prod.u0).fmt36() << " "
 	   << W36(prod.u1).fmt36() << " "
 	   << W36(prod.u2).fmt36() << " "

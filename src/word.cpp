@@ -117,25 +117,32 @@ string W72::fmt128(int128_t v128, int base) {
 
 
 
-W72 W72::negate() {
-  W36 rLo{-sLo};		// Do this first so we can test for zero mag.
-  W72 result{-sHi - (rLo.mag == 0), rLo};
-  result.loSign = result.hiSign;
+void W72::setSign(const int aSign) {
+  hiSign = aSign;
+  loSign = aSign;
+}
+
+
+W72 W72::negate() const {
+  W36 rHi{(int64_t) ~hi35};
+  W36 rLo{(int64_t) ~lo35};
+
+  if (rLo.incMag()) (void) rHi.incMag();
+
+  W72 result{rHi, rLo};
+  result.setSign(hiSign);
   return result;
 }
 
 
-// Octal 12 digit number iomanip settings thingie.
+// Octal 12 digit with leading zeros iomanip settings thingie.
 static ostream &oct12(ostream &os) {
   return os << oct << setfill('0') << setw(12);
 }
 
 
-// This leaves the sign bit wrong in some cases, so be sure to
-// setSign() after.
-W144 W144::negate() {
-
-  // Complement each (unsigned) word.
+W144 W144::negate() const {
+  // Complement low 35 bits of each word.
   W36 r3, r2, r1, r0;
 
   r3.u = ~mag3;
@@ -143,7 +150,8 @@ W144 W144::negate() {
   r1.u = ~mag1;
   r0.u = ~mag0;
 
-  // Add one, propagating carry.
+  // Increment the magnitude starting at the LSW, propagating carry as
+  // we go.
   if (r3.incMag()) {
     if (r2.incMag()) {
       if (r1.incMag()) {
@@ -152,13 +160,18 @@ W144 W144::negate() {
     }
   }
   
+  W144 result{r0, r1, r2, r3};
+  result.setSign(!sign0);
+
   cout << "W144::negate mag="
        << oct12 << mag0 << " " << oct12 << mag1 << " " << oct12 << mag2 << " " << oct12 << mag3
        << logger.endl
        << "               r="
        << oct12 <<   r0 << " " << oct12 <<   r1 << " " << oct12 <<   r2 << " " << oct12 <<   r3
+       << logger.endl
+       << "            sign=" << result.sign0
        << logger.endl;
-  W144 result{r0, r1, r2, r3};
+
   return result;
 }
 
@@ -179,7 +192,7 @@ W144 W144::fromMag(uint128_t aMag0, uint128_t aMag1, int aNeg) {
   aNeg = !!aNeg;
 
   return W144{
-    W36::fromMag((uint64_t) ((aMag1 >> 105) | aMag0), aNeg),
+    W36::fromMag((uint64_t) ((aMag1 >> 105) | (aMag0 << 23)), aNeg),
     W36::fromMag((uint64_t) (aMag1 >> 70), aNeg),
     W36::fromMag((uint64_t) (aMag1 >> 35), aNeg),
     W36::fromMag((uint64_t) aMag1, aNeg)};
@@ -318,7 +331,7 @@ struct W256 {
     if (lo == 0 && hi == 0) return "0";
 
     string s{};
-    s.reserve(128);
+    s.reserve((256 + 2) / 3);
     W256 value = *this;
 
     do {
@@ -331,39 +344,58 @@ struct W256 {
 };
 
 
-
-
-// Make a 140-bit product from two 70-bit unsigned and a sign.
+// Make a 140-bit product from two W72s, extracting the signs of each
+// and their four 36-bit unsigned absolute values. Then multiply the
+// four 36-bit unsigned values using grade-school long multiplication,
+// accumulating into a 256-bit result. Finally, negate the product if
+// either of the original signs was negative, but not both, and return
+// a W144.
 W144 W144::product(W72 a, W72 b) {
   cout << "W144::product"
        << " a=" << W36(a.hi).fmt36() << " " << W36(a.lo).fmt36() << " "
        << " b=" << W36(b.hi).fmt36() << " " << W36(b.lo).fmt36()
        << logger.endl;
 
+  int aSign = a.hiSign;
+  int bSign = b.hiSign;
+
+  if (aSign) a = a.negate();
+  if (bSign) b = b.negate();
+
+  cout << "W144::product"
+       << " negated a=" << W36(a.hi).fmt36() << " " << W36(a.lo).fmt36() << " "
+       << " negated b=" << W36(b.hi).fmt36() << " " << W36(b.lo).fmt36()
+       << logger.endl;
+
   W256 p256;
-  p256  = W256((uint128_t) a.lo * (uint128_t) b.lo) <<  0;
-  cout << "  1:   " << W36(a.lo).fmt36() << " * " << W36(b.lo).fmt36() << "=" 
+  p256  = W256((uint128_t) a.lo35 * (uint128_t) b.lo35) <<  0;
+  cout << "  1:   " << W36(a.lo35).fmt36() << " * " << W36(b.lo35).fmt36() << "=" 
        << p256.toOct() << "   (lo*lo)<< 0" << logger.endl;
 
-  p256 += W256((uint128_t) a.hi * (uint128_t) b.lo) << 35;
-  cout << "  2: + " << W36(a.hi).fmt36() << " * " << W36(b.lo).fmt36() << "=" 
+  p256 += W256((uint128_t) a.hi35 * (uint128_t) b.lo35) << 35;
+  cout << "  2: + " << W36(a.hi35).fmt36() << " * " << W36(b.lo35).fmt36() << "=" 
        << p256.toOct() << "   (hi*lo)<<35" << logger.endl;
 
-  p256 += W256((uint128_t) a.lo * (uint128_t) b.hi) << 35;
-  cout << "  3: + " << W36(a.lo).fmt36() << " * " << W36(b.hi).fmt36() << "=" 
+  p256 += W256((uint128_t) a.lo35 * (uint128_t) b.hi35) << 35;
+  cout << "  3: + " << W36(a.lo35).fmt36() << " * " << W36(b.hi35).fmt36() << "=" 
        << p256.toOct() <<  "   (lo*hi)<<35" << logger.endl;
 
-  p256 += W256((uint128_t) a.hi * (uint128_t) b.hi) << 70;
-  cout << "  4: + " << W36(a.hi).fmt36() << " * " << W36(b.hi).fmt36() << "=" 
+  p256 += W256((uint128_t) a.hi35 * (uint128_t) b.hi35) << 70;
+  cout << "  4: + " << W36(a.hi35).fmt36() << " * " << W36(b.hi35).fmt36() << "=" 
        << p256.toOct() << "   (hi*hi)<<70" << logger.endl;
 
   cout << "p256=" << p256.toOct() << logger.endl;
 
   uint128_t hi70 = (uint128_t) (p256 >> 70);
-  uint128_t lo70 = (uint128_t) p256 & (W72::all1s >> 2);
+  uint128_t lo70 = (uint128_t) p256 & mask70;
   cout << "hi70=" << W72::fmt128(hi70) << "  lo70=" << W72::fmt128(lo70) << logger.endl;
 
-  return W144::fromMag(hi70, lo70, 0);
+  // 377777777777777777777776
+  // 377777,,777777 777777,,777776
+  W144 result = W144::fromMag(hi70, lo70, 0);
+  if (aSign ^ bSign) result = result.negate();
+
+  return result;
 }
 
 

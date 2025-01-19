@@ -266,13 +266,15 @@ struct W72 {
   inline operator uint128_t() {return u;}
   inline operator int128_t() {return s;}
 
-  W72 negate();
+  // Set sign of both words to aSign.
+  void setSign(const int aSign);
 
-  static inline const uint128_t bit0 = ((uint128_t) 1) << 71;
-  static inline const int128_t sBit1 = ((int128_t) 1) << 70;
-  static inline const uint128_t bit36 = ((uint128_t) 1) << 35;
-  static inline const uint128_t all1s = (bit0 << 1) - 1;
+  W72 negate() const;
 
+  static inline const uint128_t bit0 = (uint128_t) 1 << 71;
+  static inline const int128_t sBit1 = (int128_t) 1 << 70;
+  static inline const uint128_t bit36 = (uint128_t) 1 << 35;
+  static inline const uint128_t all1s = ((uint128_t) 1 << 72) - 1;
 
   // Return mask for PDP10 bit number `n`.
   constexpr static uint128_t bit(unsigned n) {return ((uint128_t) 1) << (71 - n);}
@@ -343,13 +345,16 @@ struct W144 {
   // unsigned magnitudes.
   static W144 product(W72 a, W72 b);
 
-  W144 negate();
+  W144 negate() const;
 
   // Set sign of all four words to aSign.
   void setSign(const int aSign);
 
   uint128_t lowerU70() const;
   uint128_t upperU70() const;
+
+  // 70 bits all ones.
+  static inline const uint128_t mask70 = (((uint128_t) 1) << 70) - 1;
 
   // Compare this 140-bit magnitude against the specified 70-bit
   // magnitude return true if this >= a70.
