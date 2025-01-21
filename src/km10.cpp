@@ -822,6 +822,8 @@ void KM10::emulate() {
 
     if (logger.pc || logger.mem || logger.ac || logger.io || logger.dte)
       logger.s << logger.endl << flush;
+
+    cout << flush;
   }
 
   // Restore console to normal

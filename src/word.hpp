@@ -206,10 +206,6 @@ struct W36 {
 };
 
 
-// This is a 72-bit word whose internal representation is to keep all
-// 72 bits. Using "halves()" it can be converted to the 1+35+1+35 bit
-// representation used by PDP10 to represent signed values where the
-// "1" bits here are both copies of the sign bit from bit #0.
 struct W72 {
 
   union {
@@ -255,16 +251,11 @@ struct W72 {
     return W72{(uint64_t) mag, (uint64_t) mag >> 35, !!isNeg};
   }
 
-  // Grab the 70-bit signed number from the double word represention,
-  // cutting out the low word's sign bit.
-  inline int128_t toS70() const {return ((int128_t) sHi << 35) | lo35;}
-
   // Grab the 70-bit unsigned magnitude from the double word
   // represention, cutting out the low word's sign bit.
-  inline uint128_t toMag() const {return ((uint128_t) hi35 << 35) | lo35;}
+  uint128_t toMag() const;
 
-  inline operator uint128_t() {return u;}
-  inline operator int128_t() {return s;}
+  operator int128_t() const;
 
   // Set sign of both words to aSign.
   void setSign(const int aSign);
@@ -282,8 +273,10 @@ struct W72 {
   // Return rightmost `s` bit mask.
   constexpr static uint128_t rMask(unsigned s) {return (((uint128_t) 1) << (s + 1)) - 1;}
 
+  // Note this ignores the low word's sign since that is not
+  // consistent across formats.
   inline bool isMaxNeg() {
-    return lo == 0400000'000000ull && hi == 0400000'000000ull;
+    return hiSign && hi35 == 0 && lo35 == 0;
   }
 
 

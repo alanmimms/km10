@@ -167,7 +167,7 @@ W144 W144::negate() const {
        << oct12 << mag0 << " " << oct12 << mag1 << " " << oct12 << mag2 << " " << oct12 << mag3
        << logger.endl
        << "               r="
-       << oct12 <<   r0 << " " << oct12 <<   r1 << " " << oct12 <<   r2 << " " << oct12 <<   r3
+       << oct12 << r0 << " " << oct12 << r1 << " " << oct12 << r2 << " " << oct12 << r3
        << logger.endl
        << "            sign=" << result.sign0
        << logger.endl;
@@ -188,14 +188,14 @@ W144::W144(W36 a0, W36 a1, W36 a2, W36 a3) {
 }
 
 
+// This takes two 70-bit magnitudes and turns them into a signed W144.
 W144 W144::fromMag(uint128_t aMag0, uint128_t aMag1, int aNeg) {
   aNeg = !!aNeg;
-
   return W144{
-    W36::fromMag((uint64_t) ((aMag1 >> 105) | (aMag0 << 23)), aNeg),
-    W36::fromMag((uint64_t) (aMag1 >> 70), aNeg),
-    W36::fromMag((uint64_t) (aMag1 >> 35), aNeg),
-    W36::fromMag((uint64_t) aMag1, aNeg)};
+    W36::fromMag(aMag0 >> 35, aNeg),
+    W36::fromMag(aMag0 & W36::magMask, aNeg),
+    W36::fromMag(aMag1 >> 35, aNeg),
+    W36::fromMag(aMag1 & W36::magMask, aNeg)};
 }
 
 
@@ -220,6 +220,27 @@ union W140 {
   };
 
   W140() : lo70(0), hi70(0) {}
+};
+
+
+// This is simply so we can easily refer to the lower 35 bits of the
+// value and the next 36 bits up from there during multiply.
+struct W128 {
+
+  struct ATTRPACKED {
+    uint64_t lo35: 35;
+    uint64_t hi36: 36;
+  };
+
+  struct ATTRPACKED {
+    uint64_t lo;
+    uint64_t hi;
+  };
+
+  W128(uint128_t a)
+    : lo(a),
+      hi(a >> 64)
+  {}
 };
 
 
@@ -316,8 +337,6 @@ struct W256 {
   }
 
 
-  operator uint128_t() const { return lo; }
-
   W140 to140() const {
     W140 r;
     r.lo70 = lo;
@@ -344,6 +363,20 @@ struct W256 {
 };
 
 
+operator W72::int128_t() {
+  int128_t r = ((int128_t) hi35 << 35) | lo35;
+  if (hiSign) r |= (int128_t) -1 << 70;
+  return r;
+}
+
+
+// Grab the 70-bit unsigned magnitude from the double word
+// represention, cutting out the low word's sign bit.
+uint128_t toMag() const {
+  return ((uint128_t) hi35 << 35) | lo35;
+}
+
+
 // Make a 140-bit product from two W72s, extracting the signs of each
 // and their four 36-bit unsigned absolute values. Then multiply the
 // four 36-bit unsigned values using grade-school long multiplication,
@@ -359,17 +392,17 @@ W144 W144::product(W72 a, W72 b) {
   int aSign = a.hiSign;
   int bSign = b.hiSign;
 
-  if (aSign) a = a.negate();
-  if (bSign) b = b.negate();
+  W128 a128{(uint128_t) (aSign ? -int128_t(a) : int128_t(a))};;
+  W128 b128{(uint128_t) (bSign ? -int128_t(b) : int128_t(b))};;
 
   cout << "W144::product"
-       << " negated a=" << W36(a.hi).fmt36() << " " << W36(a.lo).fmt36() << " "
+       << " negated a=" << W36(uint64_t) (a128 >> 35)).fmt36() << " " << W36(a.lo).fmt36() << " "
        << " negated b=" << W36(b.hi).fmt36() << " " << W36(b.lo).fmt36()
        << logger.endl;
 
   W256 p256;
-  p256  = W256((uint128_t) a.lo35 * (uint128_t) b.lo35) <<  0;
-  cout << "  1:   " << W36(a.lo35).fmt36() << " * " << W36(b.lo35).fmt36() << "=" 
+  p256  = W256((uint128_t) a128.lo35 * (uint128_t) b128.lo35) <<  0;
+  cout << "  1:   " << W36(a128.lo35).fmt36() << " * " << W36(b128.lo35).fmt36() << "=" 
        << p256.toOct() << "   (lo*lo)<< 0" << logger.endl;
 
   p256 += W256((uint128_t) a.hi35 * (uint128_t) b.lo35) << 35;

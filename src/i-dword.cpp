@@ -92,12 +92,16 @@ struct DWordGroup: KM10 {
       acPutN(big1, iw.ac+1);
       acPutN(big1, iw.ac+2);
       acPutN(big1, iw.ac+3);
+      cout << "DMUL both operands maxNeg; return all four words = 400000,,000000" << logger.endl;
       return flags.usr ? iTrap : iNormal;
-    } else if ((a.lo35 == 0 && a.hi35 == 0) || (b.lo35 == 0 && b.hi35 == 0)) {
+    } else if ((a.hiSign == 0 && a.hi35 == 0 && a.lo35 == 0) ||
+	       (b.hiSign == 0 && b.hi35 == 0 && b.lo35 == 0))
+    {
       acPutN(0, iw.ac+0);
       acPutN(0, iw.ac+1);
       acPutN(0, iw.ac+2);
       acPutN(0, iw.ac+3);
+      cout << "DMUL one or both operands zero; return all four words = zero" << logger.endl;
       return iNormal;
     } else {
       W144 prod = W144::product(a, b);
