@@ -78,6 +78,11 @@ string W36::ascii() const {
 }
 
 
+uint128_t W72::toMag() const {
+  return (uint128_t) lo35 | (uint128_t) (hi35 << 35);
+}
+
+
 string W72::fmt72() const {
   ostringstream ss;
   ss << W36(hi).fmt36() << ",,," << W36(lo).fmt36();
@@ -199,51 +204,6 @@ W144 W144::fromMag(uint128_t aMag0, uint128_t aMag1, int aNeg) {
 }
 
 
-union W140 {
-
-  struct ATTRPACKED {
-    uint128_t u3: 35;
-    uint128_t u2: 35;
-    uint128_t u1: 35;
-    uint128_t u0: 35;
-  };
-
-  struct ATTRPACKED {
-    uint128_t lo70: 70;
-    uint128_t hi70: 70;
-  };
-
-  struct ATTRPACKED {
-    uint128_t lo35: 35;
-    uint128_t mid70: 70;
-    uint128_t hi35: 35;
-  };
-
-  W140() : lo70(0), hi70(0) {}
-};
-
-
-// This is simply so we can easily refer to the lower 35 bits of the
-// value and the next 36 bits up from there during multiply.
-struct W128 {
-
-  struct ATTRPACKED {
-    uint64_t lo35: 35;
-    uint64_t hi36: 36;
-  };
-
-  struct ATTRPACKED {
-    uint64_t lo;
-    uint64_t hi;
-  };
-
-  W128(uint128_t a)
-    : lo(a),
-      hi(a >> 64)
-  {}
-};
-
-
 struct W256 {
   uint128_t lo;
   uint128_t hi;
@@ -258,13 +218,6 @@ struct W256 {
   {}
 
 
-  W256 operator+(const W256 &a) const {
-    W256 r = *this;
-    r += a;
-    return r;
-  }
-
-
   W256 &operator+=(const W256 &a) {
     lo = lo + a.lo;
     hi = hi + a.hi + (lo < a.lo); // Carry
@@ -272,16 +225,10 @@ struct W256 {
   }
 
 
-  string toOct128(uint128_t t) const {
-    string result;
-
-    while (t > 0) {
-      result.insert(result.begin(), '0' + (t & 7));
-      t >>= 3;
-    }
-
-    if (result.length() == 0) result = "0";
-    return result;
+  W256 operator+(const W256 &a) const {
+    W256 r = *this;
+    r += a;
+    return r;
   }
 
 
@@ -313,17 +260,17 @@ struct W256 {
   }
 
 
-  uint128_t operator>>(const int n) const {
-    W256 result = *this;
-    result >>= n;
-    return result;
+  W256 operator<<(const int n) {
+    W256 r{*this};
+    r <<= n;
+    return r;
   }
 
 
-  uint128_t operator<<(const int n) const {
-    W256 result = *this;
-    result <<= n;
-    return result;
+  W256 operator>>(const int n) {
+    W256 r{*this};
+    r >>= n;
+    return r;
   }
 
 
@@ -334,14 +281,6 @@ struct W256 {
 
   bool operator!=(const W256 &a) {
     return lo != a.lo || hi != a.hi;
-  }
-
-
-  W140 to140() const {
-    W140 r;
-    r.lo70 = lo;
-    r.hi70 = *this >> 70;
-    return r;
   }
 
 
@@ -363,9 +302,10 @@ struct W256 {
 };
 
 
-operator W72::int128_t() {
-  int128_t r = ((int128_t) hi35 << 35) | lo35;
-  if (hiSign) r |= (int128_t) -1 << 70;
+/*
+  operator int128_t(W72 a) {
+  int128_t r = ((int128_t) ahi35 << 35) | a.lo35;
+  if (a.hiSign) r |= (int128_t) -1 << 70;
   return r;
 }
 
@@ -375,6 +315,7 @@ operator W72::int128_t() {
 uint128_t toMag() const {
   return ((uint128_t) hi35 << 35) | lo35;
 }
+*/
 
 
 // Make a 140-bit product from two W72s, extracting the signs of each
@@ -392,35 +333,52 @@ W144 W144::product(W72 a, W72 b) {
   int aSign = a.hiSign;
   int bSign = b.hiSign;
 
-  W128 a128{(uint128_t) (aSign ? -int128_t(a) : int128_t(a))};;
-  W128 b128{(uint128_t) (bSign ? -int128_t(b) : int128_t(b))};;
+  // Create 36-bit word representation of the absval of a and b. This
+  // involves possible negation of the low word and checking for carry
+  // and incrementing the high word if this is the case. The high word
+  // has to be treated as unsigned 36-bit after.
+  W36 aAbsLo(a.lo35);
+  W36 aAbsHi(a.hi35);
+  if (aSign) {
+    aAbsLo.negate();
+    aAbsHi.negate();
+    aAbsHi.u += aAbsLo.u >> 35;
+  }
 
-  cout << "W144::product"
-       << " negated a=" << W36(uint64_t) (a128 >> 35)).fmt36() << " " << W36(a.lo).fmt36() << " "
-       << " negated b=" << W36(b.hi).fmt36() << " " << W36(b.lo).fmt36()
+  W36 bAbsLo(b.lo35);
+  W36 bAbsHi(b.hi35);
+  if (bSign) {
+    bAbsLo.negate();
+    bAbsHi.negate();
+    bAbsHi.u += bAbsLo.u >> 35;
+  }
+
+  cout << "W144::product will multiple "
+       << " abs a=" << aAbsHi.fmt36() << " " << aAbsLo.fmt36() << " * "
+       << " abs b=" << bAbsHi.fmt36() << " " << bAbsLo.fmt36()
        << logger.endl;
 
   W256 p256;
-  p256  = W256((uint128_t) a128.lo35 * (uint128_t) b128.lo35) <<  0;
-  cout << "  1:   " << W36(a128.lo35).fmt36() << " * " << W36(b128.lo35).fmt36() << "=" 
+  p256  = W256((uint128_t) aAbsLo * (uint128_t) bAbsLo) << 0;
+  cout << "  1:   " << aAbsLo.fmt36() << " * " << bAbsLo.fmt36() << "=" 
        << p256.toOct() << "   (lo*lo)<< 0" << logger.endl;
 
-  p256 += W256((uint128_t) a.hi35 * (uint128_t) b.lo35) << 35;
-  cout << "  2: + " << W36(a.hi35).fmt36() << " * " << W36(b.lo35).fmt36() << "=" 
+  p256 += W256((uint128_t) aAbsHi * (uint128_t) bAbsLo) << 35;
+  cout << "  2: + " << aAbsHi.fmt36() << " * " << bAbsLo.fmt36() << "=" 
        << p256.toOct() << "   (hi*lo)<<35" << logger.endl;
 
-  p256 += W256((uint128_t) a.lo35 * (uint128_t) b.hi35) << 35;
-  cout << "  3: + " << W36(a.lo35).fmt36() << " * " << W36(b.hi35).fmt36() << "=" 
+  p256 += W256((uint128_t) aAbsLo * (uint128_t) bAbsHi) << 35;
+  cout << "  3: + " << aAbsLo.fmt36() << " * " << bAbsHi.fmt36() << "=" 
        << p256.toOct() <<  "   (lo*hi)<<35" << logger.endl;
 
-  p256 += W256((uint128_t) a.hi35 * (uint128_t) b.hi35) << 70;
-  cout << "  4: + " << W36(a.hi35).fmt36() << " * " << W36(b.hi35).fmt36() << "=" 
+  p256 += W256((uint128_t) aAbsHi * (uint128_t) bAbsHi) << 70;
+  cout << "  4: + " << aAbsHi.fmt36() << " * " << bAbsHi.fmt36() << "=" 
        << p256.toOct() << "   (hi*hi)<<70" << logger.endl;
 
   cout << "p256=" << p256.toOct() << logger.endl;
 
-  uint128_t hi70 = (uint128_t) (p256 >> 70);
-  uint128_t lo70 = (uint128_t) p256 & mask70;
+  uint128_t hi70 = (uint128_t) (p256 >> 70).lo;
+  uint128_t lo70 = (uint128_t) p256.lo & mask70;
   cout << "hi70=" << W72::fmt128(hi70) << "  lo70=" << W72::fmt128(lo70) << logger.endl;
 
   // 377777777777777777777776
